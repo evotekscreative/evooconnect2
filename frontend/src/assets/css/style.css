@@ -1,0 +1,13 @@
+
+@import url("https://fonts.googleapis.com/css?family=Ubuntu:300,300i,400,400i,500,500i,700,700i&display=swap");
+.btn-primary {
+    background: -moz-linear-gradient(194deg, #00c9e4 0%, #007bff 100%);
+    /* ff3.6+ */
+    background: -webkit-gradient(
+        linear,
+        left top,
+        right top,
+        color-stop(0%, #007bff),
+        color-stop(100%, #00c9e4)
+    );
+}
