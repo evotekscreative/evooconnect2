@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import Login from "./pages/Auth/Login.jsx";
 import Register from "./pages/Auth/Register.jsx";
 import App from './App';
+import Connections from './pages/Connections.jsx';
 
 const router = createBrowserRouter([
   {
@@ -28,6 +29,11 @@ const router = createBrowserRouter([
     path: '/privacy',
     element: <div>Privacy Policy Page</div>,
   },
+
+  {
+    path: '/connections',
+    element: <Connections/> ,
+  }
 ]);
 
 export default router;
