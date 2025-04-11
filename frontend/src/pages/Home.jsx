@@ -82,8 +82,8 @@ const Home = () => {
             </div>
             <p className='border-b pb-4'>Lorem ipsum dolor sit amet consectetur adipisicing elit.</p>
             <div className="mt-2 flex gap-3 text-sm text-blue-500">
-              <button className='flex items-center bg-sky-100 px-3 py-1 gap-1 hover:text-sky-200 cursor-pointer'><HeartIcon className='w-4 h-4' /> Like</button>
-              <button className='flex items-center bg-sky-100 px-3 py-1 gap-1 hover:text-sky-200 cursor-pointer'><MessageSquare className='w-4 h-4' /> Comment</button>
+              <button className='flex items-center bg-sky-100 px-3 py-1 gap-1 hover:bg-white cursor-pointer'><HeartIcon className='w-4 h-4' /> Like</button>
+              <button className='flex items-center bg-sky-100 px-3 py-1 gap-1 hover:bg-white cursor-pointer'><MessageSquare className='w-4 h-4' /> Comment</button>
             </div>
           </div>
         </div>
