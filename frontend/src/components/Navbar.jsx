@@ -34,7 +34,9 @@ const Navbar = () => {
     <nav className="flex items-center justify-between px-16 py-[13px] bg-sky-500 text-white shadow-sm relative font-sans">
       {/* Kiri: Logo + Search */}
       <div className="flex items-center gap-3">
+        <Link to="/">
         <img src={Logo} alt="Logo" className="h-8" />
+        </Link>
         
         <div className="flex items-center bg-white rounded-full px-3 py-2 w-50 ml-4">
           <input
