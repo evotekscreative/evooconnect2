@@ -1,22 +1,16 @@
+// main.go
 package main
 
 import (
-	"log"
-	"net/http"
+	"be-evoconnect/db"
+	"be-evoconnect/routes"
 
-	"github.com/MuhamadAfghan/evoconnect/tree/main/backend/controllers/authcontroller"
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
 )
 
 func main() {
-	r := mux.NewRouter()
-
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Welcome to the Go Auth API!"))
-	}).Methods("GET")
-	r.HandleFunc("/login", authcontroller.Login).Methods("POST")
-	r.HandleFunc("/register", authcontroller.Register).Methods("POST")
-	r.HandleFunc("/logout", authcontroller.Logout).Methods("POST")
-
-	log.Fatal(http.ListenAndServe(":8080", r))
+	db.ConnectDB()
+	e := echo.New()
+	routes.InitAuthRoutes(e)
+	e.Logger.Fatal(e.Start(":8080"))
 }
