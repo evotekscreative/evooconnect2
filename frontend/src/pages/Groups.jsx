@@ -1,9 +1,86 @@
 import React, { useState } from "react";
 import Case from "../components/Case";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from 'react-router-dom';
+import { Trash2, LogOut, ArrowLeft } from "lucide-react";
+
 
 export default function Groups() {
   const [showModal, setShowModal] = useState(false);
+  const navigate = useNavigate(); 
+  const [groups, setGroups] = useState([
+    {
+      id: 1,
+      name: "Web Developers",
+      members: 12,
+      isAdmin: true,
+      createdDate: "2023-05-15"
+    },
+    {
+      id: 2,
+      name: "Design Community",
+      members: 24,
+      isAdmin: false,
+      joinedDate: "2023-06-20"
+    },
+    {
+      id: 3,
+      name: "React Enthusiasts",
+      members: 8,
+      isAdmin: false,
+      joinedDate: "2023-07-10"
+    },
+    {
+      id: 4,
+      name: "JavaScript Masters",
+      members: 15,
+      isAdmin: true,
+      createdDate: "2023-08-05"
+    },
+    {
+      id: 5,
+      name: "JavaScript Masters",
+      members: 15,
+      isAdmin: true,
+      createdDate: "2023-08-05"
+    },
+    {
+      id: 6,
+      name: "JavaScript Masters",
+      members: 15,
+      isAdmin: true,
+      createdDate: "2023-08-05"
+    },
+  ]);
+
+  // Memisahkan grup admin dan grup yang diikuti
+  const adminGroups = groups.filter(group => group.isAdmin);
+  const joinedGroups = groups.filter(group => !group.isAdmin);
+
+  const handleDeleteGroup = (groupId) => {
+    if (window.confirm("Are you sure you want to delete this group? This action cannot be undone.")) {
+      setGroups(groups.filter(group => group.id !== groupId));
+    }
+  };
+
+  const handleLeaveGroup = (groupId) => {
+    if (window.confirm("Are you sure you want to leave this group? You'll need to be invited to join again.")) {
+      setGroups(groups.filter(group => group.id !== groupId));
+    }
+  };
+
+  const handleCreateGroup = (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const newGroup = {
+      id: groups.length + 1,
+      name: form.groupName.value,
+      members: 1,
+      isAdmin: true,
+      createdDate: new Date().toISOString().split('T')[0] // Format YYYY-MM-DD
+    };
+    setGroups([...groups, newGroup]);
+    setShowModal(false);
+  };
 
   return (
     <Case>
@@ -15,6 +92,12 @@ export default function Groups() {
             
             {/* Header */}
             <div className="flex justify-between items-center border-b pb-4">
+            <button 
+            onClick={() => navigate(-1)} 
+            className="mr-2 p-1 rounded-full hover:bg-gray-100"
+          >
+            <ArrowLeft size={20} className="text-gray-600" />
+          </button>
               <h2 className="text-xl font-semibold">Groups</h2>
               <button
                 onClick={() => setShowModal(true)}
@@ -34,49 +117,121 @@ export default function Groups() {
               </button>
             </div>
 
-            {/* Group List */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Group Card */}
-              <div className="bg-white rounded-xl shadow p-4 flex flex-col justify-between h-40">
-                <div className="flex items-center space-x-3 border-b pb-4">
-                  <div className="bg-gray-300 w-12 h-12 rounded-full overflow-hidden">
-                    <img
-                      src="#"
-                      alt="Group Logo"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div>
-                    <div className="font-medium capitalize text-blue-500">Name Group</div>
-                    <div className="text-gray-500 text-sm">12 Members</div>
-                  </div>
-                </div>
-                <div className="flex justify-end mt-4">
-                <Link to="/group-page">
-                  <button className="bg-gradient-to-r bg-gray-100 hover:bg-gray-200 text-gray-800 text-white font-medium px-4 py-1.5 rounded">
-                    View Group
-                  </button>
-                </Link>
+            {/* Groups You Created */}
+            {adminGroups.length > 0 && (
+              <div className="mb-8">
+                <h3 className="text-lg font-medium mb-4">Groups You Created</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {adminGroups.map((group) => (
+                    <div key={group.id} className="bg-white rounded-xl shadow p-4 flex flex-col justify-between h-40 border border-gray-200 hover:border-blue-300 transition-colors">
+                      <div className="flex items-center space-x-3 border-b pb-4">
+                        <div className="bg-blue-100 w-12 h-12 rounded-full overflow-hidden flex items-center justify-center">
+                          <span className="text-blue-600 text-xl font-bold">
+                            {group.name.charAt(0)}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="font-medium capitalize text-blue-500">{group.name}</div>
+                          <div className="text-gray-500 text-sm">{group.members} Members</div>
+                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                            Created on {group.createdDate}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center mt-4">
+                        <Link 
+                          to={`/groups/${group.id}`}
+                          className="text-sm text-blue-600 hover:underline"
+                        >
+                          View Group
+                        </Link>
+                        <button 
+                          onClick={() => handleDeleteGroup(group.id)}
+                          className="flex items-center text-red-600 hover:text-red-800 text-sm"
+                          title="Delete Group"
+                        >
+                          <Trash2 size={16} className="mr-1" /> Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* Groups You've Joined */}
+            {joinedGroups.length > 0 && (
+              <div>
+                <h3 className="text-lg font-medium mb-4">Groups You've Joined</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {joinedGroups.map((group) => (
+                    <div key={group.id} className="bg-white rounded-xl shadow p-4 flex flex-col justify-between h-40 border border-gray-200 hover:border-blue-300 transition-colors">
+                      <div className="flex items-center space-x-3 border-b pb-4">
+                        <div className="bg-gray-200 w-12 h-12 rounded-full overflow-hidden flex items-center justify-center">
+                          <span className="text-gray-600 text-xl font-bold">
+                            {group.name.charAt(0)}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="font-medium capitalize text-blue-500">{group.name}</div>
+                          <div className="text-gray-500 text-sm">{group.members} Members</div>
+                          <span className="text-xs bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
+                            Joined on {group.joinedDate}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center mt-4">
+                        <Link 
+                          to={`/groups/${group.id}`}
+                          className="text-sm text-blue-600 hover:underline"
+                        >
+                          View Group
+                        </Link>
+                        <button 
+                          onClick={() => handleLeaveGroup(group.id)}
+                          className="flex items-center text-gray-600 hover:text-gray-800 text-sm"
+                          title="Leave Group"
+                        >
+                          <LogOut size={16} className="mr-1" /> Leave
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {groups.length === 0 && (
+              <div className="col-span-full text-center py-8">
+                <p className="text-gray-500">You haven't joined any groups yet.</p>
+                <button
+                  onClick={() => setShowModal(true)}
+                  className="mt-2 text-blue-600 hover:underline"
+                >
+                  Create your first group
+                </button>
+              </div>
+            )}
           </div>
           
-
           {/* Right Sidebar */}
           <div className="space-y-4">
-            
             {/* Group Statistics */}
             <div className="bg-white rounded-xl shadow p-4">
               <h3 className="font-medium mb-2 border-b pb-4">Group Statistics</h3>
               <ul className="text-sm text-gray-700 space-y-1">
                 <li className="flex justify-between border-b pb-4">
                   <span>Total Groups</span>
-                  <span>0</span>
+                  <span>{groups.length}</span>
                 </li>
                 <li className="flex justify-between border-b pb-4">
-                  <span>My Groups</span>
-                  <span>0</span>
+                  <span>Groups Created</span>
+                  <span>{adminGroups.length}</span>
+                </li>
+                <li className="flex justify-between">
+                  <span>Groups Joined</span>
+                  <span>{joinedGroups.length}</span>
                 </li>
               </ul>
             </div>
@@ -84,12 +239,31 @@ export default function Groups() {
             {/* Suggested Groups */}
             <div className="bg-white rounded-xl shadow p-4">
               <h3 className="font-medium mb-2 border-b pb-4">Groups You Might Like</h3>
-              <p className="text-sm text-gray-500 mb-2">
-                You've joined all available groups.
-              </p>
-              <button className="text-blue-600 text-sm hover:underline">
-                Show all →
-              </button>
+              {groups.length < 3 ? (
+                <>
+                  <p className="text-sm text-gray-500 mb-2">
+                    Here are some suggestions for you:
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
+                      <span>JavaScript Developers</span>
+                      <button className="text-blue-600 text-xs hover:underline">
+                        Join
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
+                      <span>UI/UX Designers</span>
+                      <button className="text-blue-600 text-xs hover:underline">
+                        Join
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-gray-500 mb-2">
+                  You've joined all available groups.
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -99,49 +273,53 @@ export default function Groups() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
             <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-md">
               <h3 className="text-lg font-semibold mb-4">Create New Group</h3>
+              
+              <form onSubmit={handleCreateGroup}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium">Group Name</label>
+                    <input
+                      type="text"
+                      name="groupName"
+                      className="w-full mt-1 border border-gray-300 rounded px-3 py-2"
+                      placeholder="Enter group name"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium">Description</label>
+                    <textarea
+                      name="description"
+                      className="w-full mt-1 border border-gray-300 rounded px-3 py-2"
+                      placeholder="Enter group description"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium">Group Photo</label>
+                    <input
+                      type="file"
+                      className="mt-1"
+                      accept="image/*"
+                    />
+                  </div>
+                </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium">Group Name</label>
-                  <input
-                    type="text"
-                    className="w-full mt-1 border border-gray-300 rounded px-3 py-2"
-                    placeholder="Enter group name"
-                  />
+                <div className="mt-6 flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    Create
+                  </button>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium">Description</label>
-                  <textarea
-                    className="w-full mt-1 border border-gray-300 rounded px-3 py-2"
-                    placeholder="Enter group description"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium">Group Photo</label>
-                  <input
-                    type="file"
-                    className="mt-1"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end space-x-3">
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    // Simpan logic submit di sini
-                    setShowModal(false);
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Create
-                </button>
-              </div>
+              </form>
             </div>
           </div>
         )}
