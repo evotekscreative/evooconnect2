@@ -7,6 +7,10 @@ import Jobs from './pages/Jobs/index.jsx';
 import JobProfile from './pages/Profile/job-profile.jsx';
 import Faq from './pages/Faq/index.jsx';
 import CompanyProfile from "./pages/Profile/company-profile.jsx"
+import Groups from './pages/Groups.jsx';
+import ListConnection from './pages/ListConnection.jsx';
+import { Messages } from './pages/Messages.jsx';
+import GroupPage from './pages/GroupPage.jsx';
 
 const router = createBrowserRouter([
   {
@@ -14,11 +18,11 @@ const router = createBrowserRouter([
     element: <App />,
   },
   {
-    path: '/Login',
+    path: '/login',
     element: <Login />,
   },
   {
-    path: '/Register',
+    path: '/register',
     element: <Register />,
   },
   {
@@ -33,7 +37,6 @@ const router = createBrowserRouter([
     path: '/privacy',
     element: <div>Privacy Policy Page</div>,
   },
-
   {
     path: '/connections',
     element: <Connections/> ,
@@ -55,7 +58,27 @@ const router = createBrowserRouter([
   },
   {
     path: '/company-profile',
-    element: <CompanyProfile/> ,
+    element: <CompanyProfile/> , 
+  },
+  {
+    path: '/groups',
+    element: <Groups />
+  },
+  {
+    path: '/list-connection',
+    element: <ListConnection />,
+  },
+  {
+    path: '/messages',
+    element: <Messages />,
+  },
+  {
+    path: '/group-page',
+    element: <GroupPage />,
+  },
+  {
+    path: '/blog/:id',
+    element: <div>Blog Detail Page</div>,
   }
 ]);
 
