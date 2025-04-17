@@ -64,12 +64,25 @@ export default function ConnectionSuggestions() {
   ]);
 
   const handleConnect = (id) => {
-    setConnections(connections.map(conn => 
-      conn.id === id ? { ...conn, status: "pending" } : conn
-    ));
-    
-    const connection = connections.find(conn => conn.id === id);
-    setInvitations([...invitations, { ...connection, status: "pending" }]);
+    setConnections(connections.map(conn => {
+      if (conn.id === id) {
+        // Jika status saat ini adalah "pending", ubah kembali ke "connect"
+        // Jika status saat ini adalah "connect", ubah ke "pending"
+        const newStatus = conn.status === "pending" ? "connect" : "pending";
+        
+        // Jika mengubah dari pending ke connect, hapus dari invitations
+        if (newStatus === "connect") {
+          setInvitations(invitations.filter(inv => inv.id !== id));
+        } else {
+          // Jika mengubah dari connect ke pending, tambahkan ke invitations
+          const connection = connections.find(conn => conn.id === id);
+          setInvitations([...invitations, { ...connection, status: "pending" }]);
+        }
+        
+        return { ...conn, status: newStatus };
+      }
+      return conn;
+    }));
   };
 
   const handleAccept = (id) => {
@@ -150,23 +163,26 @@ export default function ConnectionSuggestions() {
                       <div className="mt-6">
                         <div className="flex justify-center mb-4">
                         {person.status === "connect" && (
-                          <button 
-                            onClick={() => handleConnect(person.id)}
-                            className="w-full border border-blue-500 text-blue-500 rounded py-2 px-4 text-sm font-medium hover:bg-blue-50 transition"
-                          >
-                            Connect
-                          </button>
-                        )}
-                        {person.status === "pending" && (
-                          <button className="w-full border bg-yellow-200 rounded py-2 px-4 text-sm font-medium hover:bg-yellow-100 transition">
-                            Pending
-                          </button>
-                        )}
-                        {person.status === "connected" && (
-                          <button className="w-full border bg-blue-500 text-white rounded py-2 px-4 text-sm font-medium hover:bg-blue-500 transition">
-                            Connected
-                          </button>
-                        )}
+  <button 
+    onClick={() => handleConnect(person.id)}
+    className="w-full border border-blue-500 text-blue-500 rounded py-2 px-4 text-sm font-medium hover:bg-blue-50 transition"
+  >
+    Connect
+  </button>
+)}
+{person.status === "pending" && (
+  <button 
+    onClick={() => handleConnect(person.id)}
+    className="w-full border bg-yellow-200 rounded py-2 px-4 text-sm font-medium hover:bg-yellow-100 transition"
+  >
+    Pending
+  </button>
+)}
+{person.status === "connected" && (
+  <button className="w-full border bg-blue-500 text-white rounded py-2 px-4 text-sm font-medium hover:bg-blue-500 transition">
+    Connected
+  </button>
+)}  
                       </div>
                       </div>
                     </div>

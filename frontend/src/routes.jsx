@@ -7,6 +7,7 @@ import Groups from './pages/Groups.jsx';
 import ListConnection from './pages/ListConnection.jsx';
 import { Messages } from './pages/Messages.jsx';
 import GroupPage from './pages/GroupPage.jsx';
+import Blog from './pages/Blog.jsx';
 
 const router = createBrowserRouter([
   {
@@ -54,8 +55,8 @@ const router = createBrowserRouter([
     element: <GroupPage />,
   },
   {
-    path: '/blog/:id',
-    element: <div>Blog Detail Page</div>,
+    path: '/blog',
+    element: <Blog />,
   }
 ]);
 
