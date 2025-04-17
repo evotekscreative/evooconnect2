@@ -14,11 +14,11 @@ const router = createBrowserRouter([
     element: <App />,
   },
   {
-    path: '/Login',
+    path: '/login',
     element: <Login />,
   },
   {
-    path: '/Register',
+    path: '/register',
     element: <Register />,
   },
   {
@@ -33,36 +33,30 @@ const router = createBrowserRouter([
     path: '/privacy',
     element: <div>Privacy Policy Page</div>,
   },
-
   {
     path: '/connections',
-    element: <Connections/> ,
+    element: <Connections />,
   },
-
   {
     path: '/groups',
-    element: <Groups/>
+    element: <Groups />
   },
-
   {
     path: '/list-connection',
-    element: <ListConnection/>,
+    element: <ListConnection />,
   },
-
   {
     path: '/messages',
-    element: <Messages  />,
+    element: <Messages />,
   },
-
   {
     path: '/group-page',
     element: <GroupPage />,
+  },
+  {
+    path: '/blog/:id',
+    element: <div>Blog Detail Page</div>,
   }
-
-  
-
-  
-  
 ]);
 
 export default router;

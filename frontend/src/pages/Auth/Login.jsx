@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import logo from '../../assets/img/logo1.png'; 
 import googleIcon from '../../assets/img/google-icon.jpg';
-import Alert from "../../components/Auth/alert";
+import Alert from '../../components/Auth/Alert';
 import '../../assets/css/style.css';
 
 function Login() {
@@ -65,7 +65,7 @@ const handleSubmit = async (e) => {
               <form onSubmit={handleSubmit}>
                 {/* Email/Phone Field */}
                 <div className="mb-4">
-                  <label className="block mb-1">Email or Phone</label>
+                <label className="block text-left mb-1 text-sm text-gray-600">Username</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 flex items-center pl-3">
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-gray-400">
@@ -75,7 +75,7 @@ const handleSubmit = async (e) => {
                     </div>
                     <input 
                       type="email" 
-                      className={`pl-10 w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.email ? 'border-red-500' : 'border-gray-300'}`} 
+                      className={`pl-10 w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-black ${errors.email ? 'border-red-500' : 'border-gray-300'}`} 
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
@@ -86,7 +86,7 @@ const handleSubmit = async (e) => {
                 
                 {/* Password Field */}
                 <div className="mb-4">
-                  <label className="block mb-1">Password</label>
+                <label className="block text-left mb-1 text-sm text-gray-600">Password</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 flex items-center pl-3">
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-gray-400">
@@ -96,7 +96,7 @@ const handleSubmit = async (e) => {
                     </div>
                     <input 
                       type="password" 
-                      className={`pl-10 w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.password ? 'border-red-500' : 'border-gray-300'}`}
+                      className={`pl-10 w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-black ${errors.password ? 'border-red-500' : 'border-gray-300'}`}
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
@@ -133,7 +133,7 @@ const handleSubmit = async (e) => {
                   <div className="flex justify-center items-center mt-4">
                     <a href="#" className="flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white hover:bg-gray-50">
                       <img src={googleIcon} alt="Google Logo" className="w-5 h-5 mr-2" />
-                      <span>Login with Google</span>
+                      <span class="text-sm">Login with Google</span>
                     </a>
                   </div>
                 </div>
@@ -142,7 +142,7 @@ const handleSubmit = async (e) => {
                 <div className="flex justify-between items-center py-4">
                   <Link to="/forgot-password" className="text-blue-600 hover:text-blue-800">Forgot password?</Link>
                   <span>
-                    Don't have an account? <Link to="/Register" className="font-bold text-blue-600 hover:text-blue-800">sign up</Link>
+                    Don't have an account? <Link to="/register" className="font-bold text-blue-600 hover:text-blue-800">sign up</Link>
                   </span>
                 </div>
               </form>
