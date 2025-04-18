@@ -30,8 +30,8 @@ func main() {
 
 	router := app.NewRouter(categoryController, authController)
 
-	// Menggunakan jwtSecret yang sama untuk middleware
-	authMiddleware := middleware.NewSelectiveAuthMiddleware(router, jwtSecret) // Use the new middleware
+	corsMiddleware := middleware.CORSMiddleware(router)
+	authMiddleware := middleware.NewSelectiveAuthMiddleware(corsMiddleware, jwtSecret)
 
 	server := http.Server{
 		Addr:    "localhost:3000",
