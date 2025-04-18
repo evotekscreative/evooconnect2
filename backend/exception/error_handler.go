@@ -1,10 +1,10 @@
 package exception
 
 import (
+	"evoconnect/backend/helper"
+	"evoconnect/backend/model/web"
 	"fmt"
 	"net/http"
-	"programmerzamannow/belajar-golang-restful-api/helper"
-	"programmerzamannow/belajar-golang-restful-api/model/web"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -19,7 +19,40 @@ func ErrorHandler(writer http.ResponseWriter, request *http.Request, err interfa
 		return
 	}
 
-	internalServerError(writer, request, err)
+	if badRequestError(writer, request, err) {
+		return
+	}
+
+	if unauthorizedError(writer, request, err) {
+		return
+	}
+
+	if tooManyRequestsError(writer, request, err) {
+		return
+	}
+
+	if internalServerError(writer, request, err) {
+		return
+	}
+}
+
+func unauthorizedError(writer http.ResponseWriter, request *http.Request, err interface{}) bool {
+	exception, ok := err.(UnauthorizedError)
+	if ok {
+		writer.Header().Set("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusUnauthorized)
+
+		webResponse := web.WebResponse{
+			Code:   http.StatusUnauthorized,
+			Status: "UNAUTHORIZED",
+			Data:   exception.Error,
+		}
+
+		helper.WriteToResponseBody(writer, webResponse)
+		return true
+	} else {
+		return false
+	}
 }
 
 func validationErrors(writer http.ResponseWriter, request *http.Request, err interface{}) bool {
@@ -81,15 +114,59 @@ func notFoundError(writer http.ResponseWriter, request *http.Request, err interf
 	}
 }
 
-func internalServerError(writer http.ResponseWriter, request *http.Request, err interface{}) {
-	writer.Header().Set("Content-Type", "application/json")
-	writer.WriteHeader(http.StatusInternalServerError)
+func internalServerError(writer http.ResponseWriter, request *http.Request, err interface{}) bool {
+	exception, ok := err.(InternalServerError)
+	if ok {
+		writer.Header().Set("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusInternalServerError)
 
-	webResponse := web.WebResponse{
-		Code:   http.StatusInternalServerError,
-		Status: "INTERNAL SERVER ERROR",
-		Data:   err,
+		webResponse := web.WebResponse{
+			Code:   http.StatusInternalServerError,
+			Status: "INTERNAL SERVER ERROR",
+			Data:   exception.Error,
+		}
+
+		helper.WriteToResponseBody(writer, webResponse)
+		return true
+	} else {
+		return false
 	}
+}
 
-	helper.WriteToResponseBody(writer, webResponse)
+func badRequestError(writer http.ResponseWriter, request *http.Request, err interface{}) bool {
+	exception, ok := err.(BadRequestError)
+	if ok {
+		writer.Header().Set("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusBadRequest)
+
+		webResponse := web.WebResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD REQUEST",
+			Data:   exception.Error,
+		}
+
+		helper.WriteToResponseBody(writer, webResponse)
+		return true
+	} else {
+		return false
+	}
+}
+
+func tooManyRequestsError(writer http.ResponseWriter, request *http.Request, err interface{}) bool {
+	exception, ok := err.(TooManyRequestsError)
+	if ok {
+		writer.Header().Set("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusTooManyRequests)
+
+		webResponse := web.WebResponse{
+			Code:   http.StatusTooManyRequests,
+			Status: "TOO_MANY_REQUESTS",
+			Data:   exception.Error,
+		}
+
+		helper.WriteToResponseBody(writer, webResponse)
+		return true
+	} else {
+		return false
+	}
 }

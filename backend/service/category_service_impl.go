@@ -3,12 +3,13 @@ package service
 import (
 	"context"
 	"database/sql"
+	"evoconnect/backend/exception"
+	"evoconnect/backend/helper"
+	"evoconnect/backend/model/domain"
+	"evoconnect/backend/model/web"
+	"evoconnect/backend/repository"
+
 	"github.com/go-playground/validator/v10"
-	"programmerzamannow/belajar-golang-restful-api/exception"
-	"programmerzamannow/belajar-golang-restful-api/helper"
-	"programmerzamannow/belajar-golang-restful-api/model/domain"
-	"programmerzamannow/belajar-golang-restful-api/model/web"
-	"programmerzamannow/belajar-golang-restful-api/repository"
 )
 
 type CategoryServiceImpl struct {
