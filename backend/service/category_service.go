@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"programmerzamannow/belajar-golang-restful-api/model/web"
+	"evoconnect/backend/model/web"
 )
 
 type CategoryService interface {

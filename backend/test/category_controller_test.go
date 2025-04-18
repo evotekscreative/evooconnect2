@@ -5,19 +5,22 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
+
+	"github.com/dgrijalva/jwt-go"
 	"github.com/go-playground/validator/v10"
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
-	"io"
+
+	"evoconnect/backend/app"
+	"evoconnect/backend/controller"
+	"evoconnect/backend/helper"
+	"evoconnect/backend/middleware"
+	"evoconnect/backend/model/domain"
+	"evoconnect/backend/repository"
+	"evoconnect/backend/service"
 	"net/http"
 	"net/http/httptest"
-	"programmerzamannow/belajar-golang-restful-api/app"
-	"programmerzamannow/belajar-golang-restful-api/controller"
-	"programmerzamannow/belajar-golang-restful-api/helper"
-	"programmerzamannow/belajar-golang-restful-api/middleware"
-	"programmerzamannow/belajar-golang-restful-api/model/domain"
-	"programmerzamannow/belajar-golang-restful-api/repository"
-	"programmerzamannow/belajar-golang-restful-api/service"
 	"strconv"
 	"strings"
 	"testing"
@@ -25,7 +28,10 @@ import (
 )
 
 func setupTestDB() *sql.DB {
-	db, err := sql.Open("postgres", "user=postgres password=root dbname=go_database host=localhost port=5432 sslmode=disable")
+	config := app.GetDatabaseConfig()
+	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+		config.Host, config.Port, config.User, config.Password, config.DbName, config.SSLMode)
+	db, err := sql.Open("postgres", dsn)
 	helper.PanicIfError(err)
 
 	db.SetMaxIdleConns(5)
@@ -36,29 +42,58 @@ func setupTestDB() *sql.DB {
 	return db
 }
 
-func setupRouter(db *sql.DB) http.Handler {
+// Updated setupRouter function to work with new auth requirements
+// Updated setupRouter function to work with new auth requirements
+func setupCategoryRouter(db *sql.DB) http.Handler {
 	validate := validator.New()
+
+	// Category dependencies
 	categoryRepository := repository.NewCategoryRepository()
 	categoryService := service.NewCategoryService(categoryRepository, db, validate)
 	categoryController := controller.NewCategoryController(categoryService)
-	router := app.NewRouter(categoryController)
 
-	return middleware.NewAuthMiddleware(router)
+	// Auth dependencies (mock implementation for testing)
+	userRepository := repository.NewUserRepository()
+	jwtSecret := "test-secret-key"
+	authService := service.NewAuthService(userRepository, db, validate, jwtSecret)
+	authController := controller.NewAuthController(authService)
+
+	// Create router with both controllers
+	router := app.NewRouter(categoryController, authController)
+
+	// Create test JWT middleware with a fixed secret
+	return middleware.NewSelectiveAuthMiddleware(router, jwtSecret)
+}
+
+// Function to create a JWT token for testing
+func createTestToken() string {
+	// Implementation similar to the one in auth_service_impl.go
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id": 1,
+		"email":   "test@example.com",
+		"exp":     time.Now().Add(time.Hour * 72).Unix(),
+	})
+
+	tokenString, _ := token.SignedString([]byte("test-secret-key"))
+	return tokenString
 }
 
 func truncateCategory(db *sql.DB) {
 	db.Exec("TRUNCATE category RESTART IDENTITY CASCADE")
 }
 
+// Now update all the test functions to use setupCategoryRouter instead of setupRouter
+// and add JWT token authentication
+
 func TestCreateCategorySuccess(t *testing.T) {
 	db := setupTestDB()
 	truncateCategory(db)
-	router := setupRouter(db)
+	router := setupCategoryRouter(db)
 
 	requestBody := strings.NewReader(`{"name" : "Gadget"}`)
 	request := httptest.NewRequest(http.MethodPost, "http://localhost:3000/api/categories", requestBody)
 	request.Header.Add("Content-Type", "application/json")
-	request.Header.Add("X-API-Key", "RAHASIA")
+	request.Header.Add("Authorization", "Bearer "+createTestToken())
 
 	recorder := httptest.NewRecorder()
 
@@ -78,12 +113,12 @@ func TestCreateCategorySuccess(t *testing.T) {
 func TestCreateCategoryFailed(t *testing.T) {
 	db := setupTestDB()
 	truncateCategory(db)
-	router := setupRouter(db)
+	router := setupCategoryRouter(db)
 
 	requestBody := strings.NewReader(`{"name" : ""}`)
 	request := httptest.NewRequest(http.MethodPost, "http://localhost:3000/api/categories", requestBody)
 	request.Header.Add("Content-Type", "application/json")
-	request.Header.Add("X-API-Key", "RAHASIA")
+	request.Header.Add("Authorization", "Bearer "+createTestToken())
 
 	recorder := httptest.NewRecorder()
 
@@ -111,12 +146,12 @@ func TestUpdateCategorySuccess(t *testing.T) {
 	})
 	tx.Commit()
 
-	router := setupRouter(db)
+	router := setupCategoryRouter(db)
 
 	requestBody := strings.NewReader(`{"name" : "Gadget"}`)
 	request := httptest.NewRequest(http.MethodPut, "http://localhost:3000/api/categories/"+strconv.Itoa(category.Id), requestBody)
 	request.Header.Add("Content-Type", "application/json")
-	request.Header.Add("X-API-Key", "RAHASIA")
+	request.Header.Add("Authorization", "Bearer "+createTestToken())
 
 	recorder := httptest.NewRecorder()
 
@@ -135,6 +170,9 @@ func TestUpdateCategorySuccess(t *testing.T) {
 	assert.Equal(t, "Gadget", responseBody["data"].(map[string]interface{})["name"])
 }
 
+// Update all remaining test functions similarly
+// (Replacing setupRouter(db) with setupCategoryRouter(db) and X-API-Key with JWT token)
+
 func TestUpdateCategoryFailed(t *testing.T) {
 	db := setupTestDB()
 	truncateCategory(db)
@@ -146,12 +184,12 @@ func TestUpdateCategoryFailed(t *testing.T) {
 	})
 	tx.Commit()
 
-	router := setupRouter(db)
+	router := setupCategoryRouter(db)
 
 	requestBody := strings.NewReader(`{"name" : ""}`)
 	request := httptest.NewRequest(http.MethodPut, "http://localhost:3000/api/categories/"+strconv.Itoa(category.Id), requestBody)
 	request.Header.Add("Content-Type", "application/json")
-	request.Header.Add("X-API-Key", "RAHASIA")
+	request.Header.Add("Authorization", "Bearer "+createTestToken())
 
 	recorder := httptest.NewRecorder()
 
@@ -179,10 +217,10 @@ func TestGetCategorySuccess(t *testing.T) {
 	})
 	tx.Commit()
 
-	router := setupRouter(db)
+	router := setupCategoryRouter(db)
 
 	request := httptest.NewRequest(http.MethodGet, "http://localhost:3000/api/categories/"+strconv.Itoa(category.Id), nil)
-	request.Header.Add("X-API-Key", "RAHASIA")
+	request.Header.Add("Authorization", "Bearer "+createTestToken())
 
 	recorder := httptest.NewRecorder()
 
@@ -204,10 +242,10 @@ func TestGetCategorySuccess(t *testing.T) {
 func TestGetCategoryFailed(t *testing.T) {
 	db := setupTestDB()
 	truncateCategory(db)
-	router := setupRouter(db)
+	router := setupCategoryRouter(db)
 
 	request := httptest.NewRequest(http.MethodGet, "http://localhost:3000/api/categories/404", nil)
-	request.Header.Add("X-API-Key", "RAHASIA")
+	request.Header.Add("Authorization", "Bearer "+createTestToken())
 
 	recorder := httptest.NewRecorder()
 
@@ -235,11 +273,11 @@ func TestDeleteCategorySuccess(t *testing.T) {
 	})
 	tx.Commit()
 
-	router := setupRouter(db)
+	router := setupCategoryRouter(db)
 
 	request := httptest.NewRequest(http.MethodDelete, "http://localhost:3000/api/categories/"+strconv.Itoa(category.Id), nil)
 	request.Header.Add("Content-Type", "application/json")
-	request.Header.Add("X-API-Key", "RAHASIA")
+	request.Header.Add("Authorization", "Bearer "+createTestToken())
 
 	recorder := httptest.NewRecorder()
 
@@ -259,11 +297,11 @@ func TestDeleteCategorySuccess(t *testing.T) {
 func TestDeleteCategoryFailed(t *testing.T) {
 	db := setupTestDB()
 	truncateCategory(db)
-	router := setupRouter(db)
+	router := setupCategoryRouter(db)
 
 	request := httptest.NewRequest(http.MethodDelete, "http://localhost:3000/api/categories/404", nil)
 	request.Header.Add("Content-Type", "application/json")
-	request.Header.Add("X-API-Key", "RAHASIA")
+	request.Header.Add("Authorization", "Bearer "+createTestToken())
 
 	recorder := httptest.NewRecorder()
 
@@ -294,17 +332,16 @@ func TestListCategoriesSuccess(t *testing.T) {
 	})
 	tx.Commit()
 
-	router := setupRouter(db)
+	router := setupCategoryRouter(db)
 
 	request := httptest.NewRequest(http.MethodGet, "http://localhost:3000/api/categories", nil)
-	request.Header.Add("X-API-Key", "RAHASIA")
+	request.Header.Add("Authorization", "Bearer "+createTestToken())
 
 	recorder := httptest.NewRecorder()
 
 	router.ServeHTTP(recorder, request)
 
-	response := recorder.
-		Result()
+	response := recorder.Result()
 	assert.Equal(t, 200, response.StatusCode)
 
 	body, _ := io.ReadAll(response.Body)
@@ -328,13 +365,46 @@ func TestListCategoriesSuccess(t *testing.T) {
 	assert.Equal(t, category2.Name, categoryResponse2["name"])
 }
 
-func TestUnauthorized(t *testing.T) {
+func TestUnauthorizedWithInvalidToken(t *testing.T) {
 	db := setupTestDB()
 	truncateCategory(db)
-	router := setupRouter(db)
+	router := setupCategoryRouter(db)
+
+	// Test with malformed token
+	request := httptest.NewRequest(http.MethodGet, "http://localhost:3000/api/categories", nil)
+	request.Header.Add("Authorization", "Bearer invalid.token.format")
+
+	recorder := httptest.NewRecorder()
+
+	// Call the router directly - no need for panic recovery
+	router.ServeHTTP(recorder, request)
+
+	// Check the response directly
+	response := recorder.Result()
+	assert.Equal(t, 401, response.StatusCode)
+
+	body, _ := io.ReadAll(response.Body)
+	var responseBody map[string]interface{}
+	json.Unmarshal(body, &responseBody)
+
+	// Output the response body for debugging
+	t.Logf("Response body: %s", string(body))
+
+	// Verify the response structure
+	assert.Equal(t, 401, int(responseBody["code"].(float64)))
+	assert.Equal(t, "UNAUTHORIZED", responseBody["status"])
+	// You can also check for specific error message if your implementation includes one
+	assert.Contains(t, responseBody["data"], "token")
+}
+
+// Add a test for missing Authorization header
+func TestMissingAuthHeader(t *testing.T) {
+	db := setupTestDB()
+	truncateCategory(db)
+	router := setupCategoryRouter(db)
 
 	request := httptest.NewRequest(http.MethodGet, "http://localhost:3000/api/categories", nil)
-	request.Header.Add("X-API-Key", "SALAH")
+	// No Authorization header added
 
 	recorder := httptest.NewRecorder()
 

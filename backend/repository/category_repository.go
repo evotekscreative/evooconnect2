@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"programmerzamannow/belajar-golang-restful-api/model/domain"
+	"evoconnect/backend/model/domain"
 )
 
 type CategoryRepository interface {

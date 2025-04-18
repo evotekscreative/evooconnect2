@@ -2,12 +2,36 @@ package app
 
 import (
 	"database/sql"
-	"programmerzamannow/belajar-golang-restful-api/helper"
+	"evoconnect/backend/helper"
+	"fmt"
 	"time"
 )
 
+type DatabaseConfig struct {
+	Host     string
+	Port     int
+	User     string
+	Password string
+	DbName   string
+	SSLMode  string
+}
+
+func GetDatabaseConfig() DatabaseConfig {
+	return DatabaseConfig{
+		Host:     helper.GetEnv("DB_HOST", "localhost"),
+		Port:     helper.GetEnvInt("DB_PORT", 5432),
+		User:     helper.GetEnv("DB_USERNAME", "postgres"),
+		Password: helper.GetEnv("DB_PASSWORD", "root"),
+		DbName:   helper.GetEnv("DB_NAME", "go_database"),
+		SSLMode:  helper.GetEnv("DB_SSLMODE", "disable"),
+	}
+}
+
 func NewDB() *sql.DB {
-	db, err := sql.Open("postgres", "user=postgres password=root dbname=go_database host=localhost port=5432 sslmode=disable")
+	config := GetDatabaseConfig()
+	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+		config.Host, config.Port, config.User, config.Password, config.DbName, config.SSLMode)
+	db, err := sql.Open("postgres", dsn)
 	helper.PanicIfError(err)
 
 	db.SetMaxIdleConns(5)

@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"programmerzamannow/belajar-golang-restful-api/helper"
-	"programmerzamannow/belajar-golang-restful-api/model/domain"
+	"evoconnect/backend/helper"
+	"evoconnect/backend/model/domain"
 )
 
 type CategoryRepositoryImpl struct {
