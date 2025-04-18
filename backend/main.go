@@ -1,16 +1,31 @@
-// main.go
 package main
 
 import (
-	"be-evoconnect/db"
-	"be-evoconnect/routes"
-
-	"github.com/labstack/echo/v4"
+	"github.com/go-playground/validator/v10"
+	_ "github.com/lib/pq"
+	"net/http"
+	"programmerzamannow/belajar-golang-restful-api/app"
+	"programmerzamannow/belajar-golang-restful-api/controller"
+	"programmerzamannow/belajar-golang-restful-api/helper"
+	"programmerzamannow/belajar-golang-restful-api/middleware"
+	"programmerzamannow/belajar-golang-restful-api/repository"
+	"programmerzamannow/belajar-golang-restful-api/service"
 )
 
 func main() {
-	db.ConnectDB()
-	e := echo.New()
-	routes.InitAuthRoutes(e)
-	e.Logger.Fatal(e.Start(":8080"))
+
+	db := app.NewDB()
+	validate := validator.New()
+	categoryRepository := repository.NewCategoryRepository()
+	categoryService := service.NewCategoryService(categoryRepository, db, validate)
+	categoryController := controller.NewCategoryController(categoryService)
+	router := app.NewRouter(categoryController)
+
+	server := http.Server{
+		Addr:    "localhost:3000",
+		Handler: middleware.NewAuthMiddleware(router),
+	}
+
+	err := server.ListenAndServe()
+	helper.PanicIfError(err)
 }
