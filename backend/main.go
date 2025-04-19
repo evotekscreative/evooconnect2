@@ -29,12 +29,8 @@ func main() {
 	authService := service.NewAuthService(userRepository, db, validate, jwtSecret)
 	authController := controller.NewAuthController(authService)
 
-	categoryRepository := repository.NewCategoryRepository()
-	categoryService := service.NewCategoryService(categoryRepository, db, validate)
-	categoryController := controller.NewCategoryController(categoryService)
-
 	// First create the router
-	router := app.NewRouter(categoryController, authController, userController)
+	router := app.NewRouter(authController, userController)
 
 	// Create middleware chain correctly by converting to http.Handler first
 	var handler http.Handler = router

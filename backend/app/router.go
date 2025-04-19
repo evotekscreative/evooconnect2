@@ -11,7 +11,6 @@ import (
 )
 
 func NewRouter(
-	categoryController controller.CategoryController,
 	authController controller.AuthController,
 	userController controller.UserController,
 ) *httprouter.Router {
@@ -24,14 +23,8 @@ func NewRouter(
 	router.POST("/api/auth/verify", authController.VerifyEmail)
 	router.POST("/api/auth/forgot-password", authController.ForgotPassword)
 	router.POST("/api/auth/reset-password", authController.ResetPassword)
-	router.GET("/api/user/profile", userController.GetProfile)
 
-	// Existing category routes
-	router.GET("/api/categories", categoryController.FindAll)
-	router.GET("/api/categories/:categoryId", categoryController.FindById)
-	router.POST("/api/categories", categoryController.Create)
-	router.PUT("/api/categories/:categoryId", categoryController.Update)
-	router.DELETE("/api/categories/:categoryId", categoryController.Delete)
+	router.GET("/api/user/profile", userController.GetProfile)
 
 	// Add custom NotFound handler
 	router.NotFound = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {

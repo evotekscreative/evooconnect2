@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"evoconnect/backend/exception"
+	"evoconnect/backend/helper"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
 )
@@ -22,29 +23,15 @@ func NewUserService(userRepository repository.UserRepository, db *sql.DB) UserSe
 
 func (service *UserServiceImpl) GetProfile(ctx context.Context, userId int) web.UserProfileResponse {
 	tx, err := service.DB.Begin()
-	if err != nil {
-		panic(exception.NewInternalServerError("Database error: " + err.Error()))
-	}
-	defer tx.Rollback()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
 
 	// Get user from repository
 	user, err := service.UserRepository.FindById(ctx, tx, userId)
 	if err != nil {
-		panic(exception.NewNotFoundError("User not found"))
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		panic(exception.NewInternalServerError("Database error: " + err.Error()))
+		panic(exception.NewNotFoundError(err.Error()))
 	}
 
 	// Return user profile without sensitive information
-	return web.UserProfileResponse{
-		ID:         user.Id,
-		Name:       user.Name,
-		Email:      user.Email,
-		IsVerified: user.IsVerified,
-		CreatedAt:  user.CreatedAt,
-		UpdatedAt:  user.UpdatedAt,
-	}
+	return helper.ToUserProfileResponse(user)
 }
