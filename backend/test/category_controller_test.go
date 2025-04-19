@@ -58,8 +58,10 @@ func setupCategoryRouter(db *sql.DB) http.Handler {
 	authService := service.NewAuthService(userRepository, db, validate, jwtSecret)
 	authController := controller.NewAuthController(authService)
 
-	// Create router with both controllers
-	router := app.NewRouter(categoryController, authController)
+	userService := service.NewUserService(userRepository, db)
+	userController := controller.NewUserController(userService)
+
+	router := app.NewRouter(categoryController, authController, userController)
 
 	// Create test JWT middleware with a fixed secret
 	return middleware.NewSelectiveAuthMiddleware(router, jwtSecret)

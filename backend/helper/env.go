@@ -1,10 +1,12 @@
 package helper
 
 import (
-	"github.com/joho/godotenv"
+	// "fmt"
 	"log"
 	"os"
 	"strconv"
+
+	"github.com/joho/godotenv"
 )
 
 // LoadEnv loads environment variables from .env file
@@ -16,6 +18,13 @@ func LoadEnv() {
 	} else {
 		log.Println("Environment variables loaded from .env file")
 	}
+
+	// jwtSecret := os.Getenv("JWT_SECRET_KEY")
+	// if jwtSecret == "" {
+	// 	panic("JWT_SECRET_KEY environment variable not set")
+	// }
+	// fmt.Println("JWT Secret loaded, length:", len(jwtSecret))
+
 }
 
 // GetEnv returns environment variable or default value

@@ -19,6 +19,10 @@
     {
       "name": "Authentication",
       "description": "User authentication operations"
+    },
+    {
+      "name": "User",
+      "description": "User profile operations"
     }
   ],
   "paths": {
@@ -325,8 +329,13 @@
       "post": {
         "tags": ["Authentication"],
         "summary": "Verify email address",
-        "description": "Verifies a user's email address using a 6-digit token sent via email. Limited to 10 attempts per 5 minutes.",
+        "description": "Verifies a user's email address using a 6-digit token sent via email. Limited to 10 attempts per 5 minutes. User must be logged in.",
         "operationId": "verifyEmail",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -379,6 +388,21 @@
                   "code": 400,
                   "status": "BAD REQUEST",
                   "data": "Invalid or expired verification token"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - User not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": 401,
+                  "status": "UNAUTHORIZED",
+                  "data": "Authentication required"
                 }
               }
             }
@@ -577,6 +601,69 @@
                   "code": 429,
                   "status": "TOO_MANY_REQUESTS",
                   "data": "Too many reset attempts. Please try again later."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/profile": {
+      "get": {
+        "tags": ["User"],
+        "summary": "Get user profile",
+        "description": "Retrieves the profile information of the authenticated user",
+        "operationId": "getUserProfile",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User profile retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "OK"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing JWT token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": 401,
+                  "status": "UNAUTHORIZED",
+                  "data": "Invalid or missing authentication token"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }

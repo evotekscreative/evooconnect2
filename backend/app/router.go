@@ -13,6 +13,7 @@ import (
 func NewRouter(
 	categoryController controller.CategoryController,
 	authController controller.AuthController,
+	userController controller.UserController,
 ) *httprouter.Router {
 	router := httprouter.New()
 
@@ -23,6 +24,7 @@ func NewRouter(
 	router.POST("/api/auth/verify", authController.VerifyEmail)
 	router.POST("/api/auth/forgot-password", authController.ForgotPassword)
 	router.POST("/api/auth/reset-password", authController.ResetPassword)
+	router.GET("/api/user/profile", userController.GetProfile)
 
 	// Existing category routes
 	router.GET("/api/categories", categoryController.FindAll)

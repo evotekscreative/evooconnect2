@@ -104,7 +104,6 @@ func setupAuthRouter() http.Handler {
 		"/api/auth/login",
 		"/api/auth/register",
 		"/api/auth/verify/send",
-		"/api/auth/verify",
 		"/api/auth/forgot-password",
 		"/api/auth/reset-password",
 	}
@@ -523,21 +522,21 @@ func TestForgotPassword(t *testing.T) {
 	assert.True(t, hasToken)
 }
 
-func TestVerifyEmail(t *testing.T) {
+func TestVerifyEmail_InvalidToken(t *testing.T) {
 	setupEmailTest()
 	db := setupAuthTestDB()
 	truncateUsers(db)
 	router := setupAuthRouter()
 
-	// Register a user
+	// 1. Register a user first
 	registerBody := map[string]interface{}{
-		"name":     "Verify Email Test",
-		"email":    "verify.test@example.com",
+		"name":     "Verify Email Token Test",
+		"email":    "verify.token@example.com",
 		"password": "password123",
 	}
 	registerJson, _ := json.Marshal(registerBody)
 
-	registerReq := httptest.NewRequest(http.MethodPost, "http://localhost:3000/api/auth/register",
+	registerReq := httptest.NewRequest(http.MethodPost, "/api/auth/register",
 		strings.NewReader(string(registerJson)))
 	registerReq.Header.Add("Content-Type", "application/json")
 
@@ -547,52 +546,85 @@ func TestVerifyEmail(t *testing.T) {
 	// Ensure registration was successful
 	assert.Equal(t, 201, registerRec.Result().StatusCode)
 
-	// Get the verification token from the database
-	var token string
-	err := db.QueryRow("SELECT verification_token FROM users WHERE email = $1",
-		"verify.test@example.com").Scan(&token)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, token)
+	// 2. Set up verification token
+	verificationToken := "123456"
+	expiryTime := time.Now().Add(24 * time.Hour)
 
-	// Test verifying email
-	verifyBody := map[string]interface{}{
-		"token": token,
+	_, err := db.Exec(`
+    UPDATE users 
+    SET verification_token = $1, 
+        verification_expires = $2,
+        is_verified = false
+    WHERE email = $3`,
+		verificationToken, expiryTime, "verify.token@example.com")
+	helper.PanicIfError(err)
+
+	// 3. Get auth token by setting user as verified temporarily
+	_, err = db.Exec("UPDATE users SET is_verified = true WHERE email = $1", "verify.token@example.com")
+	helper.PanicIfError(err)
+
+	loginBody := map[string]interface{}{
+		"email":    "verify.token@example.com",
+		"password": "password123",
 	}
-	verifyJson, _ := json.Marshal(verifyBody)
+	loginJson, _ := json.Marshal(loginBody)
 
-	verifyReq := httptest.NewRequest(http.MethodPost, "http://localhost:3000/api/auth/verify",
-		strings.NewReader(string(verifyJson)))
-	verifyReq.Header.Add("Content-Type", "application/json")
+	loginReq := httptest.NewRequest(http.MethodPost, "/api/auth/login",
+		strings.NewReader(string(loginJson)))
+	loginReq.Header.Add("Content-Type", "application/json")
 
-	verifyRec := httptest.NewRecorder()
-	router.ServeHTTP(verifyRec, verifyReq)
+	loginRec := httptest.NewRecorder()
+	router.ServeHTTP(loginRec, loginReq)
 
-	// Read response
-	response := verifyRec.Result()
+	// Ensure login was successful
+	loginResponse := loginRec.Result()
+	assert.Equal(t, 200, loginResponse.StatusCode)
+
+	// Extract auth token from login response
+	loginResponseBody, _ := io.ReadAll(loginResponse.Body)
+	var loginResponseData map[string]interface{}
+	json.Unmarshal(loginResponseBody, &loginResponseData)
+
+	data := loginResponseData["data"].(map[string]interface{})
+	authToken := data["token"].(string)
+
+	// 4. Reset verification status
+	_, err = db.Exec("UPDATE users SET is_verified = false WHERE email = $1", "verify.token@example.com")
+	helper.PanicIfError(err)
+
+	// 5. Test with invalid token
+	invalidVerifyBody := map[string]interface{}{
+		"token": "invalidToken", // Different from the one in DB
+	}
+	invalidVerifyJson, _ := json.Marshal(invalidVerifyBody)
+
+	invalidVerifyReq := httptest.NewRequest(http.MethodPost, "/api/auth/verify",
+		strings.NewReader(string(invalidVerifyJson)))
+	invalidVerifyReq.Header.Add("Content-Type", "application/json")
+	invalidVerifyReq.Header.Add("Authorization", "Bearer "+authToken)
+
+	invalidVerifyRec := httptest.NewRecorder()
+	router.ServeHTTP(invalidVerifyRec, invalidVerifyReq)
+
+	// Check response
+	response := invalidVerifyRec.Result()
 	body, _ := io.ReadAll(response.Body)
+
 	var responseBody map[string]interface{}
 	json.Unmarshal(body, &responseBody)
 
-	// Output response for debugging if test fails
-	if response.StatusCode != 200 {
-		t.Logf("Response: %v", string(body))
-	}
+	// Should fail with 400 Bad Request
+	assert.Equal(t, 400, response.StatusCode)
+	assert.Equal(t, float64(400), responseBody["code"].(float64))
+	assert.Equal(t, "BAD REQUEST", responseBody["status"])
+	assert.Contains(t, responseBody["data"], "Invalid verification token")
 
-	// Assertions
-	assert.Equal(t, 200, response.StatusCode)
-	assert.Equal(t, 200, int(responseBody["code"].(float64)))
-	assert.Equal(t, "OK", responseBody["status"])
-
-	// Check data contains the success message
-	data := responseBody["data"].(map[string]interface{})
-	assert.Contains(t, data["message"], "successfully verified")
-
-	// Check user is now verified
+	// User should still be unverified
 	var isVerified bool
 	err = db.QueryRow("SELECT is_verified FROM users WHERE email = $1",
-		"verify.test@example.com").Scan(&isVerified)
+		"verify.token@example.com").Scan(&isVerified)
 	assert.NoError(t, err)
-	assert.True(t, isVerified)
+	assert.False(t, isVerified)
 }
 
 func TestResetPassword(t *testing.T) {
