@@ -475,7 +475,6 @@ func (service *AuthServiceImpl) ResetPassword(ctx context.Context, request web.R
 	}
 }
 
-// Add this new method
 func (service *AuthServiceImpl) logFailedResetAttempt(ctx context.Context, tx *sql.Tx, clientIP string, token string) error {
 	// You would need to implement this method in your UserRepository
 	return service.UserRepository.LogFailedAttempt(ctx, tx, clientIP, "password_reset", token)
