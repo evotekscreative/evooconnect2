@@ -1,16 +1,43 @@
-// main.go
 package main
 
 import (
-	"be-evoconnect/db"
-	"be-evoconnect/routes"
+	"evoconnect/backend/app"
+	"evoconnect/backend/controller"
+	"evoconnect/backend/helper"
+	"evoconnect/backend/middleware"
+	"evoconnect/backend/repository"
+	"evoconnect/backend/service"
+	"net/http"
 
-	"github.com/labstack/echo/v4"
+	"github.com/go-playground/validator/v10"
+	_ "github.com/lib/pq"
 )
 
 func main() {
-	db.ConnectDB()
-	e := echo.New()
-	routes.InitAuthRoutes(e)
-	e.Logger.Fatal(e.Start(":8080"))
+	helper.LoadEnv()
+	db := app.NewDB()
+	validate := validator.New()
+
+	jwtSecret := helper.GetEnv("JWT_SECRET_KEY", "your-secret-key")
+
+	userRepository := repository.NewUserRepository()
+	authService := service.NewAuthService(userRepository, db, validate, jwtSecret)
+	authController := controller.NewAuthController(authService)
+
+	categoryRepository := repository.NewCategoryRepository()
+	categoryService := service.NewCategoryService(categoryRepository, db, validate)
+	categoryController := controller.NewCategoryController(categoryService)
+
+	router := app.NewRouter(categoryController, authController)
+
+	corsMiddleware := middleware.CORSMiddleware(router)
+	authMiddleware := middleware.NewSelectiveAuthMiddleware(corsMiddleware, jwtSecret)
+
+	server := http.Server{
+		Addr:    "localhost:3000",
+		Handler: authMiddleware,
+	}
+
+	err := server.ListenAndServe()
+	helper.PanicIfError(err)
 }
