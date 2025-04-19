@@ -47,7 +47,7 @@ func (controller *AuthControllerImpl) Register(writer http.ResponseWriter, reque
 	}
 
 	// Set status code pada response writer juga
-	writer.WriteHeader(http.StatusCreated)
+	// writer.WriteHeader(http.StatusCreated)
 	helper.WriteToResponseBody(writer, webResponse)
 }
 
