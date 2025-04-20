@@ -10,6 +10,44 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Add this at the top of the file, after the import section
+
+// TestMiddlewareWrapper wraps the selective auth middleware to make it testable
+type TestMiddlewareWrapper struct {
+	originalMiddleware *middleware.SelectiveAuthMiddleware
+	requiresAuthPaths  map[string]bool
+}
+
+func NewTestMiddlewareWrapper(handler http.Handler, jwtSecret string) *TestMiddlewareWrapper {
+	return &TestMiddlewareWrapper{
+		originalMiddleware: middleware.NewSelectiveAuthMiddleware(handler, jwtSecret),
+		requiresAuthPaths:  make(map[string]bool),
+	}
+}
+
+func (t *TestMiddlewareWrapper) RequireAuthForAllPaths() {
+	// This replaces the CheckAuthFunc assignments in your tests
+	t.requiresAuthPaths = map[string]bool{"*": true}
+}
+
+func (t *TestMiddlewareWrapper) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// If we've configured this wrapper to require auth for all paths
+	if _, exists := t.requiresAuthPaths["*"]; exists {
+		// Override the PublicPaths to empty so all paths require auth
+		originalPaths := t.originalMiddleware.PublicPaths
+		t.originalMiddleware.PublicPaths = []string{}
+
+		// Call the original middleware
+		t.originalMiddleware.ServeHTTP(w, r)
+
+		// Restore the original paths
+		t.originalMiddleware.PublicPaths = originalPaths
+	} else {
+		// Just use the original middleware with its default behavior
+		t.originalMiddleware.ServeHTTP(w, r)
+	}
+}
+
 func TestAuthMiddleware_ValidToken(t *testing.T) {
 	// Create a simple handler for testing
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -18,14 +56,12 @@ func TestAuthMiddleware_ValidToken(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	// Create middleware
+	// Create middleware wrapper
 	jwtSecret := "test-secret"
-	authMiddleware := middleware.NewSelectiveAuthMiddleware(handler, jwtSecret)
+	authMiddleware := NewTestMiddlewareWrapper(handler, jwtSecret)
 
-	// Override the CheckAuthFunc to always require auth for this test path
-	authMiddleware.CheckAuthFunc = func(path string) bool {
-		return true // Always require auth for tests
-	}
+	// Override auth check to require auth for all paths
+	authMiddleware.RequireAuthForAllPaths()
 
 	// Create a test request
 	request := httptest.NewRequest("GET", "http://example.com/api/protected", nil)
@@ -60,12 +96,8 @@ func TestAuthMiddleware_InvalidToken(t *testing.T) {
 
 	// Create middleware
 	jwtSecret := "test-secret"
-	authMiddleware := middleware.NewSelectiveAuthMiddleware(handler, jwtSecret)
-
-	// Override the CheckAuthFunc to always require auth for this test path
-	authMiddleware.CheckAuthFunc = func(path string) bool {
-		return true // Always require auth for tests
-	}
+	authMiddleware := NewTestMiddlewareWrapper(handler, jwtSecret)
+	authMiddleware.RequireAuthForAllPaths()
 
 	// Create a test request with invalid token
 	request := httptest.NewRequest("GET", "http://example.com/api/protected", nil)
@@ -91,12 +123,8 @@ func TestAuthMiddleware_MissingToken(t *testing.T) {
 
 	// Create middleware
 	jwtSecret := "test-secret"
-	authMiddleware := middleware.NewSelectiveAuthMiddleware(handler, jwtSecret)
-
-	// Override the CheckAuthFunc to always require auth for this test path
-	authMiddleware.CheckAuthFunc = func(path string) bool {
-		return true // Always require auth for tests
-	}
+	authMiddleware := NewTestMiddlewareWrapper(handler, jwtSecret)
+	authMiddleware.RequireAuthForAllPaths()
 
 	// Create a test request without Authorization header
 	request := httptest.NewRequest("GET", "http://example.com/api/protected", nil)
