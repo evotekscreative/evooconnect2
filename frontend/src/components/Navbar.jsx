@@ -15,7 +15,7 @@ const Navbar = () => {
   const [isBellOpen, setIsBellOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  const msgRef = useRef(null);
+  const msgRef = useRef(null);         
   const bellRef = useRef(null);
   const dropdownRef = useRef(null);
 
