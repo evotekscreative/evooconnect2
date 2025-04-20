@@ -3,11 +3,15 @@ import Login from "./pages/Auth/Login.jsx";
 import Register from "./pages/Auth/Register.jsx";
 import App from './App';
 import Connections from './pages/Connections.jsx';
+import PrivacyPolicy from './pages/PrivacyPolicy.jsx';
+import TermsCondition from './pages/TermsCondition.jsx';
 import Groups from './pages/Groups.jsx';
+import CreateBlog from './pages/Blog/CreateBlog.jsx';
+import Blog from './pages/Blog/Blog.jsx';
+import BlogDetail from './pages/Blog/BlogDetail.jsx';
 import ListConnection from './pages/ListConnection.jsx';
 import { Messages } from './pages/Messages.jsx';
 import GroupPage from './pages/GroupPage.jsx';
-
 const router = createBrowserRouter([
   {
     path: '/',
@@ -27,11 +31,11 @@ const router = createBrowserRouter([
   },
   {
     path: '/terms',
-    element: <div>Terms Page</div>,
+    element: <TermsCondition/>,
   },
   {
     path: '/privacy',
-    element: <div>Privacy Policy Page</div>,
+    element: <PrivacyPolicy/>,
   },
   {
     path: '/connections',
@@ -54,9 +58,17 @@ const router = createBrowserRouter([
     element: <GroupPage />,
   },
   {
-    path: '/blog/:id',
-    element: <div>Blog Detail Page</div>,
-  }
+    path: '/create-blog',
+    element: <CreateBlog />,
+  },
+  {
+    path: '/blog',
+    element: <Blog />,
+  },
+  {
+    path: '/detail-blog/:id',
+    element: <BlogDetail />,
+  },
 ]);
 
 export default router;
