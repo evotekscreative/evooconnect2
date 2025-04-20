@@ -96,12 +96,12 @@ const Navbar = () => {
             </div>
             {isBellOpen && (
               <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg z-50">
-                <div className="p-4 border-b font-bold text-black">Notifications</div>
+                <div className="bg-black p-4 border-b font-bold text-white">Alert Center</div>
                 <ul className="max-h-64 overflow-y-auto text-black">
-                  <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Notifikasi 1</li>
-                  <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Notifikasi 2</li>
-                  <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Notifikasi 3</li>
-                </ul>
+                  <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                  <Link to="/notification">Notifikasi</Link>
+                  </li>
+                </ul>      
               </div>
             )}
           </div>
