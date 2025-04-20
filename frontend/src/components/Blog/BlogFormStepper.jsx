@@ -1,5 +1,4 @@
-
-function BlogFormStepper({ steps, currentStep }) {
+function BlogFormStepper({ steps = [], currentStep = 1 }) {
     return (
       <div className="flex justify-between items-center w-full">
         {steps.map((step) => (

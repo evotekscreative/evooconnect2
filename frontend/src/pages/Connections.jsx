@@ -2,7 +2,6 @@ import React from "react";
 import Case from "../components/Case";
 import { Link } from "react-router-dom";
 import Profile from "../assets/img/logo-evo-2.png";
-
 import { Briefcase, MapPin, Mail } from "lucide-react";
 
 export default function ConnectionSuggestions() {
