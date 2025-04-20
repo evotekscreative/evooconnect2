@@ -7,12 +7,14 @@ import (
 	"evoconnect/backend/middleware"
 	"evoconnect/backend/repository"
 	"evoconnect/backend/service"
+	"fmt"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
 	_ "github.com/lib/pq"
 )
 
+// In the main function, remove debugging lines
 func main() {
 	helper.LoadEnv()
 	db := app.NewDB()
@@ -21,23 +23,29 @@ func main() {
 	jwtSecret := helper.GetEnv("JWT_SECRET_KEY", "your-secret-key")
 
 	userRepository := repository.NewUserRepository()
+	userService := service.NewUserService(userRepository, db)
+	userController := controller.NewUserController(userService)
+
 	authService := service.NewAuthService(userRepository, db, validate, jwtSecret)
 	authController := controller.NewAuthController(authService)
 
-	categoryRepository := repository.NewCategoryRepository()
-	categoryService := service.NewCategoryService(categoryRepository, db, validate)
-	categoryController := controller.NewCategoryController(categoryService)
+	// First create the router
+	router := app.NewRouter(authController, userController)
 
-	router := app.NewRouter(categoryController, authController)
+	// Create middleware chain correctly by converting to http.Handler first
+	var handler http.Handler = router
 
-	corsMiddleware := middleware.CORSMiddleware(router)
-	authMiddleware := middleware.NewSelectiveAuthMiddleware(corsMiddleware, jwtSecret)
+	// Apply middlewares
+	handler = middleware.CORSMiddleware(handler)
+	handler = middleware.NewSelectiveAuthMiddleware(handler, jwtSecret)
 
+	// Start the server with the wrapped handler
 	server := http.Server{
 		Addr:    "localhost:3000",
-		Handler: authMiddleware,
+		Handler: handler,
 	}
 
+	fmt.Println("Server starting on localhost:3000")
 	err := server.ListenAndServe()
 	helper.PanicIfError(err)
 }

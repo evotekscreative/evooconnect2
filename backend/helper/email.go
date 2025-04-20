@@ -35,8 +35,8 @@ func sendEmail(to, subject, body string) error {
 	config := GetEmailConfig()
 
 	// More detailed logging
-	fmt.Printf("Email configuration: Host=%s, Port=%d, Username=%s, From=%s\n",
-		config.Host, config.Port, config.Username, config.From)
+	// fmt.Printf("Email configuration: Host=%s, Port=%d, Username=%s, From=%s\n",
+	// 	config.Host, config.Port, config.Username, config.From)
 
 	auth := smtp.PlainAuth("", config.Username, config.Password, config.Host)
 

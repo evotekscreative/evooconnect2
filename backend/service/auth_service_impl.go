@@ -34,7 +34,6 @@ func NewAuthService(userRepository repository.UserRepository, db *sql.DB, valida
 	}
 }
 
-// generateToken creates a JWT token for the user
 func (service *AuthServiceImpl) generateToken(user domain.User) string {
 	claims := jwt.MapClaims{
 		"user_id": user.Id,
@@ -75,9 +74,9 @@ func (service *AuthServiceImpl) Login(ctx context.Context, request web.LoginRequ
 	}
 
 	// Check if email is verified
-	if !user.IsVerified {
-		panic(exception.NewUnauthorizedError("Email not verified. Please check your email for verification instructions."))
-	}
+	// if !user.IsVerified {
+	// 	panic(exception.NewUnauthorizedError("Email not verified. Please check your email for verification instructions."))
+	// }
 
 	// Verify password
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password))
@@ -159,23 +158,16 @@ func (service *AuthServiceImpl) Register(ctx context.Context, request web.Regist
 }
 
 func (service *AuthServiceImpl) SendVerificationEmail(ctx context.Context, request web.EmailRequest) web.MessageResponse {
-	fmt.Println("Starting SendVerificationEmail...")
-	fmt.Printf("Request email: %s\n", request.Email)
-
+	// Validate the request
 	err := service.Validate.Struct(request)
-	if err != nil {
-		fmt.Printf("Validation error: %v\n", err)
-		helper.PanicIfError(err)
-	}
+	helper.PanicIfError(err)
 
 	// Get client IP for rate limiting
 	clientIP := helper.GetClientIP(ctx)
-	fmt.Printf("Client IP: %s\n", clientIP)
 
 	// Check rate limiting first
 	rateLimitTx, err := service.DB.Begin()
 	if err != nil {
-		fmt.Printf("Failed to begin rate limit transaction: %v\n", err)
 		panic(exception.NewInternalServerError("Database error: " + err.Error()))
 	}
 
@@ -183,49 +175,39 @@ func (service *AuthServiceImpl) SendVerificationEmail(ctx context.Context, reque
 	func() {
 		defer func() {
 			if r := recover(); r != nil {
-				fmt.Printf("Panic in rate limit check: %v\n", r)
 				rateLimitTx.Rollback()
 				panic(r)
 			}
 		}()
 
-		fmt.Println("Checking rate limiting...")
 		isLimited, err = service.UserRepository.IsRateLimited(ctx, rateLimitTx, clientIP, "send_verification_email", 3, 15*time.Minute)
 		if err != nil {
-			fmt.Printf("Rate limit check error: %v\n", err)
 			rateLimitTx.Rollback()
 			isLimited = false
 		} else {
-			fmt.Printf("Rate limit status: %v\n", isLimited)
 			rateLimitTx.Commit()
 		}
 	}()
 
 	if isLimited {
-		fmt.Println("Request is rate limited")
 		panic(exception.NewTooManyRequestsError("Too many verification email requests. Please try again later."))
 	}
 
 	// Main transaction for sending verification email
 	tx, err := service.DB.Begin()
 	if err != nil {
-		fmt.Printf("Failed to begin main transaction: %v\n", err)
 		helper.PanicIfError(err)
 	}
 	defer helper.CommitOrRollback(tx)
 
 	// Find the user
-	fmt.Println("Finding user...")
 	user, err := service.UserRepository.FindByEmail(ctx, tx, request.Email)
 	if err != nil {
-		fmt.Printf("User not found: %v\n", err)
 		panic(exception.NewNotFoundError(err.Error()))
 	}
-	fmt.Printf("Found user: %s\n", user.Email)
 
 	// Check if already verified
 	if user.IsVerified {
-		fmt.Println("User already verified")
 		return web.MessageResponse{
 			Message: "Email already verified",
 		}
@@ -234,18 +216,12 @@ func (service *AuthServiceImpl) SendVerificationEmail(ctx context.Context, reque
 	// Generate verification token
 	token := generateRandomToken()
 	expires := time.Now().Add(24 * time.Hour)
-	fmt.Printf("Generated token: %s (expires: %v)\n", token, expires)
 
 	// Save token to user record
-	fmt.Println("Saving verification token...")
 	err = service.UserRepository.SaveVerificationToken(ctx, tx, user.Id, token, expires)
-	if err != nil {
-		fmt.Printf("Failed to save token: %v\n", err)
-		helper.PanicIfError(err)
-	}
+	helper.PanicIfError(err)
 
 	// Prepare and send email
-	fmt.Println("Preparing to send email...")
 	emailBody := fmt.Sprintf(`
         <html>
         <body>
@@ -262,25 +238,20 @@ func (service *AuthServiceImpl) SendVerificationEmail(ctx context.Context, reque
 
 	err = helper.EmailSender(user.Email, "Verify Your Email", emailBody)
 	if err != nil {
-		fmt.Printf("Failed to send email: %v\n", err)
 		panic(exception.NewBadRequestError("Failed to send verification email: " + err.Error()))
 	}
-	fmt.Println("Email sent successfully")
 
 	// Log successful email send
-	fmt.Println("Logging email send attempt...")
 	logTx, err := service.DB.Begin()
 	if err == nil {
 		err = service.UserRepository.LogFailedAttempt(ctx, logTx, clientIP, "send_verification_email", "")
 		if err != nil {
-			fmt.Printf("Failed to log attempt: %v\n", err)
 			logTx.Rollback()
 		} else {
 			logTx.Commit()
 		}
 	}
 
-	fmt.Println("SendVerificationEmail completed successfully")
 	return web.MessageResponse{
 		Message: "Verification email sent",
 	}
@@ -290,87 +261,52 @@ func (service *AuthServiceImpl) VerifyEmail(ctx context.Context, request web.Ver
 	err := service.Validate.Struct(request)
 	helper.PanicIfError(err)
 
-	// Check token format first (no DB access needed)
+	// Get user_id from the JWT token (added by middleware)
+	userID, ok := ctx.Value("user_id").(int)
+	if !ok {
+		panic(exception.NewUnauthorizedError("Unauthorized access"))
+	}
+
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Get the current user by ID
+	user, err := service.UserRepository.FindById(ctx, tx, userID)
+	if err != nil {
+		panic(exception.NewUnauthorizedError("Invalid user session"))
+	}
+
+	// Check if user is already verified
+	if user.IsVerified {
+		return web.MessageResponse{
+			Message: "Email is already verified",
+		}
+	}
+
+	// Check if token is a reasonable length
 	if len(request.Token) != 6 {
 		panic(exception.NewBadRequestError("Invalid verification token format"))
 	}
 
-	// Get client IP
-	clientIP := helper.GetClientIP(ctx)
-
-	// First transaction: Check rate limiting
-	rateLimitTx, err := service.DB.Begin()
-	if err != nil {
-		panic(exception.NewInternalServerError("Database error: " + err.Error()))
+	// Check if token matches the user's verification token
+	if user.VerificationToken != request.Token {
+		// Log failed attempt
+		clientIP := helper.GetClientIP(ctx)
+		_ = service.UserRepository.LogFailedAttempt(ctx, tx, clientIP, "email_verification", request.Token)
+		panic(exception.NewBadRequestError("Invalid verification token"))
 	}
 
-	var isLimited bool
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				rateLimitTx.Rollback()
-				panic(r)
-			}
-		}()
-
-		// Check if rate limited
-		isLimited, err = service.UserRepository.IsRateLimited(ctx, rateLimitTx, clientIP, "email_verification", 10, 5*time.Minute)
-		if err != nil {
-			rateLimitTx.Rollback()
-			isLimited = false
-		} else {
-			rateLimitTx.Commit()
-		}
-	}()
-
-	if isLimited {
-		panic(exception.NewTooManyRequestsError("Too many verification attempts. Please try again later."))
+	// Check if token is expired
+	if time.Now().After(user.VerificationExpires) {
+		panic(exception.NewBadRequestError("Verification token has expired"))
 	}
 
-	// Second transaction: Verify email
-	verifyTx, err := service.DB.Begin()
-	if err != nil {
-		panic(exception.NewInternalServerError("Database error: " + err.Error()))
-	}
-
-	var user domain.User
-	verifySuccess := false
-
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				verifyTx.Rollback()
-				panic(r)
-			}
-		}()
-
-		// Try to verify
-		user, err = service.UserRepository.VerifyEmail(ctx, verifyTx, request.Token)
-		if err != nil {
-			verifyTx.Rollback() // Roll back verification attempt
-
-			// Log failed attempt in a separate transaction
-			logTx, err := service.DB.Begin()
-			if err == nil {
-				_ = service.UserRepository.LogFailedAttempt(ctx, logTx, clientIP, "email_verification", request.Token)
-				logTx.Commit()
-			}
-
-			panic(exception.NewBadRequestError("Invalid or expired verification token"))
-		}
-
-		verifySuccess = true
-		verifyTx.Commit()
-	}()
-
-	// If verification was successful, clear rate limiting in a new transaction
-	if verifySuccess {
-		clearTx, err := service.DB.Begin()
-		if err == nil {
-			_ = service.UserRepository.ClearFailedAttempts(ctx, clearTx, user.Id, "email_verification")
-			clearTx.Commit()
-		}
-	}
+	// Update user's verification status
+	user.IsVerified = true
+	user.VerificationToken = ""
+	user.VerificationExpires = time.Time{}
+	service.UserRepository.Update(ctx, tx, user)
 
 	return web.MessageResponse{
 		Message: "Email successfully verified",
@@ -539,7 +475,6 @@ func (service *AuthServiceImpl) ResetPassword(ctx context.Context, request web.R
 	}
 }
 
-// Add this new method
 func (service *AuthServiceImpl) logFailedResetAttempt(ctx context.Context, tx *sql.Tx, clientIP string, token string) error {
 	// You would need to implement this method in your UserRepository
 	return service.UserRepository.LogFailedAttempt(ctx, tx, clientIP, "password_reset", token)
