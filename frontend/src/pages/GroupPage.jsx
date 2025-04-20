@@ -24,6 +24,8 @@ export default function GroupPage() {
     following_count: 42
   });
 
+  
+
   const [connections, setConnections] = useState([
     { id: 1, from_user_id: 1, toUser: { id: 6, name: "Robert Wilson", profile_photo: "/api/placeholder/40/40" } },
     { id: 2, from_user_id: 1, toUser: { id: 7, name: "Emily Clark", profile_photo: "/api/placeholder/40/40" } },
@@ -209,55 +211,62 @@ export default function GroupPage() {
             </div>
 
             {/* Posts Display */}
-            <div className="rounded border bg-white shadow-sm mb-4">
-              <div className="border-b p-3">
-                <h6 className="m-0 font-medium">Recent Posts</h6>
-              </div>
-              <div className="p-0">
-                {/* Sample Post */}
-                <div className="border-b p-3">
-                  <div className="flex items-center mb-3">
-                    <img 
-                      src="/api/placeholder/40/40" 
-                      className="rounded-full mr-2 w-10 h-10" 
-                      alt="" 
-                    />
-                    <div>
-                      <h6 className="font-bold mb-0">John Doe</h6>
-                      <small className="text-gray-500">2 hours ago</small>
-                    </div>
-                    <div className="ml-auto relative group">
-                      <button className="bg-gray-100 hover:bg-gray-200 rounded-full p-1">
-                        <MoreHorizontal size={16} />
-                      </button>
-                      <div className="hidden group-hover:block absolute right-0 bg-white border rounded shadow-lg z-10 w-32">
-                        <a href="#" className="block px-4 py-2 hover:bg-gray-100 text-sm">Edit</a>
-                        <a href="#" className="block px-4 py-2 hover:bg-gray-100 text-sm">Delete</a>
-                        <a href="#" className="block px-4 py-2 hover:bg-gray-100 text-sm">Report</a>
-                      </div>
-                    </div>
-                  </div>
-                  <p>This is a sample post content. Looking forward to our next group meeting!</p>
-                  <img src="/api/placeholder/600/400" className="w-full mb-3 rounded" alt="" />
-                  <div className="flex justify-between">
-                    <div className="flex space-x-2 text-blue-500">
-                      <button className="bg-sky-100 hover:bg-sky-200 px-3 py-1 rounded text-sm flex items-center">
-                        <ThumbsUp size={14} className="mr-1" /> Like (24)
-                      </button>
-                      <button className="bg-sky-100 hover:bg-sky-200 px-3 py-1 rounded text-sm flex items-center">
-                        <MessageCircle size={14} className="mr-1" /> Comment (8)
-                      </button>
-                    </div>
-                    <button className="bg-sky-100 hover:bg-sky-200 px-3 py-1 rounded text-sm flex items-center text-blue-500">
-                      <Share size={14} className="mr-1" /> Share
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <a href="#" className="font-bold block text-blue-500 w-full bg-transparent p-3 text-center">
-                Load More <ArrowDown size={16} className="inline ml-1" />
-              </a>
-            </div>
+<div className="rounded border bg-white shadow-sm mb-4">
+  <div className="border-b p-3">
+    <h6 className="m-0 font-medium">Recent Posts</h6>
+  </div>
+  <div className="p-0">
+    {/* Sample Post 1 */}
+    <div className="border-b p-3">
+      <div className="flex items-center mb-3">
+        <img 
+          src="/api/placeholder/40/40" 
+          className="rounded-full mr-2 w-10 h-10" 
+          alt="User" 
+        />
+        <div>
+          <h6 className="font-bold mb-0">John Doe</h6>
+          <small className="text-gray-500">2 hours ago</small>
+        </div>
+        <div className="ml-auto relative group">
+          <button className="bg-gray-100 hover:bg-gray-200 rounded-full p-1">
+            <MoreHorizontal size={16} />
+          </button>
+          <div className="hidden group-hover:block absolute right-0 bg-white border rounded shadow-lg z-10 w-32">
+            <a href="#" className="block px-4 py-2 hover:bg-gray-100 text-sm">Edit</a>
+            <a href="#" className="block px-4 py-2 hover:bg-gray-100 text-sm">Delete</a>
+            <a href="#" className="block px-4 py-2 hover:bg-gray-100 text-sm">Report</a>
+          </div>
+        </div>
+      </div>
+      <p className="mb-3">This is a sample post content. Looking forward to our next group meeting!</p>
+      <div className="mb-3 rounded-lg overflow-hidden border">
+        <img 
+          src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80" 
+          className="w-full h-auto object-cover" 
+          alt="Posted content" 
+        />
+      </div>
+      <div className="flex justify-between">
+        <div className="flex space-x-2 text-blue-500">
+          <button className="bg-sky-100 hover:bg-sky-200 px-3 py-1 rounded text-sm flex items-center">
+            <ThumbsUp size={14} className="mr-1" /> Like (24)
+          </button>
+          <button className="bg-sky-100 hover:bg-sky-200 px-3 py-1 rounded text-sm flex items-center">
+            <MessageCircle size={14} className="mr-1" /> Comment (8)
+          </button>
+        </div>
+        <button className="bg-sky-100 hover:bg-sky-200 px-3 py-1 rounded text-sm flex items-center text-blue-500">
+          <Share size={14} className="mr-1" /> Share
+        </button>
+      </div>
+    </div>
+   
+  </div>
+  <a href="#" className="font-bold block text-blue-500 w-full bg-transparent p-3 text-center">
+    Load More <ArrowDown size={16} className="inline ml-1" />
+  </a>
+</div>
           </main>
 
           {/* Right Sidebar */}
