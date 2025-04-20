@@ -5,7 +5,11 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        primary: "#0e9dea", // Warna biru yang kamu pake di desain Laravel kamu
+      },
+    },
   },
   plugins: [],
 }
