@@ -8,6 +8,7 @@ import ListConnection from './pages/ListConnection.jsx';
 import { Messages } from './pages/Messages.jsx';
 import GroupPage from './pages/GroupPage.jsx';
 import Blog from './pages/Blog.jsx';
+import Notification from './pages/Notification.jsx';
 
 const router = createBrowserRouter([
   {
@@ -57,6 +58,10 @@ const router = createBrowserRouter([
   {
     path: '/blog',
     element: <Blog />,
+  },
+  {
+    path: '/notification',
+    element: <Notification />,
   }
 ]);
 
