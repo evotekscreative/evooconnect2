@@ -1,10 +1,22 @@
-import React from "react";
+import React, { useState } from "react";
 import Navbar from "../../components/Navbar";
-import { Button } from "../../components/Button";
 import job1 from '../../assets/img/job1.png';
-// import { MapPin } from 'lucide-react';
 
 export default function NewPage() {
+    // State untuk melacak status klik tombol
+    const [clickedSave, setClickedSave] = useState(false);
+    const [clickedApply, setClickedApply] = useState(false);
+
+    // Fungsi untuk menangani klik pada tombol Save
+    const handleSaveClick = () => {
+        setClickedSave(true);
+    };
+
+    // Fungsi untuk menangani klik pada tombol Apply
+    const handleApplyClick = () => {
+        setClickedApply(true);
+    };
+
     return (
         <>
             <Navbar />
@@ -15,25 +27,31 @@ export default function NewPage() {
                         <div className="flex justify-between items-start ">
                             <div>
                                 <h1 className="font-bold text-xl">Hallo</h1>
-                                <div class="flex items-center space-x-1">
+                                <div className="flex items-center space-x-1">
                                     <a
                                         href="#"
-                                        class="text-[#0A66C2] font-semibold text-sm hover:underline"
+                                        className="text-[#0A66C2] font-semibold text-sm hover:underline"
                                     >
                                         React Company
                                     </a>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#383838" stroke-width="0.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin-icon lucide-map-pin"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /><circle cx="12" cy="10" r="3" /></svg>                                    <p class="text-gray-500 text-xs">mm · 11 hours ago</p>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#383838" stroke-width="0.75" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-map-pin-icon lucide-map-pin"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /><circle cx="12" cy="10" r="3" /></svg>
+                                    <p className="text-gray-500 text-xs">mm · 11 hours ago</p>
                                 </div>
                             </div>
                             <div className="flex space-x-2">
-                                <button className="px-5 py-1 text-sm rounded border border-[#0A66C2] text-[#0A66C2] bg-white hover:bg-blue-50 transition">
-                                    Save
+                                <button
+                                    className={`px-5 py-1 text-sm rounded border ${clickedSave ? 'bg-green-500 text-white' : 'border-[#0A66C2] text-[#0A66C2] bg-white'} transition`}
+                                    onClick={handleSaveClick}
+                                >
+                                    {clickedSave ? 'Saved' : 'Save'}
                                 </button>
-                                <Button className="px-5 py-1 text-sm rounded bg-[#0A66C2] text-white hover:bg-blue-700 transition">
-                                    Apply
-                                </Button>
+                                <button
+                                    className={`bg-blue-500 text-white text-sm py-2 px-4 rounded-md ${clickedApply ? 'bg-green-500' : ''}`}
+                                    onClick={handleApplyClick}
+                                >
+                                    {clickedApply ? 'Applied' : 'Apply'}
+                                </button>
                             </div>
-
                         </div>
                     </div>
 
@@ -47,7 +65,6 @@ export default function NewPage() {
                                     alt="Company Logo"
                                     className="w-40 h-40 rounded-full mx-auto mb-3 object-cover"
                                 />
-
                                 <button className="bg-blue-50 text-blue-500 hover:bg-blue-100 text-sm font-medium py-1.5 px-5 rounded-md border border-blue-100 transition mb-4 mt-1">
                                     + Follow
                                 </button>
@@ -82,7 +99,7 @@ export default function NewPage() {
                             {/* Overview */}
                             <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <h2 className="text-xl font-semibold mb-2">Overview</h2>
-                                <hr></hr>
+                                <hr />
                                 <p className="text-sm text-gray-600 mt-3">mmm</p>
                             </div>
 
@@ -146,7 +163,6 @@ export default function NewPage() {
                                         READ MORE
                                     </a>
                                 </div>
-
                             </div>
                         </div>
 
@@ -159,7 +175,6 @@ export default function NewPage() {
                                 </svg>
                                 Set alert for jobs
                             </button>
-
 
                             <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <p className="font-semibold text-sm mb-2">Similar Jobs</p>
