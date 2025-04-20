@@ -1,0 +1,874 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Authentication API",
+    "description": "API for user registration, login, email verification and password reset",
+    "version": "1.0.0",
+    "contact": {
+      "name": "EvoConnect Support",
+      "email": "support@evoconnect.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api",
+      "description": "Development server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "User authentication operations"
+    },
+    {
+      "name": "User",
+      "description": "User profile operations"
+    }
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Register a new user",
+        "description": "Creates a new user account and sends a verification email with a 6-digit code",
+        "operationId": "registerUser",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User successfully registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 201
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "CREATED"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/RegisterResponse"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or email already registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "emailExistsError": {
+                    "value": {
+                      "code": 400,
+                      "status": "BAD REQUEST",
+                      "data": "Email already registered"
+                    }
+                  },
+                  "validationError": {
+                    "value": {
+                      "code": 400,
+                      "status": "BAD REQUEST",
+                      "data": {
+                        "Email": "must be a valid email address",
+                        "Password": "minimum value is 6"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many registration attempts from this IP address",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": 429,
+                  "status": "TOO_MANY_REQUESTS",
+                  "data": "Too many registration attempts. Please try again later."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "User login",
+        "description": "Authenticates a user and returns a JWT token. Email must be verified before login.",
+        "operationId": "loginUser",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful login",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "OK"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/LoginResponse"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials or email not verified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "invalidCredentials": {
+                    "value": {
+                      "code": 401,
+                      "status": "UNAUTHORIZED",
+                      "data": "Invalid credentials"
+                    }
+                  },
+                  "emailNotVerified": {
+                    "value": {
+                      "code": 401,
+                      "status": "UNAUTHORIZED",
+                      "data": "Email not verified. Please check your email for verification instructions."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many login attempts from this IP address",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": 429,
+                  "status": "TOO_MANY_REQUESTS",
+                  "data": "Too many login attempts. Please try again later."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/verify/send": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Send verification email",
+        "description": "Sends a verification email with a 6-digit verification code. Limited to 3 requests per 15 minutes.",
+        "operationId": "sendVerificationEmail",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verification email sent or email already verified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "OK"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/MessageResponse"
+                    }
+                  }
+                },
+                "examples": {
+                  "emailSent": {
+                    "value": {
+                      "code": 200,
+                      "status": "OK",
+                      "data": {
+                        "message": "Verification email sent"
+                      }
+                    }
+                  },
+                  "alreadyVerified": {
+                    "value": {
+                      "code": 200,
+                      "status": "OK",
+                      "data": {
+                        "message": "Email already verified"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid email format or failure to send email",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many verification email requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": 429,
+                  "status": "TOO_MANY_REQUESTS",
+                  "data": "Too many verification email requests. Please try again later."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/verify": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Verify email address",
+        "description": "Verifies a user's email address using a 6-digit token sent via email. Limited to 10 attempts per 5 minutes. User must be logged in.",
+        "operationId": "verifyEmail",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerificationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Email successfully verified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "OK"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/MessageResponse"
+                    }
+                  }
+                },
+                "example": {
+                  "code": 200,
+                  "status": "OK",
+                  "data": {
+                    "message": "Email successfully verified"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or expired verification token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": 400,
+                  "status": "BAD REQUEST",
+                  "data": "Invalid or expired verification token"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - User not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": 401,
+                  "status": "UNAUTHORIZED",
+                  "data": "Authentication required"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many verification attempts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": 429,
+                  "status": "TOO_MANY_REQUESTS",
+                  "data": "Too many verification attempts. Please try again later."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/forgot-password": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Request password reset",
+        "description": "Sends a password reset email with a 6-digit code. Limited to 3 requests per 15 minutes.",
+        "operationId": "forgotPassword",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password reset email sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "OK"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/MessageResponse"
+                    }
+                  }
+                },
+                "example": {
+                  "code": 200,
+                  "status": "OK",
+                  "data": {
+                    "message": "Password reset instructions sent to your email"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid email format or failure to send email",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": 404,
+                  "status": "NOT FOUND",
+                  "data": "User not found"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many password reset requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": 429,
+                  "status": "TOO_MANY_REQUESTS",
+                  "data": "Too many password reset requests. Please try again later."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/reset-password": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Reset password",
+        "description": "Resets a user's password using a 6-digit token sent via email. Token is valid for 1 hour.",
+        "operationId": "resetPassword",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password successfully reset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "OK"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/MessageResponse"
+                    }
+                  }
+                },
+                "example": {
+                  "code": 200,
+                  "status": "OK",
+                  "data": {
+                    "message": "Password successfully reset"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or expired reset token, or password validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "invalidToken": {
+                    "value": {
+                      "code": 400,
+                      "status": "BAD REQUEST",
+                      "data": "Invalid or expired reset token"
+                    }
+                  },
+                  "validationError": {
+                    "value": {
+                      "code": 400,
+                      "status": "BAD REQUEST",
+                      "data": {
+                        "Password": "minimum value is 6"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many reset attempts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": 429,
+                  "status": "TOO_MANY_REQUESTS",
+                  "data": "Too many reset attempts. Please try again later."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/profile": {
+      "get": {
+        "tags": ["User"],
+        "summary": "Get user profile",
+        "description": "Retrieves the profile information of the authenticated user",
+        "operationId": "getUserProfile",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User profile retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "OK"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing JWT token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": 401,
+                  "status": "UNAUTHORIZED",
+                  "data": "Invalid or missing authentication token"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "example": "John Doe"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "john.doe@example.com"
+          },
+          "is_verified": {
+            "type": "boolean",
+            "example": false
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2023-09-08T12:00:00Z"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2023-09-08T12:00:00Z"
+          }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": ["name", "email", "password"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "John Doe",
+            "description": "User's full name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "john.doe@example.com",
+            "description": "User's email address"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "example": "password123",
+            "description": "User's password (min 6 characters)",
+            "minLength": 6
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "john.doe@example.com",
+            "description": "User's email address"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "example": "password123",
+            "description": "User's password"
+          }
+        }
+      },
+      "EmailRequest": {
+        "type": "object",
+        "required": ["email"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "john.doe@example.com",
+            "description": "User's email address"
+          }
+        }
+      },
+      "VerificationRequest": {
+        "type": "object",
+        "required": ["token"],
+        "properties": {
+          "token": {
+            "type": "string",
+            "example": "123456",
+            "description": "6-digit email verification token",
+            "minLength": 6,
+            "maxLength": 6,
+            "pattern": "^[0-9]{6}$"
+          }
+        }
+      },
+      "ResetPasswordRequest": {
+        "type": "object",
+        "required": ["token", "password"],
+        "properties": {
+          "token": {
+            "type": "string",
+            "example": "123456",
+            "description": "6-digit password reset token",
+            "minLength": 6,
+            "maxLength": 6,
+            "pattern": "^[0-9]{6}$"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "example": "newpassword123",
+            "description": "New password (min 6 characters)",
+            "minLength": 6
+          }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "description": "JWT authentication token"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        }
+      },
+      "RegisterResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "description": "JWT authentication token"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        }
+      },
+      "MessageResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Operation successful"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 400
+          },
+          "status": {
+            "type": "string",
+            "example": "BAD REQUEST"
+          },
+          "data": {
+            "type": "object",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object"
+              }
+            ],
+            "example": "Error message or validation errors object"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT token obtained during login or registration"
+      }
+    }
+  },
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ]
+}
