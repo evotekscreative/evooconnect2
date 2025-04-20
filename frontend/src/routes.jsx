@@ -3,6 +3,10 @@ import Login from "./pages/Auth/Login.jsx";
 import Register from "./pages/Auth/Register.jsx";
 import App from './App';
 import Connections from './pages/Connections.jsx';
+import Jobs from './pages/Jobs/index.jsx';
+import JobProfile from './pages/Profile/job-profile.jsx';
+import Faq from './pages/Faq/index.jsx';
+import CompanyProfile from "./pages/Profile/company-profile.jsx"
 import Groups from './pages/Groups.jsx';
 import ListConnection from './pages/ListConnection.jsx';
 import { Messages } from './pages/Messages.jsx';
@@ -37,7 +41,26 @@ const router = createBrowserRouter([
   },
   {
     path: '/connections',
-    element: <Connections />,
+    element: <Connections/> ,
+  },
+
+  {
+    path: '/jobs',
+    element: <Jobs/> ,
+  },
+
+  {
+    path: '/job-profile',
+    element: <JobProfile/> ,
+  },
+
+  {
+    path: '/faq',
+    element: <Faq/> ,
+  },
+  {
+    path: '/company-profile',
+    element: <CompanyProfile/> , 
   },
   {
     path: '/groups',
