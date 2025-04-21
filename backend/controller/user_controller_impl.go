@@ -5,6 +5,7 @@ import (
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/service"
+	"fmt"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -28,6 +29,31 @@ func (controller *UserControllerImpl) GetProfile(writer http.ResponseWriter, req
 	}
 
 	userResponse := controller.UserService.GetProfile(request.Context(), userId)
+
+	webResponse := web.WebResponse{
+		Code:   200,
+		Status: "OK",
+		Data:   userResponse,
+	}
+
+	helper.WriteToResponseBody(writer, webResponse)
+}
+
+func (controller *UserControllerImpl) UpdateProfile(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Get user_id from context that was set by auth middleware
+	userId, ok := request.Context().Value("user_id").(int)
+	if !ok {
+		panic(exception.NewUnauthorizedError("Unauthorized access"))
+	}
+
+	updateProfileRequest := web.UpdateProfileRequest{}
+	helper.ReadFromRequestBody(request, &updateProfileRequest)
+
+	fmt.Printf("Received update for user ID %d: %+v\n", userId, updateProfileRequest)
+
+	userResponse := controller.UserService.UpdateProfile(request.Context(), userId, updateProfileRequest)
+
+	fmt.Printf("Response data: %+v\n", userResponse)
 
 	webResponse := web.WebResponse{
 		Code:   200,
