@@ -5,7 +5,7 @@ import ProfilePage from "./pages/Profile.jsx";
 
 function App() {
   return <div>
-    <ProfilePage/>
+    <JobDashboard/>
   </div>
 }
 
