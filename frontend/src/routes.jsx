@@ -87,7 +87,7 @@ const router = createBrowserRouter([
     element: <Faq />,
   },
   {
-    path: '/company-profile',
+    path: '/company-profile/:companyId',
     element: <CompanyProfile />,
   },
   {
