@@ -5,6 +5,16 @@ import job1 from "../../assets/img/job1.png";
 
 export default function CompanyProfile() {
     const [activeTab, setActiveTab] = useState("About");
+
+    // State buat tombol Follow di Company Header
+    const [isFollowingMain, setIsFollowingMain] = useState(false);
+
+    // State untuk Follow di Similar Pages
+    const [isFollowingAmazon, setIsFollowingAmazon] = useState(false);
+
+    // State untuk Connect di People Also Viewed
+    const [isConnectedSophia, setIsConnectedSophia] = useState(false);
+
     const tabs = ["About", "Update", "Jobs", "Reviews"];
 
     return (
@@ -39,8 +49,15 @@ export default function CompanyProfile() {
                         <button className="flex items-center gap-2 bg-blue-100 text-blue-600 px-4 py-2 rounded-md hover:bg-blue-200 text-sm">
                             Visit Website
                         </button>
-                        <button className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 text-sm">
-                            + Follow
+                        <button
+                            onClick={() => setIsFollowingMain(true)}
+                            className={`px-4 py-2 rounded-md text-white text-sm transition-colors ${
+                                isFollowingMain
+                                    ? "bg-green-500 hover:bg-green-600"
+                                    : "bg-blue-500 hover:bg-blue-600"
+                            }`}
+                        >
+                            {isFollowingMain ? " Followed" : "+ Follow"}
                         </button>
                     </div>
                 </div>
@@ -117,11 +134,17 @@ export default function CompanyProfile() {
                                                 evoconnect.com
                                             </a>
                                         </li>
+                                        <hr className="py-2" />
                                         <li><strong>Industry:</strong> Informatika</li>
+                                        <hr className="py-2" />
                                         <li><strong>Company Size:</strong> 70 employees</li>
+                                        <hr className="py-2" />
                                         <li><strong>Headquarters:</strong> Los Santos</li>
+                                        <hr className="py-2" />
                                         <li><strong>Type:</strong> Public</li>
+                                        <hr className="py-2" />
                                         <li><strong>Founded:</strong> 2025-03-14</li>
+                                        <hr className="py-2" />
                                         <li><strong>Specialties:</strong> Speeeeeeeeeee</li>
                                     </ul>
                                 </div>
@@ -177,6 +200,7 @@ export default function CompanyProfile() {
 
                             {/* Right Sidebar */}
                             <div className="lg:col-span-3 space-y-10">
+                                {/* Similar Pages */}
                                 <div className="bg-white p-6 rounded-md shadow">
                                     <h2 className="text-lg font-semibold mb-4">Similar Pages</h2>
                                     <div className="space-y-4">
@@ -192,13 +216,21 @@ export default function CompanyProfile() {
                                                     <p className="text-sm text-gray-400">Internet</p>
                                                 </div>
                                             </div>
-                                            <button className="bg-blue-500 hover:bg-blue-600 text-white text-sm py-2 px-4 rounded-md">
-                                                + Follow
+                                            <button
+                                                onClick={() => setIsFollowingAmazon(true)}
+                                                className={`text-sm py-2 px-4 rounded-md text-white transition-colors ${
+                                                    isFollowingAmazon
+                                                        ? "bg-green-500 hover:bg-green-600"
+                                                        : "bg-blue-500 hover:bg-blue-600"
+                                                }`}
+                                            >
+                                                {isFollowingAmazon ? " Followed" : "+ Follow"}
                                             </button>
                                         </div>
                                     </div>
                                 </div>
 
+                                {/* People Also Viewed */}
                                 <div className="bg-white p-6 rounded-md shadow">
                                     <h2 className="text-lg font-semibold mb-4">People Also Viewed</h2>
                                     <div className="flex items-center justify-between">
@@ -213,12 +245,20 @@ export default function CompanyProfile() {
                                                 <p className="text-sm text-gray-400">@Harvard</p>
                                             </div>
                                         </div>
-                                        <button className="bg-blue-500 hover:bg-blue-600 text-white text-sm py-2 px-4 rounded-md">
-                                            Connect
+                                        <button
+                                            onClick={() => setIsConnectedSophia(true)}
+                                            className={`text-sm py-2 px-4 rounded-md text-white transition-colors ${
+                                                isConnectedSophia
+                                                    ? "bg-green-500 hover:bg-green-600"
+                                                    : "bg-blue-500 hover:bg-blue-600"
+                                            }`}
+                                        >
+                                            {isConnectedSophia ? " Connected" : "Connect"}
                                         </button>
                                     </div>
                                 </div>
 
+                                {/* Premium */}
                                 <div className="bg-yellow-100 p-4 rounded-md text-center">
                                     <p className="font-bold text-lg mb-1">EVOConnect Premium</p>
                                     <p className="text-sm text-gray-700">Grow & nurture your network</p>
