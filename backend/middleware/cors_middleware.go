@@ -7,7 +7,8 @@ import (
 // CORSMiddleware adds required CORS headers to allow Swagger UI testing
 func CORSMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*") // Or whatever your frontend origin is
+		// Tambahkan header CORS tetapi jangan menggantikan header lain
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
@@ -16,6 +17,7 @@ func CORSMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
+		// Lewatkan ke handler berikutnya
 		next.ServeHTTP(w, r)
 	})
 }
