@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import logo from "../assets/img/logo1.png";
+import { Link } from "react-router-dom";
+import Case from "../components/Case";  
 import { 
   Briefcase, Users, Pen, MessageSquare, Bell, User, Eye, 
   Bookmark, Calendar, MapPin, GraduationCap, Building,
-  Facebook, Twitter, Linkedin, Github, Instagram
+  Facebook, Twitter, Linkedin, Github, Instagram,
 } from "lucide-react";
 
 export default function ProfilePage() {
@@ -150,28 +151,7 @@ export default function ProfilePage() {
   return (
     <div className="bg-[#EDF3F7] min-h-screen">
       {/* Navbar */}
-      <div className="bg-[#00AEEF] text-white flex justify-between items-center px-4 py-3">
-        <div className="flex items-center gap-2 max-w-[1100px] mx-auto w-full justify-between">
-          <div className="flex items-center gap-4">
-            <div className="font-bold text-lg flex items-center gap-2">
-              <img src={logo} alt="Evo Connect Logo" className="h-8" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search people, jobs & more"
-              className="px-3 py-1 rounded-md text-black text-sm w-64"
-            />
-          </div>
-          <div className="flex items-center gap-5 text-sm">
-            <a href="#" className="flex items-center gap-1"><Briefcase size={16} />Jobs</a>
-            <a href="#" className="flex items-center gap-1"><Users size={16} />Connection</a>
-            <a href="#" className="flex items-center gap-1"><Pen size={16} />Blog</a>
-            <a href="#"><MessageSquare size={16} /></a>
-            <a href="#"><Bell size={16} /></a>
-            <a href="#"><User size={16} /></a>
-          </div>
-        </div>
-      </div>
+     <Case />
 
       {/* Content */}
       <div className="max-w-4xl mx-auto py-6 flex flex-col md:flex-row gap-6 px-4">
@@ -189,18 +169,18 @@ export default function ProfilePage() {
             <p className="text-sm text-gray-500">{headline || "No information yet."}</p>
 
             <div className="mt-4 space-y-2 text-left text-sm">
-              <div className="flex justify-between items-center">
+              <Link to="/list-connection" className="flex justify-between items-center">
                 <span className="flex items-center gap-1"><Users size={14} /> Connections</span>
                 <span className="font-bold">358</span>
-              </div>
+              </Link>
               <div className="flex justify-between items-center">
                 <span className="flex items-center gap-1"><Eye size={14} /> Views</span>
                 <span className="font-bold">85</span>
               </div>
-              <div className="flex justify-between items-center">
+              <Link to="/job-saved" className="flex justify-between items-center">
                 <span className="flex items-center gap-1"><Bookmark size={14} /> Job Saved</span>
                 <span className="font-bold">120</span>
-              </div>
+              </Link>
             </div>
 
             <button className="text-blue-600 text-sm mt-4">Log Out</button>
