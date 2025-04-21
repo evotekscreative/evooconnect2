@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import Navbar from "../../components/Navbar";
 import job1 from '../../assets/img/job1.png';
+import { useParams } from "react-router-dom";
 
 export default function NewPage() {
+    const params = useParams();
+    const jobId = params.jobId;
     // State untuk melacak status klik tombol
     const [clickedSave, setClickedSave] = useState(false);
     const [clickedApply, setClickedApply] = useState(false);
@@ -17,6 +20,80 @@ export default function NewPage() {
         setClickedApply(true);
     };
 
+    const data = [
+        {
+            id: 1,
+            title: "Software Engineer",
+            company: "Angular Company",
+            location: "Remote",
+            description: "We are looking for a Frontend Developer to join our team.",
+            overview: "We are looking for a Frontend Developer to join our team.",
+            aplicantRank: 30,   
+            // requirements: [
+            //     "Bachelor's degree in Computer Science or related field",
+            //     "2+ years of experience in frontend development",
+            //     "Proficiency in HTML, CSS, and JavaScript",
+            // ],
+            postedDate: "2023-09-30",
+            seniorityLevel: "Director",
+            Industry: "Information Technology",
+            type: "Full-time",
+            jobFunction: "Engineering",
+            salary: "$60,000 - $80,000",
+            companyLogo: "https://via.placeholder.com/150",
+            companyDescription: "Angular Company is a leading tech company specializing in web development.",
+            companySize: "100-500 employees",
+            // companyWebsite: "https://angularcompany.com",
+            // companyFollowers: 500,
+            // companyLocation: "New York, NY",
+            // companyFounded: "2015",
+            // companyHeadquarters: "New York, NY",
+            // companySocialMedia: {
+            //     linkedin: "https://www.linkedin.com/company/angularcompany",
+            //     twitter: "https://twitter.com/angularcompany",
+            //     facebook: "https://www.facebook.com/angularcompany",
+            // }
+        },
+        {
+            id: 2,
+            title: "Frontend Developer",
+            company: "Angular Company",
+            location: "Remote",
+            description: "We are looking for a Frontend Developer to join our team.",
+            overview: "We are looking for a Frontend Developer to join our team.",
+            aplicantRank: 30,   
+            // requirements: [
+            //     "Bachelor's degree in Computer Science or related field",
+            //     "2+ years of experience in frontend development",
+            //     "Proficiency in HTML, CSS, and JavaScript",
+            // ],
+            postedDate: "2023-09-30",
+            seniorityLevel: "Director",
+            Industry: "Information Technology",
+            type: "Full-time",
+            jobFunction: "Engineering",
+            salary: "$60,000 - $80,000",
+            companyLogo: "https://via.placeholder.com/150",
+            companyDescription: "Angular Company is a leading tech company specializing in web development.",
+            companySize: "100-500 employees",
+            // companyWebsite: "https://angularcompany.com",
+            // companyFollowers: 500,
+            // companyLocation: "New York, NY",
+            // companyFounded: "2015",
+            // companyHeadquarters: "New York, NY",
+            // companySocialMedia: {
+            //     linkedin: "https://www.linkedin.com/company/angularcompany",
+            //     twitter: "https://twitter.com/angularcompany",
+            //     facebook: "https://www.facebook.com/angularcompany",
+            // }
+        }
+    ]
+
+    const job = data.find(job => job.id === parseInt(jobId));
+    if (!job) {
+        return <div>Job not found</div>;
+    }
+
     return (
         <>
             <Navbar />
@@ -26,16 +103,16 @@ export default function NewPage() {
                         {/* Header */}
                         <div className="flex justify-between items-start ">
                             <div>
-                                <h1 className="font-bold text-xl">Hallo</h1>
+                                <h1 className="font-bold text-xl">{job.title}</h1>
                                 <div className="flex items-center space-x-1">
                                     <a
                                         href="#"
                                         className="text-[#0A66C2] font-semibold text-sm hover:underline"
                                     >
-                                        React Company
+                                        {job.company}
                                     </a>
                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#383838" stroke-width="0.75" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-map-pin-icon lucide-map-pin"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /><circle cx="12" cy="10" r="3" /></svg>
-                                    <p className="text-gray-500 text-xs">mm · 11 hours ago</p>
+                                    <p className="text-gray-500 text-xs">{job.location} | posted {job.postedDate}</p>
                                 </div>
                             </div>
                             <div className="flex space-x-2">
@@ -69,17 +146,17 @@ export default function NewPage() {
                                     + Follow
                                 </button>
 
-                                <p className="font-semibold text-lg">React Company</p>
-                                <p className="text-xs text-gray-500 mb-4">mm</p>
+                                <p className="font-semibold text-lg">{job.title}</p>
+                                <p className="text-xs text-gray-500 mb-4">{job.overview}</p>
                                 <hr className="my-4" />
                                 <div className="text-xs text-gray-500 space-y-1 text-left">
                                     <div className="flex justify-between mb-2">
                                         <span>Posted</span>
-                                        <span className="font-semibold text-black">11 hours ago</span>
+                                        <span className="font-semibold text-black">{job.postedDate}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span>Applicant Rank</span>
-                                        <span className="font-semibold text-black">25</span>
+                                        <span className="font-semibold text-black">{job.aplicantRank}</span>
                                     </div>
                                 </div>
                             </div>
@@ -100,7 +177,7 @@ export default function NewPage() {
                             <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <h2 className="text-xl font-semibold mb-2">Overview</h2>
                                 <hr />
-                                <p className="text-sm text-gray-600 mt-3">mmm</p>
+                                <p className="text-sm text-gray-600 mt-3">{job.overview}</p>
                             </div>
 
                             {/* Job Details */}
@@ -109,23 +186,23 @@ export default function NewPage() {
 
                                 <div className="grid grid-cols-1 gap-y-2 text-sm text-gray-600 mt-2">
                                     <p>
-                                        <span className="font-semibold text-gray-800">Seniority Level:</span> Entry level
+                                        <span className="font-semibold text-gray-800">Seniority Level:</span> {job.seniorityLevel}
                                     </p>
                                     <hr className="my-2" />
                                     <p>
-                                        <span className="font-semibold text-gray-800">Industry:</span> Internet Information Technology & Services
+                                        <span className="font-semibold text-gray-800">Industry:</span> {job.Industry}
                                     </p>
                                     <hr className="my-2" />
                                     <p>
-                                        <span className="font-semibold text-gray-800">Employment Type:</span> Part-time
+                                        <span className="font-semibold text-gray-800">Employment Type:</span> {job.type}
                                     </p>
                                     <hr className="my-2" />
                                     <p>
-                                        <span className="font-semibold text-gray-800">Job Functions:</span> Marketing
+                                        <span className="font-semibold text-gray-800">Job Functions:</span> {job.jobFunction}
                                     </p>
                                     <hr className="my-2" />
                                     <p>
-                                        <span className="font-semibold text-gray-800">Salary:</span> Rp 9.999
+                                        <span className="font-semibold text-gray-800">Salary:</span> {job.salary}
                                     </p>
                                 </div>
                             </div>
@@ -148,14 +225,7 @@ export default function NewPage() {
 
                                 <h2 className="text-xl font-semibold mb-2">About us</h2>
                                 <p className="text-sm text-gray-600 mb-3">
-                                    Welcome! We’re so happy you found us. Since you’ve come this far, we’d love to take
-                                    the opportunity to introduce ourselves.
-                                    <br /><br />
-                                    Our story starts in 2006 with three founders in a Sydney garage (no, we’re not kidding).
-                                    Born from a desire to earn a living doing what they loved, with the flexibility to
-                                    do it from anywhere, Envato set out to create an online community for buying and
-                                    selling creative digital assets. Nearly 13 years later, we’re profitable and still totally
-                                    bootstrapped...
+                                   {job.companyDescription}
                                 </p>
                                 <hr className="my-4" />
                                 <div className="text-center">
