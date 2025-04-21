@@ -1,6 +1,6 @@
   import { useState } from 'react';
   import { Link } from 'react-router-dom';
-  import logo from '../../assets/img/logo1.png';
+  import logo from '../../assets/img/logoB.png';
   import googleIcon from '../../assets/img/google-icon.jpg';
   import Alert from '../../components/Auth/Alert';
   import '../../assets/css/style.css';
@@ -57,9 +57,9 @@
               <div className="bg-white rounded-lg shadow-md overflow-hidden p-6">
                 {/* Header with Logo */}
                 <div className="mb-4 text-center">
-                  <img src={logo} alt="EVOConnect Logo" className="mx-auto h-16 object-contain" />
-                  <h5 className="font-bold mt-3">Join EVOConnect</h5>
-                  <p className="text-gray-500">
+                  <img src={logo} alt="EVOConnect Logo" className="mx-auto h-[80px] object-contain" />
+                  <h5 className="font-bold mt-2 text-xl">Join EVOConnect</h5>
+                  <p className="text-gray-500 text-sm">
                     Make the most of your professional life
                   </p>
                 </div>
@@ -134,7 +134,7 @@
                   
                   {/* Terms and Conditions */}
                   <div className="mb-4">
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 text-center">
                       You agree to the EVOConnect{' '}
                       <Link to="/terms" className="text-blue-600 hover:text-blue-800">User Agreement</Link>, and{' '}
                       <Link to="/privacy" className="text-blue-600 hover:text-blue-800">Privacy Policy</Link>.
@@ -151,7 +151,7 @@
                   {/* Social Login Options */}
                   <div className="mt-4 pb-4 text-center border-b border-gray-200">
                     <p className="text-xs text-gray-500 mb-3">Or login with</p>
-                    <div className="flex justify-center items-center">
+                    <div className="flex justify-center items-center mb-2">
                       <a href="#" className="shadow-lg flex items-center px-3 py-2 border shadow-sm rounded-md bg-white hover:bg-gray-50">
                         <img src={googleIcon} alt="Google" className="w-5 h-5 mr-2" />
                         <span className="text-sm">Login with Google</span>
