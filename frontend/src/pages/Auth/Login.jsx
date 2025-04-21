@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import logo from '../../assets/img/logo1.png'; 
+import logo from '../../assets/img/logoB.png'; 
 import googleIcon from '../../assets/img/google-icon.jpg';
 import Alert from '../../components/Auth/Alert';
 import '../../assets/css/style.css';
@@ -54,9 +54,9 @@ const handleSubmit = async (e) => {
             <div className="bg-white rounded-lg shadow-md p-6">
               {/* Header with Logo */}
               <div className="mb-4 text-center">
-                <img src={logo} alt="EVOConnect Logo" className="mx-auto h-16 object-contain" />
-                <h5 className="font-bold mt-3 text-xl">Selamat datang</h5>
-                <p className="text-gray-500">
+                <img src={logo} alt="EVOConnect Logo" className="mx-auto h-20 object-contain" />
+                <h5 className="font-bold mt-3 text-xl mb-2">Welcome</h5>
+                <p className="text-gray-500 text-sm">
                   Don't miss your next opportunity. Sign in to stay updated on your professional world.
                 </p>
               </div>
@@ -130,7 +130,7 @@ const handleSubmit = async (e) => {
                 {/* Social Login Options */}
                 <div className="border-b border-gray-200 mt-4 pb-4 text-center">
                   <p className="text-sm text-gray-500">Or login with</p>
-                  <div className="flex justify-center items-center mt-4">
+                  <div className="flex justify-center items-center mt-4 mb-3">
                     <a href="#" className="flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white hover:bg-gray-50">
                       <img src={googleIcon} alt="Google Logo" className="w-5 h-5 mr-2" />
                       <span class="text-sm">Login with Google</span>
@@ -140,9 +140,9 @@ const handleSubmit = async (e) => {
 
                 {/* Footer Links */}
                 <div className="flex justify-between items-center py-4">
-                  <Link to="/forgot-password" className="text-blue-600 hover:text-blue-800">Forgot password?</Link>
-                  <span>
-                    Don't have an account? <Link to="/register" className="font-bold text-blue-600 hover:text-blue-800">sign up</Link>
+                  <Link to="/forgot-password" className="text-blue-600 hover:text-blue-800 text-sm">Forgot password?</Link>
+                  <span className="text-sm">
+                    Don't have an account? <Link to="/register" className="font-bold text-blue-600 hover:text-blue-800 text-sm">sign up</Link>
                   </span>
                 </div>
               </form>

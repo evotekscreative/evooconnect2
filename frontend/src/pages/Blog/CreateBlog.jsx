@@ -1,15 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import BlogFormStepper from '../../../components/Blog/BlogFormStepper';
-import TitleStep from '../../../components/Blog/TitleStep';
-import CategoryStep from '../../../components/Blog/CategoryStep';
-import ContentStep from '../../../components/Blog/ContentStep';
-import PreviewStep from '../../../components/Blog/PreviewStep';
-import logo from '../../../assets/img/logo1.png'
- 
+import BlogFormStepper from '../../components/Blog/BlogFormStepper';
+import TitleStep from '../../components/Blog/TitleStep';
+import CategoryStep from '../../components/Blog/CategoryStep';
+import ContentStep from '../../components/Blog/ContentStep';
+import PreviewStep from '../../components/Blog/PreviewStep';
 
-
-BlogFormStepper
 function CreateBlog() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
@@ -17,7 +13,8 @@ function CreateBlog() {
     title: '',
     category: '',
     content: '',
-    images: []
+    images: [],
+    date: new Date().toLocaleDateString()
   });
 
   const steps = [
@@ -43,15 +40,15 @@ function CreateBlog() {
   };
 
   const handleSubmit = async () => {
-    // Here you would typically send the data to your API
     try {
-      console.log('Submitting blog post:', formData);
-      // Mock API call
-      // await axios.post('/api/blogs', formData);
-      
-      // On success
+      const id = Date.now().toString();
+      const blogData = { id, ...formData };
+
+      const existingBlogs = JSON.parse(localStorage.getItem("blogs")) || [];
+      localStorage.setItem("blogs", JSON.stringify([...existingBlogs, blogData]));
+
       alert('Blog post created successfully!');
-      navigate('/blog');
+      navigate(`/detail-blog/${id}`);
     } catch (error) {
       console.error('Error creating blog post:', error);
     }
@@ -109,14 +106,9 @@ function CreateBlog() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-
-
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          {/* Stepper */}
           <BlogFormStepper steps={steps} currentStep={currentStep} />
-          
-          {/* Form Content */}
           <div className="bg-white rounded-lg shadow-md p-6 mt-8">
             {renderStepContent()}
           </div>
@@ -125,6 +117,5 @@ function CreateBlog() {
     </div>
   );
 }
-
 
 export default CreateBlog;
