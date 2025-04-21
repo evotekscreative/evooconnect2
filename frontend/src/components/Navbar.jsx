@@ -129,8 +129,12 @@ const Navbar = () => {
                   </div>
                 </div>
                 <ul className="flex flex-col divide-y">
-                  <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">My Account</li>
-                  <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Edit Profile</li>
+                  <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                    <Link to="/profile">Profile</Link>
+                  </li>
+                  <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                    <Link to="/edit-profile">Edit Profile</Link>
+                  </li>
                   <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Logout</li>
                 </ul>
               </div>
