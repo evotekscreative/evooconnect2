@@ -3,10 +3,10 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/domain"
-	"fmt"
 	"time"
 )
 
@@ -34,12 +34,21 @@ func (repository *UserRepositoryImpl) Save(ctx context.Context, tx *sql.Tx, user
 }
 
 func (repository *UserRepositoryImpl) Update(ctx context.Context, tx *sql.Tx, user domain.User) domain.User {
-	fmt.Printf("Statring saving to database")
-	fmt.Printf("Updating user with ID: %d\n", user.Id)
-	fmt.Printf("User details: %+v\n", user)
+	// Marshal Skills dan Socials ke JSON sebelum disimpan
+	skillsJSON, err := json.Marshal(user.Skills)
+	helper.PanicIfError(err)
 
-	SQL := "UPDATE users SET name = $1, email = $2, username = $3, birthdate = $4, gender = $5, location = $6, organization = $7, website = $8, phone = $9, headline = $10, about = $11, skills = $12, socials = $13, photo = $14, updated_at = $15 WHERE id = $16"
-	_, err := tx.ExecContext(ctx, SQL,
+	socialsJSON, err := json.Marshal(user.Socials)
+	helper.PanicIfError(err)
+
+	SQL := `UPDATE users SET 
+        name = $1, email = $2, username = $3, birthdate = $4, 
+        gender = $5, location = $6, organization = $7, 
+        website = $8, phone = $9, headline = $10, about = $11, 
+        skills = $12::jsonb, socials = $13::jsonb, photo = $14, 
+        updated_at = $15 WHERE id = $16`
+
+	_, err = tx.ExecContext(ctx, SQL,
 		user.Name,
 		user.Email,
 		user.Username,
@@ -51,10 +60,11 @@ func (repository *UserRepositoryImpl) Update(ctx context.Context, tx *sql.Tx, us
 		user.Phone,
 		user.Headline,
 		user.About,
-		user.Skills,
-		user.Socials,
+		string(skillsJSON),  // Convert to string for PostgreSQL JSONB
+		string(socialsJSON), // Convert to string for PostgreSQL JSONB
 		user.Photo,
-		time.Now(), user.Id)
+		time.Now(),
+		user.Id)
 	helper.PanicIfError(err)
 
 	return user
@@ -66,10 +76,23 @@ func (repository *UserRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx, us
 	helper.PanicIfError(err)
 }
 
+// Perbarui definisi struct domain.User di model/domain/user.go
+// untuk menggunakan pointer pada kolom yang bisa NULL
+
 func (repository *UserRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, userId int) (domain.User, error) {
-	SQL := `SELECT id, name, email, password, is_verified, username, birthdate, gender, 
-           location, organization, website, phone, headline, about, skills, socials, 
-           photo, created_at, updated_at 
+	SQL := `SELECT id, name, email, password, is_verified, 
+           COALESCE(username, '') as username, 
+           COALESCE(birthdate, '0001-01-01') as birthdate, 
+           COALESCE(gender, '') as gender,
+           COALESCE(location, '') as location, 
+           COALESCE(organization, '') as organization, 
+           COALESCE(website, '') as website, 
+           COALESCE(phone, '') as phone, 
+           COALESCE(headline, '') as headline, 
+           COALESCE(about, '') as about, 
+           skills, socials, 
+           COALESCE(photo, '') as photo, 
+           created_at, updated_at 
            FROM users WHERE id = $1`
 
 	rows, err := tx.QueryContext(ctx, SQL, userId)
@@ -78,7 +101,7 @@ func (repository *UserRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, 
 
 	user := domain.User{}
 	if rows.Next() {
-		fmt.Printf("user succesfully")
+		var skillsStr, socialsStr string
 		err := rows.Scan(
 			&user.Id,
 			&user.Name,
@@ -94,12 +117,20 @@ func (repository *UserRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, 
 			&user.Phone,
 			&user.Headline,
 			&user.About,
-			&user.Skills,
-			&user.Socials,
+			&skillsStr,
+			&socialsStr,
 			&user.Photo,
 			&user.CreatedAt,
 			&user.UpdatedAt)
 		helper.PanicIfError(err)
+
+		// Unmarshal JSON strings into Skills and Socials
+		err = json.Unmarshal([]byte(skillsStr), &user.Skills)
+		helper.PanicIfError(err)
+
+		err = json.Unmarshal([]byte(socialsStr), &user.Socials)
+		helper.PanicIfError(err)
+
 		return user, nil
 	} else {
 		return user, errors.New("user not found")
