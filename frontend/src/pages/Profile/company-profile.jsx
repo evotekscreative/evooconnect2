@@ -2,8 +2,12 @@ import React, { useState } from "react";
 import Navbar from "../../components/Navbar";
 import companyProfile from "../../assets/img/company-profile.jpg";
 import job1 from "../../assets/img/job1.png";
+import { useParams } from "react-router-dom";
+import { caption } from "framer-motion/client";
 
 export default function CompanyProfile() {
+    const params = useParams();
+    const companyId = params.companyId;
     const [activeTab, setActiveTab] = useState("About");
 
     // State buat tombol Follow di Company Header
@@ -16,6 +20,54 @@ export default function CompanyProfile() {
     const [isConnectedSophia, setIsConnectedSophia] = useState(false);
 
     const tabs = ["About", "Update", "Jobs", "Reviews"];
+
+    const data = [
+        {
+            id: 1,
+            name: "EvoConnect",
+            description: "A leading tech company specializing in innovative solutions",
+            caption: "Connecting the world through technology",
+            industry: "Information Technology",
+            location: "Yogyakarta, Indonesia",
+            employees: "100-500",
+            headquarters: "Jakarta, Indonesia",
+            type:   "public",
+            founded: "2025-03-14",
+            specialties: "hahahayy",
+            logo: "https://cdn-icons-png.flaticon.com/512/174/174857.png",
+            website: "https://evoconnect.com",
+            followers: 1412800,
+            connections: 350,
+            Employees: 200,
+            rating: 4.5,
+            jobs: 15
+        },
+        {
+            id: 2,
+            name: "Tech Innovators",
+            description: "Pioneering the future of technology",
+            caption: "Connecting",
+            industry: "Software Development",
+            location: "Jakarta, Indonesia",
+            employees: "50-200",
+            headquarters: "Yogyakarta, Indonesia",
+            type:   "public",
+            founded: "2025-12-14",
+            specialties: "hahaha",
+            logo: "https://cdn-icons-png.flaticon.com/512/174/174857.png",
+            website: "https://evoconnect.com",
+            followers: 1412800,
+            connections: 400,
+            Employees: 150,
+            rating: 4.2,
+            jobs: 8
+        }
+    ]
+
+    const company = data.find((item) => item.id === parseInt(companyId));
+    if (!company) {
+        return <div className="text-center mt-10">Company not found</div>;
+    }
 
     return (
         <>
@@ -34,7 +86,7 @@ export default function CompanyProfile() {
                 <div className="max-w-screen-xl mx-auto flex flex-col md:flex-row items-center justify-between py-4 px-4 bg-white rounded-md shadow -mt-8 relative z-10">
                     <div className="text-center md:text-left">
                         <h1 className="text-2xl font-bold flex items-center justify-center md:justify-start gap-2">
-                            React Company
+                            {company.name}
                             <img
                                 src="https://upload.wikimedia.org/wikipedia/commons/a/a7/React-icon.svg"
                                 alt="React Icon"
@@ -42,7 +94,7 @@ export default function CompanyProfile() {
                             />
                         </h1>
                         <p className="text-gray-500">
-                            Informatika | Los Santos | 14,128,005 followers
+                            {company.industry} | {company.location} | {company.followers} followers
                         </p>
                     </div>
                     <div className="flex gap-2 mt-4 md:mt-0">
@@ -51,11 +103,10 @@ export default function CompanyProfile() {
                         </button>
                         <button
                             onClick={() => setIsFollowingMain(true)}
-                            className={`px-4 py-2 rounded-md text-white text-sm transition-colors ${
-                                isFollowingMain
-                                    ? "bg-green-500 hover:bg-green-600"
-                                    : "bg-blue-500 hover:bg-blue-600"
-                            }`}
+                            className={`px-4 py-2 rounded-md text-white text-sm transition-colors ${isFollowingMain
+                                ? "bg-green-500 hover:bg-green-600"
+                                : "bg-blue-500 hover:bg-blue-600"
+                                }`}
                         >
                             {isFollowingMain ? " Followed" : "+ Follow"}
                         </button>
@@ -69,11 +120,10 @@ export default function CompanyProfile() {
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`pb-3 text-lg font-medium transition ${
-                                    activeTab === tab
-                                        ? "border-b-2 border-blue-500 text-blue-500"
-                                        : "text-gray-600 hover:text-blue-500"
-                                }`}
+                                className={`pb-3 text-lg font-medium transition ${activeTab === tab
+                                    ? "border-b-2 border-blue-500 text-blue-500"
+                                    : "text-gray-600 hover:text-blue-500"
+                                    }`}
                             >
                                 {tab}
                             </button>
@@ -93,17 +143,17 @@ export default function CompanyProfile() {
                                         alt="Company Logo"
                                         className="w-40 h-40"
                                     />
-                                    <h2 className="text-lg font-bold mt-4">Overview</h2>
-                                    <p className="text-gray-600 text-center p-4">Pppppppppppp</p>
+                                    <h2 className="text-lg font-bold mt-4">{company.name}</h2>
+                                    <p className="text-gray-600 text-center p-4">{company.caption}</p>
                                     <hr className="border-t-2 border-gray-300 my-4 w-full" />
                                     <div className="text-sm text-gray-800 mt-4 space-y-2 px-4 w-full">
                                         <div className="flex justify-between">
                                             <span className="font-semibold">Common Connections:</span>
-                                            <span className="text-cyan-400 font-semibold">358</span>
+                                            <span className="text-cyan-400 font-semibold">{company.connections}</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="font-semibold">All Employees:</span>
-                                            <span className="text-cyan-400 font-semibold">191,895</span>
+                                            <span className="text-cyan-400 font-semibold">{company.Employees}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -115,7 +165,7 @@ export default function CompanyProfile() {
                                 <div className="bg-white p-6 rounded-md shadow">
                                     <h2 className="text-2xl font-semibold mb-4">About</h2>
                                     <hr className="py-2" />
-                                    <p className="text-gray-700">Hallo</p>
+                                    <p className="text-gray-700">{company.description}</p>
                                 </div>
 
                                 {/* Overview */}
@@ -126,26 +176,26 @@ export default function CompanyProfile() {
                                         <li>
                                             <strong>Website:</strong>{" "}
                                             <a
-                                                href="http://evoconnect.com"
+                                                href={company.website}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="text-blue-500 hover:underline"
                                             >
-                                                evoconnect.com
+                                                {company.website}
                                             </a>
                                         </li>
                                         <hr className="py-2" />
-                                        <li><strong>Industry:</strong> Informatika</li>
+                                        <li><strong>Industry:</strong> {company.industry}</li>
                                         <hr className="py-2" />
-                                        <li><strong>Company Size:</strong> 70 employees</li>
+                                        <li><strong>Company Size:</strong> {company.employees}</li>
                                         <hr className="py-2" />
-                                        <li><strong>Headquarters:</strong> Los Santos</li>
+                                        <li><strong>Headquarters:</strong> {company.headquarters}</li>
                                         <hr className="py-2" />
-                                        <li><strong>Type:</strong> Public</li>
+                                        <li><strong>Type:</strong> {company.type}</li>
                                         <hr className="py-2" />
-                                        <li><strong>Founded:</strong> 2025-03-14</li>
+                                        <li><strong>Founded:</strong> {company.founded}</li>
                                         <hr className="py-2" />
-                                        <li><strong>Specialties:</strong> Speeeeeeeeeee</li>
+                                        <li><strong>Specialties:</strong> {company.specialties}</li>
                                     </ul>
                                 </div>
 
@@ -168,7 +218,7 @@ export default function CompanyProfile() {
                                         </div>
                                         <div>
                                             <h3 className="text-lg font-semibold">Postal Address</h3>
-                                            <p className="text-gray-700">Karang Tengah</p>
+                                            <p className="text-gray-700">{company.location}</p>
                                         </div>
                                         <div>
                                             <a
@@ -185,11 +235,7 @@ export default function CompanyProfile() {
                                                     viewBox="0 0 24 24"
                                                     xmlns="http://www.w3.org/2000/svg"
                                                 >
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        d="M17.657 16.657L13.414 12.414l4.243-4.243m1.414 1.414L16.243 12l2.828 2.828M6 12h.01M21 12c0 4.418-3.582 8-8 8s-8-3.582-8-8 3.582-8 8-8 8 3.582 8 8z"
-                                                    ></path>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin-icon lucide-map-pin"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
                                                 </svg>
                                                 Get Directions
                                             </a>
@@ -218,11 +264,10 @@ export default function CompanyProfile() {
                                             </div>
                                             <button
                                                 onClick={() => setIsFollowingAmazon(true)}
-                                                className={`text-sm py-2 px-4 rounded-md text-white transition-colors ${
-                                                    isFollowingAmazon
-                                                        ? "bg-green-500 hover:bg-green-600"
-                                                        : "bg-blue-500 hover:bg-blue-600"
-                                                }`}
+                                                className={`text-sm py-2 px-4 rounded-md text-white transition-colors ${isFollowingAmazon
+                                                    ? "bg-green-500 hover:bg-green-600"
+                                                    : "bg-blue-500 hover:bg-blue-600"
+                                                    }`}
                                             >
                                                 {isFollowingAmazon ? " Followed" : "+ Follow"}
                                             </button>
@@ -247,11 +292,10 @@ export default function CompanyProfile() {
                                         </div>
                                         <button
                                             onClick={() => setIsConnectedSophia(true)}
-                                            className={`text-sm py-2 px-4 rounded-md text-white transition-colors ${
-                                                isConnectedSophia
-                                                    ? "bg-green-500 hover:bg-green-600"
-                                                    : "bg-blue-500 hover:bg-blue-600"
-                                            }`}
+                                            className={`text-sm py-2 px-4 rounded-md text-white transition-colors ${isConnectedSophia
+                                                ? "bg-green-500 hover:bg-green-600"
+                                                : "bg-blue-500 hover:bg-blue-600"
+                                                }`}
                                         >
                                             {isConnectedSophia ? " Connected" : "Connect"}
                                         </button>
