@@ -17,6 +17,10 @@ import { Messages } from './pages/Messages.jsx';
 import GroupPage from './pages/GroupPage.jsx';
 import Blog from "./pages/Blog/Blog.jsx";
 import Notification from './pages/Notification.jsx';
+import JobDashboard from './pages/JobSaved.jsx';
+import HelpPage from './pages/Help.jsx';
+import ProfilePage from './pages/Profile.jsx';
+import ProfileEdit from './pages/EditProfile.jsx';
 
 const router = createBrowserRouter([
   {
@@ -33,38 +37,58 @@ const router = createBrowserRouter([
   },
   {
     path: '/forgot-password',
-    element: <div>Forgot Password Page</div>, 
+    element: <div>Forgot Password Page</div>,
   },
   {
     path: '/terms',
-    element: <TermsCondition/>,
+    element: <TermsCondition />,
   },
   {
     path: '/privacy',
-    element: <PrivacyPolicy/>,
+    element: <PrivacyPolicy />,
   },
   {
     path: '/connections',
-    element: <Connections/> ,
+    element: <Connections />,
   },
 
   {
     path: '/jobs',
-    element: <Jobs/> ,
+    element: <Jobs />,
   },
 
   {
     path: '/job-profile',
-    element: <JobProfile/> ,
+    element: <JobProfile />,
+  },
+
+  {
+    path: '/job-saved',
+    element: <JobDashboard />,
+  },
+
+  {
+    path: '/help',
+    element: <HelpPage/>,
+  },
+
+  {
+    path: '/profile',
+    element: <ProfilePage />,
+  },
+
+  {
+    path: '/edit-profile',
+    element: <ProfileEdit />,
   },
 
   {
     path: '/faq',
-    element: <Faq/> ,
+    element: <Faq />,
   },
   {
     path: '/company-profile',
-    element: <CompanyProfile/> , 
+    element: <CompanyProfile />,
   },
   {
     path: '/groups',
