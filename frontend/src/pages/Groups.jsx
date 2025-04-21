@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import Case from "../components/Case";
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, LogOut, ArrowLeft } from "lucide-react";
-
+import { Trash2, LogOut, ArrowLeft, ChevronDown, ChevronUp } from "lucide-react";
 
 export default function Groups() {
   const [showModal, setShowModal] = useState(false);
+  const [showAllAdminGroups, setShowAllAdminGroups] = useState(false);
+  const [showAllJoinedGroups, setShowAllJoinedGroups] = useState(false);
   const navigate = useNavigate(); 
+  
   const [groups, setGroups] = useState([
     {
       id: 1,
@@ -38,23 +40,34 @@ export default function Groups() {
     },
     {
       id: 5,
-      name: "JavaScript Masters",
-      members: 15,
+      name: "Python Programmers",
+      members: 18,
       isAdmin: true,
-      createdDate: "2023-08-05"
+      createdDate: "2023-09-12"
     },
     {
       id: 6,
-      name: "JavaScript Masters",
-      members: 15,
-      isAdmin: true,
-      createdDate: "2023-08-05"
+      name: "UX Designers",
+      members: 9,
+      isAdmin: false,
+      joinedDate: "2023-10-15"
+    },
+    {
+      id: 7,
+      name: "Data Science Group",
+      members: 22,
+      isAdmin: false,
+      joinedDate: "2023-11-01"
     },
   ]);
 
   // Memisahkan grup admin dan grup yang diikuti
   const adminGroups = groups.filter(group => group.isAdmin);
   const joinedGroups = groups.filter(group => !group.isAdmin);
+
+  // Get first 3 groups for showcase
+  const showcaseAdminGroups = showAllAdminGroups ? adminGroups : adminGroups.slice(0, 3);
+  const showcaseJoinedGroups = showAllJoinedGroups ? joinedGroups : joinedGroups.slice(0, 3);
 
   const handleDeleteGroup = (groupId) => {
     if (window.confirm("Are you sure you want to delete this group? This action cannot be undone.")) {
@@ -82,6 +95,68 @@ export default function Groups() {
     setShowModal(false);
   };
 
+  const [activeTab, setActiveTab] = useState('myGroups');
+const [invitations, setInvitations] = useState([
+  {
+    id: 1,
+    group: {
+      id: 101,
+      name: "Web Development Group",
+      members: 25,
+      image: "/api/placeholder/80/80"
+    },
+    inviter: {
+      id: 2,
+      name: "Mike Johnson",
+      profile_photo: "/api/placeholder/50/50"
+    },
+    status: "pending"
+  },
+  {
+    id: 2,
+    group: {
+      id: 102,
+      name: "React Enthusiasts",
+      members: 8,
+      image: "/api/placeholder/80/80"
+    },
+    inviter: {
+      id: 3,
+      name: "Sarah Williams",
+      profile_photo: "/api/placeholder/50/50"
+    },
+    status: "pending"
+  }
+]);
+
+const handleAcceptInvitation = (invitationId) => {
+  // Update the invitation status
+  const updatedInvitations = invitations.map(inv => 
+    inv.id === invitationId ? {...inv, status: "accepted"} : inv
+  );
+  setInvitations(updatedInvitations);
+  
+  // Add to joined groups
+  const acceptedInvitation = invitations.find(inv => inv.id === invitationId);
+  const newGroup = {
+    id: acceptedInvitation.group.id,
+    name: acceptedInvitation.group.name,
+    members: acceptedInvitation.group.members,
+    isAdmin: false,
+    joinedDate: new Date().toISOString().split('T')[0]
+  };
+  setGroups([...groups, newGroup]);
+};
+
+const handleRejectInvitation = (invitationId) => {
+  // Update the invitation status
+  const updatedInvitations = invitations.map(inv => 
+    inv.id === invitationId ? {...inv, status: "rejected"} : inv
+  );
+  setInvitations(updatedInvitations);
+};
+  
+
   return (
     <Case>
       <div className="p-6 bg-gray-100 min-h-screen">
@@ -92,12 +167,12 @@ export default function Groups() {
             
             {/* Header */}
             <div className="flex justify-between items-center border-b pb-4">
-            <button 
-            onClick={() => navigate(-1)} 
-            className="mr-2 p-1 rounded-full hover:bg-gray-100"
-          >
-            <ArrowLeft size={20} className="text-gray-600" />
-          </button>
+              <button 
+                onClick={() => navigate(-1)} 
+                className="mr-2 p-1 rounded-full hover:bg-gray-100"
+              >
+                <ArrowLeft size={20} className="text-gray-600" />
+              </button>
               <h2 className="text-xl font-semibold">Groups</h2>
               <button
                 onClick={() => setShowModal(true)}
@@ -120,9 +195,27 @@ export default function Groups() {
             {/* Groups You Created */}
             {adminGroups.length > 0 && (
               <div className="mb-8">
-                <h3 className="text-lg font-medium mb-4">Groups You Created</h3>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium">Groups You Created</h3>
+                  {adminGroups.length > 3 && (
+                    <button
+                      onClick={() => setShowAllAdminGroups(!showAllAdminGroups)}
+                      className="text-blue-600 text-sm flex items-center"
+                    >
+                      {showAllAdminGroups ? (
+                        <>
+                          <ChevronUp size={16} className="mr-1" /> Show Less
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown size={16} className="mr-1" /> Show All ({adminGroups.length})
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {adminGroups.map((group) => (
+                  {showcaseAdminGroups.map((group) => (
                     <div key={group.id} className="bg-white rounded-xl shadow p-4 flex flex-col justify-between h-40 border border-gray-200 hover:border-blue-300 transition-colors">
                       <div className="flex items-center space-x-3 border-b pb-4">
                         <div className="bg-blue-100 w-12 h-12 rounded-full overflow-hidden flex items-center justify-center">
@@ -140,7 +233,7 @@ export default function Groups() {
                       </div>
                       <div className="flex justify-between items-center mt-4">
                         <Link 
-                          to={`/groups/${group.id}`}
+                          to={`/group-page`}
                           className="text-sm text-blue-600 hover:underline"
                         >
                           View Group
@@ -162,9 +255,27 @@ export default function Groups() {
             {/* Groups You've Joined */}
             {joinedGroups.length > 0 && (
               <div>
-                <h3 className="text-lg font-medium mb-4">Groups You've Joined</h3>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium">Groups You've Joined</h3>
+                  {joinedGroups.length > 3 && (
+                    <button
+                      onClick={() => setShowAllJoinedGroups(!showAllJoinedGroups)}
+                      className="text-blue-600 text-sm flex items-center"
+                    >
+                      {showAllJoinedGroups ? (
+                        <>
+                          <ChevronUp size={16} className="mr-1" /> Show Less
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown size={16} className="mr-1" /> Show All ({joinedGroups.length})
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {joinedGroups.map((group) => (
+                  {showcaseJoinedGroups.map((group) => (
                     <div key={group.id} className="bg-white rounded-xl shadow p-4 flex flex-col justify-between h-40 border border-gray-200 hover:border-blue-300 transition-colors">
                       <div className="flex items-center space-x-3 border-b pb-4">
                         <div className="bg-gray-200 w-12 h-12 rounded-full overflow-hidden flex items-center justify-center">

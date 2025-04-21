@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import Case from "../components/Case";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Profile from "../assets/img/logo-evo-2.png";
 
-import { Briefcase, MapPin, Mail, Check, X, Clock } from "lucide-react";
+
+import { Briefcase, MapPin, Mail, Check, X, Clock, ArrowLeft } from "lucide-react";
 
 export default function ConnectionSuggestions() {
   const [activeTab, setActiveTab] = useState("people"); // 'people' or 'invitations'
+  const navigate = useNavigate(); // Use the useNavigate hook to programmatically navigate
   const [connections, setConnections] = useState([
     {
       id: 1,
@@ -107,8 +109,16 @@ export default function ConnectionSuggestions() {
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-6">
           {/* Left side - People suggestions */}
           <div className="md:col-span-3 space-y-4 bg-white rounded-xl shadow p-4">
-            <h2 className="text-xl font-semibold border-b pb-4">More suggestions for you</h2>
-            <div className="border-b border-gray-300">
+            <div className="flex items-center border-b pb-4">
+                        <button 
+                          onClick={() => navigate(-1)} 
+                          className="mr-2 p-1 rounded-full hover:bg-gray-100"
+                        >
+                          <ArrowLeft size={20} className="text-gray-600" />
+                        </button>
+                        <h2 className="text-xl font-semibold">More Suggetions for you</h2>
+          </div>
+          <div className="border-b border-gray-300">
               <button 
                 onClick={() => setActiveTab("people")}
                 className={`px-4 py-2 border-b-2 ${activeTab === "people" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500"} font-medium`}
