@@ -161,6 +161,17 @@ export default function Jobs() {
             rating: 4.5,
             jobs: 15
         },
+        {
+            id: 2,
+            name: "Tech Innovators",
+            description: "Pioneering the future of technology",
+            industry: "Software Development",
+            location: "Jakarta, Indonesia",
+            employees: "50-200",
+            logo: "https://cdn-icons-png.flaticon.com/512/174/174857.png",
+            rating: 4.2,
+            jobs: 8
+        }
     ]);
 
     // Handle form input changes for job posting
