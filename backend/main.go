@@ -36,8 +36,8 @@ func main() {
 	var handler http.Handler = router
 
 	// Apply middlewares
-	handler = middleware.CORSMiddleware(handler)
 	handler = middleware.NewSelectiveAuthMiddleware(handler, jwtSecret)
+	handler = middleware.CORSMiddleware(handler)
 
 	// Start the server with the wrapped handler
 	server := http.Server{

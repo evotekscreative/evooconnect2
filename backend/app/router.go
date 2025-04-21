@@ -25,6 +25,7 @@ func NewRouter(
 	router.POST("/api/auth/reset-password", authController.ResetPassword)
 
 	router.GET("/api/user/profile", userController.GetProfile)
+	router.PUT("/api/user/profile", userController.UpdateProfile)
 
 	// Add custom NotFound handler
 	router.NotFound = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
