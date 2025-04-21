@@ -207,9 +207,9 @@ export default function CompanyProfile() {
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
                                                 <img
-                                                    src="https://via.placeholder.com/40"
+                                                    src={job1}
                                                     alt="Amazon"
-                                                    className="w-10 h-10 rounded bg-gray-200"
+                                                    className="w-12 h-12 rounded-full bg-gray-200"
                                                 />
                                                 <div>
                                                     <p className="font-medium">Amazon</p>
@@ -236,9 +236,9 @@ export default function CompanyProfile() {
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             <img
-                                                src="https://via.placeholder.com/40"
+                                                src={job1}
                                                 alt="Profile"
-                                                className="w-10 h-10 rounded-full bg-gray-200"
+                                                className="w-12 h-12 rounded-full bg-gray-200"
                                             />
                                             <div>
                                                 <p className="font-medium">Sophia Lee</p>
