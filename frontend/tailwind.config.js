@@ -4,7 +4,11 @@ module.exports = {
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        primary: "#0e9dea", // Warna biru yang kamu pake di desain Laravel kamu
+      },
+    },
   },
   plugins: [],
 }
