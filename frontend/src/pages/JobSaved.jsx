@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Briefcase, Search, BookmarkPlus, Clock, CheckCircle, } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const JobDashboard = () => {
   const [activeTab, setActiveTab] = useState('In Progress');
@@ -31,7 +32,7 @@ const JobDashboard = () => {
           <div className="flex items-center px-3 py-2.5 rounded-lg bg-blue-50 border-l-4 border-blue-600">
             <Briefcase size={18} className="text-blue-600 mr-3" />
             <span className="text-blue-700 font-medium">My Jobs</span>
-            <span className="ml-auto bg-blue-100 text-blue-600 text-xs font-medium px-2 py-0.5 rounded-full">1</span>
+            <span className="ml-auto bg-blue-100 text-blue-600 text-xs font-medium px-2 py-0.5 rounded-full">0</span>
           </div>
         </div>
       </div>
@@ -72,7 +73,9 @@ const JobDashboard = () => {
             Track your job search journey from bookmarking to applications. We'll organize everything here for you.
           </p>
           <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-lg transition-colors">
-            Explore Job
+            <Link to="/jobs" className="flex items-center gap-2">
+            Explore Jobs
+            </Link>
           </button>
         </div>
       </div>

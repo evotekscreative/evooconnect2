@@ -29,7 +29,6 @@ export default function ProfileEdit() {
   const [phone, setPhone] = useState("");
   const [headline, setHeadline] = useState("");
   const fileInputRef = useRef(null);
-
   const [socialLinks, setSocialLinks] = useState({});
   const [activePlatforms, setActivePlatforms] = useState([]);
 

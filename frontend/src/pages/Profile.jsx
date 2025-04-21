@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
-import logo from "../assets/img/logo1.png";
 import { 
-  Briefcase, Users, Pen, MessageSquare, Bell, User, Eye, 
+  Briefcase, Users, Eye, 
   Bookmark, Calendar, MapPin, GraduationCap, Building,
-  Facebook, Twitter, Linkedin, Github, Instagram
+  Facebook, Twitter, Linkedin, Github, Instagram,
+  X, Check
 } from "lucide-react";
+import Case from "../components/Case";
+import { Link } from "react-router-dom";
 
 export default function ProfilePage() {
   const [showExperienceModal, setShowExperienceModal] = useState(false);
@@ -17,6 +19,11 @@ export default function ProfilePage() {
   const [fullName, setFullName] = useState("Muhammad Bintang Asyidqy");
   const [headline, setHeadline] = useState("");
   const [socialMedia, setSocialMedia] = useState({});
+  
+  // Alert states
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertType, setAlertType] = useState("success");
 
   // Form states
   const [experienceForm, setExperienceForm] = useState({
@@ -66,6 +73,15 @@ export default function ProfilePage() {
     if (savedSocials) setSocialMedia(JSON.parse(savedSocials));
   }, []);
 
+  const showSuccessAlert = (message) => {
+    setAlertMessage(message);
+    setAlertType("success");
+    setShowAlert(true);
+    setTimeout(() => {
+      setShowAlert(false);
+    }, 3000);
+  };
+
   const handleExperienceSubmit = (e) => {
     e.preventDefault();
     const newExperience = {
@@ -85,6 +101,7 @@ export default function ProfilePage() {
       description: '',
       companyLogo: null
     });
+    showSuccessAlert("Experience added successfully!");
   };
 
   const handleEducationSubmit = (e) => {
@@ -106,6 +123,7 @@ export default function ProfilePage() {
       description: '',
       schoolLogo: null
     });
+    showSuccessAlert("Education added successfully!");
   };
 
   const handleExperienceChange = (e) => {
@@ -148,31 +166,29 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="bg-[#EDF3F7] min-h-screen">
-      {/* Navbar */}
-      <div className="bg-[#00AEEF] text-white flex justify-between items-center px-4 py-3">
-        <div className="flex items-center gap-2 max-w-[1100px] mx-auto w-full justify-between">
-          <div className="flex items-center gap-4">
-            <div className="font-bold text-lg flex items-center gap-2">
-              <img src={logo} alt="Evo Connect Logo" className="h-8" />
+    <Case>
+      {/* Alert Notification */}
+      {showAlert && (
+        <div className="fixed top-4 right-4 z-50">
+          <div className={`flex items-center p-4 rounded-md shadow-lg ${
+            alertType === "success" ? "bg-green-100 border border-green-200" : "bg-red-100 border border-red-200"
+          }`}>
+            <div className={`mr-2 ${
+              alertType === "success" ? "text-green-600" : "text-red-600"
+            }`}>
+              {alertType === "success" ? <Check size={20} /> : <X size={20} />}
             </div>
-            <input
-              type="text"
-              placeholder="Search people, jobs & more"
-              className="px-3 py-1 rounded-md text-black text-sm w-64"
-            />
-          </div>
-          <div className="flex items-center gap-5 text-sm">
-            <a href="#" className="flex items-center gap-1"><Briefcase size={16} />Jobs</a>
-            <a href="#" className="flex items-center gap-1"><Users size={16} />Connection</a>
-            <a href="#" className="flex items-center gap-1"><Pen size={16} />Blog</a>
-            <a href="#"><MessageSquare size={16} /></a>
-            <a href="#"><Bell size={16} /></a>
-            <a href="#"><User size={16} /></a>
+            <span className="text-sm font-medium">{alertMessage}</span>
+            <button
+              onClick={() => setShowAlert(false)}
+              className="ml-4 text-gray-500 hover:text-gray-700"
+            >
+              <X size={16} />
+            </button>
           </div>
         </div>
-      </div>
-
+      )}
+      
       {/* Content */}
       <div className="max-w-4xl mx-auto py-6 flex flex-col md:flex-row gap-6 px-4">
         {/* Left Sidebar */}
@@ -189,18 +205,18 @@ export default function ProfilePage() {
             <p className="text-sm text-gray-500">{headline || "No information yet."}</p>
 
             <div className="mt-4 space-y-2 text-left text-sm">
-              <div className="flex justify-between items-center">
+              <Link to="/list-connection" className="flex justify-between items-center">
                 <span className="flex items-center gap-1"><Users size={14} /> Connections</span>
-                <span className="font-bold">358</span>
-              </div>
+                <span className="font-bold">0</span>
+              </Link>
               <div className="flex justify-between items-center">
                 <span className="flex items-center gap-1"><Eye size={14} /> Views</span>
-                <span className="font-bold">85</span>
+                <span className="font-bold">0</span>
               </div>
-              <div className="flex justify-between items-center">
+              <Link to="/job-saved" className="flex justify-between items-center">
                 <span className="flex items-center gap-1"><Bookmark size={14} /> Job Saved</span>
-                <span className="font-bold">120</span>
-              </div>
+                <span className="font-bold">0</span>
+              </Link>
             </div>
 
             <button className="text-blue-600 text-sm mt-4">Log Out</button>
@@ -655,6 +671,6 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
-    </div>
+    </Case>
   );
 }

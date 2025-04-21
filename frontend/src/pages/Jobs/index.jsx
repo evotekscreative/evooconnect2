@@ -185,17 +185,6 @@ export default function Jobs() {
                         <div className="mt-6 space-y-4">
                             {jobs.map((job) => (
                                 <div key={job.id} className="border border-gray-200 rounded-lg p-4 shadow-sm bg-white">
-                                    {/* Display job photo if available */}
-                                    {/* {job.photoUrl && (
-                                        <div className="mb-4">
-                                            <img 
-                                                src={job.photoUrl} 
-                                                alt={`${job.jobTitle} banner`} 
-                                                className="w-full h-40 object-cover rounded-lg" 
-                                            />
-                                        </div>
-                                    )} */}
-                                    
                                     <div className="flex justify-between items-center">
                                         <div>
                                             <h4 className="text-md font-semibold">{job.jobTitle}</h4>
