@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { UserPlus, UserMinus, Search, MoreHorizontal } from 'lucide-react';
+import { UserPlus, UserMinus, Search, MoreHorizontal, ArrowLeft } from 'lucide-react';
 import Case from '../components/Case.jsx';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function ConnectionList() {
   const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate(); 
   const [connections, setConnections] = useState([
     {
       id: 1,
@@ -28,6 +29,10 @@ export default function ConnectionList() {
     ));
   };
 
+  const handleDisconnect = (id) => {
+    setConnections(connections.filter(connection => connection.id !== id));
+  };
+
   const filteredConnections = connections.filter(connection => 
     connection.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     connection.role.toLowerCase().includes(searchTerm.toLowerCase())
@@ -36,7 +41,15 @@ export default function ConnectionList() {
   return (
     <Case>
       <div className="max-w-2xl mx-auto bg-white rounded-lg shadow p-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">My Connections</h1>
+        <div className="flex items-center mb-4">
+          <button 
+            onClick={() => navigate(-1)} 
+            className="mr-2 p-1 rounded-full hover:bg-gray-100"
+          >
+            <ArrowLeft size={20} className="text-gray-600" />
+          </button>
+          <h1 className="text-2xl font-bold text-gray-800">My Connections</h1>
+        </div>
 
         {/* Search Bar */}
         <div className="relative mb-6">
@@ -70,11 +83,14 @@ export default function ConnectionList() {
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                <Link to="/messages" className="px-4 py-1.5 rounded-full text-sm font-medium text-blue-600 border border-blue-600 hover:bg-blue-50 transition">
-    Messsage
-  </Link>
-                  <button className="p-2 rounded-full hover:bg-gray-200">
-                    <MoreHorizontal size={18} className="text-gray-500" />
+                  <Link to="/messages" className="px-4 py-1.5 rounded-full text-sm font-medium text-blue-600 border border-blue-600 hover:bg-blue-50 transition">
+                    Message
+                  </Link>
+                  <button 
+                    onClick={() => handleDisconnect(connection.id)}
+                    className="px-4 py-1.5 rounded-full text-sm font-medium text-white border bg-red-600 hover:bg-red-400 transition"
+                  >
+                    Disconnect
                   </button>
                 </div>
               </div>
