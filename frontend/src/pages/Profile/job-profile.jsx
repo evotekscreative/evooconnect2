@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "../../components/Navbar";
 import job1 from '../../assets/img/job1.png';
 import { useParams } from "react-router-dom";
@@ -6,16 +6,38 @@ import { useParams } from "react-router-dom";
 export default function NewPage() {
     const params = useParams();
     const jobId = params.jobId;
-    // State untuk melacak status klik tombol
     const [clickedSave, setClickedSave] = useState(false);
     const [clickedApply, setClickedApply] = useState(false);
+    const [savedJobs, setSavedJobs] = useState([]);
 
-    // Fungsi untuk menangani klik pada tombol Save
+    // Load saved jobs from localStorage when component mounts
+    useEffect(() => {
+        const saved = localStorage.getItem('savedJobs');
+        if (saved) {
+            const parsedSavedJobs = JSON.parse(saved);
+            setSavedJobs(parsedSavedJobs);
+            // Check if current job is already saved
+            if (parsedSavedJobs.some(job => job.id === parseInt(jobId))) {
+                setClickedSave(true);
+            }
+        }
+    }, [jobId]);
+
     const handleSaveClick = () => {
-        setClickedSave(true);
+        let updatedSavedJobs;
+        if (!clickedSave) {
+            // Add job to saved jobs
+            updatedSavedJobs = [...savedJobs, job];
+            setClickedSave(true);
+        } else {
+            // Remove job from saved jobs
+            updatedSavedJobs = savedJobs.filter(j => j.id !== job.id);
+            setClickedSave(false);
+        }
+        setSavedJobs(updatedSavedJobs);
+        localStorage.setItem('savedJobs', JSON.stringify(updatedSavedJobs));
     };
 
-    // Fungsi untuk menangani klik pada tombol Apply
     const handleApplyClick = () => {
         setClickedApply(true);
     };
@@ -27,13 +49,8 @@ export default function NewPage() {
             company: "Angular Company",
             location: "Remote",
             description: "We are looking for a Frontend Developer to join our team.",
-            overview: "We are looking for a Frontend Developer to join our team.",
-            aplicantRank: 30,   
-            // requirements: [
-            //     "Bachelor's degree in Computer Science or related field",
-            //     "2+ years of experience in frontend development",
-            //     "Proficiency in HTML, CSS, and JavaScript",
-            // ],
+            overview: "We are looking for a skilled Software Engineer to develop and maintain our web applications. The ideal candidate will have experience with modern JavaScript frameworks and a passion for creating high-quality code.",
+            aplicantRank: 30,
             postedDate: "2023-09-30",
             seniorityLevel: "Director",
             Industry: "Information Technology",
@@ -43,51 +60,26 @@ export default function NewPage() {
             companyLogo: "https://via.placeholder.com/150",
             companyDescription: "Angular Company is a leading tech company specializing in web development.",
             companySize: "100-500 employees",
-            // companyWebsite: "https://angularcompany.com",
-            // companyFollowers: 500,
-            // companyLocation: "New York, NY",
-            // companyFounded: "2015",
-            // companyHeadquarters: "New York, NY",
-            // companySocialMedia: {
-            //     linkedin: "https://www.linkedin.com/company/angularcompany",
-            //     twitter: "https://twitter.com/angularcompany",
-            //     facebook: "https://www.facebook.com/angularcompany",
-            // }
         },
         {
             id: 2,
             title: "Frontend Developer",
-            company: "Angular Company",
+            company: "React Company",
             location: "Remote",
             description: "We are looking for a Frontend Developer to join our team.",
-            overview: "We are looking for a Frontend Developer to join our team.",
-            aplicantRank: 30,   
-            // requirements: [
-            //     "Bachelor's degree in Computer Science or related field",
-            //     "2+ years of experience in frontend development",
-            //     "Proficiency in HTML, CSS, and JavaScript",
-            // ],
-            postedDate: "2023-09-30",
-            seniorityLevel: "Director",
+            overview: "Join our team as a Frontend Developer and help build amazing user experiences. You'll work with React, TypeScript, and modern CSS to create responsive and accessible web applications.",
+            aplicantRank: 25,
+            postedDate: "2023-10-15",
+            seniorityLevel: "Mid Level",
             Industry: "Information Technology",
             type: "Full-time",
             jobFunction: "Engineering",
-            salary: "$60,000 - $80,000",
+            salary: "$70,000 - $90,000",
             companyLogo: "https://via.placeholder.com/150",
-            companyDescription: "Angular Company is a leading tech company specializing in web development.",
-            companySize: "100-500 employees",
-            // companyWebsite: "https://angularcompany.com",
-            // companyFollowers: 500,
-            // companyLocation: "New York, NY",
-            // companyFounded: "2015",
-            // companyHeadquarters: "New York, NY",
-            // companySocialMedia: {
-            //     linkedin: "https://www.linkedin.com/company/angularcompany",
-            //     twitter: "https://twitter.com/angularcompany",
-            //     facebook: "https://www.facebook.com/angularcompany",
-            // }
+            companyDescription: "React Company is a fast-growing startup focused on creating innovative web solutions.",
+            companySize: "50-200 employees",
         }
-    ]
+    ];
 
     const job = data.find(job => job.id === parseInt(jobId));
     if (!job) {
@@ -111,7 +103,7 @@ export default function NewPage() {
                                     >
                                         {job.company}
                                     </a>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#383838" stroke-width="0.75" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-map-pin-icon lucide-map-pin"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /><circle cx="12" cy="10" r="3" /></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#383838" strokeWidth="0.75" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-map-pin-icon lucide-map-pin"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /><circle cx="12" cy="10" r="3" /></svg>
                                     <p className="text-gray-500 text-xs">{job.location} | posted {job.postedDate}</p>
                                 </div>
                             </div>
@@ -218,8 +210,8 @@ export default function NewPage() {
                                         className="w-14 h-14 rounded-full mr-2 object-cover"
                                     />
                                     <div>
-                                        <p className="font-semibold text-sm">React Company</p>
-                                        <p className="text-xs text-gray-400">Informatika | 24,044 followers</p>
+                                        <p className="font-semibold text-sm">{job.company}</p>
+                                        <p className="text-xs text-gray-400">{job.Industry} | {job.companySize}</p>
                                     </div>
                                 </div>
 
@@ -250,7 +242,6 @@ export default function NewPage() {
                                 <p className="font-semibold text-sm mb-2">Similar Jobs</p>
                                 <div className="space-y-2">
                                     <div className="border border-gray-200 p-3 rounded-lg hover:shadow-md transition">
-
                                         <div className="flex items-start space-x-3 mb-1">
                                             <img
                                                 src="https://via.placeholder.com/32"
