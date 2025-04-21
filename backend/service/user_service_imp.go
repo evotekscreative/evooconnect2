@@ -5,9 +5,9 @@ import (
 	"database/sql"
 	"evoconnect/backend/exception"
 	"evoconnect/backend/helper"
+	"evoconnect/backend/model/domain"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
-	"fmt"
 	"time"
 )
 
@@ -43,23 +43,23 @@ func (service *UserServiceImpl) UpdateProfile(ctx context.Context, userId int, r
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
-	fmt.Printf("Received update for user ID2 %d: %+v\n", userId, request)
 	// Get user from repository
-	fmt.Printf("find user")
 	user, err := service.UserRepository.FindById(ctx, tx, userId)
 	helper.PanicIfError(err)
-	fmt.Printf("user success collect to variable")
 
-	fmt.Printf("Starting update step 1")
-	birthdate, err := time.Parse("2006-01-02", request.Birthdate)
-	if err == nil {
-		user.Birthdate = birthdate
-	}
-
-	// Update user profile with all fields from request
+	// Update user profile fields
 	user.Name = request.Name
 	user.Email = request.Email
 	user.Username = request.Username
+
+	// Parse birthdate if provided
+	if request.Birthdate != "" {
+		birthdate, err := time.Parse("2006-01-02", request.Birthdate)
+		if err == nil {
+			user.Birthdate = birthdate
+		}
+	}
+
 	user.Gender = request.Gender
 	user.Location = request.Location
 	user.Organization = request.Organization
@@ -67,14 +67,33 @@ func (service *UserServiceImpl) UpdateProfile(ctx context.Context, userId int, r
 	user.Phone = request.Phone
 	user.Headline = request.Headline
 	user.About = request.About
-	user.Skills = request.Skills
-	user.Socials = request.Socials
+
+	// Convert skills to JSONB
+	var skills domain.JSONB
+	if skillsSlice, ok := request.Skills.([]interface{}); ok && len(skillsSlice) > 0 {
+		for _, skill := range skillsSlice {
+			skills = append(skills, skill)
+		}
+		user.Skills = skills
+	}
+
+	// Convert socials to SocialMedia
+	var socials domain.SocialMedia
+	if socialsSlice, ok := request.Socials.([]interface{}); ok && len(socialsSlice) > 0 {
+		for _, social := range socialsSlice {
+			if socialMap, ok := social.(map[string]interface{}); ok {
+				socials = append(socials, socialMap)
+			}
+		}
+		user.Socials = socials
+	}
+
 	user.Photo = request.Photo
 	user.UpdatedAt = time.Now()
 
-	fmt.Printf("Starting update step 2")
+	// Update user in database
 	updatedUser := service.UserRepository.Update(ctx, tx, user)
 
-	// Kembalikan respons profil yang diperbarui
+	// Return updated profile
 	return helper.ToUserProfileResponse(updatedUser)
 }

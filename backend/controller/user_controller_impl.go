@@ -5,7 +5,6 @@ import (
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/service"
-	"fmt"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -49,11 +48,7 @@ func (controller *UserControllerImpl) UpdateProfile(writer http.ResponseWriter, 
 	updateProfileRequest := web.UpdateProfileRequest{}
 	helper.ReadFromRequestBody(request, &updateProfileRequest)
 
-	fmt.Printf("Received update for user ID %d: %+v\n", userId, updateProfileRequest)
-
 	userResponse := controller.UserService.UpdateProfile(request.Context(), userId, updateProfileRequest)
-
-	fmt.Printf("Response data: %+v\n", userResponse)
 
 	webResponse := web.WebResponse{
 		Code:   200,

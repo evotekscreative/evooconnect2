@@ -1,6 +1,63 @@
 package domain
 
-import "time"
+import (
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
+	"time"
+)
+
+// Tipe khusus untuk kolom JSONB
+type JSONB []interface{}
+
+// Value - Implementasi interface driver.Valuer
+func (j JSONB) Value() (driver.Value, error) {
+	if j == nil {
+		return nil, nil
+	}
+	return json.Marshal(j)
+}
+
+// Scan - Implementasi interface sql.Scanner
+func (j *JSONB) Scan(value interface{}) error {
+	if value == nil {
+		*j = nil
+		return nil
+	}
+
+	s, ok := value.([]byte)
+	if !ok {
+		return errors.New("Invalid scan source for JSONB")
+	}
+
+	return json.Unmarshal(s, j)
+}
+
+// Tipe khusus untuk socials
+type SocialMedia []map[string]interface{}
+
+// Value - Implementasi interface driver.Valuer
+func (s SocialMedia) Value() (driver.Value, error) {
+	if s == nil {
+		return nil, nil
+	}
+	return json.Marshal(s)
+}
+
+// Scan - Implementasi interface sql.Scanner
+func (s *SocialMedia) Scan(value interface{}) error {
+	if value == nil {
+		*s = nil
+		return nil
+	}
+
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New("Invalid scan source for SocialMedia")
+	}
+
+	return json.Unmarshal(bytes, s)
+}
 
 type User struct {
 	Id                  int         `json:"id"`
