@@ -8,4 +8,5 @@ import (
 
 type UserController interface {
 	GetProfile(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+	UpdateProfile(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 }
