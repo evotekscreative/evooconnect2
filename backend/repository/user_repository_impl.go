@@ -41,14 +41,14 @@ func (repository *UserRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx, us
 }
 
 func (repository *UserRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, userId int) (domain.User, error) {
-	SQL := "SELECT id, name, email, password, is_verified, created_at, updated_at FROM users WHERE id = $1"
+	SQL := "SELECT id, name, email, password, is_verified, verification_token, verification_expires, created_at, updated_at FROM users WHERE id = $1"
 	rows, err := tx.QueryContext(ctx, SQL, userId)
 	helper.PanicIfError(err)
 	defer rows.Close()
 
 	user := domain.User{}
 	if rows.Next() {
-		err := rows.Scan(&user.Id, &user.Name, &user.Email, &user.Password, &user.IsVerified, &user.CreatedAt, &user.UpdatedAt)
+		err := rows.Scan(&user.Id, &user.Name, &user.Email, &user.Password, &user.IsVerified, &user.VerificationToken, &user.VerificationExpires, &user.CreatedAt, &user.UpdatedAt)
 		helper.PanicIfError(err)
 		return user, nil
 	} else {
