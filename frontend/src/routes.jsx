@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom';
 import Login from "./pages/Auth/Login.jsx";
 import Register from "./pages/Auth/Register.jsx";
+import ForgotPassword from "./pages/Auth/ForgotPassword.jsx";
 import App from './App';
 import Connections from './pages/Connections.jsx';
 import PrivacyPolicy from './pages/PrivacyPolicy.jsx';
@@ -33,7 +34,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/forgot-password',
-    element: <div>Forgot Password Page</div>, 
+    element: <ForgotPassword/>, 
   },
   {
     path: '/terms',
