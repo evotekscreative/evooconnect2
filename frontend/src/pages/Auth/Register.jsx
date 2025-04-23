@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
 import logo from '../../assets/img/logoB.png';
 import googleIcon from '../../assets/img/google-icon.jpg';
 import Alert from '../../components/Auth/Alert';
 import '../../assets/css/style.css';
+import Cookies from 'js-cookie';
 
 function Register() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
     username: '',
@@ -21,37 +23,60 @@ function Register() {
     message: '',
   });
 
+  const [loading, setLoading] = useState(false);
+
+  // Simpan name & email ke localStorage
+  useEffect(() => {
+    const storedName = localStorage.getItem('register_name');
+    const storedEmail = localStorage.getItem('register_email');
+
+    setFormData((prev) => ({
+      ...prev,
+      name: storedName || '',
+      email: storedEmail || '',
+    }));
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('register_name', formData.name);
+    localStorage.setItem('register_email', formData.email);
+  }, [formData.name, formData.email]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setAlertInfo(prev => ({ ...prev, show: false }));
+    setAlertInfo({ show: false, type: '', message: '' });
+    setLoading(true);
 
-    // Validasi simple
     const newErrors = {};
-    if (!formData.name) newErrors.name = "Name is required";
-    if (!formData.username) newErrors.username = "Username is required";
-    if (!formData.email) newErrors.email = "Email is required";
+    if (!formData.name) newErrors.name = 'Name is required';
+    if (!formData.username) newErrors.username = 'Username is required';
+    if (!formData.email) newErrors.email = 'Email is required';
     if (!formData.password || formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
+      newErrors.password = 'Password must be at least 6 characters';
     }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      setLoading(false);
       return;
-    } else {
-      setErrors({});
     }
+
+    setErrors({});
 
     try {
       const response = await axios.post('http://localhost:3000/api/auth/register', formData);
-      Cookies.set('token', response.data.data.token, { expires: 7 })
+      Cookies.set('token', response.data.data.token, { expires: 7 });
+
+      localStorage.removeItem('register_name');
+      localStorage.removeItem('register_email');
 
       setAlertInfo({
         show: true,
@@ -60,12 +85,16 @@ function Register() {
       });
 
       setFormData({ name: '', username: '', email: '', password: '' });
+
+      navigate('/');
     } catch (error) {
       setAlertInfo({
         show: true,
         type: 'error',
         message: error.response?.data?.data || 'Registration failed!',
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -75,7 +104,6 @@ function Register() {
         <div className="flex justify-center items-center min-h-screen">
           <div className="w-full max-w-md px-4">
             <div className="bg-white rounded-lg shadow-md overflow-hidden p-6">
-              {/* Header */}
               <div className="mb-3 text-center">
                 <img src={logo} alt="EVOConnect Logo" className="mx-auto h-[80px] object-contain" />
                 <h5 className="font-bold mt-2 text-xl">Join EVOConnect</h5>
@@ -83,7 +111,6 @@ function Register() {
               </div>
 
               <form onSubmit={handleSubmit}>
-                {/* Name */}
                 <InputField
                   label="Name"
                   name="name"
@@ -93,8 +120,6 @@ function Register() {
                   error={errors.name}
                   placeholder="Enter your full name"
                 />
-
-                {/* Username */}
                 <InputField
                   label="Username"
                   name="username"
@@ -104,8 +129,6 @@ function Register() {
                   error={errors.username}
                   placeholder="Create username"
                 />
-
-                {/* Email */} 
                 <InputField
                   label="Email"
                   name="email"
@@ -115,8 +138,6 @@ function Register() {
                   error={errors.email}
                   placeholder="Enter your email address"
                 />
-
-                {/* Password */}
                 <InputField
                   label="Password (6 or more characters)"
                   name="password"
@@ -127,57 +148,86 @@ function Register() {
                   placeholder="Create a password"
                 />
 
-                {/* Terms */}
                 <div className="mb-4 text-xs text-gray-500 text-center">
                   You agree to the EVOConnect{' '}
                   <Link to="/terms" className="text-blue-600 hover:text-blue-800">User Agreement</Link>, and{' '}
                   <Link to="/privacy" className="text-blue-600 hover:text-blue-800">Privacy Policy</Link>.
                 </div>
 
-                {/* Submit */}
-                <button type="submit" className="w-full btn-primary text-white py-2 px-4 rounded-md uppercase font-medium text-sm">
-                  Agree & Join
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`w-full font-semibold py-2 rounded-lg transition text-white ${loading
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700"
+                    }`}
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg
+                        className="animate-spin h-5 w-5 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8v8z"
+                        ></path>
+                      </svg>
+                      Sending...
+                    </span>
+                  ) : (
+                    "AGREE & JOIN"
+                  )}
                 </button>
 
-                {/* Social Login Options */}
-                <div className="mt-4 pb-4 text-center border-b border-gray-200">
-                    <p className="text-xs text-gray-500 mb-3">Or login with</p>
-                    <div className="flex justify-center items-center mb-2">
-                      <a href="#" className="shadow-lg flex items-center px-3 py-2 border shadow-sm rounded-md bg-white hover:bg-gray-50">
-                        <img src={googleIcon} alt="Google" className="w-5 h-5 mr-2" />
-                        <span className="text-sm">Login with Google</span>
-                      </a>
-                    </div>
-                  </div>
-
-                {/* Footer */}
-                <div className="flex justify-between items-center py-4">
-                  <Link to="/forgot-password" className="text-blue-600 hover:text-blue-800 text-sm">
-                    Forgot password?
-                  </Link>
-                  <span className="text-sm">
-                    Already on EVOConnect?{' '}
-                    <Link to="/login" className="font-bold text-blue-600 hover:text-blue-800">
-                      sign in
-                    </Link>
-                  </span>
-                </div>
               </form>
+
+              <div className="mt-4 pb-4 text-center border-b border-gray-200">
+                <p className="text-xs text-gray-500 mb-3">Or login with</p>
+                <div className="flex justify-center items-center mb-2">
+                  <a href="#" className="shadow-lg flex items-center px-3 py-2 border shadow-sm rounded-md bg-white hover:bg-gray-50">
+                    <img src={googleIcon} alt="Google" className="w-5 h-5 mr-2" />
+                    <span className="text-sm">Login with Google</span>
+                  </a>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center py-4">
+                <Link to="/forgot-password" className="text-blue-600 hover:text-blue-800 text-sm">
+                  Forgot password?
+                </Link>
+                <span className="text-sm">
+                  Already on EVOConnect?{' '}
+                  <Link to="/login" className="font-bold text-blue-600 hover:text-blue-800">
+                    sign in
+                  </Link>
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Alert */}
-      <div className="fixed top-5 right-5 z-50">
-        {alertInfo.show && (
-          <Alert 
-            type={alertInfo.type} 
-            message={alertInfo.message} 
-            onClose={() => setAlertInfo({ ...alertInfo, show: false })} 
+      {alertInfo.show && (
+        <div className="fixed top-5 right-5 z-50">
+          <Alert
+            type={alertInfo.type}
+            message={alertInfo.message}
+            onClose={() => setAlertInfo({ ...alertInfo, show: false })}
           />
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -193,7 +243,8 @@ function InputField({ label, name, type, value, onChange, error, placeholder }) 
           value={value}
           onChange={onChange}
           placeholder={placeholder}
-          className={`pl-3 w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-black ${error ? 'border-red-500' : 'border-gray-300'}`}
+          className={`pl-3 w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-black ${error ? 'border-red-500' : 'border-gray-300'
+            }`}
         />
       </div>
       {error && <span className="text-red-500 text-sm">{error}</span>}

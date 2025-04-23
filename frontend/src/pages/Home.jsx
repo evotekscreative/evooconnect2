@@ -26,7 +26,16 @@ export default function SocialNetworkFeed() {
   const [commentText, setCommentText] = useState('');
   const [replyText, setReplyText] = useState('');
   const [replyingTo, setReplyingTo] = useState(null);
+  const [showNotification, setShowNotification] = useState(false); 
   const fileInputRef = useRef(null);
+
+  // Simulate successful registration
+  const simulateRegistrationSuccess = () => {
+    setShowNotification(true);
+    setTimeout(() => {
+      setShowNotification(false);
+    }, 5000); // Hide notification after 5 seconds
+  };
 
   // Sample posts data with comments
   const [posts, setPosts] = useState([
@@ -378,6 +387,13 @@ export default function SocialNetworkFeed() {
 
   return (
     <div className="flex bg-gray-50 px-32 py-6">
+      {/* Notification Alert */}
+      {showNotification && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50">
+          Registration successful! Welcome to EVOConnect.
+        </div>
+      )}
+
       {/* Left Sidebar - Profile Section */}
       <div className="w-1/4 pr-4">
         <div className="bg-white rounded-lg shadow mb-4 p-4 text-center">
@@ -426,6 +442,16 @@ export default function SocialNetworkFeed() {
       
       {/* Main Content - Feed */}
       <div className="w-1/2 px-1">
+        {/* Simulate Registration Success Button */}
+        <div className="mb-4">
+          <button
+            onClick={simulateRegistrationSuccess}
+            className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-600 transition"
+          >
+            Simulate Registration Success
+          </button>
+        </div>
+
         {/* Post creation box */}
         <div className="bg-white rounded-lg shadow mb-4 p-3">
           <div className="flex items-center mb-3">

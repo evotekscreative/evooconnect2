@@ -60,15 +60,14 @@ const ForgotPassword = () => {
                 placeholder="guest@example.com"
               />
             </div>
-
+          
             <button
               type="submit"
               disabled={loading}
-              className={`w-full font-semibold py-2 rounded-lg transition ${
-                loading
-                  ? "bg-primary cursor-not-allowed"
-                  : "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700"
-              } text-white`}
+              className={`w-full font-semibold py-2 rounded-lg transition text-white ${loading
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700"
+              }`}
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
