@@ -37,3 +37,24 @@ func (controller *UserControllerImpl) GetProfile(writer http.ResponseWriter, req
 
 	helper.WriteToResponseBody(writer, webResponse)
 }
+
+func (controller *UserControllerImpl) UpdateProfile(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Get user_id from context that was set by auth middleware
+	userId, ok := request.Context().Value("user_id").(int)
+	if !ok {
+		panic(exception.NewUnauthorizedError("Unauthorized access"))
+	}
+
+	updateProfileRequest := web.UpdateProfileRequest{}
+	helper.ReadFromRequestBody(request, &updateProfileRequest)
+
+	userResponse := controller.UserService.UpdateProfile(request.Context(), userId, updateProfileRequest)
+
+	webResponse := web.WebResponse{
+		Code:   200,
+		Status: "OK",
+		Data:   userResponse,
+	}
+
+	helper.WriteToResponseBody(writer, webResponse)
+}

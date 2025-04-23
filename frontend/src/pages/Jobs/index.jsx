@@ -161,6 +161,17 @@ export default function Jobs() {
             rating: 4.5,
             jobs: 15
         },
+        {
+            id: 2,
+            name: "Tech Innovators",
+            description: "Pioneering the future of technology",
+            industry: "Software Development",
+            location: "Jakarta, Indonesia",
+            employees: "50-200",
+            logo: "https://cdn-icons-png.flaticon.com/512/174/174857.png",
+            rating: 4.2,
+            jobs: 8
+        }
     ]);
 
     // Handle form input changes for job posting
@@ -262,7 +273,7 @@ export default function Jobs() {
     // Handle company creation
     const handleCompanySubmit = (e) => {
         e.preventDefault();
-        
+
         const newCompany = {
             id: companies.length + 1,
             name: companyForm.name,
@@ -347,22 +358,22 @@ export default function Jobs() {
                         {/* Search bar */}
                         <div className="flex items-center border border-gray-300 rounded-md overflow-hidden">
                             <Input
-                                placeholder={activeTab === "job" ? "Search jobs..." : "Search companies..."}
-                                className="flex-grow border-none focus:outline-none px-4 py-2 text-sm"
+                                placeholder={activeTab === "job" ? "Search jobs" : "Search companies"}
+                                className="flex-grow border-none focus:outline-none focus:ring-0 focus:border-transparent px-4 py-2 text-sm"
                             />
                             <Search size={20} className="ml-2 mr-2" />
                         </div>
 
                         {/* Tabs */}
                         <div className="mt-4 flex space-x-6 text-sm font-medium border-b border-gray-200 pb-2">
-                            <button 
-                                onClick={() => setActiveTab("job")} 
+                            <button
+                                onClick={() => setActiveTab("job")}
                                 className={`${activeTab === "job" ? "text-[#0A66C2] border-b-2 border-[#0A66C2]" : "text-gray-500 hover:text-[#0A66C2]"} pb-1`}
                             >
                                 Job
                             </button>
-                            <button 
-                                onClick={() => setActiveTab("company")} 
+                            <button
+                                onClick={() => setActiveTab("company")}
                                 className={`${activeTab === "company" ? "text-[#0A66C2] border-b-2 border-[#0A66C2]" : "text-gray-500 hover:text-[#0A66C2]"} pb-1`}
                             >
                                 Company
@@ -440,7 +451,9 @@ export default function Jobs() {
                                     <div key={company.id} className="border border-gray-200 rounded-lg p-4 shadow-sm bg-white">
                                         <div className="flex justify-between items-start">
                                             <div>
-                                                <h4 className="text-md font-semibold">{company.name}</h4>
+                                                <Link to={`/company-profile/${company.id}`}>
+                                                    <h4 className="text-md font-semibold">{company.name}</h4>
+                                                </Link>
                                                 <p className="text-sm text-gray-600">{company.description}</p>
                                                 <div className="mt-2 flex items-center gap-1 text-yellow-400">
                                                     {[...Array(Math.floor(company.rating))].map((_, i) => (
@@ -496,7 +509,7 @@ export default function Jobs() {
                             {activeTab === "job" ? "Designer at Google?" : "Tech companies in your area"}
                         </p>
 
-                        {(activeTab === "job" ? 
+                        {(activeTab === "job" ?
                             [{
                                 title: "Product Director",
                                 company: "Spotify Inc.",
@@ -507,7 +520,7 @@ export default function Jobs() {
                                 company: "Invision",
                                 location: "London, UK",
                                 logo: "https://cdn-icons-png.flaticon.com/512/174/174881.png"
-                            }] : 
+                            }] :
                             [{
                                 name: "Google",
                                 industry: "Technology",
@@ -568,10 +581,10 @@ export default function Jobs() {
             {/* Modal Post a Job */}
             {showPostAJobModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-                    <div className="bg-white max-h-[90vh] overflow-y-auto p-6 rounded-lg shadow-lg w-full max-w-md relative">
+                    <div className="bg-white max-h-[90vh] overflow-y-auto p-6 rounded-lg shadow-lg w-full max-w-lg relative">
                         <button
                             onClick={() => setShowPostAJobModal(false)}
-                            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl"
+                            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl"
                         >
                             ×
                         </button>
@@ -773,10 +786,10 @@ export default function Jobs() {
             {/* Modal Create Company */}
             {showCreateCompanyModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-                    <div className="bg-white max-h-[90vh] overflow-y-auto p-6 rounded-lg shadow-lg w-full max-w-md relative">
+                    <div className="bg-white max-h-[90vh] overflow-y-auto p-6 rounded-lg shadow-lg w-full max-w-lg relative">
                         <button
                             onClick={() => setShowCreateCompanyModal(false)}
-                            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl"
+                            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl"
                         >
                             ×
                         </button>
@@ -820,9 +833,9 @@ export default function Jobs() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                                <textarea 
-                                    className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" 
-                                    rows={4} 
+                                <textarea
+                                    className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"
+                                    rows={4}
                                     placeholder="Enter Company Description"
                                     name="description"
                                     value={companyForm.description}
@@ -845,9 +858,9 @@ export default function Jobs() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                                <textarea 
-                                    className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" 
-                                    rows={2} 
+                                <textarea
+                                    className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"
+                                    rows={2}
                                     placeholder="Enter Location"
                                     name="location"
                                     value={companyForm.location}
@@ -858,9 +871,9 @@ export default function Jobs() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
-                                <Input 
+                                <Input
                                     type="text"
-                                    className="w-full" 
+                                    className="w-full"
                                     placeholder="Enter Website"
                                     name="website"
                                     value={companyForm.website}
@@ -871,9 +884,9 @@ export default function Jobs() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Company Size</label>
-                                <Input 
+                                <Input
                                     type="text"
-                                    className="w-full" 
+                                    className="w-full"
                                     placeholder="Enter Company Size"
                                     name="employees"
                                     value={companyForm.employees}
@@ -884,9 +897,9 @@ export default function Jobs() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Headquarters</label>
-                                <Input 
+                                <Input
                                     type="text"
-                                    className="w-full" 
+                                    className="w-full"
                                     placeholder="Enter Headquarters"
                                     name="headquarters"
                                     value={companyForm.headquarters}
@@ -896,9 +909,9 @@ export default function Jobs() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Company Type</label>
-                                <Input 
+                                <Input
                                     type="text"
-                                    className="w-full" 
+                                    className="w-full"
                                     placeholder="Enter Company Type"
                                     name="companyType"
                                     value={companyForm.companyType}
@@ -919,9 +932,9 @@ export default function Jobs() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Specialties</label>
-                                <textarea 
-                                    className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" 
-                                    rows={4} 
+                                <textarea
+                                    className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"
+                                    rows={4}
                                     placeholder="Enter Company Specialties"
                                     name="specialties"
                                     value={companyForm.specialties}
@@ -952,7 +965,7 @@ export default function Jobs() {
                                 >
                                     Cancel
                                 </button>
-                                <Button 
+                                <Button
                                     type="submit"
                                     className="bg-[#0A66C2] text-white hover:bg-blue-700"
                                 >
