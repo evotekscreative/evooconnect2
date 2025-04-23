@@ -18,11 +18,12 @@ func NewUserRepository() UserRepository {
 }
 
 func (repository *UserRepositoryImpl) Save(ctx context.Context, tx *sql.Tx, user domain.User) domain.User {
-	SQL := "INSERT INTO users(name, email, password, is_verified, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
+	SQL := "INSERT INTO users(name, email, username, password, is_verified, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id"
 	var id int
 	err := tx.QueryRowContext(ctx, SQL,
 		user.Name,
 		user.Email,
+		user.Username,
 		user.Password,
 		user.IsVerified,
 		user.CreatedAt,
@@ -146,6 +147,30 @@ func (repository *UserRepositoryImpl) FindByEmail(ctx context.Context, tx *sql.T
 	user := domain.User{}
 	if rows.Next() {
 		err := rows.Scan(&user.Id, &user.Name, &user.Email, &user.Password, &user.IsVerified, &user.CreatedAt, &user.UpdatedAt)
+		helper.PanicIfError(err)
+		return user, nil
+	} else {
+		return user, errors.New("user not found")
+	}
+}
+
+func (repository *UserRepositoryImpl) FindByUsername(ctx context.Context, tx *sql.Tx, username string) (domain.User, error) {
+	SQL := "SELECT id, name, email, username, password, is_verified, created_at, updated_at FROM users WHERE username = $1"
+	rows, err := tx.QueryContext(ctx, SQL, username)
+	helper.PanicIfError(err)
+	defer rows.Close()
+
+	user := domain.User{}
+	if rows.Next() {
+		err := rows.Scan(
+			&user.Id,
+			&user.Name,
+			&user.Email,
+			&user.Username,
+			&user.Password,
+			&user.IsVerified,
+			&user.CreatedAt,
+			&user.UpdatedAt)
 		helper.PanicIfError(err)
 		return user, nil
 	} else {

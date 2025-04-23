@@ -13,6 +13,7 @@ type UserRepository interface {
 	Delete(ctx context.Context, tx *sql.Tx, userId int)
 	FindById(ctx context.Context, tx *sql.Tx, userId int) (domain.User, error)
 	FindByEmail(ctx context.Context, tx *sql.Tx, email string) (domain.User, error)
+	FindByUsername(ctx context.Context, tx *sql.Tx, username string) (domain.User, error) // Add this method
 	SaveVerificationToken(ctx context.Context, tx *sql.Tx, userId int, token string, expires time.Time) error
 	VerifyEmail(ctx context.Context, tx *sql.Tx, token string) (domain.User, error)
 	SaveResetToken(ctx context.Context, tx *sql.Tx, email string, token string, expires time.Time) error
