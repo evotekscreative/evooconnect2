@@ -121,7 +121,7 @@ const router = createBrowserRouter([
   {
     path: '/notification',
     element: <Notification />,
-  }
+  },
 ]);
 
 export default router;
