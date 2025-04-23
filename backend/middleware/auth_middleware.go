@@ -2,8 +2,6 @@ package middleware
 
 import (
 	"context"
-	"evoconnect/backend/helper"
-	"evoconnect/backend/model/web"
 	"fmt"
 	"net/http"
 	"strings"
@@ -12,124 +10,73 @@ import (
 	"github.com/google/uuid"
 )
 
-type SelectiveAuthMiddleware struct {
-	Handler     http.Handler
-	JwtSecret   string
-	PublicPaths []string
+type AuthMiddleware struct {
+	Handler   http.Handler
+	JWTSecret string
 }
 
-func NewSelectiveAuthMiddleware(handler http.Handler, jwtSecret string) *SelectiveAuthMiddleware {
-	return &SelectiveAuthMiddleware{
+func NewAuthMiddleware(handler http.Handler, jwtSecret string) *AuthMiddleware {
+	return &AuthMiddleware{
 		Handler:   handler,
-		JwtSecret: jwtSecret,
-		PublicPaths: []string{
-			"/api/auth/login",
-			"/api/auth/register",
-			"/api/auth/verify/send",
-			"/api/auth/forgot-password",
-			"/api/auth/reset-password",
-			// Note: /api/auth/verify is protected and requires auth
-		},
+		JWTSecret: jwtSecret,
 	}
 }
 
-// Helper method to check if a path requires authentication
-func (middleware *SelectiveAuthMiddleware) CheckAuthFunc(path string) bool {
-	for _, publicPath := range middleware.PublicPaths {
-		if strings.HasPrefix(path, publicPath) {
-			return false // No auth required for public paths
-		}
-	}
-	return true // Auth required for all other paths
-}
-
-func (middleware *SelectiveAuthMiddleware) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
-	path := request.URL.Path
-
-	// Check if authentication is required for this path
-	if !middleware.CheckAuthFunc(path) {
+func (middleware *AuthMiddleware) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+	// Skip authentication for login, register, and other public endpoints
+	if strings.Contains(request.URL.Path, "/auth/") ||
+		request.URL.Path == "/api/health" {
 		middleware.Handler.ServeHTTP(writer, request)
 		return
 	}
 
-	// This path requires authentication, check for token
 	authHeader := request.Header.Get("Authorization")
-	if authHeader == "" {
-		writer.Header().Set("Content-Type", "application/json")
-		writer.WriteHeader(http.StatusUnauthorized)
-
-		webResponse := web.WebResponse{
-			Code:   http.StatusUnauthorized,
-			Status: "UNAUTHORIZED",
-			Data:   "Missing Authorization header",
-		}
-
-		helper.WriteToResponseBody(writer, webResponse)
+	if !strings.Contains(authHeader, "Bearer ") {
+		http.Error(writer, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	if !strings.HasPrefix(authHeader, "Bearer ") {
-		writer.Header().Set("Content-Type", "application/json")
-		writer.WriteHeader(http.StatusUnauthorized)
-
-		webResponse := web.WebResponse{
-			Code:   http.StatusUnauthorized,
-			Status: "UNAUTHORIZED",
-			Data:   "Invalid token format - missing Bearer prefix",
-		}
-
-		helper.WriteToResponseBody(writer, webResponse)
-		return
-	}
-
+	// Extract the token
 	tokenString := strings.Replace(authHeader, "Bearer ", "", 1)
 
-	// Parse and validate the token
+	// Parse and validate token
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+		// Validate signing method
+		if method, ok := token.Method.(*jwt.SigningMethodHMAC); !ok || method.Alg() != "HS256" {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(middleware.JwtSecret), nil
+		return []byte(middleware.JWTSecret), nil
 	})
 
 	if err != nil {
-		writer.Header().Set("Content-Type", "application/json")
-		writer.WriteHeader(http.StatusUnauthorized)
-
-		webResponse := web.WebResponse{
-			Code:   http.StatusUnauthorized,
-			Status: "UNAUTHORIZED",
-			Data:   "Invalid token",
-		}
-
-		helper.WriteToResponseBody(writer, webResponse)
+		http.Error(writer, "Unauthorized: "+err.Error(), http.StatusUnauthorized)
 		return
 	}
 
-	// Parse claims
+	// Verify token claims
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok || !token.Valid {
 		http.Error(writer, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	// Parse user_id to UUID from string
+	// Extract user_id from claims
 	userIdStr, ok := claims["user_id"].(string)
 	if !ok {
 		http.Error(writer, "Invalid token claims", http.StatusUnauthorized)
 		return
 	}
 
-	userId, err := uuid.Parse(userIdStr)
+	// Parse UUID
+	_, err = uuid.Parse(userIdStr)
 	if err != nil {
-		http.Error(writer, "Invalid user ID format", http.StatusUnauthorized)
+		http.Error(writer, "Invalid user ID format: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Create context with user_id
-	ctx := context.WithValue(request.Context(), "user_id", userId)
+	// Add user_id to context
+	ctx := context.WithValue(request.Context(), "user_id", userIdStr)
 	request = request.WithContext(ctx)
 
-	// Pass to next handler
 	middleware.Handler.ServeHTTP(writer, request)
 }

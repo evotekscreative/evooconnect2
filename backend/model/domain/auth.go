@@ -1,8 +1,6 @@
 package domain
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 )
 
@@ -11,6 +9,6 @@ type LoginUser struct {
 	Name       string    `json:"name"`
 	Email      string    `json:"email"`
 	IsVerified bool      `json:"is_verified"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	CreatedAt  string    `json:"created_at"`
+	UpdatedAt  string    `json:"updated_at"`
 }

@@ -1,8 +1,6 @@
 package web
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 )
 
@@ -10,21 +8,30 @@ type UserProfileResponse struct {
 	ID           uuid.UUID   `json:"id"`
 	Name         string      `json:"name"`
 	Email        string      `json:"email"`
-	Username     string      `json:"username" validate:"required,max=100"`
-	Birthdate    time.Time   `json:"birthdate"`
-	Gender       string      `json:"gender" validate:"max=20"`
-	Location     string      `json:"location" validate:"max=100"`
-	Organization string      `json:"organization" validate:"max=100"`
+	Username     string      `json:"username"`
+	Birthdate    string      `json:"birthdate"`
+	Gender       string      `json:"gender"`
+	Location     string      `json:"location"`
+	Organization string      `json:"organization"`
 	Website      string      `json:"website"`
-	Phone        string      `json:"phone" validate:"max=20"`
+	Phone        string      `json:"phone"`
 	Headline     string      `json:"headline"`
 	About        string      `json:"about"`
 	Skills       interface{} `json:"skills"`
 	Socials      interface{} `json:"socials"`
 	Photo        string      `json:"photo"`
 	IsVerified   bool        `json:"is_verified"`
-	CreatedAt    time.Time   `json:"created_at"`
-	UpdatedAt    time.Time   `json:"updated_at"`
+	CreatedAt    string      `json:"created_at"`
+	UpdatedAt    string      `json:"updated_at"`
+}
+
+type UserMinimal struct {
+	Id       uuid.UUID `json:"id"`
+	Name     string    `json:"name"`
+	Username string    `json:"username"`
+	Photo    string    `json:"photo"`
+	Email    string    `json:"email"`
+	Headline string    `json:"headline,omitempty"`
 }
 
 type SocialMediaResponse struct {

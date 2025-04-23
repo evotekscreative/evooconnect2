@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/google/uuid"
 	// "github.com/go-playground/validator/v10"
 	"github.com/julienschmidt/httprouter"
 	_ "github.com/lib/pq"
@@ -56,7 +57,7 @@ func createUserForTest(db *sql.DB) domain.User {
 		UpdatedAt:  time.Now(),
 	}
 
-	var userId int
+	var userId uuid.UUID
 	err := db.QueryRow(`
         INSERT INTO users(name, email, password, is_verified, created_at, updated_at) 
         VALUES($1, $2, $3, $4, $5, $6) 
@@ -68,7 +69,7 @@ func createUserForTest(db *sql.DB) domain.User {
 	return user
 }
 
-func createJWTToken(userId int) string {
+func createJWTToken(userId uuid.UUID) string {
 	// Create JWT token for testing
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": userId,
@@ -96,7 +97,7 @@ func setupUserRouter(db *sql.DB) http.Handler {
 	router.PanicHandler = exception.ErrorHandler
 
 	// Create middleware with JWT auth
-	middleware := middleware.NewSelectiveAuthMiddleware(router, "test-secret-key")
+	middleware := middleware.NewAuthMiddleware(router, "test-secret-key")
 
 	return middleware
 }
@@ -141,7 +142,7 @@ func TestGetProfileSuccess(t *testing.T) {
 
 	// Check user data in response
 	data := responseBody["data"].(map[string]interface{})
-	assert.Equal(t, float64(user.Id), data["id"].(float64))
+	assert.Equal(t, user.Id.String(), data["id"].(string))
 	assert.Equal(t, user.Name, data["name"])
 	assert.Equal(t, user.Email, data["email"])
 	assert.Equal(t, user.IsVerified, data["is_verified"])

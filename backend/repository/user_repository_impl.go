@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/domain"
@@ -41,21 +40,28 @@ func (repository *UserRepositoryImpl) Save(ctx context.Context, tx *sql.Tx, user
 }
 
 func (repository *UserRepositoryImpl) Update(ctx context.Context, tx *sql.Tx, user domain.User) domain.User {
-	// Marshal Skills dan Socials ke JSON sebelum disimpan
-	skillsJSON, err := json.Marshal(user.Skills)
-	helper.PanicIfError(err)
-
-	socialsJSON, err := json.Marshal(user.Socials)
-	helper.PanicIfError(err)
-
 	SQL := `UPDATE users SET 
         name = $1, email = $2, username = $3, birthdate = $4, 
         gender = $5, location = $6, organization = $7, 
         website = $8, phone = $9, headline = $10, about = $11, 
-        skills = $12::jsonb, socials = $13::jsonb, photo = $14, 
+        skills = $12, socials = $13, photo = $14, 
         updated_at = $15 WHERE id = $16`
 
-	_, err = tx.ExecContext(ctx, SQL,
+	var skillsValue, socialsValue interface{}
+
+	if user.Skills.Valid {
+		skillsValue = user.Skills.String
+	} else {
+		skillsValue = nil
+	}
+
+	if user.Socials.Valid {
+		socialsValue = user.Socials.String
+	} else {
+		socialsValue = nil
+	}
+
+	_, err := tx.ExecContext(ctx, SQL,
 		user.Name,
 		user.Email,
 		user.Username,
@@ -67,8 +73,8 @@ func (repository *UserRepositoryImpl) Update(ctx context.Context, tx *sql.Tx, us
 		user.Phone,
 		user.Headline,
 		user.About,
-		string(skillsJSON),  // Convert to string for PostgreSQL JSONB
-		string(socialsJSON), // Convert to string for PostgreSQL JSONB
+		skillsValue,
+		socialsValue,
 		user.Photo,
 		time.Now(),
 		user.Id)
@@ -108,7 +114,6 @@ func (repository *UserRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, 
 
 	user := domain.User{}
 	if rows.Next() {
-		var skillsStr, socialsStr string
 		err := rows.Scan(
 			&user.Id,
 			&user.Name,
@@ -124,20 +129,12 @@ func (repository *UserRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, 
 			&user.Phone,
 			&user.Headline,
 			&user.About,
-			&skillsStr,
-			&socialsStr,
+			&user.Skills,
+			&user.Socials,
 			&user.Photo,
 			&user.CreatedAt,
 			&user.UpdatedAt)
 		helper.PanicIfError(err)
-
-		// Unmarshal JSON strings into Skills and Socials
-		err = json.Unmarshal([]byte(skillsStr), &user.Skills)
-		helper.PanicIfError(err)
-
-		err = json.Unmarshal([]byte(socialsStr), &user.Socials)
-		helper.PanicIfError(err)
-
 		return user, nil
 	} else {
 		return user, errors.New("user not found")
