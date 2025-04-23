@@ -55,7 +55,7 @@ const handleSubmit = async (e) => {
               {/* Header with Logo */}
               <div className="mb-4 text-center">
                 <img src={logo} alt="EVOConnect Logo" className="mx-auto h-20 object-contain" />
-                <h5 className="font-bold mt-3 text-xl mb-2">Welcome</h5>
+                <h5 className="font-bold mt-3 text-xl mb-2">Welcome to EVOConnect</h5>
                 <p className="text-gray-500 text-sm">
                   Don't miss your next opportunity. Sign in to stay updated on your professional world.
                 </p>

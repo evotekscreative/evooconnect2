@@ -154,7 +154,7 @@ export default function ProfilePage() {
         <div className="flex items-center gap-2 max-w-[1100px] mx-auto w-full justify-between">
           <div className="flex items-center gap-4">
             <div className="font-bold text-lg flex items-center gap-2">
-              <img src={logo} alt="Evo Connect Logo" className="h-8" />
+              <img src={logo} alt="EvoConnect Logo" className="h-8" />
             </div>
             <input
               type="text"
