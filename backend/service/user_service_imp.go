@@ -9,6 +9,8 @@ import (
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type UserServiceImpl struct {
@@ -23,7 +25,7 @@ func NewUserService(userRepository repository.UserRepository, db *sql.DB) UserSe
 	}
 }
 
-func (service *UserServiceImpl) GetProfile(ctx context.Context, userId int) web.UserProfileResponse {
+func (service *UserServiceImpl) GetProfile(ctx context.Context, userId uuid.UUID) web.UserProfileResponse {
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
@@ -38,7 +40,7 @@ func (service *UserServiceImpl) GetProfile(ctx context.Context, userId int) web.
 	return helper.ToUserProfileResponse(user)
 }
 
-func (service *UserServiceImpl) UpdateProfile(ctx context.Context, userId int, request web.UpdateProfileRequest) web.UserProfileResponse {
+func (service *UserServiceImpl) UpdateProfile(ctx context.Context, userId uuid.UUID, request web.UpdateProfileRequest) web.UserProfileResponse {
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)

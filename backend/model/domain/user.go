@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Tipe khusus untuk kolom JSONB
@@ -60,7 +62,7 @@ func (s *SocialMedia) Scan(value interface{}) error {
 }
 
 type User struct {
-	Id                  int         `json:"id"`
+	Id                  uuid.UUID   `json:"id"`
 	Name                string      `json:"name"`
 	Email               string      `json:"email"`
 	Password            string      `json:"-"`

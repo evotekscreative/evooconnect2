@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/google/uuid"
 )
 
 type SelectiveAuthMiddleware struct {
@@ -105,39 +106,28 @@ func (middleware *SelectiveAuthMiddleware) ServeHTTP(writer http.ResponseWriter,
 		return
 	}
 
+	// Parse claims
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok || !token.Valid {
-		writer.Header().Set("Content-Type", "application/json")
-		writer.WriteHeader(http.StatusUnauthorized)
-
-		webResponse := web.WebResponse{
-			Code:   http.StatusUnauthorized,
-			Status: "UNAUTHORIZED",
-			Data:   "Invalid token claims",
-		}
-
-		helper.WriteToResponseBody(writer, webResponse)
+		http.Error(writer, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	// Get user_id from claims
-	userID, ok := claims["user_id"].(float64)
+	// Parse user_id to UUID from string
+	userIdStr, ok := claims["user_id"].(string)
 	if !ok {
-		writer.Header().Set("Content-Type", "application/json")
-		writer.WriteHeader(http.StatusUnauthorized)
+		http.Error(writer, "Invalid token claims", http.StatusUnauthorized)
+		return
+	}
 
-		webResponse := web.WebResponse{
-			Code:   http.StatusUnauthorized,
-			Status: "UNAUTHORIZED",
-			Data:   "Invalid token: missing user_id",
-		}
-
-		helper.WriteToResponseBody(writer, webResponse)
+	userId, err := uuid.Parse(userIdStr)
+	if err != nil {
+		http.Error(writer, "Invalid user ID format", http.StatusUnauthorized)
 		return
 	}
 
 	// Create context with user_id
-	ctx := context.WithValue(request.Context(), "user_id", int(userID))
+	ctx := context.WithValue(request.Context(), "user_id", userId)
 	request = request.WithContext(ctx)
 
 	// Pass to next handler

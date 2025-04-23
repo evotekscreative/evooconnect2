@@ -8,6 +8,8 @@ import (
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/domain"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type UserRepositoryImpl struct {
@@ -18,19 +20,23 @@ func NewUserRepository() UserRepository {
 }
 
 func (repository *UserRepositoryImpl) Save(ctx context.Context, tx *sql.Tx, user domain.User) domain.User {
-	SQL := "INSERT INTO users(name, email, username, password, is_verified, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id"
-	var id int
-	err := tx.QueryRowContext(ctx, SQL,
+	// Generate a new UUID if not provided
+	if user.Id == uuid.Nil {
+		user.Id = uuid.New()
+	}
+
+	SQL := "INSERT INTO users(id, name, email, username, password, is_verified, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"
+	_, err := tx.ExecContext(ctx, SQL,
+		user.Id,
 		user.Name,
 		user.Email,
 		user.Username,
 		user.Password,
 		user.IsVerified,
 		user.CreatedAt,
-		user.UpdatedAt).Scan(&id)
+		user.UpdatedAt)
 	helper.PanicIfError(err)
 
-	user.Id = id
 	return user
 }
 
@@ -71,7 +77,7 @@ func (repository *UserRepositoryImpl) Update(ctx context.Context, tx *sql.Tx, us
 	return user
 }
 
-func (repository *UserRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx, userId int) {
+func (repository *UserRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx, userId uuid.UUID) {
 	SQL := "DELETE FROM users WHERE id = $1"
 	_, err := tx.ExecContext(ctx, SQL, userId)
 	helper.PanicIfError(err)
@@ -80,7 +86,7 @@ func (repository *UserRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx, us
 // Perbarui definisi struct domain.User di model/domain/user.go
 // untuk menggunakan pointer pada kolom yang bisa NULL
 
-func (repository *UserRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, userId int) (domain.User, error) {
+func (repository *UserRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, userId uuid.UUID) (domain.User, error) {
 	SQL := `SELECT id, name, email, password, is_verified, 
            COALESCE(username, '') as username, 
            COALESCE(birthdate, '0001-01-01') as birthdate, 
@@ -178,7 +184,7 @@ func (repository *UserRepositoryImpl) FindByUsername(ctx context.Context, tx *sq
 	}
 }
 
-func (repository *UserRepositoryImpl) SaveVerificationToken(ctx context.Context, tx *sql.Tx, userId int, token string, expires time.Time) error {
+func (repository *UserRepositoryImpl) SaveVerificationToken(ctx context.Context, tx *sql.Tx, userId uuid.UUID, token string, expires time.Time) error {
 	SQL := "UPDATE users SET verification_token = $1, verification_expires = $2 WHERE id = $3"
 	_, err := tx.ExecContext(ctx, SQL, token, expires, userId)
 	return err
@@ -233,7 +239,7 @@ func (repository *UserRepositoryImpl) FindByResetToken(ctx context.Context, tx *
 	}
 }
 
-func (repository *UserRepositoryImpl) UpdatePassword(ctx context.Context, tx *sql.Tx, userId int, hashedPassword string) error {
+func (repository *UserRepositoryImpl) UpdatePassword(ctx context.Context, tx *sql.Tx, userId uuid.UUID, hashedPassword string) error {
 	SQL := "UPDATE users SET password = $1, reset_token = NULL, reset_expires = NULL, updated_at = $2 WHERE id = $3"
 	_, err := tx.ExecContext(ctx, SQL, hashedPassword, time.Now(), userId)
 	return err
@@ -261,7 +267,7 @@ func (repository *UserRepositoryImpl) LogFailedAttempt(ctx context.Context, tx *
 }
 
 // ClearFailedAttempts removes rate limiting entries for a user
-func (repository *UserRepositoryImpl) ClearFailedAttempts(ctx context.Context, tx *sql.Tx, userID int, actionType string) error {
+func (repository *UserRepositoryImpl) ClearFailedAttempts(ctx context.Context, tx *sql.Tx, userID uuid.UUID, actionType string) error {
 	// First, find the user's associated attempts (by getting their email)
 	userSQL := "SELECT email FROM users WHERE id = $1"
 	var email string
