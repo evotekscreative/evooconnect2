@@ -38,7 +38,7 @@ export default function ProfileEdit() {
     if (savedAbout) setAbout(savedAbout);
 
     const savedSkills = localStorage.getItem("profileSkills");
-    if (savedSkills) setSkills(JSON.parse(savedSkills));
+  if (savedSkills) setSkills(JSON.parse(savedSkills));
 
     const savedImage = localStorage.getItem("profileImage");
     if (savedImage) setProfileImage(savedImage);

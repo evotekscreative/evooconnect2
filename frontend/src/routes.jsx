@@ -1,7 +1,6 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter } from "react-router-dom";
 import Login from "./pages/Auth/Login.jsx";
 import Register from "./pages/Auth/Register.jsx";
-import ForgotPassword from "./pages/Auth/ForgotPassword.jsx";
 import App from './App';
 import Connections from './pages/Connections.jsx';
 import PrivacyPolicy from './pages/PrivacyPolicy.jsx';
@@ -17,112 +16,112 @@ import ListConnection from './pages/ListConnection.jsx';
 import { Messages } from './pages/Messages.jsx';
 import GroupPage from './pages/GroupPage.jsx';
 import Blog from "./pages/Blog/Blog.jsx";
-import Notification from './pages/Notification.jsx';
-import JobDashboard from './pages/JobSaved.jsx';
-import HelpPage from './pages/Help.jsx';
-import ProfilePage from './pages/Profile.jsx';
-import ProfileEdit from './pages/EditProfile.jsx';
+import Notification from "./pages/Notification.jsx";
+import JobDashboard from "./pages/JobSaved.jsx";
+import HelpPage from "./pages/Help.jsx";
+import ProfilePage from "./pages/Profile.jsx";
+import ProfileEdit from "./pages/EditProfile.jsx";
 
 const router = createBrowserRouter([
   {
-    path: '/',
+    path: "/",
     element: <App />,
   },
   {
-    path: '/login',
+    path: "/login",
     element: <Login />,
   },
   {
-    path: '/register',
+    path: "/register",
     element: <Register />,
   },
   {
     path: '/forgot-password',
-    element: <ForgotPassword/>, 
+    element: <div>Forgot Password Page</div>,
   },
   {
-    path: '/terms',
+    path: "/terms",
     element: <TermsCondition />,
   },
   {
-    path: '/privacy',
+    path: "/privacy",
     element: <PrivacyPolicy />,
   },
   {
-    path: '/connections',
+    path: "/connections",
     element: <Connections />,
   },
 
   {
-    path: '/jobs',
+    path: "/jobs",
     element: <Jobs />,
   },
 
   {
-    path: '/job-profile',
+    path: "/jobs/:jobId",
     element: <JobProfile />,
   },
 
   {
-    path: '/job-saved',
+    path: "/job-saved",
     element: <JobDashboard />,
   },
 
   {
-    path: '/help',
-    element: <HelpPage/>,
+    path: "/help",
+    element: <HelpPage />,
   },
 
   {
-    path: '/profile',
+    path: "/profile",
     element: <ProfilePage />,
   },
 
   {
-    path: '/edit-profile',
+    path: "/edit-profile",
     element: <ProfileEdit />,
   },
 
   {
-    path: '/faq',
+    path: "/faq",
     element: <Faq />,
   },
   {
-    path: '/company-profile',
+    path: '/company-profile/:companyId',
     element: <CompanyProfile />,
   },
   {
-    path: '/groups',
-    element: <Groups />
+    path: "/groups",
+    element: <Groups />,
   },
   {
-    path: '/list-connection',
+    path: "/list-connection",
     element: <ListConnection />,
   },
   {
-    path: '/messages',
+    path: "/messages",
     element: <Messages />,
   },
   {
-    path: '/group-page',
+    path: "/group-page",
     element: <GroupPage />,
   },
   {
-    path: '/create-blog',
+    path: "/create-blog",
     element: <CreateBlog />,
   },
   {
-    path: '/blog',
+    path: "/blog",
     element: <Blog />,
   },
   {
-    path: '/detail-blog/:id',
+    path: "/detail-blog/:id",
     element: <BlogDetail />,
   },
   {
-    path: '/notification',
+    path: "/notification",
     element: <Notification />,
-  }
+  },
 ]);
 
 export default router;

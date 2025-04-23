@@ -1,21 +1,90 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "../../components/Navbar";
 import job1 from '../../assets/img/job1.png';
+import { useParams } from "react-router-dom";
 
 export default function NewPage() {
-    // State untuk melacak status klik tombol
+    const params = useParams();
+    const jobId = params.jobId;
     const [clickedSave, setClickedSave] = useState(false);
     const [clickedApply, setClickedApply] = useState(false);
+    const [savedJobs, setSavedJobs] = useState([]);
 
-    // Fungsi untuk menangani klik pada tombol Save
+    // Load saved jobs from localStorage when component mounts
+    useEffect(() => {
+        const saved = localStorage.getItem('savedJobs');
+        if (saved) {
+            const parsedSavedJobs = JSON.parse(saved);
+            setSavedJobs(parsedSavedJobs);
+            // Check if current job is already saved
+            if (parsedSavedJobs.some(job => job.id === parseInt(jobId))) {
+                setClickedSave(true);
+            }
+        }
+    }, [jobId]);
+
     const handleSaveClick = () => {
-        setClickedSave(true);
+        let updatedSavedJobs;
+        if (!clickedSave) {
+            // Add job to saved jobs
+            updatedSavedJobs = [...savedJobs, job];
+            setClickedSave(true);
+        } else {
+            // Remove job from saved jobs
+            updatedSavedJobs = savedJobs.filter(j => j.id !== job.id);
+            setClickedSave(false);
+        }
+        setSavedJobs(updatedSavedJobs);
+        localStorage.setItem('savedJobs', JSON.stringify(updatedSavedJobs));
     };
 
-    // Fungsi untuk menangani klik pada tombol Apply
     const handleApplyClick = () => {
         setClickedApply(true);
     };
+
+    const data = [
+        {
+            id: 1,
+            title: "Software Engineer",
+            company: "Angular Company",
+            location: "Remote",
+            description: "We are looking for a Frontend Developer to join our team.",
+            overview: "We are looking for a skilled Software Engineer to develop and maintain our web applications. The ideal candidate will have experience with modern JavaScript frameworks and a passion for creating high-quality code.",
+            aplicantRank: 30,
+            postedDate: "2023-09-30",
+            seniorityLevel: "Director",
+            Industry: "Information Technology",
+            type: "Full-time",
+            jobFunction: "Engineering",
+            salary: "$60,000 - $80,000",
+            companyLogo: "https://via.placeholder.com/150",
+            companyDescription: "Angular Company is a leading tech company specializing in web development.",
+            companySize: "100-500 employees",
+        },
+        {
+            id: 2,
+            title: "Frontend Developer",
+            company: "React Company",
+            location: "Remote",
+            description: "We are looking for a Frontend Developer to join our team.",
+            overview: "Join our team as a Frontend Developer and help build amazing user experiences. You'll work with React, TypeScript, and modern CSS to create responsive and accessible web applications.",
+            aplicantRank: 25,
+            postedDate: "2023-10-15",
+            seniorityLevel: "Mid Level",
+            Industry: "Information Technology",
+            type: "Full-time",
+            jobFunction: "Engineering",
+            salary: "$70,000 - $90,000",
+            companyLogo: "https://via.placeholder.com/150",
+            companyDescription: "React Company is a fast-growing startup focused on creating innovative web solutions.",
+            companySize: "50-200 employees",
+        }
+    ];
+
+    const job = data.find(job => job.id === parseInt(jobId));
+    if (!job) {
+        return <div>Job not found</div>;
+    }
 
     return (
         <>
@@ -26,16 +95,16 @@ export default function NewPage() {
                         {/* Header */}
                         <div className="flex justify-between items-start ">
                             <div>
-                                <h1 className="font-bold text-xl">Hallo</h1>
+                                <h1 className="font-bold text-xl">{job.title}</h1>
                                 <div className="flex items-center space-x-1">
                                     <a
                                         href="#"
                                         className="text-[#0A66C2] font-semibold text-sm hover:underline"
                                     >
-                                        React Company
+                                        {job.company}
                                     </a>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#383838" stroke-width="0.75" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-map-pin-icon lucide-map-pin"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /><circle cx="12" cy="10" r="3" /></svg>
-                                    <p className="text-gray-500 text-xs">mm · 11 hours ago</p>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#383838" strokeWidth="0.75" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-map-pin-icon lucide-map-pin"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /><circle cx="12" cy="10" r="3" /></svg>
+                                    <p className="text-gray-500 text-xs">{job.location} | posted {job.postedDate}</p>
                                 </div>
                             </div>
                             <div className="flex space-x-2">
@@ -69,17 +138,17 @@ export default function NewPage() {
                                     + Follow
                                 </button>
 
-                                <p className="font-semibold text-lg">React Company</p>
-                                <p className="text-xs text-gray-500 mb-4">mm</p>
+                                <p className="font-semibold text-lg">{job.title}</p>
+                                <p className="text-xs text-gray-500 mb-4">{job.overview}</p>
                                 <hr className="my-4" />
                                 <div className="text-xs text-gray-500 space-y-1 text-left">
                                     <div className="flex justify-between mb-2">
                                         <span>Posted</span>
-                                        <span className="font-semibold text-black">11 hours ago</span>
+                                        <span className="font-semibold text-black">{job.postedDate}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span>Applicant Rank</span>
-                                        <span className="font-semibold text-black">25</span>
+                                        <span className="font-semibold text-black">{job.aplicantRank}</span>
                                     </div>
                                 </div>
                             </div>
@@ -100,7 +169,7 @@ export default function NewPage() {
                             <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <h2 className="text-xl font-semibold mb-2">Overview</h2>
                                 <hr />
-                                <p className="text-sm text-gray-600 mt-3">mmm</p>
+                                <p className="text-sm text-gray-600 mt-3">{job.overview}</p>
                             </div>
 
                             {/* Job Details */}
@@ -109,23 +178,23 @@ export default function NewPage() {
 
                                 <div className="grid grid-cols-1 gap-y-2 text-sm text-gray-600 mt-2">
                                     <p>
-                                        <span className="font-semibold text-gray-800">Seniority Level:</span> Entry level
+                                        <span className="font-semibold text-gray-800">Seniority Level:</span> {job.seniorityLevel}
                                     </p>
                                     <hr className="my-2" />
                                     <p>
-                                        <span className="font-semibold text-gray-800">Industry:</span> Internet Information Technology & Services
+                                        <span className="font-semibold text-gray-800">Industry:</span> {job.Industry}
                                     </p>
                                     <hr className="my-2" />
                                     <p>
-                                        <span className="font-semibold text-gray-800">Employment Type:</span> Part-time
+                                        <span className="font-semibold text-gray-800">Employment Type:</span> {job.type}
                                     </p>
                                     <hr className="my-2" />
                                     <p>
-                                        <span className="font-semibold text-gray-800">Job Functions:</span> Marketing
+                                        <span className="font-semibold text-gray-800">Job Functions:</span> {job.jobFunction}
                                     </p>
                                     <hr className="my-2" />
                                     <p>
-                                        <span className="font-semibold text-gray-800">Salary:</span> Rp 9.999
+                                        <span className="font-semibold text-gray-800">Salary:</span> {job.salary}
                                     </p>
                                 </div>
                             </div>
@@ -141,21 +210,14 @@ export default function NewPage() {
                                         className="w-14 h-14 rounded-full mr-2 object-cover"
                                     />
                                     <div>
-                                        <p className="font-semibold text-sm">React Company</p>
-                                        <p className="text-xs text-gray-400">Informatika | 24,044 followers</p>
+                                        <p className="font-semibold text-sm">{job.company}</p>
+                                        <p className="text-xs text-gray-400">{job.Industry} | {job.companySize}</p>
                                     </div>
                                 </div>
 
                                 <h2 className="text-xl font-semibold mb-2">About us</h2>
                                 <p className="text-sm text-gray-600 mb-3">
-                                    Welcome! We’re so happy you found us. Since you’ve come this far, we’d love to take
-                                    the opportunity to introduce ourselves.
-                                    <br /><br />
-                                    Our story starts in 2006 with three founders in a Sydney garage (no, we’re not kidding).
-                                    Born from a desire to earn a living doing what they loved, with the flexibility to
-                                    do it from anywhere, Envato set out to create an online community for buying and
-                                    selling creative digital assets. Nearly 13 years later, we’re profitable and still totally
-                                    bootstrapped...
+                                   {job.companyDescription}
                                 </p>
                                 <hr className="my-4" />
                                 <div className="text-center">
@@ -180,7 +242,6 @@ export default function NewPage() {
                                 <p className="font-semibold text-sm mb-2">Similar Jobs</p>
                                 <div className="space-y-2">
                                     <div className="border border-gray-200 p-3 rounded-lg hover:shadow-md transition">
-
                                         <div className="flex items-start space-x-3 mb-1">
                                             <img
                                                 src="https://via.placeholder.com/32"

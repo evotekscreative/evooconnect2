@@ -107,6 +107,11 @@ func (service *AuthServiceImpl) Register(ctx context.Context, request web.Regist
 		panic(exception.NewBadRequestError("Email already registered"))
 	}
 
+	_, err = service.UserRepository.FindByUsername(ctx, tx, request.Username)
+	if err == nil {
+		panic(exception.NewBadRequestError("Username already taken"))
+	}
+
 	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
 	helper.PanicIfError(err)
@@ -114,6 +119,7 @@ func (service *AuthServiceImpl) Register(ctx context.Context, request web.Regist
 	user := domain.User{
 		Name:       request.Name,
 		Email:      request.Email,
+		Username:   request.Username,
 		Password:   string(hashedPassword),
 		IsVerified: false, // Set to false for new registrations
 		CreatedAt:  time.Now(),

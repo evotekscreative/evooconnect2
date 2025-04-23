@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import logo from "../assets/img/logo1.png";
+import { Link } from "react-router-dom";
+import Case from "../components/Case";  
 import { 
   Briefcase, Users, Pen, MessageSquare, Bell, User, Eye, 
   Bookmark, Calendar, MapPin, GraduationCap, Building,
-  Facebook, Twitter, Linkedin, Github, Instagram
+  Facebook, Twitter, Linkedin, Github, Instagram,
 } from "lucide-react";
 
 export default function ProfilePage() {
@@ -189,18 +190,18 @@ export default function ProfilePage() {
             <p className="text-sm text-gray-500">{headline || "No information yet."}</p>
 
             <div className="mt-4 space-y-2 text-left text-sm">
-              <div className="flex justify-between items-center">
+              <Link to="/list-connection" className="flex justify-between items-center">
                 <span className="flex items-center gap-1"><Users size={14} /> Connections</span>
                 <span className="font-bold">358</span>
-              </div>
+              </Link>
               <div className="flex justify-between items-center">
                 <span className="flex items-center gap-1"><Eye size={14} /> Views</span>
                 <span className="font-bold">85</span>
               </div>
-              <div className="flex justify-between items-center">
+              <Link to="/job-saved" className="flex justify-between items-center">
                 <span className="flex items-center gap-1"><Bookmark size={14} /> Job Saved</span>
                 <span className="font-bold">120</span>
-              </div>
+              </Link>
             </div>
 
             <button className="text-blue-600 text-sm mt-4">Log Out</button>
