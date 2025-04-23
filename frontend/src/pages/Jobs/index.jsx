@@ -6,6 +6,7 @@ import { Input } from "../../components/Input";
 import { Button } from "../../components/Button";
 import { Search } from 'lucide-react';
 import { Link } from "react-router-dom";
+import { Toaster, toast } from "sonner";
 
 export default function Jobs() {
     const [showPostAJobModal, setShowPostAJobModal] = useState(false);
@@ -28,7 +29,7 @@ export default function Jobs() {
         company: "EvoConnect",
         photo: null,
         photoPreview: null
-    });
+});
 
     // Form state for company creation
     const [companyForm, setCompanyForm] = useState({
@@ -81,8 +82,7 @@ export default function Jobs() {
             Industry: "Information Technology",
             type: "Full-time",
             jobFunction: "Engineering",
-            salary: "$60,000 - $80,000",
-            companyLogo: "https://via.placeholder.com/150",
+            salary: "$60,000 - $80,000", 
             companyDescription: "Angular Company is a leading tech company specializing in web development.",
             companySize: "100-500 employees",
             companyLogo: "https://cdn-icons-png.flaticon.com/512/174/174857.png",
@@ -254,8 +254,9 @@ export default function Jobs() {
             photoPreview: null
         });
 
-        // Close modal
+       
         setShowPostAJobModal(false);
+        toast.success("Job posted successfully!");
     };
 
     // Handle company creation
@@ -301,10 +302,12 @@ export default function Jobs() {
 
         // Close modal
         setShowCreateCompanyModal(false);
+        toast.success("Company created successfully!");
     };
 
     return (
         <>
+         <Toaster position="top-right" richColors />
             <Navbar />
             <div className="bg-[#eef3f8] min-h-screen px-4 lg:px-32 py-6 grid grid-cols-12 gap-6">
                 {/* Left Sidebar */}

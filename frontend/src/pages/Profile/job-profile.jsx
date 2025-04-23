@@ -9,16 +9,26 @@ export default function NewPage() {
     const [clickedSave, setClickedSave] = useState(false);
     const [clickedApply, setClickedApply] = useState(false);
     const [savedJobs, setSavedJobs] = useState([]);
+    const [appliedJobs, setAppliedJobs] = useState([]);
 
-    // Load saved jobs from localStorage when component mounts
+    // Load saved and applied jobs from localStorage when component mounts
     useEffect(() => {
         const saved = localStorage.getItem('savedJobs');
+        const applied = localStorage.getItem('appliedJobs');
+        
         if (saved) {
             const parsedSavedJobs = JSON.parse(saved);
             setSavedJobs(parsedSavedJobs);
-            // Check if current job is already saved
             if (parsedSavedJobs.some(job => job.id === parseInt(jobId))) {
                 setClickedSave(true);
+            }
+        }
+        
+        if (applied) {
+            const parsedAppliedJobs = JSON.parse(applied);
+            setAppliedJobs(parsedAppliedJobs);
+            if (parsedAppliedJobs.some(job => job.id === parseInt(jobId))) {
+                setClickedApply(true);
             }
         }
     }, [jobId]);
@@ -26,11 +36,9 @@ export default function NewPage() {
     const handleSaveClick = () => {
         let updatedSavedJobs;
         if (!clickedSave) {
-            // Add job to saved jobs
             updatedSavedJobs = [...savedJobs, job];
             setClickedSave(true);
         } else {
-            // Remove job from saved jobs
             updatedSavedJobs = savedJobs.filter(j => j.id !== job.id);
             setClickedSave(false);
         }
@@ -39,7 +47,20 @@ export default function NewPage() {
     };
 
     const handleApplyClick = () => {
-        setClickedApply(true);
+        if (!clickedApply) {
+            const updatedAppliedJobs = [...appliedJobs, job];
+            setAppliedJobs(updatedAppliedJobs);
+            setClickedApply(true);
+            localStorage.setItem('appliedJobs', JSON.stringify(updatedAppliedJobs));
+            
+            // Also save the job if not already saved
+            if (!clickedSave) {
+                const updatedSavedJobs = [...savedJobs, job];
+                setSavedJobs(updatedSavedJobs);
+                setClickedSave(true);
+                localStorage.setItem('savedJobs', JSON.stringify(updatedSavedJobs));
+            }
+        }
     };
 
     const data = [
@@ -117,6 +138,7 @@ export default function NewPage() {
                                 <button
                                     className={`bg-blue-500 text-white text-sm py-2 px-4 rounded-md ${clickedApply ? 'bg-green-500' : ''}`}
                                     onClick={handleApplyClick}
+                                    disabled={clickedApply}
                                 >
                                     {clickedApply ? 'Applied' : 'Apply'}
                                 </button>
@@ -253,7 +275,7 @@ export default function NewPage() {
                                                 <p className="text-xs text-[#0A66C2]">Spotify Inc.</p>
                                             </div>
                                         </div>
-                                        <div className="flex items-center text-gray-500 text-xs mt-2">
+                                        <div className="flex items-center text-gray-500 text-xs mt-2 space-x-4">
                                             <svg
                                                 xmlns="http://www.w3.org/2000/svg"
                                                 width="14"

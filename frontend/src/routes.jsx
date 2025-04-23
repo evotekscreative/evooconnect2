@@ -21,6 +21,7 @@ import JobDashboard from './pages/JobSaved.jsx';
 import HelpPage from './pages/Help.jsx';
 import ProfilePage from './pages/Profile.jsx';
 import ProfileEdit from './pages/EditProfile.jsx';
+import PostPage from './pages/PostPage.jsx';
 
 const router = createBrowserRouter([
   {
@@ -121,6 +122,10 @@ const router = createBrowserRouter([
   {
     path: '/notification',
     element: <Notification />,
+  },
+  {
+    path: '/post-page',
+    element: <PostPage />,
   }
 ]);
 

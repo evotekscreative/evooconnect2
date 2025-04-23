@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import Case from "../components/Case";  
-import { 
-  Briefcase, Users, Pen, MessageSquare, Bell, User, Eye, 
+import Case from "../components/Case";
+import {
+  Briefcase, Users, Clock, ChevronLeft, ChevronRight, Eye,
   Bookmark, Calendar, MapPin, GraduationCap, Building,
   Facebook, Twitter, Linkedin, Github, Instagram,
 } from "lucide-react";
+import { Toaster, toast } from "sonner"; // Import Toaster and toast
 
 export default function ProfilePage() {
   const [showExperienceModal, setShowExperienceModal] = useState(false);
@@ -18,6 +19,44 @@ export default function ProfilePage() {
   const [fullName, setFullName] = useState("Muhammad Bintang Asyidqy");
   const [headline, setHeadline] = useState("");
   const [socialMedia, setSocialMedia] = useState({});
+  const [post] = useState([
+    {
+      id: 1,
+      title: 'Belajar Membuat Aplikasi Back-End untuk Pemula',
+      provider: 'Dicoding',
+      date: 'March 2023',
+      image: '/api/placeholder/300/200',
+      likes: 14,
+      comments: 1
+    },
+    {
+      id: 2,
+      title: 'Sertifikat Kelas Belajar jQuery Dasar',
+      provider: 'CODEPOLITAN',
+      date: 'January 2023',
+      image: '/api/placeholder/300/200',
+      likes: 11,
+      comments: 1
+    },
+    {
+      id: 3,
+      title: 'React.js Developer postificate',
+      provider: 'Meta',
+      date: 'December 2022',
+      image: '/api/placeholder/300/200',
+      likes: 19,
+      comments: 2
+    },
+    {
+      id: 4,
+      title: 'Responsive Web Design',
+      provider: 'freeCodeCamp',
+      date: 'November 2022',
+      image: '/api/placeholder/300/200',
+      likes: 8,
+      comments: 0
+    }
+  ]);
 
   // Form states
   const [experienceForm, setExperienceForm] = useState({
@@ -29,7 +68,7 @@ export default function ProfilePage() {
     endMonth: 'Month',
     endYear: 'Year',
     description: '',
-    companyLogo: null
+    logoCompany: null
   });
 
   const [educationForm, setEducationForm] = useState({
@@ -50,19 +89,19 @@ export default function ProfilePage() {
   useEffect(() => {
     const savedAbout = localStorage.getItem('profileAbout');
     if (savedAbout) setAbout(savedAbout);
-    
+
     const savedSkills = localStorage.getItem('profileSkills');
     if (savedSkills) setSkills(JSON.parse(savedSkills));
-    
+
     const savedImage = localStorage.getItem('profileImage');
     if (savedImage) setProfileImage(savedImage);
-    
+
     const savedFullName = localStorage.getItem('profileFullName');
     if (savedFullName) setFullName(savedFullName);
-    
+
     const savedHeadline = localStorage.getItem('profileHeadline');
     if (savedHeadline) setHeadline(savedHeadline);
-    
+
     const savedSocials = localStorage.getItem('profileSocials');
     if (savedSocials) setSocialMedia(JSON.parse(savedSocials));
   }, []);
@@ -84,8 +123,9 @@ export default function ProfilePage() {
       endMonth: 'Month',
       endYear: 'Year',
       description: '',
-      companyLogo: null
+      logoCompany: null
     });
+    toast.success("Experience added successfully!");
   };
 
   const handleEducationSubmit = (e) => {
@@ -107,6 +147,7 @@ export default function ProfilePage() {
       description: '',
       schoolLogo: null
     });
+    toast.success("Education added successfully!");
   };
 
   const handleExperienceChange = (e) => {
@@ -128,7 +169,7 @@ export default function ProfilePage() {
   const handleExperienceFileChange = (e) => {
     setExperienceForm({
       ...experienceForm,
-      companyLogo: e.target.files[0]
+      logoCompany: e.target.files[0]
     });
   };
 
@@ -148,237 +189,323 @@ export default function ProfilePage() {
     setSocialMedia(data);
   };
 
+  // Scroll handlers for post
+  const scrollLeft = () => {
+    document.getElementById('post-container').scrollBy({ left: -300, behavior: 'smooth' });
+  };
+
+  const scrollRight = () => {
+    document.getElementById('post-container').scrollBy({ left: 300, behavior: 'smooth' });
+  };
+
   return (
     <div className="bg-[#EDF3F7] min-h-screen">
-      {/* Navbar */}
-     <Case />
+      {/* Toast Notification Container */}
+      <Toaster position="top-right" richColors />
 
-      {/* Content */}
-      <div className="max-w-4xl mx-auto py-6 flex flex-col md:flex-row gap-6 px-4">
-        {/* Left Sidebar */}
-        <div className="w-full md:w-1/3 space-y-4">
-          <div className="bg-white rounded-md shadow p-4 text-center">
-            <div className="relative w-24 h-24 mx-auto bg-gray-200 rounded-full overflow-hidden flex items-center justify-center">
-              {profileImage ? (
-                <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+      {/* Navbar */}
+      <Case />
+
+      {/* Content - Using full width with controlled padding */}
+      <div className="w-full mx-auto py-6 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-6 justify-center">
+          {/* Left Sidebar - Keeping width consistent */}
+          <div className="w-full md:w-1/3 space-y-4">
+            <div className="bg-white rounded-lg shadow-md p-6 text-center">
+              <div className="relative w-28 h-28 mx-auto bg-gray-200 rounded-full overflow-hidden flex items-center justify-center">
+                {profileImage ? (
+                  <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-2xl font-bold">MA</span>
+                )}
+              </div>
+              <h2 className="font-bold text-xl mt-4">{fullName}</h2>
+              <p className="text-base text-gray-500">{headline || "No information yet."}</p>
+
+              <div className="mt-5 space-y-2 text-left">
+                <Link to="/list-connection" className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md">
+                  <span className="flex items-center gap-2 text-base"><Users size={18} /> Connections</span>
+                  <span className="font-bold text-lg">358</span>
+                </Link>
+                <div className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md">
+                  <span className="flex items-center gap-2 text-base"><Eye size={18} /> Views</span>
+                  <span className="font-bold text-lg">85</span>
+                </div>
+                <Link to="/job-saved" className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md">
+                  <span className="flex items-center gap-2 text-base"><Bookmark size={18} /> Job Saved</span>
+                  <span className="font-bold text-lg">120</span>
+                </Link>
+              </div>
+
+              <button className="text-blue-600 text-base mt-5">Log Out</button>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="font-semibold text-lg">Skills</h3>
+              {skills.length > 0 ? (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {skills.map((skill, index) => (
+                    <span
+                      key={index}
+                      className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
               ) : (
-                <span className="text-xl font-bold">MA</span>
+                <p className="text-base text-gray-500 mt-1">No skills added yet.</p>
               )}
             </div>
-            <h2 className="font-bold text-md mt-4">{fullName}</h2>
-            <p className="text-sm text-gray-500">{headline || "No information yet."}</p>
 
-            <div className="mt-4 space-y-2 text-left text-sm">
-              <Link to="/list-connection" className="flex justify-between items-center">
-                <span className="flex items-center gap-1"><Users size={14} /> Connections</span>
-                <span className="font-bold">358</span>
-              </Link>
-              <div className="flex justify-between items-center">
-                <span className="flex items-center gap-1"><Eye size={14} /> Views</span>
-                <span className="font-bold">85</span>
-              </div>
-              <Link to="/job-saved" className="flex justify-between items-center">
-                <span className="flex items-center gap-1"><Bookmark size={14} /> Job Saved</span>
-                <span className="font-bold">120</span>
-              </Link>
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="font-semibold text-lg mb-2">Social Media</h3>
+              {Object.keys(socialMedia).length > 0 ? (
+                <div className="space-y-2">
+                  {Object.entries(socialMedia).map(([platform, username]) => (
+                    <div key={platform} className="flex items-center gap-2 p-1 hover:bg-gray-50 rounded-md">
+                      {platform === 'instagram' && <Instagram className="w-5 h-5 text-pink-500" />}
+                      {platform === 'facebook' && <Facebook className="w-5 h-5 text-blue-500" />}
+                      {platform === 'twitter' && <Twitter className="w-5 h-5 text-blue-400" />}
+                      {platform === 'linkedin' && <Linkedin className="w-5 h-5 text-blue-700" />}
+                      {platform === 'github' && <Github className="w-5 h-5 text-black" />}
+                      <span className="text-base">@{username}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-base text-gray-500">No social media added yet.</p>
+              )}
             </div>
-
-            <button className="text-blue-600 text-sm mt-4">Log Out</button>
           </div>
 
-          <div className="bg-white rounded-md shadow p-3">
-            <h3 className="font-semibold text-sm">Skills</h3>
-            {skills.length > 0 ? (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {skills.map((skill, index) => (
-                  <span
-                    key={index}
-                    className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs"
+          {/* Right Main Section - Expanded to 2/3 for more space */}
+          <div className="w-full md:w-2/3 space-y-4">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="font-semibold text-lg">About You</h3>
+              <p className="text-base text-gray-600 mt-3">
+                {about || "No information provided yet."}
+              </p>
+            </div>
+
+            {/* Experience Section */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-2">
+                  <Briefcase size={20} className="text-[#00AEEF]" />
+                  <h3 className="font-semibold text-lg">Experience</h3>
+                </div>
+                <button
+                  className="text-sm bg-[#00AEEF] text-white px-4 py-2 rounded-md hover:bg-[#0099d6] transition flex items-center gap-1"
+                  onClick={() => setShowExperienceModal(true)}
+                >
+                  + Add Experience
+                </button>
+              </div>
+
+              {experiences.length > 0 ? (
+                <div className="mt-6 space-y-8">
+                  {experiences.map((exp) => (
+                    <div key={exp.id} className="border-b pb-6 last:border-b-0 last:pb-0">
+                      <div className="flex items-start">
+                        {exp.logoCompany ? (
+                          <div className="mr-4">
+                            <div className="h-16 w-16 rounded-md border bg-white flex items-center justify-center shadow-sm overflow-hidden">
+                              <img
+                                src={URL.createObjectURL(exp.logoCompany)}
+                                alt={`${exp.companyName} Logo`}
+                                className="max-h-14 max-w-14 object-contain"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mr-4">
+                            <div className="h-16 w-16 rounded-md bg-gray-100 flex items-center justify-center shadow-sm">
+                              <Building size={24} className="text-gray-400" />
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <h4 className="font-medium text-lg text-[#00AEEF]">{exp.jobTitle}</h4>
+                          <p className="text-base font-medium">{exp.companyName}</p>
+
+                          <div className="flex items-center gap-3 mt-2 text-sm text-gray-500">
+                            <span className="flex items-center gap-1">
+                              <Calendar size={14} />
+                              {formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear) || 'Present'}
+                            </span>
+                            {exp.location && (
+                              <span className="flex items-center gap-1">
+                                <MapPin size={14} />
+                                {exp.location}
+                              </span>
+                            )}
+                          </div>
+
+                          {exp.description && (
+                            <div className="mt-4 text-base text-gray-700 bg-gray-50 p-4 rounded-md border-l-2 border-[#00AEEF]">
+                              {exp.description}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 bg-gray-50 rounded-md border border-dashed border-gray-300 mt-4">
+                  <Briefcase size={40} className="mx-auto text-gray-300 mb-3" />
+                  <p className="text-base text-gray-500">No experience added yet.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Education Section */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-2">
+                  <GraduationCap size={20} className="text-[#00AEEF]" />
+                  <h3 className="font-semibold text-lg">Education</h3>
+                </div>
+                <button
+                  className="text-sm bg-[#00AEEF] text-white px-4 py-2 rounded-md hover:bg-[#0099d6] transition flex items-center gap-1"
+                  onClick={() => setShowEducationModal(true)}
+                >
+                  + Add Education
+                </button>
+              </div>
+
+              {educations.length > 0 ? (
+                <div className="mt-6 space-y-8">
+                  {educations.map((edu) => (
+                    <div key={edu.id} className="border-b pb-6 last:border-b-0 last:pb-0">
+                      <div className="flex items-start">
+                        {edu.schoolLogo ? (
+                          <div className="mr-4">
+                            <div className="h-16 w-16 rounded-md border bg-white flex items-center justify-center shadow-sm overflow-hidden">
+                              <img
+                                src={URL.createObjectURL(edu.schoolLogo)}
+                                alt={`${edu.schoolName} Logo`}
+                                className="max-h-14 max-w-14 object-contain"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mr-4">
+                            <div className="h-16 w-16 rounded-md bg-gray-100 flex items-center justify-center shadow-sm">
+                              <GraduationCap size={24} className="text-gray-400" />
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <h4 className="font-medium text-lg text-[#00AEEF]">{edu.degree}</h4>
+                          <p className="text-base font-medium">{edu.schoolName}</p>
+
+                          <div className="flex items-center gap-3 mt-2 text-sm text-gray-500">
+                            <span className="flex items-center gap-1">
+                              <Calendar size={14} />
+                              {formatDate(edu.startMonth, edu.startYear)} - {formatDate(edu.endMonth, edu.endYear) || 'Present'}
+                            </span>
+                            {edu.location && (
+                              <span className="flex items-center gap-1">
+                                <MapPin size={14} />
+                                {edu.location}
+                              </span>
+                            )}
+                          </div>
+
+                          {edu.description && (
+                            <div className="mt-4 text-base text-gray-700 bg-gray-50 p-4 rounded-md border-l-2 border-[#00AEEF]">
+                              {edu.description}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 bg-gray-50 rounded-md border border-dashed border-gray-300 mt-4">
+                  <GraduationCap size={40} className="mx-auto text-gray-300 mb-3" />
+                  <p className="text-base text-gray-500">No education added yet.</p>
+                </div>
+              )}
+            </div>
+
+            {/* post Section */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-2">
+                  <Clock size={20} className="text-[#00AEEF]" />
+                  <h3 className="font-semibold text-lg">POST</h3>
+                </div>
+                <div className="flex space-x-2">
+                  <button 
+                    onClick={scrollLeft}
+                    className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 transition"
+                    aria-label="Scroll left"
                   >
-                    {skill}
-                  </span>
-                ))}
+                    <ChevronLeft size={20} />
+                  </button>
+                  <button 
+                    onClick={scrollRight}
+                    className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 transition"
+                    aria-label="Scroll right"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                </div>
               </div>
-            ) : (
-              <p className="text-sm text-gray-500 mt-1">No skills added yet.</p>
-            )}
-          </div>
 
-          <div className="bg-white rounded-md shadow p-3">
-            <h3 className="font-semibold text-sm mb-2">Social Media</h3>
-            {Object.keys(socialMedia).length > 0 ? (
-              <div className="space-y-2">
-                {Object.entries(socialMedia).map(([platform, username]) => (
-                  <div key={platform} className="flex items-center gap-2">
-                    {platform === 'instagram' && <Instagram className="w-4 h-4 text-pink-500" />}
-                    {platform === 'facebook' && <Facebook className="w-4 h-4 text-blue-500" />}
-                    {platform === 'twitter' && <Twitter className="w-4 h-4 text-blue-400" />}
-                    {platform === 'linkedin' && <Linkedin className="w-4 h-4 text-blue-700" />}
-                    {platform === 'github' && <Github className="w-4 h-4 text-black" />}
-                    <span className="text-xs">@{username}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500">No social media added yet.</p>
-            )}
-          </div>
-        </div>
-
-        {/* Right Main Section */}
-        <div className="w-full md:w-2/3 space-y-4">
-          <div className="bg-white rounded-md shadow p-4">
-            <h3 className="font-semibold">About You</h3>
-            <p className="text-sm text-gray-500 mt-2">
-              {about || "No information provided yet."}
-            </p>
-          </div>
-
-          {/* Experience Section */}
-          <div className="bg-white rounded-md shadow p-4">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center gap-2">
-                <Briefcase size={18} className="text-[#00AEEF]" />
-                <h3 className="font-semibold text-lg">Experience</h3>
-              </div>
-              <button
-                className="text-sm bg-[#00AEEF] text-white px-3 py-1.5 rounded-md hover:bg-[#0099d6] transition flex items-center gap-1"
-                onClick={() => setShowExperienceModal(true)}
+              {/* Scrollable container */}
+              <div 
+                id="post-container" 
+                className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
-                + Add Experience
-              </button>
-            </div>
-
-            {experiences.length > 0 ? (
-              <div className="mt-4 space-y-6">
-                {experiences.map((exp) => (
-                  <div key={exp.id} className="border-b pb-5 last:border-b-0 last:pb-0">
-                    <div className="flex items-start">
-                      {exp.companyLogo ? (
-                        <div className="mr-4">
-                          <div className="h-16 w-16 rounded-md border bg-white flex items-center justify-center shadow-sm overflow-hidden">
-                            <img
-                              src={URL.createObjectURL(exp.companyLogo)}
-                              alt={`${exp.companyName} Logo`}
-                              className="max-h-14 max-w-14 object-contain"
-                            />
-                          </div>
+                {post.map(post => (
+                  <div key={post.id} className="flex-shrink-0 w-64 border rounded-lg overflow-hidden bg-white shadow-sm">
+                    <div className="h-40 bg-gray-100 relative">
+                      <img 
+                        src={post.image} 
+                        alt={`${post.title} post`} 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="p-4">
+                      <h4 className="font-medium text-base text-[#00AEEF] line-clamp-2">{post.title}</h4>
+                      <p className="text-sm text-gray-600 mt-1">{post.provider}</p>
+                      <p className="text-xs text-gray-500 mt-1">{post.date}</p>
+                      
+                      <div className="flex justify-between items-center mt-3">
+                        <div className="flex items-center text-xs text-gray-500">
+                          <span>{post.likes} likes</span>
+                          <span className="mx-2">•</span>
+                          <span>{post.comments} comments</span>
                         </div>
-                      ) : (
-                        <div className="mr-4">
-                          <div className="h-16 w-16 rounded-md bg-gray-100 flex items-center justify-center shadow-sm">
-                            <Building size={24} className="text-gray-400" />
-                          </div>
-                        </div>
-                      )}
-                      <div className="flex-1">
-                        <h4 className="font-medium text-base text-[#00AEEF]">{exp.jobTitle}</h4>
-                        <p className="text-sm font-medium">{exp.companyName}</p>
-
-                        <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                          <span className="flex items-center gap-1">
-                            <Calendar size={12} />
-                            {formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear) || 'Present'}
-                          </span>
-                          {exp.location && (
-                            <span className="flex items-center gap-1">
-                              <MapPin size={12} />
-                              {exp.location}
-                            </span>
-                          )}
-                        </div>
-
-                        {exp.description && (
-                          <div className="mt-3 text-sm text-gray-700 bg-gray-50 p-3 rounded-md border-l-2 border-[#00AEEF]">
-                            {exp.description}
-                          </div>
-                        )}
+                        <button className="text-xs text-[#00AEEF]">Share</button>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-            ) : (
-              <div className="text-center py-6 bg-gray-50 rounded-md border border-dashed border-gray-300">
-                <Briefcase size={32} className="mx-auto text-gray-300 mb-2" />
-                <p className="text-sm text-gray-500">No experience added yet.</p>
+              
+              <style jsx>{`
+                .scrollbar-hide::-webkit-scrollbar {
+                  display: none;
+                }
+                .scrollbar-hide {
+                  -ms-overflow-style: none;
+                  scrollbar-width: none;
+                }
+              `}</style>
+              <div className="flex justify-center mt-4">
+                <button className="text-[#00AEEF] text-asmibold font-semibold hover:underline">
+                  <Link to="/post-page"> See All Post </Link>
+                </button>
               </div>
-            )}
-          </div>
-
-          {/* Education Section */}
-          <div className="bg-white rounded-md shadow p-4">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center gap-2">
-                <GraduationCap size={18} className="text-[#00AEEF]" />
-                <h3 className="font-semibold text-lg">Education</h3>
-              </div>
-              <button
-                className="text-sm bg-[#00AEEF] text-white px-3 py-1.5 rounded-md hover:bg-[#0099d6] transition flex items-center gap-1"
-                onClick={() => setShowEducationModal(true)}
-              >
-                + Add Education
-              </button>
             </div>
-
-            {educations.length > 0 ? (
-              <div className="mt-4 space-y-6">
-                {educations.map((edu) => (
-                  <div key={edu.id} className="border-b pb-5 last:border-b-0 last:pb-0">
-                    <div className="flex items-start">
-                      {edu.schoolLogo ? (
-                        <div className="mr-4">
-                          <div className="h-16 w-16 rounded-md border bg-white flex items-center justify-center shadow-sm overflow-hidden">
-                            <img
-                              src={URL.createObjectURL(edu.schoolLogo)}
-                              alt={`${edu.schoolName} Logo`}
-                              className="max-h-14 max-w-14 object-contain"
-                            />
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="mr-4">
-                          <div className="h-16 w-16 rounded-md bg-gray-100 flex items-center justify-center shadow-sm">
-                            <GraduationCap size={24} className="text-gray-400" />
-                          </div>
-                        </div>
-                      )}
-                      <div className="flex-1">
-                        <h4 className="font-medium text-base text-[#00AEEF]">{edu.degree}</h4>
-                        <p className="text-sm font-medium">{edu.schoolName}</p>
-
-                        <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                          <span className="flex items-center gap-1">
-                            <Calendar size={12} />
-                            {formatDate(edu.startMonth, edu.startYear)} - {formatDate(edu.endMonth, edu.endYear) || 'Present'}
-                          </span>
-                          {edu.location && (
-                            <span className="flex items-center gap-1">
-                              <MapPin size={12} />
-                              {edu.location}
-                            </span>
-                          )}
-                        </div>
-
-                        {edu.description && (
-                          <div className="mt-3 text-sm text-gray-700 bg-gray-50 p-3 rounded-md border-l-2 border-[#00AEEF]">
-                            {edu.description}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-6 bg-gray-50 rounded-md border border-dashed border-gray-300">
-                <GraduationCap size={32} className="mx-auto text-gray-300 mb-2" />
-                <p className="text-sm text-gray-500">No education added yet.</p>
-              </div>
-            )}
           </div>
-
-          <p className="text-center text-sm text-gray-500 mt-4">No posts available.</p>
         </div>
       </div>
 
