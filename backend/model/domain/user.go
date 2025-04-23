@@ -1,10 +1,13 @@
 package domain
 
 import (
+	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Tipe khusus untuk kolom JSONB
@@ -60,27 +63,27 @@ func (s *SocialMedia) Scan(value interface{}) error {
 }
 
 type User struct {
-	Id                  int         `json:"id"`
-	Name                string      `json:"name"`
-	Email               string      `json:"email"`
-	Password            string      `json:"-"`
-	Username            string      `json:"username" `
-	Birthdate           time.Time   `json:"birthdate"`
-	Gender              string      `json:"gender" `
-	Location            string      `json:"location" `
-	Organization        string      `json:"organization" `
-	Website             string      `json:"website"`
-	Phone               string      `json:"phone" `
-	Headline            string      `json:"headline"`
-	About               string      `json:"about"`
-	Skills              interface{} `json:"skills"`
-	Socials             interface{} `json:"socials"`
-	Photo               string      `json:"photo"`
-	IsVerified          bool        `json:"is_verified"`
-	VerificationToken   string      `json:"-"`
-	VerificationExpires time.Time   `json:"-"`
-	ResetToken          string      `json:"-"`
-	ResetExpires        time.Time   `json:"-"`
-	CreatedAt           time.Time   `json:"created_at"`
-	UpdatedAt           time.Time   `json:"updated_at"`
+	Id                  uuid.UUID      `json:"id"`
+	Name                string         `json:"name"`
+	Email               string         `json:"email"`
+	Password            string         `json:"-"`
+	Username            string         `json:"username" `
+	Birthdate           time.Time      `json:"birthdate"`
+	Gender              string         `json:"gender" `
+	Location            string         `json:"location" `
+	Organization        string         `json:"organization" `
+	Website             string         `json:"website"`
+	Phone               string         `json:"phone" `
+	Headline            string         `json:"headline"`
+	About               string         `json:"about"`
+	Skills              sql.NullString `json:"skills"`
+	Socials             sql.NullString `json:"socials"`
+	Photo               string         `json:"photo"`
+	IsVerified          bool           `json:"is_verified"`
+	VerificationToken   string         `json:"-"`
+	VerificationExpires time.Time      `json:"-"`
+	ResetToken          string         `json:"-"`
+	ResetExpires        time.Time      `json:"-"`
+	CreatedAt           time.Time      `json:"created_at"`
+	UpdatedAt           time.Time      `json:"updated_at"`
 }
