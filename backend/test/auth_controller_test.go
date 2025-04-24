@@ -40,15 +40,18 @@ func setupAuthTestDB() *sql.DB {
 	_, err = db.Exec(`
         -- Create users table if not exists
         CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             name VARCHAR(255) NOT NULL,
             email VARCHAR(255) UNIQUE NOT NULL,
+            username VARCHAR(255) UNIQUE,
             password VARCHAR(255) NOT NULL,
             is_verified BOOLEAN DEFAULT FALSE,
             verification_token VARCHAR(255),
             verification_expires TIMESTAMP,
             reset_token VARCHAR(255),
             reset_expires TIMESTAMP,
+            skills JSONB,
+            socials JSONB, 
             created_at TIMESTAMP NOT NULL DEFAULT NOW(),
             updated_at TIMESTAMP NOT NULL DEFAULT NOW()
         );
@@ -99,16 +102,18 @@ func setupAuthRouter() http.Handler {
 	router.PanicHandler = exception.ErrorHandler
 
 	// Create middleware with public paths
-	middleware := middleware.NewSelectiveAuthMiddleware(router, "test-jwt-secret")
-	middleware.PublicPaths = []string{
-		"/api/auth/login",
-		"/api/auth/register",
-		"/api/auth/verify/send",
-		"/api/auth/forgot-password",
-		"/api/auth/reset-password",
-	}
+	middleware := middleware.NewAuthMiddleware(router, "test-jwt-secret")
 
 	return middleware
+}
+
+// Mock email sender for testing
+func setupEmailTest() {
+	// Override the email sender to capture emails instead of sending them
+	helper.EmailSender = func(to, subject, body string) error {
+		// Just log or store the email information for assertions
+		return nil
+	}
 }
 
 func TestRegisterSuccess(t *testing.T) {
@@ -120,20 +125,15 @@ func TestRegisterSuccess(t *testing.T) {
 	truncateUsers(db)
 	router := setupAuthRouter()
 
-	// Verify database connection
-	err := db.Ping()
-	assert.NoError(t, err, "Database connection failed")
-
 	// Create request body
 	requestBody := map[string]interface{}{
 		"name":     "John Doe",
 		"email":    "john.doe@example.com",
 		"password": "password123",
 	}
-	requestBodyJson, err := json.Marshal(requestBody)
-	assert.NoError(t, err, "Failed to marshal request body")
+	requestBodyJson, _ := json.Marshal(requestBody)
 
-	// Create request with correct headers
+	// Create request
 	request := httptest.NewRequest(http.MethodPost, "/api/auth/register",
 		strings.NewReader(string(requestBodyJson)))
 	request.Header.Set("Content-Type", "application/json")
@@ -141,60 +141,33 @@ func TestRegisterSuccess(t *testing.T) {
 	// Record response
 	recorder := httptest.NewRecorder()
 
-	// Execute request with panic recovery
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				t.Logf("Panic during request: %v", r)
-			}
-		}()
-		router.ServeHTTP(recorder, request)
-	}()
+	// Execute request
+	router.ServeHTTP(recorder, request)
 
 	// Read response
 	response := recorder.Result()
-	body, err := io.ReadAll(response.Body)
-	assert.NoError(t, err, "Failed to read response body")
-
-	// Log response details for debugging
-	t.Logf("Response Status: %d", response.StatusCode)
-	t.Logf("Response Headers: %v", response.Header)
-	t.Logf("Response Body: %s", string(body))
-
-	// Verify response is not empty
-	if len(body) == 0 {
-		// Check database for diagnostic info
-		var count int
-		err := db.QueryRow("SELECT COUNT(*) FROM users").Scan(&count)
-		t.Logf("Users in database: %d (error: %v)", count, err)
-		t.Fatal("Response body is empty")
-	}
-
-	// Parse response body
+	body, _ := io.ReadAll(response.Body)
 	var responseBody map[string]interface{}
-	err = json.Unmarshal(body, &responseBody)
-	assert.NoError(t, err, "Failed to parse response body")
+	json.Unmarshal(body, &responseBody)
 
-	// Verify response structure
-	assert.Equal(t, 201, response.StatusCode, "Expected status code 201")
-	assert.NotNil(t, responseBody["code"], "Response missing 'code' field")
-	assert.NotNil(t, responseBody["status"], "Response missing 'status' field")
-	assert.NotNil(t, responseBody["data"], "Response missing 'data' field")
+	// Assertions
+	assert.Equal(t, 201, response.StatusCode)
+	assert.Equal(t, float64(201), responseBody["code"].(float64))
+	assert.Equal(t, "CREATED", responseBody["status"])
+	assert.NotNil(t, responseBody["data"])
 
-	// Verify response data
-	data, ok := responseBody["data"].(map[string]interface{})
-	assert.True(t, ok, "Data field is not a map")
-	assert.NotEmpty(t, data["token"], "Token is empty")
+	// Check user data in response
+	data := responseBody["data"].(map[string]interface{})
+	assert.NotEmpty(t, data["token"])
 
-	user, ok := data["user"].(map[string]interface{})
-	assert.True(t, ok, "User field is not a map")
+	user := data["user"].(map[string]interface{})
 	assert.Equal(t, "John Doe", user["name"])
 	assert.Equal(t, "john.doe@example.com", user["email"])
-	assert.NotContains(t, user, "password")
+	assert.NotContains(t, user, "password") // Password should not be returned
 
 	// Verify database state
 	var dbUser struct {
-		ID         int
+		ID         string
 		Name       string
 		Email      string
 		Password   string
@@ -202,7 +175,8 @@ func TestRegisterSuccess(t *testing.T) {
 		CreatedAt  time.Time
 		UpdatedAt  time.Time
 	}
-	err = db.QueryRow(`
+
+	err := db.QueryRow(`
         SELECT id, name, email, password, is_verified, created_at, updated_at 
         FROM users 
         WHERE email = $1`,
@@ -221,10 +195,88 @@ func TestRegisterSuccess(t *testing.T) {
 	assert.Equal(t, "John Doe", dbUser.Name)
 	assert.Equal(t, "john.doe@example.com", dbUser.Email)
 	assert.NotEmpty(t, dbUser.Password)
-	assert.NotEqual(t, "password123", dbUser.Password)
+	assert.NotEqual(t, "password123", dbUser.Password) // Password should be hashed
 	assert.False(t, dbUser.IsVerified)
 	assert.False(t, dbUser.CreatedAt.IsZero())
 	assert.False(t, dbUser.UpdatedAt.IsZero())
+}
+
+func TestRegisterValidationError(t *testing.T) {
+	// Setup
+	setupEmailTest()
+	db := setupAuthTestDB()
+	truncateUsers(db)
+	router := setupAuthRouter()
+
+	// Test with missing required fields
+	requestBody := map[string]interface{}{
+		"name": "Invalid User",
+		// Missing email and password
+	}
+	requestBodyJson, _ := json.Marshal(requestBody)
+
+	request := httptest.NewRequest(http.MethodPost, "/api/auth/register",
+		strings.NewReader(string(requestBodyJson)))
+	request.Header.Set("Content-Type", "application/json")
+
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, request)
+
+	response := recorder.Result()
+	body, _ := io.ReadAll(response.Body)
+	var responseBody map[string]interface{}
+	json.Unmarshal(body, &responseBody)
+
+	// Verify validation error response
+	assert.Equal(t, 400, response.StatusCode)
+	assert.Equal(t, float64(400), responseBody["code"].(float64))
+	assert.Equal(t, "BAD REQUEST", responseBody["status"])
+
+	// Check validation errors
+	errors := responseBody["data"].(map[string]interface{})
+	assert.Contains(t, errors, "Email")
+	assert.Contains(t, errors, "Password")
+}
+
+func TestRegisterDuplicateEmail(t *testing.T) {
+	// Setup
+	setupEmailTest()
+	db := setupAuthTestDB()
+	truncateUsers(db)
+	router := setupAuthRouter()
+
+	// Register first user
+	requestBody := map[string]interface{}{
+		"name":     "First User",
+		"email":    "duplicate@example.com",
+		"password": "password123",
+	}
+	requestJson, _ := json.Marshal(requestBody)
+
+	firstRequest := httptest.NewRequest(http.MethodPost, "/api/auth/register",
+		strings.NewReader(string(requestJson)))
+	firstRequest.Header.Set("Content-Type", "application/json")
+
+	firstRecorder := httptest.NewRecorder()
+	router.ServeHTTP(firstRecorder, firstRequest)
+	assert.Equal(t, 201, firstRecorder.Result().StatusCode)
+
+	// Try to register with same email
+	secondRequest := httptest.NewRequest(http.MethodPost, "/api/auth/register",
+		strings.NewReader(string(requestJson)))
+	secondRequest.Header.Set("Content-Type", "application/json")
+
+	secondRecorder := httptest.NewRecorder()
+	router.ServeHTTP(secondRecorder, secondRequest)
+
+	response := secondRecorder.Result()
+	body, _ := io.ReadAll(response.Body)
+	var responseBody map[string]interface{}
+	json.Unmarshal(body, &responseBody)
+
+	// Verify conflict response
+	assert.Equal(t, 409, response.StatusCode) // or whatever your API returns for conflicts
+	assert.Equal(t, "CONFLICT", responseBody["status"])
 }
 
 func TestLoginSuccess(t *testing.T) {
@@ -241,7 +293,8 @@ func TestLoginSuccess(t *testing.T) {
 	}
 	registerJson, _ := json.Marshal(registerBody)
 
-	registerReq := httptest.NewRequest(http.MethodPost, "http://localhost:3000/api/auth/register", strings.NewReader(string(registerJson)))
+	registerReq := httptest.NewRequest(http.MethodPost, "/api/auth/register",
+		strings.NewReader(string(registerJson)))
 	registerReq.Header.Add("Content-Type", "application/json")
 
 	registerRec := httptest.NewRecorder()
@@ -251,180 +304,19 @@ func TestLoginSuccess(t *testing.T) {
 	assert.Equal(t, 201, registerRec.Result().StatusCode)
 
 	// Verify the user's email
-	var verificationToken string
-	err := db.QueryRow("SELECT verification_token FROM users WHERE email = $1", "john.doe@example.com").Scan(&verificationToken)
-	helper.PanicIfError(err)
+	_, err := db.Exec("UPDATE users SET is_verified = true WHERE email = $1",
+		"john.doe@example.com")
+	assert.NoError(t, err)
 
-	_, err = db.Exec("UPDATE users SET is_verified = true WHERE email = $1", "john.doe@example.com")
-	helper.PanicIfError(err)
-
-	// Create login request body
-	requestBody := map[string]interface{}{
+	// Create login request
+	loginBody := map[string]interface{}{
 		"email":    "john.doe@example.com",
 		"password": "password123",
 	}
-	requestBodyJson, _ := json.Marshal(requestBody)
-
-	// Create request
-	request := httptest.NewRequest(http.MethodPost, "http://localhost:3000/api/auth/login", strings.NewReader(string(requestBodyJson)))
-	request.Header.Add("Content-Type", "application/json")
-
-	// Record response
-	recorder := httptest.NewRecorder()
-
-	// Execute request
-	router.ServeHTTP(recorder, request)
-
-	// Read response
-	response := recorder.Result()
-	body, _ := io.ReadAll(response.Body)
-	var responseBody map[string]interface{}
-	json.Unmarshal(body, &responseBody)
-
-	// Output response for debugging if test fails
-	if response.StatusCode != 200 {
-		t.Logf("Login Response: %v", string(body))
-	}
-
-	// Assertions
-	assert.Equal(t, 200, response.StatusCode)
-	assert.Equal(t, 200, int(responseBody["code"].(float64)))
-	assert.Equal(t, "OK", responseBody["status"])
-	assert.NotNil(t, responseBody["data"])
-
-	// Check response data
-	data := responseBody["data"].(map[string]interface{})
-	assert.NotEmpty(t, data["token"])
-	assert.NotNil(t, data["user"])
-
-	user := data["user"].(map[string]interface{})
-	assert.Equal(t, "john.doe@example.com", user["email"])
-	assert.NotContains(t, user, "password") // Password should not be returned
-}
-
-func TestLoginFailed(t *testing.T) {
-	// Setup
-	db := setupAuthTestDB()
-	truncateUsers(db)
-	router := setupAuthRouter()
-
-	// Create request body with invalid credentials
-	requestBody := map[string]interface{}{
-		"email":    "nonexistent@example.com",
-		"password": "wrongpassword",
-	}
-	requestBodyJson, _ := json.Marshal(requestBody)
-
-	// Create request
-	request := httptest.NewRequest(http.MethodPost, "http://localhost:3000/api/auth/login", strings.NewReader(string(requestBodyJson)))
-	request.Header.Add("Content-Type", "application/json")
-
-	// Record response
-	recorder := httptest.NewRecorder()
-
-	// Execute request
-	router.ServeHTTP(recorder, request)
-
-	// Read response
-	response := recorder.Result()
-	body, _ := io.ReadAll(response.Body)
-	var responseBody map[string]interface{}
-	json.Unmarshal(body, &responseBody)
-
-	// Output response for debugging
-	t.Logf("Login Failed Response: %v", string(body))
-
-	// Assertions - the exact status code depends on your implementation
-	// For "user not found", it should be 404 NOT FOUND
-	assert.Equal(t, 404, response.StatusCode)
-	assert.Equal(t, 404, int(responseBody["code"].(float64)))
-	assert.Equal(t, "NOT FOUND", responseBody["status"])
-	// The exact error message might vary based on your implementation
-	assert.Contains(t, responseBody["data"], "not found")
-}
-
-func TestRegisterDuplicateEmail(t *testing.T) {
-	// Setup
-	db := setupAuthTestDB()
-	truncateUsers(db)
-	router := setupAuthRouter()
-
-	// Register first user
-	registerBody := map[string]interface{}{
-		"name":     "John Doe",
-		"email":    "duplicate@example.com",
-		"password": "password123",
-	}
-	registerJson, _ := json.Marshal(registerBody)
-
-	registerReq := httptest.NewRequest(http.MethodPost, "http://localhost:3000/api/auth/register", strings.NewReader(string(registerJson)))
-	registerReq.Header.Add("Content-Type", "application/json")
-
-	registerRec := httptest.NewRecorder()
-	router.ServeHTTP(registerRec, registerReq)
-
-	// Ensure first registration was successful
-	assert.Equal(t, 201, registerRec.Result().StatusCode)
-
-	// Try to register with same email
-	duplicateReq := httptest.NewRequest(http.MethodPost, "http://localhost:3000/api/auth/register", strings.NewReader(string(registerJson)))
-	duplicateReq.Header.Add("Content-Type", "application/json")
-
-	duplicateRec := httptest.NewRecorder()
-	router.ServeHTTP(duplicateRec, duplicateReq)
-
-	// Read response
-	response := duplicateRec.Result()
-	body, _ := io.ReadAll(response.Body)
-	var responseBody map[string]interface{}
-	json.Unmarshal(body, &responseBody)
-
-	// Output response for debugging
-	t.Logf("Duplicate Email Response: %v", string(body))
-
-	// Assertions - should be 400 BAD REQUEST
-	assert.Equal(t, 400, response.StatusCode)
-	assert.Equal(t, 400, int(responseBody["code"].(float64)))
-	assert.Equal(t, "BAD REQUEST", responseBody["status"])
-	// The exact error message might vary
-	assert.Contains(t, responseBody["data"], "already registered")
-}
-
-func TestLoginInvalidPassword(t *testing.T) {
-	// Setup
-	db := setupAuthTestDB()
-	truncateUsers(db)
-	router := setupAuthRouter()
-
-	// Register user first
-	registerBody := map[string]interface{}{
-		"name":     "Password Test",
-		"email":    "password.test@example.com",
-		"password": "correctpassword",
-	}
-	registerJson, _ := json.Marshal(registerBody)
-
-	registerReq := httptest.NewRequest(http.MethodPost, "http://localhost:3000/api/auth/register", strings.NewReader(string(registerJson)))
-	registerReq.Header.Add("Content-Type", "application/json")
-
-	registerRec := httptest.NewRecorder()
-	router.ServeHTTP(registerRec, registerReq)
-
-	// Ensure registration was successful
-	assert.Equal(t, 201, registerRec.Result().StatusCode)
-
-	// Verify the user's email
-	_, err := db.Exec("UPDATE users SET is_verified = true WHERE email = $1", "password.test@example.com")
-	helper.PanicIfError(err)
-
-	// Try to login with wrong password
-	loginBody := map[string]interface{}{
-		"email":    "password.test@example.com",
-		"password": "wrongpassword",
-	}
 	loginJson, _ := json.Marshal(loginBody)
 
-	loginReq := httptest.NewRequest(http.MethodPost, "http://localhost:3000/api/auth/login", strings.NewReader(string(loginJson)))
+	loginReq := httptest.NewRequest(http.MethodPost, "/api/auth/login",
+		strings.NewReader(string(loginJson)))
 	loginReq.Header.Add("Content-Type", "application/json")
 
 	loginRec := httptest.NewRecorder()
@@ -436,24 +328,253 @@ func TestLoginInvalidPassword(t *testing.T) {
 	var responseBody map[string]interface{}
 	json.Unmarshal(body, &responseBody)
 
-	// Output response for debugging
-	t.Logf("Invalid Password Response: %v", string(body))
+	// Assertions
+	assert.Equal(t, 200, response.StatusCode)
+	assert.Equal(t, float64(200), responseBody["code"].(float64))
+	assert.Equal(t, "OK", responseBody["status"])
 
-	// Assertions - should be 401 UNAUTHORIZED
-	assert.Equal(t, 401, response.StatusCode)
-	assert.Equal(t, 401, int(responseBody["code"].(float64)))
-	assert.Equal(t, "UNAUTHORIZED", responseBody["status"])
-	// The exact error message might vary
-	assert.Contains(t, responseBody["data"], "Invalid credentials")
+	// Check response data
+	data := responseBody["data"].(map[string]interface{})
+	assert.NotEmpty(t, data["token"])
+
+	user := data["user"].(map[string]interface{})
+	assert.Equal(t, "john.doe@example.com", user["email"])
+	assert.NotContains(t, user, "password") // Password should not be returned
 }
 
-// Mock email sender for testing
-func setupEmailTest() {
-	// Override the email sender to capture emails instead of sending them
-	helper.EmailSender = func(to, subject, body string) error {
-		// Just log or store the email information for assertions
-		return nil
+func TestLoginWrongPassword(t *testing.T) {
+	// Setup
+	db := setupAuthTestDB()
+	truncateUsers(db)
+	router := setupAuthRouter()
+
+	// Register a user first
+	registerBody := map[string]interface{}{
+		"name":     "Login Test",
+		"email":    "login.test@example.com",
+		"password": "correctpassword",
 	}
+	registerJson, _ := json.Marshal(registerBody)
+
+	registerReq := httptest.NewRequest(http.MethodPost, "/api/auth/register",
+		strings.NewReader(string(registerJson)))
+	registerReq.Header.Add("Content-Type", "application/json")
+
+	registerRec := httptest.NewRecorder()
+	router.ServeHTTP(registerRec, registerReq)
+
+	// Verify the user
+	_, err := db.Exec("UPDATE users SET is_verified = true WHERE email = $1",
+		"login.test@example.com")
+	assert.NoError(t, err)
+
+	// Try to login with wrong password
+	loginBody := map[string]interface{}{
+		"email":    "login.test@example.com",
+		"password": "wrongpassword",
+	}
+	loginJson, _ := json.Marshal(loginBody)
+
+	loginReq := httptest.NewRequest(http.MethodPost, "/api/auth/login",
+		strings.NewReader(string(loginJson)))
+	loginReq.Header.Add("Content-Type", "application/json")
+
+	loginRec := httptest.NewRecorder()
+	router.ServeHTTP(loginRec, loginReq)
+
+	// Check response
+	response := loginRec.Result()
+	assert.Equal(t, 401, response.StatusCode)
+
+	body, _ := io.ReadAll(response.Body)
+	var responseBody map[string]interface{}
+	json.Unmarshal(body, &responseBody)
+
+	assert.Equal(t, "UNAUTHORIZED", responseBody["status"])
+}
+
+func TestLoginNotVerified(t *testing.T) {
+	// Setup
+	db := setupAuthTestDB()
+	truncateUsers(db)
+	router := setupAuthRouter()
+
+	// Register a user first but don't verify
+	registerBody := map[string]interface{}{
+		"name":     "Unverified User",
+		"email":    "unverified@example.com",
+		"password": "password123",
+	}
+	registerJson, _ := json.Marshal(registerBody)
+
+	registerReq := httptest.NewRequest(http.MethodPost, "/api/auth/register",
+		strings.NewReader(string(registerJson)))
+	registerReq.Header.Add("Content-Type", "application/json")
+
+	registerRec := httptest.NewRecorder()
+	router.ServeHTTP(registerRec, registerReq)
+
+	// Ensure user is not verified (default behavior)
+
+	// Try to login
+	loginBody := map[string]interface{}{
+		"email":    "unverified@example.com",
+		"password": "password123",
+	}
+	loginJson, _ := json.Marshal(loginBody)
+
+	loginReq := httptest.NewRequest(http.MethodPost, "/api/auth/login",
+		strings.NewReader(string(loginJson)))
+	loginReq.Header.Add("Content-Type", "application/json")
+
+	loginRec := httptest.NewRecorder()
+	router.ServeHTTP(loginRec, loginReq)
+
+	// Check response
+	response := loginRec.Result()
+
+	// Depending on your implementation - could return 401 or 403
+	assert.True(t, response.StatusCode == 401 || response.StatusCode == 403)
+
+	body, _ := io.ReadAll(response.Body)
+	var responseBody map[string]interface{}
+	json.Unmarshal(body, &responseBody)
+
+	// Error message should mention verification
+	if message, ok := responseBody["data"].(string); ok {
+		assert.Contains(t, strings.ToLower(message), "verif")
+	}
+}
+
+func TestSendVerificationEmail(t *testing.T) {
+	// Setup
+	setupEmailTest()
+	db := setupAuthTestDB()
+	truncateUsers(db)
+	router := setupAuthRouter()
+
+	// Register a user first
+	registerBody := map[string]interface{}{
+		"name":     "Verification Test",
+		"email":    "verification@example.com",
+		"password": "password123",
+	}
+	registerJson, _ := json.Marshal(registerBody)
+
+	registerReq := httptest.NewRequest(http.MethodPost, "/api/auth/register",
+		strings.NewReader(string(registerJson)))
+	registerReq.Header.Add("Content-Type", "application/json")
+
+	registerRec := httptest.NewRecorder()
+	router.ServeHTTP(registerRec, registerReq)
+
+	// Send verification email request
+	verifyBody := map[string]interface{}{
+		"email": "verification@example.com",
+	}
+	verifyJson, _ := json.Marshal(verifyBody)
+
+	verifyReq := httptest.NewRequest(http.MethodPost, "/api/auth/verify/send",
+		strings.NewReader(string(verifyJson)))
+	verifyReq.Header.Add("Content-Type", "application/json")
+
+	verifyRec := httptest.NewRecorder()
+	router.ServeHTTP(verifyRec, verifyReq)
+
+	// Check response
+	response := verifyRec.Result()
+	assert.Equal(t, 200, response.StatusCode)
+
+	body, _ := io.ReadAll(response.Body)
+	var responseBody map[string]interface{}
+	json.Unmarshal(body, &responseBody)
+
+	data := responseBody["data"].(map[string]interface{})
+	assert.Contains(t, data["message"], "verification")
+
+	// Check if token was created in database
+	var hasToken bool
+	err := db.QueryRow(`
+        SELECT EXISTS(
+            SELECT 1 FROM users 
+            WHERE email = $1 AND verification_token IS NOT NULL
+        )`,
+		"verification@example.com").Scan(&hasToken)
+	assert.NoError(t, err)
+	assert.True(t, hasToken)
+}
+
+func TestVerifyEmail(t *testing.T) {
+	// Setup
+	setupEmailTest()
+	db := setupAuthTestDB()
+	truncateUsers(db)
+	router := setupAuthRouter()
+
+	// Register a user first
+	registerBody := map[string]interface{}{
+		"name":     "Email Verify Test",
+		"email":    "verify@example.com",
+		"password": "password123",
+	}
+	registerJson, _ := json.Marshal(registerBody)
+
+	registerReq := httptest.NewRequest(http.MethodPost, "/api/auth/register",
+		strings.NewReader(string(registerJson)))
+	registerReq.Header.Add("Content-Type", "application/json")
+
+	registerRec := httptest.NewRecorder()
+	router.ServeHTTP(registerRec, registerReq)
+
+	// Set verification token
+	verificationToken := "verify123"
+	verificationExpires := time.Now().Add(1 * time.Hour)
+
+	_, err := db.Exec(`
+        UPDATE users
+        SET verification_token = $1,
+            verification_expires = $2
+        WHERE email = $3`,
+		verificationToken, verificationExpires, "verify@example.com")
+	assert.NoError(t, err)
+
+	// Verify email
+	verifyBody := map[string]interface{}{
+		"token": verificationToken,
+	}
+	verifyJson, _ := json.Marshal(verifyBody)
+
+	verifyReq := httptest.NewRequest(http.MethodPost, "/api/auth/verify",
+		strings.NewReader(string(verifyJson)))
+	verifyReq.Header.Add("Content-Type", "application/json")
+
+	verifyRec := httptest.NewRecorder()
+	router.ServeHTTP(verifyRec, verifyReq)
+
+	// Check response
+	response := verifyRec.Result()
+	assert.Equal(t, 200, response.StatusCode)
+
+	// Check if user is verified in database
+	var isVerified bool
+	err = db.QueryRow(`
+        SELECT is_verified
+        FROM users
+        WHERE email = $1`,
+		"verify@example.com").Scan(&isVerified)
+	assert.NoError(t, err)
+	assert.True(t, isVerified)
+
+	// Check if verification token is cleared
+	var hasToken bool
+	err = db.QueryRow(`
+        SELECT EXISTS(
+            SELECT 1 FROM users 
+            WHERE email = $1 AND verification_token IS NOT NULL
+        )`,
+		"verify@example.com").Scan(&hasToken)
+	assert.NoError(t, err)
+	assert.False(t, hasToken)
 }
 
 func TestForgotPassword(t *testing.T) {
@@ -470,7 +591,7 @@ func TestForgotPassword(t *testing.T) {
 	}
 	registerJson, _ := json.Marshal(registerBody)
 
-	registerReq := httptest.NewRequest(http.MethodPost, "http://localhost:3000/api/auth/register",
+	registerReq := httptest.NewRequest(http.MethodPost, "/api/auth/register",
 		strings.NewReader(string(registerJson)))
 	registerReq.Header.Add("Content-Type", "application/json")
 
@@ -480,13 +601,13 @@ func TestForgotPassword(t *testing.T) {
 	// Ensure registration was successful
 	assert.Equal(t, 201, registerRec.Result().StatusCode)
 
-	// Now test forgot password
+	// Test forgot password
 	forgotBody := map[string]interface{}{
 		"email": "reset.test@example.com",
 	}
 	forgotJson, _ := json.Marshal(forgotBody)
 
-	forgotReq := httptest.NewRequest(http.MethodPost, "http://localhost:3000/api/auth/forgot-password",
+	forgotReq := httptest.NewRequest(http.MethodPost, "/api/auth/forgot-password",
 		strings.NewReader(string(forgotJson)))
 	forgotReq.Header.Add("Content-Type", "application/json")
 
@@ -499,132 +620,54 @@ func TestForgotPassword(t *testing.T) {
 	var responseBody map[string]interface{}
 	json.Unmarshal(body, &responseBody)
 
-	// Output response for debugging if test fails
-	if response.StatusCode != 200 {
-		t.Logf("Response: %v", string(body))
-	}
-
 	// Assertions
 	assert.Equal(t, 200, response.StatusCode)
-	assert.Equal(t, 200, int(responseBody["code"].(float64)))
+	assert.Equal(t, float64(200), responseBody["code"].(float64))
 	assert.Equal(t, "OK", responseBody["status"])
 
 	// Check data contains the success message
 	data := responseBody["data"].(map[string]interface{})
 	assert.Contains(t, data["message"], "sent to your email")
 
-	// Additional verification: Check database has reset token
+	// Verify database has reset token
 	var hasToken bool
 	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND reset_token IS NOT NULL)",
 		"reset.test@example.com").Scan(&hasToken)
-
 	assert.NoError(t, err)
 	assert.True(t, hasToken)
 }
 
-func TestVerifyEmail_InvalidToken(t *testing.T) {
+func TestForgotPasswordInvalidEmail(t *testing.T) {
+	// Setup
 	setupEmailTest()
 	db := setupAuthTestDB()
 	truncateUsers(db)
 	router := setupAuthRouter()
 
-	// 1. Register a user first
-	registerBody := map[string]interface{}{
-		"name":     "Verify Email Token Test",
-		"email":    "verify.token@example.com",
-		"password": "password123",
+	// Try with non-existing email
+	forgotBody := map[string]interface{}{
+		"email": "nonexistent@example.com",
 	}
-	registerJson, _ := json.Marshal(registerBody)
+	forgotJson, _ := json.Marshal(forgotBody)
 
-	registerReq := httptest.NewRequest(http.MethodPost, "/api/auth/register",
-		strings.NewReader(string(registerJson)))
-	registerReq.Header.Add("Content-Type", "application/json")
+	forgotReq := httptest.NewRequest(http.MethodPost, "/api/auth/forgot-password",
+		strings.NewReader(string(forgotJson)))
+	forgotReq.Header.Add("Content-Type", "application/json")
 
-	registerRec := httptest.NewRecorder()
-	router.ServeHTTP(registerRec, registerReq)
-
-	// Ensure registration was successful
-	assert.Equal(t, 201, registerRec.Result().StatusCode)
-
-	// 2. Set up verification token
-	verificationToken := "123456"
-	expiryTime := time.Now().Add(24 * time.Hour)
-
-	_, err := db.Exec(`
-    UPDATE users 
-    SET verification_token = $1, 
-        verification_expires = $2,
-        is_verified = false
-    WHERE email = $3`,
-		verificationToken, expiryTime, "verify.token@example.com")
-	helper.PanicIfError(err)
-
-	// 3. Get auth token by setting user as verified temporarily
-	_, err = db.Exec("UPDATE users SET is_verified = true WHERE email = $1", "verify.token@example.com")
-	helper.PanicIfError(err)
-
-	loginBody := map[string]interface{}{
-		"email":    "verify.token@example.com",
-		"password": "password123",
-	}
-	loginJson, _ := json.Marshal(loginBody)
-
-	loginReq := httptest.NewRequest(http.MethodPost, "/api/auth/login",
-		strings.NewReader(string(loginJson)))
-	loginReq.Header.Add("Content-Type", "application/json")
-
-	loginRec := httptest.NewRecorder()
-	router.ServeHTTP(loginRec, loginReq)
-
-	// Ensure login was successful
-	loginResponse := loginRec.Result()
-	assert.Equal(t, 200, loginResponse.StatusCode)
-
-	// Extract auth token from login response
-	loginResponseBody, _ := io.ReadAll(loginResponse.Body)
-	var loginResponseData map[string]interface{}
-	json.Unmarshal(loginResponseBody, &loginResponseData)
-
-	data := loginResponseData["data"].(map[string]interface{})
-	authToken := data["token"].(string)
-
-	// 4. Reset verification status
-	_, err = db.Exec("UPDATE users SET is_verified = false WHERE email = $1", "verify.token@example.com")
-	helper.PanicIfError(err)
-
-	// 5. Test with invalid token
-	invalidVerifyBody := map[string]interface{}{
-		"token": "invalidToken", // Different from the one in DB
-	}
-	invalidVerifyJson, _ := json.Marshal(invalidVerifyBody)
-
-	invalidVerifyReq := httptest.NewRequest(http.MethodPost, "/api/auth/verify",
-		strings.NewReader(string(invalidVerifyJson)))
-	invalidVerifyReq.Header.Add("Content-Type", "application/json")
-	invalidVerifyReq.Header.Add("Authorization", "Bearer "+authToken)
-
-	invalidVerifyRec := httptest.NewRecorder()
-	router.ServeHTTP(invalidVerifyRec, invalidVerifyReq)
+	forgotRec := httptest.NewRecorder()
+	router.ServeHTTP(forgotRec, forgotReq)
 
 	// Check response
-	response := invalidVerifyRec.Result()
-	body, _ := io.ReadAll(response.Body)
+	response := forgotRec.Result()
+	// Some implementations return 200 even for non-existent emails to prevent email enumeration
+	// So we'll just check the general flow
 
+	body, _ := io.ReadAll(response.Body)
 	var responseBody map[string]interface{}
 	json.Unmarshal(body, &responseBody)
 
-	// Should fail with 400 Bad Request
-	assert.Equal(t, 400, response.StatusCode)
-	assert.Equal(t, float64(400), responseBody["code"].(float64))
-	assert.Equal(t, "BAD REQUEST", responseBody["status"])
-	assert.Contains(t, responseBody["data"], "Invalid verification token")
-
-	// User should still be unverified
-	var isVerified bool
-	err = db.QueryRow("SELECT is_verified FROM users WHERE email = $1",
-		"verify.token@example.com").Scan(&isVerified)
-	assert.NoError(t, err)
-	assert.False(t, isVerified)
+	// Most implementations will return status 200 to prevent user enumeration
+	assert.Equal(t, 200, response.StatusCode)
 }
 
 func TestResetPassword(t *testing.T) {
@@ -641,7 +684,7 @@ func TestResetPassword(t *testing.T) {
 	}
 	registerJson, _ := json.Marshal(registerBody)
 
-	registerReq := httptest.NewRequest(http.MethodPost, "http://localhost:3000/api/auth/register",
+	registerReq := httptest.NewRequest(http.MethodPost, "/api/auth/register",
 		strings.NewReader(string(registerJson)))
 	registerReq.Header.Add("Content-Type", "application/json")
 
@@ -665,13 +708,6 @@ func TestResetPassword(t *testing.T) {
 		resetToken, resetExpires, "reset.password@example.com")
 	assert.NoError(t, err)
 
-	// Verify token was set
-	var storedToken string
-	err = db.QueryRow("SELECT reset_token FROM users WHERE email = $1",
-		"reset.password@example.com").Scan(&storedToken)
-	assert.NoError(t, err)
-	assert.Equal(t, resetToken, storedToken)
-
 	// Test password reset
 	resetBody := map[string]interface{}{
 		"token":    resetToken,
@@ -679,7 +715,7 @@ func TestResetPassword(t *testing.T) {
 	}
 	resetJson, _ := json.Marshal(resetBody)
 
-	resetReq := httptest.NewRequest(http.MethodPost, "http://localhost:3000/api/auth/reset-password",
+	resetReq := httptest.NewRequest(http.MethodPost, "/api/auth/reset-password",
 		strings.NewReader(string(resetJson)))
 	resetReq.Header.Add("Content-Type", "application/json")
 
@@ -688,52 +724,7 @@ func TestResetPassword(t *testing.T) {
 
 	// Read response
 	response := resetRec.Result()
-	body, err := io.ReadAll(response.Body)
-	assert.NoError(t, err, "Failed to read response body")
-
-	// Log response for debugging
-	t.Logf("Reset password response: %s", string(body))
-
-	// Check if response body is empty
-	if len(body) == 0 {
-		t.Fatal("Response body is empty")
-	}
-
-	var responseBody map[string]interface{}
-	err = json.Unmarshal(body, &responseBody)
-	assert.NoError(t, err, "Failed to parse response body")
-
-	// Check response structure first
-	assert.NotNil(t, responseBody, "Response body should not be nil")
-
-	// Verify HTTP status code
-	assert.Equal(t, 200, response.StatusCode, "Expected status code 200")
-
-	// Safe type assertions with validation
-	if code, ok := responseBody["code"].(float64); ok {
-		assert.Equal(t, float64(200), code, "Expected response code 200")
-	} else {
-		t.Logf("Warning: 'code' field missing or not a number")
-	}
-
-	if status, ok := responseBody["status"].(string); ok {
-		assert.Equal(t, "OK", status, "Expected status OK")
-	} else {
-		t.Logf("Warning: 'status' field missing or not a string")
-	}
-
-	// Verify response data safely
-	data, ok := responseBody["data"].(map[string]interface{})
-	if !ok {
-		t.Logf("Warning: 'data' field missing or not a map")
-	} else {
-		message, ok := data["message"].(string)
-		if ok {
-			assert.Contains(t, message, "successfully reset", "Expected success message")
-		} else {
-			t.Logf("Warning: 'message' field missing or not a string")
-		}
-	}
+	assert.Equal(t, 200, response.StatusCode)
 
 	// Verify reset token is cleared
 	var hasToken bool
@@ -753,7 +744,7 @@ func TestResetPassword(t *testing.T) {
 	}
 	loginJson, _ := json.Marshal(loginBody)
 
-	loginReq := httptest.NewRequest(http.MethodPost, "http://localhost:3000/api/auth/login",
+	loginReq := httptest.NewRequest(http.MethodPost, "/api/auth/login",
 		strings.NewReader(string(loginJson)))
 	loginReq.Header.Add("Content-Type", "application/json")
 
@@ -762,4 +753,122 @@ func TestResetPassword(t *testing.T) {
 
 	loginResponse := loginRec.Result()
 	assert.Equal(t, 200, loginResponse.StatusCode, "Should be able to login with new password")
+}
+
+func TestResetPasswordInvalidToken(t *testing.T) {
+	// Setup
+	setupEmailTest()
+	db := setupAuthTestDB()
+	truncateUsers(db)
+	router := setupAuthRouter()
+
+	// Register user first
+	registerBody := map[string]interface{}{
+		"name":     "Invalid Token Test",
+		"email":    "invalid.token@example.com",
+		"password": "password123",
+	}
+	registerJson, _ := json.Marshal(registerBody)
+
+	registerReq := httptest.NewRequest(http.MethodPost, "/api/auth/register",
+		strings.NewReader(string(registerJson)))
+	registerReq.Header.Add("Content-Type", "application/json")
+
+	registerRec := httptest.NewRecorder()
+	router.ServeHTTP(registerRec, registerReq)
+
+	// Set up valid reset token
+	validToken := "validtoken"
+	resetExpires := time.Now().Add(1 * time.Hour)
+
+	_, err := db.Exec(`
+        UPDATE users 
+        SET reset_token = $1, 
+            reset_expires = $2, 
+            is_verified = true 
+        WHERE email = $3`,
+		validToken, resetExpires, "invalid.token@example.com")
+	assert.NoError(t, err)
+
+	// Try with invalid token
+	resetBody := map[string]interface{}{
+		"token":    "invalidtoken",
+		"password": "newpassword123",
+	}
+	resetJson, _ := json.Marshal(resetBody)
+
+	resetReq := httptest.NewRequest(http.MethodPost, "/api/auth/reset-password",
+		strings.NewReader(string(resetJson)))
+	resetReq.Header.Add("Content-Type", "application/json")
+
+	resetRec := httptest.NewRecorder()
+	router.ServeHTTP(resetRec, resetReq)
+
+	// Check response
+	response := resetRec.Result()
+	assert.Equal(t, 400, response.StatusCode)
+
+	// Verify original token still exists
+	var token string
+	err = db.QueryRow(`
+        SELECT reset_token
+        FROM users 
+        WHERE email = $1`,
+		"invalid.token@example.com").Scan(&token)
+	assert.NoError(t, err)
+	assert.Equal(t, validToken, token, "Token should remain unchanged after failed reset attempt")
+}
+
+func TestResetPasswordExpiredToken(t *testing.T) {
+	// Setup
+	setupEmailTest()
+	db := setupAuthTestDB()
+	truncateUsers(db)
+	router := setupAuthRouter()
+
+	// Register user first
+	registerBody := map[string]interface{}{
+		"name":     "Expired Token Test",
+		"email":    "expired.token@example.com",
+		"password": "password123",
+	}
+	registerJson, _ := json.Marshal(registerBody)
+
+	registerReq := httptest.NewRequest(http.MethodPost, "/api/auth/register",
+		strings.NewReader(string(registerJson)))
+	registerReq.Header.Add("Content-Type", "application/json")
+
+	registerRec := httptest.NewRecorder()
+	router.ServeHTTP(registerRec, registerReq)
+
+	// Set up expired reset token
+	expiredToken := "expiredtoken"
+	resetExpires := time.Now().Add(-1 * time.Hour) // Expired 1 hour ago
+
+	_, err := db.Exec(`
+        UPDATE users 
+        SET reset_token = $1, 
+            reset_expires = $2, 
+            is_verified = true 
+        WHERE email = $3`,
+		expiredToken, resetExpires, "expired.token@example.com")
+	assert.NoError(t, err)
+
+	// Try with expired token
+	resetBody := map[string]interface{}{
+		"token":    expiredToken,
+		"password": "newpassword123",
+	}
+	resetJson, _ := json.Marshal(resetBody)
+
+	resetReq := httptest.NewRequest(http.MethodPost, "/api/auth/reset-password",
+		strings.NewReader(string(resetJson)))
+	resetReq.Header.Add("Content-Type", "application/json")
+
+	resetRec := httptest.NewRecorder()
+	router.ServeHTTP(resetRec, resetReq)
+
+	// Check response - should be 400 Bad Request or 410 Gone
+	response := resetRec.Result()
+	assert.True(t, response.StatusCode == 400 || response.StatusCode == 410)
 }

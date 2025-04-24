@@ -2,9 +2,22 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Case from "../components/Case";
 import {
-  Briefcase, Users, Clock, ChevronLeft, ChevronRight, Eye,
-  Bookmark, Calendar, MapPin, GraduationCap, Building,
-  Facebook, Twitter, Linkedin, Github, Instagram,
+  Briefcase,
+  Users,
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  Bookmark,
+  Calendar,
+  MapPin,
+  GraduationCap,
+  Building,
+  Facebook,
+  Twitter,
+  Linkedin,
+  Github,
+  Instagram,
 } from "lucide-react";
 import { Toaster, toast } from "sonner"; // Import Toaster and toast
 
@@ -22,87 +35,104 @@ export default function ProfilePage() {
   const [post] = useState([
     {
       id: 1,
-      title: 'Belajar Membuat Aplikasi Back-End untuk Pemula',
-      provider: 'Dicoding',
-      date: 'March 2023',
-      image: '/api/placeholder/300/200',
+      title: "Belajar Membuat Aplikasi Back-End untuk Pemula",
+      provider: "Dicoding",
+      date: "March 2023",
+      image: "/api/placeholder/300/200",
       likes: 14,
-      comments: 1
+      comments: 1,
     },
     {
       id: 2,
-      title: 'Sertifikat Kelas Belajar jQuery Dasar',
-      provider: 'CODEPOLITAN',
-      date: 'January 2023',
-      image: '/api/placeholder/300/200',
+      title: "Sertifikat Kelas Belajar jQuery Dasar",
+      provider: "CODEPOLITAN",
+      date: "January 2023",
+      image: "/api/placeholder/300/200",
       likes: 11,
-      comments: 1
+      comments: 1,
     },
     {
       id: 3,
-      title: 'React.js Developer postificate',
-      provider: 'Meta',
-      date: 'December 2022',
-      image: '/api/placeholder/300/200',
+      title: "React.js Developer postificate",
+      provider: "Meta",
+      date: "December 2022",
+      image: "/api/placeholder/300/200",
       likes: 19,
-      comments: 2
+      comments: 2,
     },
     {
       id: 4,
-      title: 'Responsive Web Design',
-      provider: 'freeCodeCamp',
-      date: 'November 2022',
-      image: '/api/placeholder/300/200',
+      title: "Responsive Web Design",
+      provider: "freeCodeCamp",
+      date: "November 2022",
+      image: "/api/placeholder/300/200",
       likes: 8,
-      comments: 0
-    }
+      comments: 0,
+    },
   ]);
 
   // Form states
   const [experienceForm, setExperienceForm] = useState({
-    jobTitle: '',
-    companyName: '',
-    location: '',
-    startMonth: 'Month',
-    startYear: 'Year',
-    endMonth: 'Month',
-    endYear: 'Year',
-    description: '',
-    logoCompany: null
+    jobTitle: "",
+    companyName: "",
+    location: "",
+    startMonth: "Month",
+    startYear: "Year",
+    endMonth: "Month",
+    endYear: "Year",
+    description: "",
+    logoCompany: null,
   });
 
   const [educationForm, setEducationForm] = useState({
-    degree: '',
-    schoolName: '',
-    location: '',
-    startMonth: 'Month',
-    startYear: 'Year',
-    endMonth: 'Month',
-    endYear: 'Year',
-    description: '',
-    schoolLogo: null
+    degree: "",
+    schoolName: "",
+    location: "",
+    startMonth: "Month",
+    startYear: "Year",
+    endMonth: "Month",
+    endYear: "Year",
+    description: "",
+    schoolLogo: null,
   });
 
-  const months = ["Month", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  const years = ["Year", ...Array.from({ length: 50 }, (_, i) => `${new Date().getFullYear() - i}`)];
+  const months = [
+    "Month",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+  const years = [
+    "Year",
+    ...Array.from({ length: 50 }, (_, i) => `${new Date().getFullYear() - i}`),
+  ];
 
   useEffect(() => {
-    const savedAbout = localStorage.getItem('profileAbout');
+    const savedAbout = localStorage.getItem("profileAbout");
     if (savedAbout) setAbout(savedAbout);
 
-    const savedSkills = localStorage.getItem('profileSkills');
+    const savedSkills = localStorage.getItem("profileSkills");
     if (savedSkills) setSkills(JSON.parse(savedSkills));
 
-    const savedImage = localStorage.getItem('profileImage');
+    const savedImage = localStorage.getItem("profileImage");
     if (savedImage) setProfileImage(savedImage);
 
-    const savedFullName = localStorage.getItem('profileFullName');
+    const savedFullName = localStorage.getItem("profileFullName");
     if (savedFullName) setFullName(savedFullName);
 
-    const savedHeadline = localStorage.getItem('profileHeadline');
+    const savedHeadline = localStorage.getItem("profileHeadline");
     if (savedHeadline) setHeadline(savedHeadline);
 
-    const savedSocials = localStorage.getItem('profileSocials');
+    const savedSocials = localStorage.getItem("profileSocials");
     if (savedSocials) setSocialMedia(JSON.parse(savedSocials));
   }, []);
 
@@ -110,20 +140,20 @@ export default function ProfilePage() {
     e.preventDefault();
     const newExperience = {
       ...experienceForm,
-      id: Date.now()
+      id: Date.now(),
     };
     setExperiences([...experiences, newExperience]);
     setShowExperienceModal(false);
     setExperienceForm({
-      jobTitle: '',
-      companyName: '',
-      location: '',
-      startMonth: 'Month',
-      startYear: 'Year',
-      endMonth: 'Month',
-      endYear: 'Year',
-      description: '',
-      logoCompany: null
+      jobTitle: "",
+      companyName: "",
+      location: "",
+      startMonth: "Month",
+      startYear: "Year",
+      endMonth: "Month",
+      endYear: "Year",
+      description: "",
+      logoCompany: null,
     });
     toast.success("Experience added successfully!");
   };
@@ -132,20 +162,20 @@ export default function ProfilePage() {
     e.preventDefault();
     const newEducation = {
       ...educationForm,
-      id: Date.now()
+      id: Date.now(),
     };
     setEducations([...educations, newEducation]);
     setShowEducationModal(false);
     setEducationForm({
-      degree: '',
-      schoolName: '',
-      location: '',
-      startMonth: 'Month',
-      startYear: 'Year',
-      endMonth: 'Month',
-      endYear: 'Year',
-      description: '',
-      schoolLogo: null
+      degree: "",
+      schoolName: "",
+      location: "",
+      startMonth: "Month",
+      startYear: "Year",
+      endMonth: "Month",
+      endYear: "Year",
+      description: "",
+      schoolLogo: null,
     });
     toast.success("Education added successfully!");
   };
@@ -154,7 +184,7 @@ export default function ProfilePage() {
     const { name, value } = e.target;
     setExperienceForm({
       ...experienceForm,
-      [name]: value
+      [name]: value,
     });
   };
 
@@ -162,26 +192,26 @@ export default function ProfilePage() {
     const { name, value } = e.target;
     setEducationForm({
       ...educationForm,
-      [name]: value
+      [name]: value,
     });
   };
 
   const handleExperienceFileChange = (e) => {
     setExperienceForm({
       ...experienceForm,
-      logoCompany: e.target.files[0]
+      logoCompany: e.target.files[0],
     });
   };
 
   const handleEducationFileChange = (e) => {
     setEducationForm({
       ...educationForm,
-      schoolLogo: e.target.files[0]
+      schoolLogo: e.target.files[0],
     });
   };
 
   const formatDate = (month, year) => {
-    if (month === 'Month' || year === 'Year') return '';
+    if (month === "Month" || year === "Year") return "";
     return `${month} ${year}`;
   };
 
@@ -191,17 +221,59 @@ export default function ProfilePage() {
 
   // Scroll handlers for post
   const scrollLeft = () => {
-    document.getElementById('post-container').scrollBy({ left: -300, behavior: 'smooth' });
+    document
+      .getElementById("post-container")
+      .scrollBy({ left: -300, behavior: "smooth" });
   };
 
   const scrollRight = () => {
-    document.getElementById('post-container').scrollBy({ left: 300, behavior: 'smooth' });
+    document
+      .getElementById("post-container")
+      .scrollBy({ left: 300, behavior: "smooth" });
   };
 
   return (
     <div className="bg-[#EDF3F7] min-h-screen">
       {/* Toast Notification Container */}
       <Toaster position="top-right" richColors />
+      {/* Navbar */}
+      <div className="bg-[#00AEEF] text-white flex justify-between items-center px-4 py-3">
+        <div className="flex items-center gap-2 max-w-[1100px] mx-auto w-full justify-between">
+          <div className="flex items-center gap-4">
+            <div className="font-bold text-lg flex items-center gap-2">
+              <img src={logo} alt="EvoConnect Logo" className="h-8" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search people, jobs & more"
+              className="px-3 py-1 rounded-md text-black text-sm w-64"
+            />
+          </div>
+          <div className="flex items-center gap-5 text-sm">
+            <a href="#" className="flex items-center gap-1">
+              <Briefcase size={16} />
+              Jobs
+            </a>
+            <a href="#" className="flex items-center gap-1">
+              <Users size={16} />
+              Connection
+            </a>
+            <a href="#" className="flex items-center gap-1">
+              <Pen size={16} />
+              Blog
+            </a>
+            <a href="#">
+              <MessageSquare size={16} />
+            </a>
+            <a href="#">
+              <Bell size={16} />
+            </a>
+            <a href="#">
+              <User size={16} />
+            </a>
+          </div>
+        </div>
+      </div>
 
       {/* Navbar */}
       <Case />
@@ -214,25 +286,43 @@ export default function ProfilePage() {
             <div className="bg-white rounded-lg shadow-md p-6 text-center">
               <div className="relative w-28 h-28 mx-auto bg-gray-200 rounded-full overflow-hidden flex items-center justify-center">
                 {profileImage ? (
-                  <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                  <img
+                    src={profileImage}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <span className="text-2xl font-bold">MA</span>
                 )}
               </div>
               <h2 className="font-bold text-xl mt-4">{fullName}</h2>
-              <p className="text-base text-gray-500">{headline || "No information yet."}</p>
+              <p className="text-base text-gray-500">
+                {headline || "No information yet."}
+              </p>
 
               <div className="mt-5 space-y-2 text-left">
-                <Link to="/list-connection" className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md">
-                  <span className="flex items-center gap-2 text-base"><Users size={18} /> Connections</span>
+                <Link
+                  to="/list-connection"
+                  className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md"
+                >
+                  <span className="flex items-center gap-2 text-base">
+                    <Users size={18} /> Connections
+                  </span>
                   <span className="font-bold text-lg">358</span>
                 </Link>
                 <div className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md">
-                  <span className="flex items-center gap-2 text-base"><Eye size={18} /> Views</span>
+                  <span className="flex items-center gap-2 text-base">
+                    <Eye size={18} /> Views
+                  </span>
                   <span className="font-bold text-lg">85</span>
                 </div>
-                <Link to="/job-saved" className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md">
-                  <span className="flex items-center gap-2 text-base"><Bookmark size={18} /> Job Saved</span>
+                <Link
+                  to="/job-saved"
+                  className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md"
+                >
+                  <span className="flex items-center gap-2 text-base">
+                    <Bookmark size={18} /> Job Saved
+                  </span>
                   <span className="font-bold text-lg">120</span>
                 </Link>
               </div>
@@ -254,7 +344,9 @@ export default function ProfilePage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-base text-gray-500 mt-1">No skills added yet.</p>
+                <p className="text-base text-gray-500 mt-1">
+                  No skills added yet.
+                </p>
               )}
             </div>
 
@@ -263,18 +355,33 @@ export default function ProfilePage() {
               {Object.keys(socialMedia).length > 0 ? (
                 <div className="space-y-2">
                   {Object.entries(socialMedia).map(([platform, username]) => (
-                    <div key={platform} className="flex items-center gap-2 p-1 hover:bg-gray-50 rounded-md">
-                      {platform === 'instagram' && <Instagram className="w-5 h-5 text-pink-500" />}
-                      {platform === 'facebook' && <Facebook className="w-5 h-5 text-blue-500" />}
-                      {platform === 'twitter' && <Twitter className="w-5 h-5 text-blue-400" />}
-                      {platform === 'linkedin' && <Linkedin className="w-5 h-5 text-blue-700" />}
-                      {platform === 'github' && <Github className="w-5 h-5 text-black" />}
+                    <div
+                      key={platform}
+                      className="flex items-center gap-2 p-1 hover:bg-gray-50 rounded-md"
+                    >
+                      {platform === "instagram" && (
+                        <Instagram className="w-5 h-5 text-pink-500" />
+                      )}
+                      {platform === "facebook" && (
+                        <Facebook className="w-5 h-5 text-blue-500" />
+                      )}
+                      {platform === "twitter" && (
+                        <Twitter className="w-5 h-5 text-blue-400" />
+                      )}
+                      {platform === "linkedin" && (
+                        <Linkedin className="w-5 h-5 text-blue-700" />
+                      )}
+                      {platform === "github" && (
+                        <Github className="w-5 h-5 text-black" />
+                      )}
                       <span className="text-base">@{username}</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-base text-gray-500">No social media added yet.</p>
+                <p className="text-base text-gray-500">
+                  No social media added yet.
+                </p>
               )}
             </div>
           </div>
@@ -306,7 +413,10 @@ export default function ProfilePage() {
               {experiences.length > 0 ? (
                 <div className="mt-6 space-y-8">
                   {experiences.map((exp) => (
-                    <div key={exp.id} className="border-b pb-6 last:border-b-0 last:pb-0">
+                    <div
+                      key={exp.id}
+                      className="border-b pb-6 last:border-b-0 last:pb-0"
+                    >
                       <div className="flex items-start">
                         {exp.logoCompany ? (
                           <div className="mr-4">
@@ -326,13 +436,19 @@ export default function ProfilePage() {
                           </div>
                         )}
                         <div className="flex-1">
-                          <h4 className="font-medium text-lg text-[#00AEEF]">{exp.jobTitle}</h4>
-                          <p className="text-base font-medium">{exp.companyName}</p>
+                          <h4 className="font-medium text-lg text-[#00AEEF]">
+                            {exp.jobTitle}
+                          </h4>
+                          <p className="text-base font-medium">
+                            {exp.companyName}
+                          </p>
 
                           <div className="flex items-center gap-3 mt-2 text-sm text-gray-500">
                             <span className="flex items-center gap-1">
                               <Calendar size={14} />
-                              {formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear) || 'Present'}
+                              {formatDate(exp.startMonth, exp.startYear)} -{" "}
+                              {formatDate(exp.endMonth, exp.endYear) ||
+                                "Present"}
                             </span>
                             {exp.location && (
                               <span className="flex items-center gap-1">
@@ -355,7 +471,9 @@ export default function ProfilePage() {
               ) : (
                 <div className="text-center py-8 bg-gray-50 rounded-md border border-dashed border-gray-300 mt-4">
                   <Briefcase size={40} className="mx-auto text-gray-300 mb-3" />
-                  <p className="text-base text-gray-500">No experience added yet.</p>
+                  <p className="text-base text-gray-500">
+                    No experience added yet.
+                  </p>
                 </div>
               )}
             </div>
@@ -378,7 +496,10 @@ export default function ProfilePage() {
               {educations.length > 0 ? (
                 <div className="mt-6 space-y-8">
                   {educations.map((edu) => (
-                    <div key={edu.id} className="border-b pb-6 last:border-b-0 last:pb-0">
+                    <div
+                      key={edu.id}
+                      className="border-b pb-6 last:border-b-0 last:pb-0"
+                    >
                       <div className="flex items-start">
                         {edu.schoolLogo ? (
                           <div className="mr-4">
@@ -393,18 +514,27 @@ export default function ProfilePage() {
                         ) : (
                           <div className="mr-4">
                             <div className="h-16 w-16 rounded-md bg-gray-100 flex items-center justify-center shadow-sm">
-                              <GraduationCap size={24} className="text-gray-400" />
+                              <GraduationCap
+                                size={24}
+                                className="text-gray-400"
+                              />
                             </div>
                           </div>
                         )}
                         <div className="flex-1">
-                          <h4 className="font-medium text-lg text-[#00AEEF]">{edu.degree}</h4>
-                          <p className="text-base font-medium">{edu.schoolName}</p>
+                          <h4 className="font-medium text-lg text-[#00AEEF]">
+                            {edu.degree}
+                          </h4>
+                          <p className="text-base font-medium">
+                            {edu.schoolName}
+                          </p>
 
                           <div className="flex items-center gap-3 mt-2 text-sm text-gray-500">
                             <span className="flex items-center gap-1">
                               <Calendar size={14} />
-                              {formatDate(edu.startMonth, edu.startYear)} - {formatDate(edu.endMonth, edu.endYear) || 'Present'}
+                              {formatDate(edu.startMonth, edu.startYear)} -{" "}
+                              {formatDate(edu.endMonth, edu.endYear) ||
+                                "Present"}
                             </span>
                             {edu.location && (
                               <span className="flex items-center gap-1">
@@ -426,8 +556,13 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="text-center py-8 bg-gray-50 rounded-md border border-dashed border-gray-300 mt-4">
-                  <GraduationCap size={40} className="mx-auto text-gray-300 mb-3" />
-                  <p className="text-base text-gray-500">No education added yet.</p>
+                  <GraduationCap
+                    size={40}
+                    className="mx-auto text-gray-300 mb-3"
+                  />
+                  <p className="text-base text-gray-500">
+                    No education added yet.
+                  </p>
                 </div>
               )}
             </div>
@@ -440,14 +575,14 @@ export default function ProfilePage() {
                   <h3 className="font-semibold text-lg">POST</h3>
                 </div>
                 <div className="flex space-x-2">
-                  <button 
+                  <button
                     onClick={scrollLeft}
                     className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 transition"
                     aria-label="Scroll left"
                   >
                     <ChevronLeft size={20} />
                   </button>
-                  <button 
+                  <button
                     onClick={scrollRight}
                     className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 transition"
                     aria-label="Scroll right"
@@ -458,38 +593,47 @@ export default function ProfilePage() {
               </div>
 
               {/* Scrollable container */}
-              <div 
-                id="post-container" 
+              <div
+                id="post-container"
                 className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
               >
-                {post.map(post => (
-                  <div key={post.id} className="flex-shrink-0 w-64 border rounded-lg overflow-hidden bg-white shadow-sm">
+                {post.map((post) => (
+                  <div
+                    key={post.id}
+                    className="flex-shrink-0 w-64 border rounded-lg overflow-hidden bg-white shadow-sm"
+                  >
                     <div className="h-40 bg-gray-100 relative">
-                      <img 
-                        src={post.image} 
-                        alt={`${post.title} post`} 
+                      <img
+                        src={post.image}
+                        alt={`${post.title} post`}
                         className="w-full h-full object-cover"
                       />
                     </div>
                     <div className="p-4">
-                      <h4 className="font-medium text-base text-[#00AEEF] line-clamp-2">{post.title}</h4>
-                      <p className="text-sm text-gray-600 mt-1">{post.provider}</p>
+                      <h4 className="font-medium text-base text-[#00AEEF] line-clamp-2">
+                        {post.title}
+                      </h4>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {post.provider}
+                      </p>
                       <p className="text-xs text-gray-500 mt-1">{post.date}</p>
-                      
+
                       <div className="flex justify-between items-center mt-3">
                         <div className="flex items-center text-xs text-gray-500">
                           <span>{post.likes} likes</span>
                           <span className="mx-2">•</span>
                           <span>{post.comments} comments</span>
                         </div>
-                        <button className="text-xs text-[#00AEEF]">Share</button>
+                        <button className="text-xs text-[#00AEEF]">
+                          Share
+                        </button>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-              
+
               <style jsx>{`
                 .scrollbar-hide::-webkit-scrollbar {
                   display: none;
@@ -550,7 +694,9 @@ export default function ProfilePage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Start Date *</label>
+                    <label className="block text-sm font-medium mb-1">
+                      Start Date *
+                    </label>
                     <div className="flex gap-2">
                       <select
                         name="startMonth"
@@ -559,7 +705,9 @@ export default function ProfilePage() {
                         onChange={handleExperienceChange}
                         required
                       >
-                        {months.map((month, index) => <option key={index}>{month}</option>)}
+                        {months.map((month, index) => (
+                          <option key={index}>{month}</option>
+                        ))}
                       </select>
                       <select
                         name="startYear"
@@ -568,12 +716,16 @@ export default function ProfilePage() {
                         onChange={handleExperienceChange}
                         required
                       >
-                        {years.map((year, index) => <option key={index}>{year}</option>)}
+                        {years.map((year, index) => (
+                          <option key={index}>{year}</option>
+                        ))}
                       </select>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">End Date</label>
+                    <label className="block text-sm font-medium mb-1">
+                      End Date
+                    </label>
                     <div className="flex gap-2">
                       <select
                         name="endMonth"
@@ -581,7 +733,9 @@ export default function ProfilePage() {
                         value={experienceForm.endMonth}
                         onChange={handleExperienceChange}
                       >
-                        {months.map((month, index) => <option key={index}>{month}</option>)}
+                        {months.map((month, index) => (
+                          <option key={index}>{month}</option>
+                        ))}
                       </select>
                       <select
                         name="endYear"
@@ -589,7 +743,9 @@ export default function ProfilePage() {
                         value={experienceForm.endYear}
                         onChange={handleExperienceChange}
                       >
-                        {years.map((year, index) => <option key={index}>{year}</option>)}
+                        {years.map((year, index) => (
+                          <option key={index}>{year}</option>
+                        ))}
                       </select>
                     </div>
                   </div>
@@ -607,7 +763,9 @@ export default function ProfilePage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Company Logo</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Company Logo
+                  </label>
                   <input
                     type="file"
                     className="w-full border px-3 py-2 rounded focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
@@ -677,7 +835,9 @@ export default function ProfilePage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Start Date *</label>
+                    <label className="block text-sm font-medium mb-1">
+                      Start Date *
+                    </label>
                     <div className="flex gap-2">
                       <select
                         name="startMonth"
@@ -686,7 +846,9 @@ export default function ProfilePage() {
                         onChange={handleEducationChange}
                         required
                       >
-                        {months.map((month, index) => <option key={index}>{month}</option>)}
+                        {months.map((month, index) => (
+                          <option key={index}>{month}</option>
+                        ))}
                       </select>
                       <select
                         name="startYear"
@@ -695,12 +857,16 @@ export default function ProfilePage() {
                         onChange={handleEducationChange}
                         required
                       >
-                        {years.map((year, index) => <option key={index}>{year}</option>)}
+                        {years.map((year, index) => (
+                          <option key={index}>{year}</option>
+                        ))}
                       </select>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">End Date</label>
+                    <label className="block text-sm font-medium mb-1">
+                      End Date
+                    </label>
                     <div className="flex gap-2">
                       <select
                         name="endMonth"
@@ -708,7 +874,9 @@ export default function ProfilePage() {
                         value={educationForm.endMonth}
                         onChange={handleEducationChange}
                       >
-                        {months.map((month, index) => <option key={index}>{month}</option>)}
+                        {months.map((month, index) => (
+                          <option key={index}>{month}</option>
+                        ))}
                       </select>
                       <select
                         name="endYear"
@@ -716,7 +884,9 @@ export default function ProfilePage() {
                         value={educationForm.endYear}
                         onChange={handleEducationChange}
                       >
-                        {years.map((year, index) => <option key={index}>{year}</option>)}
+                        {years.map((year, index) => (
+                          <option key={index}>{year}</option>
+                        ))}
                       </select>
                     </div>
                   </div>
@@ -734,7 +904,9 @@ export default function ProfilePage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">School Logo</label>
+                  <label className="block text-sm font-medium mb-1">
+                    School Logo
+                  </label>
                   <input
                     type="file"
                     className="w-full border px-3 py-2 rounded focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"

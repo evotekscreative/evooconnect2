@@ -31,6 +31,7 @@ func NewDB() *sql.DB {
 	config := GetDatabaseConfig()
 	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
 		config.Host, config.Port, config.User, config.Password, config.DbName, config.SSLMode)
+		fmt.Println("Connecting to database with DSN:", dsn)
 	db, err := sql.Open("postgres", dsn)
 	helper.PanicIfError(err)
 

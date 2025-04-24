@@ -14,6 +14,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -36,7 +37,7 @@ func NewAuthService(userRepository repository.UserRepository, db *sql.DB, valida
 
 func (service *AuthServiceImpl) generateToken(user domain.User) string {
 	claims := jwt.MapClaims{
-		"user_id": user.Id,
+		"user_id": user.Id.String(),
 		"email":   user.Email,
 		"exp":     time.Now().Add(24 * time.Hour).Unix(), // Token expires in 24 hours
 	}
@@ -107,6 +108,11 @@ func (service *AuthServiceImpl) Register(ctx context.Context, request web.Regist
 		panic(exception.NewBadRequestError("Email already registered"))
 	}
 
+	_, err = service.UserRepository.FindByUsername(ctx, tx, request.Username)
+	if err == nil {
+		panic(exception.NewBadRequestError("Username already taken"))
+	}
+
 	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
 	helper.PanicIfError(err)
@@ -114,6 +120,7 @@ func (service *AuthServiceImpl) Register(ctx context.Context, request web.Regist
 	user := domain.User{
 		Name:       request.Name,
 		Email:      request.Email,
+		Username:   request.Username,
 		Password:   string(hashedPassword),
 		IsVerified: false, // Set to false for new registrations
 		CreatedAt:  time.Now(),
@@ -262,9 +269,15 @@ func (service *AuthServiceImpl) VerifyEmail(ctx context.Context, request web.Ver
 	helper.PanicIfError(err)
 
 	// Get user_id from the JWT token (added by middleware)
-	userID, ok := ctx.Value("user_id").(int)
+	userUuid, ok := ctx.Value("user_id").(string)
 	if !ok {
 		panic(exception.NewUnauthorizedError("Unauthorized access"))
+	}
+
+	// Parse user_id to UUID
+	userID, err := uuid.Parse(userUuid)
+	if err != nil {
+		panic(exception.NewBadRequestError("Invalid user ID format"))
 	}
 
 	tx, err := service.DB.Begin()
@@ -338,7 +351,7 @@ func (service *AuthServiceImpl) logFailedVerificationAttempt(ctx context.Context
 }
 
 // clearRateLimiting removes rate limiting for a user after successful action
-func (service *AuthServiceImpl) clearRateLimiting(ctx context.Context, tx *sql.Tx, userID int, actionType string) error {
+func (service *AuthServiceImpl) clearRateLimiting(ctx context.Context, tx *sql.Tx, userID uuid.UUID, actionType string) error {
 	// You would need to implement this method in your UserRepository
 	return service.UserRepository.ClearFailedAttempts(ctx, tx, userID, actionType)
 }
