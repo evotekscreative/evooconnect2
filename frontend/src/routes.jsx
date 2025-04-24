@@ -23,6 +23,8 @@ import HelpPage from "./pages/Help.jsx";
 import ProfilePage from "./pages/Profile.jsx";
 import ProfileEdit from "./pages/EditProfile.jsx";
 import ProtectedRoute from "./components/Auth/ProtectedRoute.jsx";
+import VerifyEmail from "./pages/Auth/VerifyEmail.jsx";
+import ResetPassword from "./pages/Auth/ResetPassword.jsx";
 
 const router = createBrowserRouter([
   {
@@ -196,6 +198,18 @@ const router = createBrowserRouter([
         </ProtectedRoute>
     )
   },
+  {
+    path: "/verify-email",
+    element: <VerifyEmail />,
+  },
+  {
+    path: "/reset-password",
+    element: (
+      <ProtectedRoute>
+        <ResetPassword />
+        </ProtectedRoute>
+    )
+  }
 ]);
 
 export default router;
