@@ -7,6 +7,8 @@ import (
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/domain"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type UserRepositoryImpl struct {
@@ -17,38 +19,121 @@ func NewUserRepository() UserRepository {
 }
 
 func (repository *UserRepositoryImpl) Save(ctx context.Context, tx *sql.Tx, user domain.User) domain.User {
-	SQL := "INSERT INTO users(name, email, password, is_verified, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
-	var id int
-	err := tx.QueryRowContext(ctx, SQL, user.Name, user.Email, user.Password, user.IsVerified, user.CreatedAt, user.UpdatedAt).Scan(&id)
+	// Generate a new UUID if not provided
+	if user.Id == uuid.Nil {
+		user.Id = uuid.New()
+	}
+
+	SQL := "INSERT INTO users(id, name, email, username, password, is_verified, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"
+	_, err := tx.ExecContext(ctx, SQL,
+		user.Id,
+		user.Name,
+		user.Email,
+		user.Username,
+		user.Password,
+		user.IsVerified,
+		user.CreatedAt,
+		user.UpdatedAt)
 	helper.PanicIfError(err)
 
-	user.Id = id
 	return user
 }
 
 func (repository *UserRepositoryImpl) Update(ctx context.Context, tx *sql.Tx, user domain.User) domain.User {
-	SQL := "UPDATE users SET name = $1, email = $2, updated_at = $3 WHERE id = $4"
-	_, err := tx.ExecContext(ctx, SQL, user.Name, user.Email, time.Now(), user.Id)
+	SQL := `UPDATE users SET 
+        name = $1, email = $2, username = $3, birthdate = $4, 
+        gender = $5, location = $6, organization = $7, 
+        website = $8, phone = $9, headline = $10, about = $11, 
+        skills = $12, socials = $13, photo = $14, 
+        updated_at = $15 WHERE id = $16`
+
+	var skillsValue, socialsValue interface{}
+
+	if user.Skills.Valid {
+		skillsValue = user.Skills.String
+	} else {
+		skillsValue = nil
+	}
+
+	if user.Socials.Valid {
+		socialsValue = user.Socials.String
+	} else {
+		socialsValue = nil
+	}
+
+	_, err := tx.ExecContext(ctx, SQL,
+		user.Name,
+		user.Email,
+		user.Username,
+		user.Birthdate,
+		user.Gender,
+		user.Location,
+		user.Organization,
+		user.Website,
+		user.Phone,
+		user.Headline,
+		user.About,
+		skillsValue,
+		socialsValue,
+		user.Photo,
+		time.Now(),
+		user.Id)
 	helper.PanicIfError(err)
 
 	return user
 }
 
-func (repository *UserRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx, userId int) {
+func (repository *UserRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx, userId uuid.UUID) {
 	SQL := "DELETE FROM users WHERE id = $1"
 	_, err := tx.ExecContext(ctx, SQL, userId)
 	helper.PanicIfError(err)
 }
 
-func (repository *UserRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, userId int) (domain.User, error) {
-	SQL := "SELECT id, name, email, password, is_verified, created_at, updated_at FROM users WHERE id = $1"
+// Perbarui definisi struct domain.User di model/domain/user.go
+// untuk menggunakan pointer pada kolom yang bisa NULL
+
+func (repository *UserRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, userId uuid.UUID) (domain.User, error) {
+	SQL := `SELECT id, name, email, password, is_verified, 
+           COALESCE(username, '') as username, 
+           COALESCE(birthdate, '0001-01-01') as birthdate, 
+           COALESCE(gender, '') as gender,
+           COALESCE(location, '') as location, 
+           COALESCE(organization, '') as organization, 
+           COALESCE(website, '') as website, 
+           COALESCE(phone, '') as phone, 
+           COALESCE(headline, '') as headline, 
+           COALESCE(about, '') as about, 
+           skills, socials, 
+           COALESCE(photo, '') as photo, 
+           created_at, updated_at 
+           FROM users WHERE id = $1`
+
 	rows, err := tx.QueryContext(ctx, SQL, userId)
 	helper.PanicIfError(err)
 	defer rows.Close()
 
 	user := domain.User{}
 	if rows.Next() {
-		err := rows.Scan(&user.Id, &user.Name, &user.Email, &user.Password, &user.IsVerified, &user.CreatedAt, &user.UpdatedAt)
+		err := rows.Scan(
+			&user.Id,
+			&user.Name,
+			&user.Email,
+			&user.Password,
+			&user.IsVerified,
+			&user.Username,
+			&user.Birthdate,
+			&user.Gender,
+			&user.Location,
+			&user.Organization,
+			&user.Website,
+			&user.Phone,
+			&user.Headline,
+			&user.About,
+			&user.Skills,
+			&user.Socials,
+			&user.Photo,
+			&user.CreatedAt,
+			&user.UpdatedAt)
 		helper.PanicIfError(err)
 		return user, nil
 	} else {
@@ -72,7 +157,31 @@ func (repository *UserRepositoryImpl) FindByEmail(ctx context.Context, tx *sql.T
 	}
 }
 
-func (repository *UserRepositoryImpl) SaveVerificationToken(ctx context.Context, tx *sql.Tx, userId int, token string, expires time.Time) error {
+func (repository *UserRepositoryImpl) FindByUsername(ctx context.Context, tx *sql.Tx, username string) (domain.User, error) {
+	SQL := "SELECT id, name, email, username, password, is_verified, created_at, updated_at FROM users WHERE username = $1"
+	rows, err := tx.QueryContext(ctx, SQL, username)
+	helper.PanicIfError(err)
+	defer rows.Close()
+
+	user := domain.User{}
+	if rows.Next() {
+		err := rows.Scan(
+			&user.Id,
+			&user.Name,
+			&user.Email,
+			&user.Username,
+			&user.Password,
+			&user.IsVerified,
+			&user.CreatedAt,
+			&user.UpdatedAt)
+		helper.PanicIfError(err)
+		return user, nil
+	} else {
+		return user, errors.New("user not found")
+	}
+}
+
+func (repository *UserRepositoryImpl) SaveVerificationToken(ctx context.Context, tx *sql.Tx, userId uuid.UUID, token string, expires time.Time) error {
 	SQL := "UPDATE users SET verification_token = $1, verification_expires = $2 WHERE id = $3"
 	_, err := tx.ExecContext(ctx, SQL, token, expires, userId)
 	return err
@@ -127,7 +236,7 @@ func (repository *UserRepositoryImpl) FindByResetToken(ctx context.Context, tx *
 	}
 }
 
-func (repository *UserRepositoryImpl) UpdatePassword(ctx context.Context, tx *sql.Tx, userId int, hashedPassword string) error {
+func (repository *UserRepositoryImpl) UpdatePassword(ctx context.Context, tx *sql.Tx, userId uuid.UUID, hashedPassword string) error {
 	SQL := "UPDATE users SET password = $1, reset_token = NULL, reset_expires = NULL, updated_at = $2 WHERE id = $3"
 	_, err := tx.ExecContext(ctx, SQL, hashedPassword, time.Now(), userId)
 	return err
@@ -155,7 +264,7 @@ func (repository *UserRepositoryImpl) LogFailedAttempt(ctx context.Context, tx *
 }
 
 // ClearFailedAttempts removes rate limiting entries for a user
-func (repository *UserRepositoryImpl) ClearFailedAttempts(ctx context.Context, tx *sql.Tx, userID int, actionType string) error {
+func (repository *UserRepositoryImpl) ClearFailedAttempts(ctx context.Context, tx *sql.Tx, userID uuid.UUID, actionType string) error {
 	// First, find the user's associated attempts (by getting their email)
 	userSQL := "SELECT email FROM users WHERE id = $1"
 	var email string

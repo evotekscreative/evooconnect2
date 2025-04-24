@@ -29,15 +29,20 @@ func main() {
 	authService := service.NewAuthService(userRepository, db, validate, jwtSecret)
 	authController := controller.NewAuthController(authService)
 
-	// First create the router
-	router := app.NewRouter(authController, userController)
+	// Initialize post dependencies
+	postRepository := repository.NewPostRepository()
+	postService := service.NewPostService(postRepository, db, validate)
+	postController := controller.NewPostController(postService)
+
+	// Initialize router with all controllers
+	router := app.NewRouter(authController, userController, postController)
 
 	// Create middleware chain correctly by converting to http.Handler first
 	var handler http.Handler = router
 
 	// Apply middlewares
+	handler = middleware.NewAuthMiddleware(handler, jwtSecret)
 	handler = middleware.CORSMiddleware(handler)
-	handler = middleware.NewSelectiveAuthMiddleware(handler, jwtSecret)
 
 	// Start the server with the wrapped handler
 	server := http.Server{

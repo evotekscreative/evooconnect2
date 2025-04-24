@@ -1,0 +1,377 @@
+{
+  "info": {
+    "_postman_id": "86feb434-313f-4ca7-8481-0eeb31dab372",
+    "name": "EVOConnect",
+    "schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+    "_exporter_id": "36636210"
+  },
+  "item": [
+    {
+      "name": "User",
+      "item": [
+        {
+          "name": "GET Profile",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InZlcmlmeS50ZXN0QGV4YW1wbGUuY29tIiwiZXhwIjoxNzQ1Mjk0MjI4LCJ1c2VyX2lkIjo2fQ.R6dOEyMNuqvUL5bPnDVIj4XNzqTYehLudxgYmBOMlvM"
+              }
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "message",
+                  "value": "woi apa kabs",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "X-CSRF-TOKEN",
+                  "value": "hKQ8JdlEl0Bj8lNuQYamO3yxrHIJ9PvCqAqt9nvD",
+                  "type": "text",
+                  "disabled": true
+                }
+              ]
+            },
+            "url": "http://localhost:3000/api/user/profile"
+          },
+          "response": []
+        },
+        {
+          "name": "UPDATE Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InZlcmlmeS50ZXN0QGV4YW1wbGUuY29tIiwiZXhwIjoxNzQ1Mjk0MjI4LCJ1c2VyX2lkIjo2fQ.R6dOEyMNuqvUL5bPnDVIj4XNzqTYehLudxgYmBOMlvM"
+              }
+            },
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"John Doe\",\r\n  \"username\": \"johndoe\",\r\n  \"email\": \"john@example.com\",\r\n  \"birtxhdate\": \"1990-01-01\",\r\n  \"gender\": \"male\",\r\n  \"location\": \"Jakarta\",\r\n  \"organization\": \"Evoconnect\",\r\n  \"website\": \"https://johndoe.dev\",\r\n  \"phone\": \"08123456789\",\r\n  \"headline\": \"Fullstack Developer\",\r\n  \"about\": \"Passionate about building tech that matters.\",\r\n  \"skills\": [\"Go\", \"React\", \"Docker\"],\r\n  \"socials\": [\r\n    { \"platform\": \"github\", \"username\": \"johndoe\" },\r\n    { \"platform\": \"twitter\", \"username\": \"johndev\" }\r\n  ],\r\n  \"photo\": \"uploads/photos/johndoe.jpg\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "http://localhost:3000/api/user/profile"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Authenticate",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "RAHASIA",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\" : \"verqwsify.test@example.com\", \r\n    \"password\" : \"password123\", \r\n    \"name\": \"agan\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "http://localhost:3000/api/auth/register"
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\" : \"verify.test@example.com\", \r\n    \"password\" : \"password123\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "http://localhost:3000/api/auth/login"
+          },
+          "response": []
+        },
+        {
+          "name": "Send Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\" : \"muhamadafghanalzena@gmail.com\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "http://localhost:3000/api/auth/verify/send"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im11aGFtYWRhZmdoYW5hbHplbmFAZ21haWwuY29tIiwiZXhwIjoxNzQ1MTU2MDc4LCJ1c2VyX2lkIjoyfQ._YRymDKcnQ4QK8bXc74FaKNhvAWJYVUCrxoXvm41Qto"
+              }
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im11aGFtYWRhZmdoYW5hbHplbmFAZ21haWwuY29tIiwiZXhwIjoxNzQ1MTU2MDc4LCJ1c2VyX2lkIjoyfQ._YRymDKcnQ4QK8bXc74FaKNhvAWJYVUCrxoXvm41Qto",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"token\": \"864576\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "http://localhost:3000/api/auth/verify"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Post",
+      "item": [
+        {
+          "name": "Posts",
+          "description": "Endpoints for managing posts",
+          "item": [
+            {
+              "name": "Create Post",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:3000/api/posts",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "posts"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"content\": \"This is my first post!\",\n  \"images\": [\"uploads/images/image1.jpg\", \"uploads/images/image2.jpg\"],\n  \"visibility\": \"public\"\n}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get All Posts",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:3000/api/posts?limit=10&offset=0",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "posts"],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Post By ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:3000/api/posts/{{postId}}",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "posts", "{{postId}}"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Posts By User ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:3000/api/users/{{userId}}/posts?limit=10&offset=0",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "users", "{{userId}}", "posts"],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Post",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:3000/api/posts/{{postId}}",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "posts", "{{postId}}"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"content\": \"Updated post content\",\n  \"images\": [\"uploads/images/updated.jpg\"],\n  \"visibility\": \"private\"\n}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Post",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:3000/api/posts/{{postId}}",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "posts", "{{postId}}"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Like Post",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:3000/api/posts/{{postId}}/like",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "posts", "{{postId}}", "like"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Unlike Post",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:3000/api/posts/{{postId}}/like",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "posts", "{{postId}}", "like"]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

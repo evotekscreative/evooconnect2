@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "../../components/Navbar";
 import job1 from '../../assets/img/job1.png';
 import { useParams } from "react-router-dom";
@@ -6,18 +6,61 @@ import { useParams } from "react-router-dom";
 export default function NewPage() {
     const params = useParams();
     const jobId = params.jobId;
-    // State untuk melacak status klik tombol
     const [clickedSave, setClickedSave] = useState(false);
     const [clickedApply, setClickedApply] = useState(false);
+    const [savedJobs, setSavedJobs] = useState([]);
+    const [appliedJobs, setAppliedJobs] = useState([]);
 
-    // Fungsi untuk menangani klik pada tombol Save
+    // Load saved and applied jobs from localStorage when component mounts
+    useEffect(() => {
+        const saved = localStorage.getItem('savedJobs');
+        const applied = localStorage.getItem('appliedJobs');
+        
+        if (saved) {
+            const parsedSavedJobs = JSON.parse(saved);
+            setSavedJobs(parsedSavedJobs);
+            if (parsedSavedJobs.some(job => job.id === parseInt(jobId))) {
+                setClickedSave(true);
+            }
+        }
+        
+        if (applied) {
+            const parsedAppliedJobs = JSON.parse(applied);
+            setAppliedJobs(parsedAppliedJobs);
+            if (parsedAppliedJobs.some(job => job.id === parseInt(jobId))) {
+                setClickedApply(true);
+            }
+        }
+    }, [jobId]);
+
     const handleSaveClick = () => {
-        setClickedSave(true);
+        let updatedSavedJobs;
+        if (!clickedSave) {
+            updatedSavedJobs = [...savedJobs, job];
+            setClickedSave(true);
+        } else {
+            updatedSavedJobs = savedJobs.filter(j => j.id !== job.id);
+            setClickedSave(false);
+        }
+        setSavedJobs(updatedSavedJobs);
+        localStorage.setItem('savedJobs', JSON.stringify(updatedSavedJobs));
     };
 
-    // Fungsi untuk menangani klik pada tombol Apply
     const handleApplyClick = () => {
-        setClickedApply(true);
+        if (!clickedApply) {
+            const updatedAppliedJobs = [...appliedJobs, job];
+            setAppliedJobs(updatedAppliedJobs);
+            setClickedApply(true);
+            localStorage.setItem('appliedJobs', JSON.stringify(updatedAppliedJobs));
+            
+            // Also save the job if not already saved
+            if (!clickedSave) {
+                const updatedSavedJobs = [...savedJobs, job];
+                setSavedJobs(updatedSavedJobs);
+                setClickedSave(true);
+                localStorage.setItem('savedJobs', JSON.stringify(updatedSavedJobs));
+            }
+        }
     };
 
     const data = [
@@ -27,13 +70,8 @@ export default function NewPage() {
             company: "Angular Company",
             location: "Remote",
             description: "We are looking for a Frontend Developer to join our team.",
-            overview: "We are looking for a Frontend Developer to join our team.",
-            aplicantRank: 30,   
-            // requirements: [
-            //     "Bachelor's degree in Computer Science or related field",
-            //     "2+ years of experience in frontend development",
-            //     "Proficiency in HTML, CSS, and JavaScript",
-            // ],
+            overview: "We are looking for a skilled Software Engineer to develop and maintain our web applications. The ideal candidate will have experience with modern JavaScript frameworks and a passion for creating high-quality code.",
+            aplicantRank: 30,
             postedDate: "2023-09-30",
             seniorityLevel: "Director",
             Industry: "Information Technology",
@@ -43,51 +81,26 @@ export default function NewPage() {
             companyLogo: "https://via.placeholder.com/150",
             companyDescription: "Angular Company is a leading tech company specializing in web development.",
             companySize: "100-500 employees",
-            // companyWebsite: "https://angularcompany.com",
-            // companyFollowers: 500,
-            // companyLocation: "New York, NY",
-            // companyFounded: "2015",
-            // companyHeadquarters: "New York, NY",
-            // companySocialMedia: {
-            //     linkedin: "https://www.linkedin.com/company/angularcompany",
-            //     twitter: "https://twitter.com/angularcompany",
-            //     facebook: "https://www.facebook.com/angularcompany",
-            // }
         },
         {
             id: 2,
             title: "Frontend Developer",
-            company: "Angular Company",
+            company: "React Company",
             location: "Remote",
             description: "We are looking for a Frontend Developer to join our team.",
-            overview: "We are looking for a Frontend Developer to join our team.",
-            aplicantRank: 30,   
-            // requirements: [
-            //     "Bachelor's degree in Computer Science or related field",
-            //     "2+ years of experience in frontend development",
-            //     "Proficiency in HTML, CSS, and JavaScript",
-            // ],
-            postedDate: "2023-09-30",
-            seniorityLevel: "Director",
+            overview: "Join our team as a Frontend Developer and help build amazing user experiences. You'll work with React, TypeScript, and modern CSS to create responsive and accessible web applications.",
+            aplicantRank: 25,
+            postedDate: "2023-10-15",
+            seniorityLevel: "Mid Level",
             Industry: "Information Technology",
             type: "Full-time",
             jobFunction: "Engineering",
-            salary: "$60,000 - $80,000",
+            salary: "$70,000 - $90,000",
             companyLogo: "https://via.placeholder.com/150",
-            companyDescription: "Angular Company is a leading tech company specializing in web development.",
-            companySize: "100-500 employees",
-            // companyWebsite: "https://angularcompany.com",
-            // companyFollowers: 500,
-            // companyLocation: "New York, NY",
-            // companyFounded: "2015",
-            // companyHeadquarters: "New York, NY",
-            // companySocialMedia: {
-            //     linkedin: "https://www.linkedin.com/company/angularcompany",
-            //     twitter: "https://twitter.com/angularcompany",
-            //     facebook: "https://www.facebook.com/angularcompany",
-            // }
+            companyDescription: "React Company is a fast-growing startup focused on creating innovative web solutions.",
+            companySize: "50-200 employees",
         }
-    ]
+    ];
 
     const job = data.find(job => job.id === parseInt(jobId));
     if (!job) {
@@ -111,7 +124,7 @@ export default function NewPage() {
                                     >
                                         {job.company}
                                     </a>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#383838" stroke-width="0.75" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-map-pin-icon lucide-map-pin"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /><circle cx="12" cy="10" r="3" /></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#383838" strokeWidth="0.75" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-map-pin-icon lucide-map-pin"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /><circle cx="12" cy="10" r="3" /></svg>
                                     <p className="text-gray-500 text-xs">{job.location} | posted {job.postedDate}</p>
                                 </div>
                             </div>
@@ -125,6 +138,7 @@ export default function NewPage() {
                                 <button
                                     className={`bg-blue-500 text-white text-sm py-2 px-4 rounded-md ${clickedApply ? 'bg-green-500' : ''}`}
                                     onClick={handleApplyClick}
+                                    disabled={clickedApply}
                                 >
                                     {clickedApply ? 'Applied' : 'Apply'}
                                 </button>
@@ -136,7 +150,7 @@ export default function NewPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                         {/* Left Sidebar */}
                         <div className="lg:col-span-1 space-y-4">
-                            <div className="bg-gray-50 p-4 rounded-lg text-center shadow-sm">
+                            <div className="bg-gray-50 p-4 rounded-lg text-center shadow-lg">
                                 <img
                                     src={job1}
                                     alt="Company Logo"
@@ -161,7 +175,7 @@ export default function NewPage() {
                                 </div>
                             </div>
 
-                            <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
+                            <div className="bg-gray-50 p-4 rounded-lg shadow-lg">
                                 <div className="flex items-center justify-between mb-2">
                                     <p className="font-semibold text-sm">Photos</p>
                                     <a href="#" className="text-[#0A66C2] text-xs hover:underline">
@@ -174,14 +188,14 @@ export default function NewPage() {
                         {/* Main Info */}
                         <div className="lg:col-span-2 space-y-6">
                             {/* Overview */}
-                            <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
+                            <div className="bg-gray-50 p-4 rounded-lg shadow-lg">
                                 <h2 className="text-xl font-semibold mb-2">Overview</h2>
                                 <hr />
                                 <p className="text-sm text-gray-600 mt-3">{job.overview}</p>
                             </div>
 
                             {/* Job Details */}
-                            <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
+                            <div className="bg-gray-50 p-4 rounded-lg shadow-lg">
                                 <h2 className="text-xl font-semibold mb-5">Job Details</h2>
 
                                 <div className="grid grid-cols-1 gap-y-2 text-sm text-gray-600 mt-2">
@@ -210,7 +224,7 @@ export default function NewPage() {
                             <hr className="my-4 border-gray-200" />
 
                             {/* About Us */}
-                            <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
+                            <div className="bg-gray-50 p-4 rounded-lg shadow-lg">
                                 <div className="flex items-center mb-3">
                                     <img
                                         src={job1}
@@ -218,8 +232,8 @@ export default function NewPage() {
                                         className="w-14 h-14 rounded-full mr-2 object-cover"
                                     />
                                     <div>
-                                        <p className="font-semibold text-sm">React Company</p>
-                                        <p className="text-xs text-gray-400">Informatika | 24,044 followers</p>
+                                        <p className="font-semibold text-sm">{job.company}</p>
+                                        <p className="text-xs text-gray-400">{job.Industry} | {job.companySize}</p>
                                     </div>
                                 </div>
 
@@ -246,11 +260,10 @@ export default function NewPage() {
                                 Set alert for jobs
                             </button>
 
-                            <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
+                            <div className="bg-gray-50 p-4 rounded-lg shadow-lg">
                                 <p className="font-semibold text-sm mb-2">Similar Jobs</p>
                                 <div className="space-y-2">
                                     <div className="border border-gray-200 p-3 rounded-lg hover:shadow-md transition">
-
                                         <div className="flex items-start space-x-3 mb-1">
                                             <img
                                                 src="https://via.placeholder.com/32"
@@ -262,7 +275,7 @@ export default function NewPage() {
                                                 <p className="text-xs text-[#0A66C2]">Spotify Inc.</p>
                                             </div>
                                         </div>
-                                        <div className="flex items-center text-gray-500 text-xs mt-2">
+                                        <div className="flex items-center text-gray-500 text-xs mt-2 space-x-4">
                                             <svg
                                                 xmlns="http://www.w3.org/2000/svg"
                                                 width="14"
