@@ -5,21 +5,24 @@ import (
 	"database/sql"
 	"evoconnect/backend/model/domain"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type UserRepository interface {
 	Save(ctx context.Context, tx *sql.Tx, user domain.User) domain.User
 	Update(ctx context.Context, tx *sql.Tx, user domain.User) domain.User
-	Delete(ctx context.Context, tx *sql.Tx, userId int)
-	FindById(ctx context.Context, tx *sql.Tx, userId int) (domain.User, error)
+	Delete(ctx context.Context, tx *sql.Tx, userId uuid.UUID)
+	FindById(ctx context.Context, tx *sql.Tx, userId uuid.UUID) (domain.User, error)
 	FindByEmail(ctx context.Context, tx *sql.Tx, email string) (domain.User, error)
-	SaveVerificationToken(ctx context.Context, tx *sql.Tx, userId int, token string, expires time.Time) error
+	FindByUsername(ctx context.Context, tx *sql.Tx, username string) (domain.User, error)
+	SaveVerificationToken(ctx context.Context, tx *sql.Tx, userId uuid.UUID, token string, expires time.Time) error
 	VerifyEmail(ctx context.Context, tx *sql.Tx, token string) (domain.User, error)
 	SaveResetToken(ctx context.Context, tx *sql.Tx, email string, token string, expires time.Time) error
 	FindByResetToken(ctx context.Context, tx *sql.Tx, token string) (domain.User, error)
-	UpdatePassword(ctx context.Context, tx *sql.Tx, userId int, hashedPassword string) error
+	UpdatePassword(ctx context.Context, tx *sql.Tx, userId uuid.UUID, hashedPassword string) error
 	GetFailedAttempts(ctx context.Context, tx *sql.Tx, clientIP string, actionType string, window time.Duration) (int, error)
 	LogFailedAttempt(ctx context.Context, tx *sql.Tx, clientIP string, actionType string, token string) error
-	ClearFailedAttempts(ctx context.Context, tx *sql.Tx, userID int, actionType string) error
+	ClearFailedAttempts(ctx context.Context, tx *sql.Tx, userID uuid.UUID, actionType string) error
 	IsRateLimited(ctx context.Context, tx *sql.Tx, clientIP string, actionType string, maxAttempts int, window time.Duration) (bool, error)
 }

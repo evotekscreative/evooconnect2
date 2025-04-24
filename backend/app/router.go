@@ -13,6 +13,7 @@ import (
 func NewRouter(
 	authController controller.AuthController,
 	userController controller.UserController,
+	postController controller.PostController,
 ) *httprouter.Router {
 	router := httprouter.New()
 
@@ -26,6 +27,15 @@ func NewRouter(
 
 	router.GET("/api/user/profile", userController.GetProfile)
 	router.PUT("/api/user/profile", userController.UpdateProfile)
+
+	router.POST("/api/posts", postController.Create)
+	router.GET("/api/posts", postController.FindAll)
+	router.GET("/api/posts/:postId", postController.FindById)
+	router.PUT("/api/posts/:postId", postController.Update)
+	router.DELETE("/api/posts/:postId", postController.Delete)
+	router.GET("/api/users/:userId/posts", postController.FindByUserId)
+	router.POST("/api/posts/:postId/like", postController.LikePost)
+	router.DELETE("/api/posts/:postId/like", postController.UnlikePost)
 
 	// Add custom NotFound handler
 	router.NotFound = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
