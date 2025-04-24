@@ -4,6 +4,7 @@ import (
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/service"
+	// "fmt"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -65,17 +66,30 @@ func (controller *AuthControllerImpl) SendVerificationEmail(writer http.Response
 	helper.WriteToResponseBody(writer, webResponse)
 }
 
-func (controller *AuthControllerImpl) VerifyEmail(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	verificationRequest := web.VerificationRequest{}
-	helper.ReadFromRequestBody(request, &verificationRequest)
+// controller/auth_controller.go
 
-	messageResponse := controller.AuthService.VerifyEmail(request.Context(), verificationRequest)
+func (controller *AuthControllerImpl) VerifyEmail(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Baca body request yang hanya berisi token verifikasi
+	verifyRequest := web.VerificationRequest{}
+	helper.ReadFromRequestBody(request, &verifyRequest)
+
+	// Debug untuk melihat context yang diterima
+	// userID := request.Context().Value("user_id")
+	// email := request.Context().Value("email")
+	// fmt.Printf("VerifyEmail controller - Context values: user_id=%v, email=%v\n", userID, email)
+
+	// Panggil service
+	response := controller.AuthService.VerifyEmail(request.Context(), verifyRequest)
+
+	// Buat response
 	webResponse := web.WebResponse{
 		Code:   200,
 		Status: "OK",
-		Data:   messageResponse,
+		Data:   response,
 	}
 
+	// Kirim response
+	writer.Header().Add("Content-Type", "application/json")
 	helper.WriteToResponseBody(writer, webResponse)
 }
 

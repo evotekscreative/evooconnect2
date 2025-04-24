@@ -10,17 +10,20 @@ import (
 	"evoconnect/backend/repository"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
 
 type UserServiceImpl struct {
 	UserRepository repository.UserRepository
+	Validate       *validator.Validate
 	DB             *sql.DB
 }
 
-func NewUserService(userRepository repository.UserRepository, db *sql.DB) UserService {
+func NewUserService(userRepository repository.UserRepository, db *sql.DB, validate *validator.Validate) UserService {
 	return &UserServiceImpl{
 		UserRepository: userRepository,
+		Validate:       validate,
 		DB:             db,
 	}
 }
@@ -41,6 +44,9 @@ func (service *UserServiceImpl) GetProfile(ctx context.Context, userId uuid.UUID
 }
 
 func (service *UserServiceImpl) UpdateProfile(ctx context.Context, userId uuid.UUID, request web.UpdateProfileRequest) web.UserProfileResponse {
+	err := service.Validate.Struct(request)
+	helper.PanicIfError(err)
+
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
@@ -49,6 +55,13 @@ func (service *UserServiceImpl) UpdateProfile(ctx context.Context, userId uuid.U
 	user, err := service.UserRepository.FindById(ctx, tx, userId)
 	if err != nil {
 		panic(exception.NewNotFoundError(err.Error()))
+	}
+
+	if user.Username != request.Username {
+		_, err = service.UserRepository.FindByUsername(ctx, tx, request.Username)
+		if err == nil {
+			panic(exception.NewBadRequestError("Username already taken"))
+		}
 	}
 
 	// Update fields
@@ -70,6 +83,7 @@ func (service *UserServiceImpl) UpdateProfile(ctx context.Context, userId uuid.U
 	user.Phone = request.Phone
 	user.Headline = request.Headline
 	user.About = request.About
+	user.Username = request.Username
 
 	// Convert skills and socials to JSON string
 	if request.Skills != nil {

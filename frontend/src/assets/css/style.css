@@ -11,3 +11,56 @@
         color-stop(100%, #00c9e4)
     );
 }
+
+.ck-editor-mode ul {
+    list-style: none;
+    padding-left: 10px;
+}
+
+.ck-editor-mode ol {
+    list-style: none;
+    padding-left: 10px;
+}
+
+
+.ck-editor-mode ul li a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.ck-editor-mode ul li a:hover {
+    text-decoration: underline;
+}
+
+.ck-editor-mode ul li a:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.ck-editor-mode ul li a:active {
+    color: #0056b3;
+    text-decoration: none;
+}
+
+.ck-editor-mode a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.ck-editor-mode a:hover {
+    text-decoration: underline;
+}
+
+.ck-editor-mode b {
+    font-weight: 700;
+}
+
+.ck-editor-content ol {
+    list-style-type: decimal;
+    padding-left: 1.5em;
+  }
+  
+  .ck-editor-content ul {
+    list-style-type: disc;
+    padding-left: 1.5em;
+  }
