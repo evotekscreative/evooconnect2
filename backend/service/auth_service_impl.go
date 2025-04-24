@@ -10,6 +10,7 @@ import (
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -264,21 +265,25 @@ func (service *AuthServiceImpl) SendVerificationEmail(ctx context.Context, reque
 	}
 }
 
-func (service *AuthServiceImpl) VerifyEmail(ctx context.Context, request web.VerificationRequest) web.MessageResponse {
-	err := service.Validate.Struct(request)
-	helper.PanicIfError(err)
-
+func (service *AuthServiceImpl) VerifyEmail(ctx context.Context,  request *http.Request) web.MessageResponse {
 	// Get user_id from the JWT token (added by middleware)
-	userUuid, ok := ctx.Value("user_id").(string)
+	userIdStr, ok := request.Context().Value("user_id").(string)
 	if !ok {
 		panic(exception.NewUnauthorizedError("Unauthorized access"))
 	}
 
 	// Parse user_id to UUID
-	userID, err := uuid.Parse(userUuid)
+	userID, err := uuid.Parse(userIdStr)
 	if err != nil {
 		panic(exception.NewBadRequestError("Invalid user ID format"))
 	}
+
+	// Validate the request
+	verificationRequest := web.VerificationRequest{}
+	helper.ReadFromRequestBody(request, &verificationRequest)
+
+	err = service.Validate.Struct(verificationRequest)
+	helper.PanicIfError(err)
 
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
@@ -298,15 +303,15 @@ func (service *AuthServiceImpl) VerifyEmail(ctx context.Context, request web.Ver
 	}
 
 	// Check if token is a reasonable length
-	if len(request.Token) != 6 {
+	if len(verificationRequest.Token) != 6 {
 		panic(exception.NewBadRequestError("Invalid verification token format"))
 	}
 
 	// Check if token matches the user's verification token
-	if user.VerificationToken != request.Token {
+	if user.VerificationToken != verificationRequest.Token {
 		// Log failed attempt
 		clientIP := helper.GetClientIP(ctx)
-		_ = service.UserRepository.LogFailedAttempt(ctx, tx, clientIP, "email_verification", request.Token)
+		_ = service.UserRepository.LogFailedAttempt(ctx, tx, clientIP, "email_verification", verificationRequest.Token)
 		panic(exception.NewBadRequestError("Invalid verification token"))
 	}
 

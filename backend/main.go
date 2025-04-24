@@ -13,7 +13,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	_ "github.com/lib/pq"
 )
-
+	
 // In the main function, remove debugging lines
 func main() {
 	helper.LoadEnv()
