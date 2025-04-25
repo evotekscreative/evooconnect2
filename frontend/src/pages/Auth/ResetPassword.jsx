@@ -32,9 +32,7 @@ const ResetPassword = () => {
       setMessageColor("text-green-600");
 
       // Setelah berhasil reset, alihkan ke halaman login
-      setTimeout(() => {
         navigate("/login"); // Ganti dengan route halaman login yang sesuai
-      }, 2000);
 
     } catch (error) {
       setMessage("Something went wrong. Please try again later.");
@@ -147,3 +145,4 @@ const ResetPassword = () => {
 };
 
 export default ResetPassword;
+1

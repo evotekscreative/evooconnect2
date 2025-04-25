@@ -74,7 +74,9 @@ function Register() {
     // In your Register component's handleSubmit:
 try {
   const response = await axios.post('http://localhost:3000/api/auth/register', formData);
-  
+  const token = response.data.token;
+  localStorage.setItem('token', token);
+
   localStorage.removeItem('register_name');
   localStorage.removeItem('register_email');
 

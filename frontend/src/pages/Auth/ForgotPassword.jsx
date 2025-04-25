@@ -24,9 +24,7 @@ const ForgotPassword = () => {
       setMessageColor("text-green-600");
       
       // Setelah berhasil mengirim, alihkan ke halaman verifikasi
-      setTimeout(() => {
-        navigate("/verify-email"); // Ganti '/verify-email' dengan route halaman verifikasi email yang sesuai
-      }, 2000); // Memberi waktu 2 detik sebelum pengalihan
+        navigate("/reset-password"); // Ganti '/verify-email' dengan route halaman verifikasi email yang sesuai
 
     } catch (error) {
       if (error.response && error.response.status === 404) {

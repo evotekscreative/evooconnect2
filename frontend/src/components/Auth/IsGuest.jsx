@@ -9,7 +9,7 @@ const IsGuest = ({ children }) => {
   const navigate = useNavigate();
 
   if (token) {
-   navigate('/'); 
+    return <Navigate to="/" />; // Redirect to home if token exists
   } 
 
 

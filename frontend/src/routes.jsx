@@ -26,6 +26,7 @@ import ProfileEdit from "./pages/EditProfile.jsx";
 import ProtectedRoute from "./components/Auth/ProtectedRoute.jsx";
 import VerifyEmail from "./pages/Auth/VerifyEmail.jsx";
 import ResetPassword from "./pages/Auth/ResetPassword.jsx";
+import IsGuest from "./components/Auth/IsGuest.jsx";
 
 const router = createBrowserRouter([
   {
@@ -38,11 +39,11 @@ const router = createBrowserRouter([
   },
   {
     path: "/login",
-    element: <Login />,
+    element: <IsGuest><Login /></IsGuest>,
   },
   {
     path: "/register",
-    element: <Register />,
+    element: <IsGuest><Register /></IsGuest>,
   },
   {
     path: "/forgot-password",
@@ -205,14 +206,12 @@ const router = createBrowserRouter([
   },
   {
     path: "/verify-email",
-    element: <VerifyEmail />,
+    element: <ProtectedRoute><VerifyEmail /></ProtectedRoute>,
   },
   {
     path: "/reset-password",
     element: (
-      <ProtectedRoute>
         <ResetPassword />
-        </ProtectedRoute>
     )
   }
 ]);

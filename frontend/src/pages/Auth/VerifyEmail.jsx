@@ -15,16 +15,24 @@ const VerifyEmail = () => {
   const location = useLocation();
   
   // Get email from location state or localStorage as fallback
-  const [email, setEmail] = useState(
-    location.state?.email || localStorage.getItem('verify_email') || ""
-  );
+  const [email, setEmail] = useState(""); 
 
-  // Persist email in localStorage whenever it changes
-  useEffect(() => {
-    if (email) {
-      localStorage.setItem('verify_email', email);
+  axios.get("http://localhost:3000/api/user/profile", {
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+  })
+  .then((response) => {
+    const user = response.data.data;
+    if (user && user.email) {
+      setEmail(user.email); // Set email from user profile
+    } else {
+      const storedEmail = localStorage.getItem('verify_email');
+      if (storedEmail) {
+        setEmail(storedEmail); // Fallback to localStorage
+      } else {
+        setEmail(location.state?.email || ""); // Fallback to location state
+      }
     }
-  }, [email]);
+  })
 
   const handleSubmit = async (e) => {
     e.preventDefault();
