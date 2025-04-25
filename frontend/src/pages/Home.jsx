@@ -56,7 +56,8 @@ export default function SocialNetworkFeed() {
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [sharePostId, setSharePostId] = useState(null);
   const [replyToUser, setReplyToUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);  
+  const [chartDataState, setChartData] = useState([]);
   const fileInputRef = useRef(null);
   const trixEditorRef = useRef(null);
 
@@ -113,15 +114,21 @@ export default function SocialNetworkFeed() {
     },
   };
 
-  // 6. Tambah ke localStorage saat user masuk (gunakan useEffect)
   useEffect(() => {
-    const today = dayjs().format("YYYY-MM-DD");
     const views = JSON.parse(localStorage.getItem("profileViews")) || {};
-    views[today] = (views[today] || 0) + 1;
-    localStorage.setItem("profileViews", JSON.stringify(views));
+    const last7Days = [];
+  
+    for (let i = 6; i >= 0; i--) {
+      const date = dayjs().subtract(i, 'day').format("YYYY-MM-DD");
+      last7Days.push({
+        date: dayjs(date).format("DD MMM"), // format enak dibaca
+        views: views[date] || 0
+      });
+    }
+  
+    setChartData(last7Days);
   }, []);
 
-  // 7. Fungsi lain seperti open modal
   const openPremiumModal = () => {
     setShowPremiumModal(true);
   };
@@ -612,13 +619,6 @@ export default function SocialNetworkFeed() {
         className={`w-full ${showMobileMenu ? "hidden" : "block"
           } md:block md:w-full lg:w-1/2 px-0 md:px-1`}
       >
-
-        {/* Main Content - Feed */}
-        <div
-          className={`w-full ${showMobileMenu ? "hidden" : "block"
-            } md:block md:w-full lg:w-1/2 px-0 md:px-1`}
-        >
-
           <div className="bg-white rounded-2xl shadow-md mb-6 p-4 space-y-4">
             {/* Tabs */}
             <div className="flex border-b pb-2 space-x-1">
@@ -954,9 +954,10 @@ export default function SocialNetworkFeed() {
         </div>
 
         {/* Right Sidebar */}
-        <div>
-          className={`${showMobileMenu ? "block" : "hidden"
-            } md:block w-full md:w-1/4 lg:w-1/4 mt-4 md:mt-0 md:pl-2 lg:pl-4`}
+        <div
+        className={`${showMobileMenu ? "block" : "hidden"
+          } md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pl-2 lg:pr-4`}
+      >       
           {/* People You Might Know */}
           <div className="bg-white rounded-lg shadow mb-4 p-3">
             <h3 className="font-medium text-sm mb-3">People you might know</h3>
@@ -1352,8 +1353,8 @@ export default function SocialNetworkFeed() {
                           )}
                         </div>
                       </div>
-                    </div>
-                  ))
+                    </div> 
+                  ))   
                 )}
               </div>
 
@@ -1384,6 +1385,5 @@ export default function SocialNetworkFeed() {
           </div>
         )}
       </div>
-    </div>
   );
 } 
