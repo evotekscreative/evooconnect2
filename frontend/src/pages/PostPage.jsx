@@ -138,9 +138,6 @@ const   PostPage = () => {
                                 <button className="flex items-center gap-1 hover:text-blue-600">
                                     <Share2 size={16} /> Bagikan
                                 </button>
-                                <button className="flex items-center gap-1 hover:text-blue-600">
-                                    <Send size={16} /> Kirim
-                                </button>
                             </div>
                         </div>
 

@@ -71,22 +71,32 @@ function Register() {
 
     setErrors({});
 
-    try {
-      const response = await axios.post('http://localhost:3000/api/auth/register', formData);
-      Cookies.set('token', response.data.data.token, { expires: 7 });
+    // In your Register component's handleSubmit:
+try {
+  const response = await axios.post('http://localhost:3000/api/auth/register', formData);
+  const token = response.data.token;
+  localStorage.setItem('token', token);
 
-      localStorage.removeItem('register_name');
-      localStorage.removeItem('register_email');
+  localStorage.removeItem('register_name');
+  localStorage.removeItem('register_email');
 
-      setAlertInfo({
-        show: true,
-        type: 'success',
-        message: response.data.message || 'Registration successful!',
-      });
+  setAlertInfo({
+    show: true,
+    type: 'success',
+    message: response.data.message || 'Registration successful! Verification code sent to your email.',
+  });
 
-      setFormData({ name: '', username: '', email: '', password: '' });
+  // Navigate with email and also store it
+  navigate('/verify-email', { 
+    state: { 
+      email: formData.email,
+      from: '/register' 
+    } 
+  });
+  
+  // Clear form
+  setFormData({ name: '', username: '', email: '', password: '' });
 
-      navigate('/');
     } catch (error) {
       setAlertInfo({
         show: true,

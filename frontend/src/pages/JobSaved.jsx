@@ -197,7 +197,7 @@ const JobDashboard = () => {
                   </div>
                   <div className="mt-4 flex justify-between items-center">
                     <span className="text-xs text-gray-500">
-                      Applied on {new Date().toLocaleDateString()}
+                      Apply on {new Date().toLocaleDateString()}
                     </span>
                   </div>
                 </div>

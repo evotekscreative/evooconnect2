@@ -2,26 +2,30 @@ import { createBrowserRouter } from "react-router-dom";
 import Login from "./pages/Auth/Login.jsx";
 import Register from "./pages/Auth/Register.jsx";
 import ForgotPassword from "./pages/Auth/ForgotPassword.jsx";
-import App from './App';
-import Connections from './pages/Connections.jsx';
-import PrivacyPolicy from './pages/PrivacyPolicy.jsx';
-import TermsCondition from './pages/TermsCondition.jsx';
-import Jobs from './pages/Jobs/index.jsx';
-import JobProfile from './pages/Profile/job-profile.jsx';
-import Faq from './pages/Faq/index.jsx';
-import CompanyProfile from "./pages/Profile/company-profile.jsx"
-import Groups from './pages/Groups.jsx';
-import CreateBlog from './pages/Blog/CreateBlog.jsx';
-import BlogDetail from './pages/Blog/BlogDetail.jsx';
-import ListConnection from './pages/ListConnection.jsx';
-import { Messages } from './pages/Messages.jsx';
-import GroupPage from './pages/GroupPage.jsx';
+import App from "./App";
+import Connections from "./pages/Connections.jsx";
+import PrivacyPolicy from "./pages/PrivacyPolicy.jsx";
+import TermsCondition from "./pages/TermsCondition.jsx";
+import Jobs from "./pages/Jobs/index.jsx";
+import JobProfile from "./pages/Profile/job-profile.jsx";
+import Faq from "./pages/Faq/index.jsx";
+import CompanyProfile from "./pages/Profile/company-profile.jsx";
+import Groups from "./pages/Groups.jsx";
+import CreateBlog from "./pages/Blog/CreateBlog.jsx";
+import BlogDetail from "./pages/Blog/BlogDetail.jsx";
+import ListConnection from "./pages/ListConnection.jsx";
+import { Messages } from "./pages/Messages.jsx";
+import GroupPage from "./pages/GroupPage.jsx";
 import Blog from "./pages/Blog/Blog.jsx";
 import Notification from "./pages/Notification.jsx";
+import PostPage from "./pages/PostPage.jsx";
 import JobDashboard from "./pages/JobSaved.jsx";
 import ProfilePage from "./pages/Profile.jsx";
 import ProfileEdit from "./pages/EditProfile.jsx";
 import ProtectedRoute from "./components/Auth/ProtectedRoute.jsx";
+import VerifyEmail from "./pages/Auth/VerifyEmail.jsx";
+import ResetPassword from "./pages/Auth/ResetPassword.jsx";
+import IsGuest from "./components/Auth/IsGuest.jsx";
 import PostPage from './pages/PostPage.jsx';
 
 const router = createBrowserRouter([
@@ -30,20 +34,20 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <App />
-        </ProtectedRoute> 
-    )
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/login",
-    element: <Login />,
+    element: <IsGuest><Login /></IsGuest>,
   },
   {
     path: "/register",
-    element: <Register />,
+    element: <IsGuest><Register /></IsGuest>,
   },
   {
-    path: '/forgot-password',
-    element: <ForgotPassword/>, 
+    path: "/forgot-password",
+    element: <ForgotPassword />,
   },
   {
     path: "/terms",
@@ -58,8 +62,8 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <Connections />
-        </ProtectedRoute>
-    )
+      </ProtectedRoute>
+    ),
   },
 
   {
@@ -67,8 +71,8 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <Jobs />
-        </ProtectedRoute>
-    )
+      </ProtectedRoute>
+    ),
   },
 
   {
@@ -76,8 +80,8 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <JobProfile />
-        </ProtectedRoute>
-    )
+      </ProtectedRoute>
+    ),
   },
 
   {
@@ -85,16 +89,17 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <JobDashboard />
-        </ProtectedRoute>
-    )
+      </ProtectedRoute>
+    ),
   },
 
   {
     path: "/help",
     element: (
       <ProtectedRoute>
-        </ProtectedRoute>
-    )
+        <HelpPage />
+      </ProtectedRoute>
+    ),
   },
 
   {
@@ -102,8 +107,8 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <ProfilePage />
-        </ProtectedRoute>
-    )
+      </ProtectedRoute>
+    ),
   },
 
   {
@@ -111,8 +116,8 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <ProfileEdit />
-        </ProtectedRoute>
-    )
+      </ProtectedRoute>
+    ),
   },
 
   {
@@ -120,84 +125,94 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <Faq />
-        </ProtectedRoute>
-    )
+      </ProtectedRoute>
+    ),
   },
   {
-    path: '/company-profile/:companyId',
+    path: "/company-profile/:companyId",
     element: (
       <ProtectedRoute>
         <CompanyProfile />
-        </ProtectedRoute>
-    )
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/groups",
     element: (
       <ProtectedRoute>
         <Groups />
-        </ProtectedRoute>
-    )
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/list-connection",
     element: (
       <ProtectedRoute>
         <ListConnection />
-        </ProtectedRoute>
-    )
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/messages",
     element: (
       <ProtectedRoute>
         <Messages />
-        </ProtectedRoute>
-    )
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/group-page",
     element: (
       <ProtectedRoute>
         <GroupPage />
-        </ProtectedRoute>
-    )
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/create-blog",
     element: (
       <ProtectedRoute>
         <CreateBlog />
-        </ProtectedRoute>
-    )
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/blog",
     element: (
       <ProtectedRoute>
         <Blog />
-        </ProtectedRoute>
-    )
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/detail-blog/:id",
     element: (
       <ProtectedRoute>
         <BlogDetail />
-        </ProtectedRoute>
-    )
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/notification",
     element: (
       <ProtectedRoute>
         <Notification />
-        </ProtectedRoute>
-    )
+      </ProtectedRoute>
+    ),
   },
   {
-    path: '/post-page',
+    path: "/post-page",
     element: <PostPage />,
+  },
+  {
+    path: "/verify-email",
+    element: <ProtectedRoute><VerifyEmail /></ProtectedRoute>,
+  },
+  {
+    path: "/reset-password",
+    element: (
+        <ResetPassword />
+    )
   }
 ]);
 
