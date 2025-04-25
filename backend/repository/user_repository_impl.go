@@ -3,11 +3,12 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/domain"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type UserRepositoryImpl struct {
@@ -18,38 +19,49 @@ func NewUserRepository() UserRepository {
 }
 
 func (repository *UserRepositoryImpl) Save(ctx context.Context, tx *sql.Tx, user domain.User) domain.User {
-	SQL := "INSERT INTO users(name, email, username, password, is_verified, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id"
-	var id int
-	err := tx.QueryRowContext(ctx, SQL,
+	// Generate a new UUID if not provided
+	if user.Id == uuid.Nil {
+		user.Id = uuid.New()
+	}
+
+	SQL := "INSERT INTO users(id, name, email, username, password, is_verified, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"
+	_, err := tx.ExecContext(ctx, SQL,
+		user.Id,
 		user.Name,
 		user.Email,
 		user.Username,
 		user.Password,
 		user.IsVerified,
 		user.CreatedAt,
-		user.UpdatedAt).Scan(&id)
+		user.UpdatedAt)
 	helper.PanicIfError(err)
 
-	user.Id = id
 	return user
 }
 
 func (repository *UserRepositoryImpl) Update(ctx context.Context, tx *sql.Tx, user domain.User) domain.User {
-	// Marshal Skills dan Socials ke JSON sebelum disimpan
-	skillsJSON, err := json.Marshal(user.Skills)
-	helper.PanicIfError(err)
-
-	socialsJSON, err := json.Marshal(user.Socials)
-	helper.PanicIfError(err)
-
 	SQL := `UPDATE users SET 
         name = $1, email = $2, username = $3, birthdate = $4, 
         gender = $5, location = $6, organization = $7, 
         website = $8, phone = $9, headline = $10, about = $11, 
-        skills = $12::jsonb, socials = $13::jsonb, photo = $14, 
+        skills = $12, socials = $13, photo = $14, 
         updated_at = $15 WHERE id = $16`
 
-	_, err = tx.ExecContext(ctx, SQL,
+	var skillsValue, socialsValue interface{}
+
+	if user.Skills.Valid {
+		skillsValue = user.Skills.String
+	} else {
+		skillsValue = nil
+	}
+
+	if user.Socials.Valid {
+		socialsValue = user.Socials.String
+	} else {
+		socialsValue = nil
+	}
+
+	_, err := tx.ExecContext(ctx, SQL,
 		user.Name,
 		user.Email,
 		user.Username,
@@ -61,8 +73,8 @@ func (repository *UserRepositoryImpl) Update(ctx context.Context, tx *sql.Tx, us
 		user.Phone,
 		user.Headline,
 		user.About,
-		string(skillsJSON),  // Convert to string for PostgreSQL JSONB
-		string(socialsJSON), // Convert to string for PostgreSQL JSONB
+		skillsValue,
+		socialsValue,
 		user.Photo,
 		time.Now(),
 		user.Id)
@@ -71,7 +83,7 @@ func (repository *UserRepositoryImpl) Update(ctx context.Context, tx *sql.Tx, us
 	return user
 }
 
-func (repository *UserRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx, userId int) {
+func (repository *UserRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx, userId uuid.UUID) {
 	SQL := "DELETE FROM users WHERE id = $1"
 	_, err := tx.ExecContext(ctx, SQL, userId)
 	helper.PanicIfError(err)
@@ -80,7 +92,7 @@ func (repository *UserRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx, us
 // Perbarui definisi struct domain.User di model/domain/user.go
 // untuk menggunakan pointer pada kolom yang bisa NULL
 
-func (repository *UserRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, userId int) (domain.User, error) {
+func (repository *UserRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, userId uuid.UUID) (domain.User, error) {
 	SQL := `SELECT id, name, email, password, is_verified, 
            COALESCE(username, '') as username, 
            COALESCE(birthdate, '0001-01-01') as birthdate, 
@@ -102,7 +114,6 @@ func (repository *UserRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, 
 
 	user := domain.User{}
 	if rows.Next() {
-		var skillsStr, socialsStr string
 		err := rows.Scan(
 			&user.Id,
 			&user.Name,
@@ -118,20 +129,12 @@ func (repository *UserRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, 
 			&user.Phone,
 			&user.Headline,
 			&user.About,
-			&skillsStr,
-			&socialsStr,
+			&user.Skills,
+			&user.Socials,
 			&user.Photo,
 			&user.CreatedAt,
 			&user.UpdatedAt)
 		helper.PanicIfError(err)
-
-		// Unmarshal JSON strings into Skills and Socials
-		err = json.Unmarshal([]byte(skillsStr), &user.Skills)
-		helper.PanicIfError(err)
-
-		err = json.Unmarshal([]byte(socialsStr), &user.Socials)
-		helper.PanicIfError(err)
-
 		return user, nil
 	} else {
 		return user, errors.New("user not found")
@@ -178,7 +181,7 @@ func (repository *UserRepositoryImpl) FindByUsername(ctx context.Context, tx *sq
 	}
 }
 
-func (repository *UserRepositoryImpl) SaveVerificationToken(ctx context.Context, tx *sql.Tx, userId int, token string, expires time.Time) error {
+func (repository *UserRepositoryImpl) SaveVerificationToken(ctx context.Context, tx *sql.Tx, userId uuid.UUID, token string, expires time.Time) error {
 	SQL := "UPDATE users SET verification_token = $1, verification_expires = $2 WHERE id = $3"
 	_, err := tx.ExecContext(ctx, SQL, token, expires, userId)
 	return err
@@ -233,7 +236,7 @@ func (repository *UserRepositoryImpl) FindByResetToken(ctx context.Context, tx *
 	}
 }
 
-func (repository *UserRepositoryImpl) UpdatePassword(ctx context.Context, tx *sql.Tx, userId int, hashedPassword string) error {
+func (repository *UserRepositoryImpl) UpdatePassword(ctx context.Context, tx *sql.Tx, userId uuid.UUID, hashedPassword string) error {
 	SQL := "UPDATE users SET password = $1, reset_token = NULL, reset_expires = NULL, updated_at = $2 WHERE id = $3"
 	_, err := tx.ExecContext(ctx, SQL, hashedPassword, time.Now(), userId)
 	return err
@@ -261,7 +264,7 @@ func (repository *UserRepositoryImpl) LogFailedAttempt(ctx context.Context, tx *
 }
 
 // ClearFailedAttempts removes rate limiting entries for a user
-func (repository *UserRepositoryImpl) ClearFailedAttempts(ctx context.Context, tx *sql.Tx, userID int, actionType string) error {
+func (repository *UserRepositoryImpl) ClearFailedAttempts(ctx context.Context, tx *sql.Tx, userID uuid.UUID, actionType string) error {
 	// First, find the user's associated attempts (by getting their email)
 	userSQL := "SELECT email FROM users WHERE id = $1"
 	var email string

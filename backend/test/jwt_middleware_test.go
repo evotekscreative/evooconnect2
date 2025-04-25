@@ -14,13 +14,13 @@ import (
 
 // TestMiddlewareWrapper wraps the selective auth middleware to make it testable
 type TestMiddlewareWrapper struct {
-	originalMiddleware *middleware.SelectiveAuthMiddleware
+	originalMiddleware *middleware.AuthMiddleware
 	requiresAuthPaths  map[string]bool
 }
 
 func NewTestMiddlewareWrapper(handler http.Handler, jwtSecret string) *TestMiddlewareWrapper {
 	return &TestMiddlewareWrapper{
-		originalMiddleware: middleware.NewSelectiveAuthMiddleware(handler, jwtSecret),
+		originalMiddleware: middleware.NewAuthMiddleware(handler, jwtSecret),
 		requiresAuthPaths:  make(map[string]bool),
 	}
 }
@@ -34,14 +34,11 @@ func (t *TestMiddlewareWrapper) ServeHTTP(w http.ResponseWriter, r *http.Request
 	// If we've configured this wrapper to require auth for all paths
 	if _, exists := t.requiresAuthPaths["*"]; exists {
 		// Override the PublicPaths to empty so all paths require auth
-		originalPaths := t.originalMiddleware.PublicPaths
-		t.originalMiddleware.PublicPaths = []string{}
 
 		// Call the original middleware
 		t.originalMiddleware.ServeHTTP(w, r)
 
 		// Restore the original paths
-		t.originalMiddleware.PublicPaths = originalPaths
 	} else {
 		// Just use the original middleware with its default behavior
 		t.originalMiddleware.ServeHTTP(w, r)
@@ -149,7 +146,7 @@ func TestAuthMiddleware_PublicEndpoints(t *testing.T) {
 
 	// Create middleware
 	jwtSecret := "test-secret"
-	authMiddleware := middleware.NewSelectiveAuthMiddleware(handler, jwtSecret)
+	authMiddleware := middleware.NewAuthMiddleware(handler, jwtSecret)
 
 	// Test login endpoint (should not require token)
 	loginRequest := httptest.NewRequest("POST", "http://example.com/api/auth/login", nil)
