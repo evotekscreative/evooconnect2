@@ -20,13 +20,13 @@ import Blog from "./pages/Blog/Blog.jsx";
 import Notification from "./pages/Notification.jsx";
 import PostPage from "./pages/PostPage.jsx";
 import JobDashboard from "./pages/JobSaved.jsx";
-import HelpPage from "./pages/Help.jsx";
 import ProfilePage from "./pages/Profile.jsx";
 import ProfileEdit from "./pages/EditProfile.jsx";
 import ProtectedRoute from "./components/Auth/ProtectedRoute.jsx";
 import VerifyEmail from "./pages/Auth/VerifyEmail.jsx";
 import ResetPassword from "./pages/Auth/ResetPassword.jsx";
 import IsGuest from "./components/Auth/IsGuest.jsx";
+import PostPage from './pages/PostPage.jsx';
 
 const router = createBrowserRouter([
   {

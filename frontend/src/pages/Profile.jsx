@@ -274,6 +274,8 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+      {/* Toast Notification Container */}
+      <Toaster position="top-right" richColors />
 
       {/* Navbar */}
       <Case />
