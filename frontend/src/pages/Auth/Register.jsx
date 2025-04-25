@@ -190,7 +190,6 @@ function Register() {
                     "AGREE & JOIN"
                   )}
                 </button>
-
               </form>
 
               <div className="mt-4 pb-4 text-center border-b border-gray-200">

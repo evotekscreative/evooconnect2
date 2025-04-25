@@ -19,10 +19,10 @@ import GroupPage from './pages/GroupPage.jsx';
 import Blog from "./pages/Blog/Blog.jsx";
 import Notification from "./pages/Notification.jsx";
 import JobDashboard from "./pages/JobSaved.jsx";
-import HelpPage from "./pages/Help.jsx";
 import ProfilePage from "./pages/Profile.jsx";
 import ProfileEdit from "./pages/EditProfile.jsx";
 import ProtectedRoute from "./components/Auth/ProtectedRoute.jsx";
+import PostPage from './pages/PostPage.jsx';
 
 const router = createBrowserRouter([
   {
@@ -30,7 +30,7 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <App />
-        </ProtectedRoute>
+        </ProtectedRoute> 
     )
   },
   {
@@ -93,7 +93,6 @@ const router = createBrowserRouter([
     path: "/help",
     element: (
       <ProtectedRoute>
-        <HelpPage />
         </ProtectedRoute>
     )
   },
@@ -196,6 +195,10 @@ const router = createBrowserRouter([
         </ProtectedRoute>
     )
   },
+  {
+    path: '/post-page',
+    element: <PostPage />,
+  }
 ]);
 
 export default router;
