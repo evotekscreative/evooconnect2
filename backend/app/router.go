@@ -13,6 +13,7 @@ import (
 func NewRouter(
 	authController controller.AuthController,
 	userController controller.UserController,
+	blogController controller.BlogController,
 ) *httprouter.Router {
 	router := httprouter.New()
 
@@ -27,6 +28,14 @@ func NewRouter(
 	router.GET("/api/user/profile", userController.GetProfile)
 	router.PUT("/api/user/profile", userController.UpdateProfile)
 
+
+	// Blog routes
+	router.POST("/api/blogs", blogController.Create)
+	router.GET("/api/blogs", blogController.FindAll)
+	router.DELETE("/api/blogs/:blogId", blogController.Delete)
+	router.GET("/api/blogs/slug/:slug", blogController.GetBySlug)
+
+	
 	// Add custom NotFound handler
 	router.NotFound = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Content-Type", "application/json")

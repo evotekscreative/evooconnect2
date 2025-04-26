@@ -1,51 +1,55 @@
 package main
 
 import (
-	"evoconnect/backend/app"
-	"evoconnect/backend/controller"
-	"evoconnect/backend/helper"
-	"evoconnect/backend/middleware"
-	"evoconnect/backend/repository"
-	"evoconnect/backend/service"
-	"fmt"
-	"net/http"
+    "evoconnect/backend/app"
+    "evoconnect/backend/controller"
+    "evoconnect/backend/helper"
+    "evoconnect/backend/middleware"
+    "evoconnect/backend/repository"
+    "evoconnect/backend/service"
+    "fmt"
+    "net/http"
 
-	"github.com/go-playground/validator/v10"
-	_ "github.com/lib/pq"
+    "github.com/go-playground/validator/v10"
+    _ "github.com/lib/pq"
 )
 
-// In the main function, remove debugging lines
 func main() {
-	helper.LoadEnv()
-	db := app.NewDB()
-	validate := validator.New()
+    helper.LoadEnv()
+    db := app.NewDB()
+    validate := validator.New()
 
-	jwtSecret := helper.GetEnv("JWT_SECRET_KEY", "your-secret-key")
+    jwtSecret := helper.GetEnv("JWT_SECRET_KEY", "your-secret-key")
 
-	userRepository := repository.NewUserRepository()
-	userService := service.NewUserService(userRepository, db)
-	userController := controller.NewUserController(userService)
+    // Initialize user components
+    userRepository := repository.NewUserRepository()
+    userService := service.NewUserService(userRepository, db)
+    userController := controller.NewUserController(userService)
 
-	authService := service.NewAuthService(userRepository, db, validate, jwtSecret)
-	authController := controller.NewAuthController(authService)
+    // Initialize auth components
+    authService := service.NewAuthService(userRepository, db, validate, jwtSecret)
+    authController := controller.NewAuthController(authService)
 
-	// First create the router
-	router := app.NewRouter(authController, userController)
+    // Initialize blog components
+	blogRepository := repository.NewBlogRepository(db)
+	blogService := service.NewBlogService(blogRepository)
+	blogController := controller.NewBlogController(blogService)
+	
+	router := app.NewRouter(authController, userController, blogController)
+	
 
-	// Create middleware chain correctly by converting to http.Handler first
-	var handler http.Handler = router
+    // Create middleware chain
+    var handler http.Handler = router
+    handler = middleware.NewSelectiveAuthMiddleware(handler, jwtSecret)
+    handler = middleware.CORSMiddleware(handler)
 
-	// Apply middlewares
-	handler = middleware.NewSelectiveAuthMiddleware(handler, jwtSecret)
-	handler = middleware.CORSMiddleware(handler)
+    // Start server
+    server := http.Server{
+        Addr:    "localhost:3000",
+        Handler: handler,
+    }
 
-	// Start the server with the wrapped handler
-	server := http.Server{
-		Addr:    "localhost:3000",
-		Handler: handler,
-	}
-
-	fmt.Println("Server starting on localhost:3000")
-	err := server.ListenAndServe()
-	helper.PanicIfError(err)
+    fmt.Println("Server starting on localhost:3000")
+    err := server.ListenAndServe()
+    helper.PanicIfError(err)
 }

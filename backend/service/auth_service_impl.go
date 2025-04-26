@@ -11,7 +11,6 @@ import (
 	"evoconnect/backend/repository"
 	"fmt"
 	"time"
-
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-playground/validator/v10"
 	"golang.org/x/crypto/bcrypt"
