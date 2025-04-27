@@ -143,3 +143,53 @@ func ToCommentResponses(comments []domain.Comment) []web.CommentResponse {
 	}
 	return commentResponses
 }
+
+func ToEducationResponse(education domain.UserEducation) web.EducationResponse {
+	return web.EducationResponse{
+		Id:            education.Id,
+		UserId:        education.UserId,
+		InstituteName: education.InstituteName,
+		Major:         education.Major,
+		StartMonth:    education.StartMonth,
+		StartYear:     education.StartYear,
+		EndMonth:      education.EndMonth,
+		EndYear:       education.EndYear,
+		Caption:       education.Caption,
+		Photo:         education.Photo,
+		CreatedAt:     education.CreatedAt,
+		UpdatedAt:     education.UpdatedAt,
+	}
+}
+
+func ToEducationResponses(educations []domain.UserEducation) []web.EducationResponse {
+	var educationResponses []web.EducationResponse
+	for _, education := range educations {
+		educationResponses = append(educationResponses, ToEducationResponse(education))
+	}
+	return educationResponses
+}
+
+func ToExperienceResponse(experience domain.UserExperience) web.ExperienceResponse {
+	return web.ExperienceResponse{
+		Id:          experience.Id.String(),
+		UserId:      experience.UserId.String(),
+		JobTitle:    experience.JobTitle,
+		CompanyName: experience.CompanyName,
+		StartMonth:  experience.StartMonth,
+		StartYear:   experience.StartYear,
+		EndMonth:    experience.EndMonth,
+		EndYear:     experience.EndYear,
+		Caption:     experience.Caption,
+		Photo:       experience.Photo,
+		CreatedAt:   experience.CreatedAt,
+		UpdatedAt:   experience.UpdatedAt,
+	}
+}
+
+func ToExperienceResponses(experiences []domain.UserExperience) []web.ExperienceResponse {
+	var experienceResponses []web.ExperienceResponse
+	for _, experience := range experiences {
+		experienceResponses = append(experienceResponses, ToExperienceResponse(experience))
+	}
+	return experienceResponses
+}

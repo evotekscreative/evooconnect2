@@ -34,8 +34,6 @@ func main() {
 	blogService := service.NewBlogService(blogRepository)
 	blogController := controller.NewBlogController(blogService)
 
-	// router := app.NewRouter(authController, userController, blogController)
-
 	// Initialize post dependencies
 	postRepository := repository.NewPostRepository()
 	postService := service.NewPostService(postRepository, db, validate)
@@ -43,16 +41,20 @@ func main() {
 
 	// Create comment repository, service, and controller instances
 	commentRepository := repository.NewCommentRepository()
-	commentService := service.NewCommentService(
-		commentRepository,
-		postRepository,
-		userRepository,
-		db,
-		validate)
+	commentService := service.NewCommentService(commentRepository, postRepository, userRepository, db, validate)
 	commentController := controller.NewCommentController(commentService)
 
+	educationRepository := repository.NewEducationRepository()
+	educationService := service.NewEducationService(educationRepository, userRepository, db, validate)
+	educationController := controller.NewEducationController(educationService)
+
+	// Experience
+	experienceRepository := repository.NewExperienceRepository()
+	experienceService := service.NewExperienceService(experienceRepository, userRepository, db, validate)
+	experienceController := controller.NewExperienceController(experienceService)
+
 	// Initialize router with all controllers
-	router := app.NewRouter(authController, userController, blogController, postController, commentController)
+	router := app.NewRouter(authController, userController, blogController, postController, commentController, educationController, experienceController)
 
 	// Create middleware chain
 	var handler http.Handler = router

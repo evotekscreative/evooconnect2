@@ -1,6 +1,8 @@
 package web
 
-// LoginRequest represents login form data
+import "evoconnect/backend/model/domain"
+
+// Request models
 type LoginRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`
@@ -28,4 +30,22 @@ type VerificationRequest struct {
 type ResetPasswordRequest struct {
 	Token    string `json:"token" validate:"required"`
 	Password string `json:"password" validate:"required,min=6"`
+}
+
+// Response models
+// LoginResponse represents successful login response
+type LoginResponse struct {
+	Token string      `json:"token"`
+	User  domain.User `json:"user"`
+}
+
+// RegisterResponse represents successful registration response
+type RegisterResponse struct {
+	Token string      `json:"token"`
+	User  domain.User `json:"user"`
+}
+
+// MessageResponse for simple message responses
+type MessageResponse struct {
+	Message string `json:"message"`
 }

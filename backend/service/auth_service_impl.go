@@ -10,12 +10,11 @@ import (
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
 	"fmt"
-	"net/http"
-	"time"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+	"time"
 )
 
 type AuthServiceImpl struct {

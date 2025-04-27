@@ -759,7 +759,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"images\": [\n            \"uploads/posts/550e8400-e29b-41d4-a716-446655440000/image1.jpg\",\n            \"uploads/posts/550e8400-e29b-41d4-a716-446655440000/image2.jpg\"\n        ]\n    }\n}"
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"filenames\": [\n            \"uploads/posts/550e8400-e29b-41d4-a716-446655440000/1673956307893425167.jpg\",\n            \"uploads/posts/550e8400-e29b-41d4-a716-446655440000/1673956307893497821.jpg\"\n        ]\n    }\n}"
             }
           ]
         },
@@ -2339,12 +2339,746 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Education",
+      "description": "Endpoints untuk mengelola data pendidikan pengguna",
+      "item": [
+        {
+          "name": "Create Education",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"institute_name\": \"Harvard University\",\n  \"major\": \"Computer Science\",\n  \"start_month\": \"September\",\n  \"start_year\": \"2018\",\n  \"end_month\": \"June\",\n  \"end_year\": \"2022\",\n  \"caption\": \"Bachelor of Science in Computer Science\",\n  \"photo\": \"uploads/education/harvard.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/education",
+              "host": ["{{base_url}}"],
+              "path": ["api", "education"]
+            },
+            "description": "Menambahkan data pendidikan baru untuk pengguna saat ini"
+          },
+          "response": [
+            {
+              "name": "Create Education Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"institute_name\": \"Harvard University\",\n  \"major\": \"Computer Science\",\n  \"start_month\": \"September\",\n  \"start_year\": \"2018\",\n  \"end_month\": \"June\",\n  \"end_year\": \"2022\",\n  \"caption\": \"Bachelor of Science in Computer Science\",\n  \"photo\": \"uploads/education/harvard.jpg\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/education",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "education"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 201,\n    \"status\": \"CREATED\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"institute_name\": \"Harvard University\",\n        \"major\": \"Computer Science\",\n        \"start_month\": \"September\",\n        \"start_year\": \"2018\",\n        \"end_month\": \"June\",\n        \"end_year\": \"2022\",\n        \"caption\": \"Bachelor of Science in Computer Science\",\n        \"photo\": \"uploads/education/harvard.jpg\",\n        \"created_at\": \"2023-11-28T15:30:00Z\",\n        \"updated_at\": \"2023-11-28T15:30:00Z\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Education",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"institute_name\": \"MIT\",\n  \"major\": \"Computer Science and Engineering\",\n  \"start_month\": \"August\",\n  \"start_year\": \"2018\",\n  \"end_month\": \"May\",\n  \"end_year\": \"2022\",\n  \"caption\": \"Bachelor of Science in Computer Science and Engineering\",\n  \"photo\": \"uploads/education/mit.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/education/{{educationId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "education", "{{educationId}}"]
+            },
+            "description": "Memperbarui data pendidikan pengguna"
+          },
+          "response": [
+            {
+              "name": "Update Education Success",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"institute_name\": \"MIT\",\n  \"major\": \"Computer Science and Engineering\",\n  \"start_month\": \"August\",\n  \"start_year\": \"2018\",\n  \"end_month\": \"May\",\n  \"end_year\": \"2022\",\n  \"caption\": \"Bachelor of Science in Computer Science and Engineering\",\n  \"photo\": \"uploads/education/mit.jpg\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/education/550e8400-e29b-41d4-a716-446655440000",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "education",
+                    "550e8400-e29b-41d4-a716-446655440000"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"institute_name\": \"MIT\",\n        \"major\": \"Computer Science and Engineering\",\n        \"start_month\": \"August\",\n        \"start_year\": \"2018\",\n        \"end_month\": \"May\",\n        \"end_year\": \"2022\",\n        \"caption\": \"Bachelor of Science in Computer Science and Engineering\",\n        \"photo\": \"uploads/education/mit.jpg\",\n        \"created_at\": \"2023-11-28T15:30:00Z\",\n        \"updated_at\": \"2023-11-28T16:45:00Z\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Education",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/education/{{educationId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "education", "{{educationId}}"]
+            },
+            "description": "Menghapus data pendidikan pengguna"
+          },
+          "response": [
+            {
+              "name": "Delete Education Success",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/education/550e8400-e29b-41d4-a716-446655440000",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "education",
+                    "550e8400-e29b-41d4-a716-446655440000"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": \"Education entry deleted successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Education by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/education/{{educationId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "education", "{{educationId}}"]
+            },
+            "description": "Mendapatkan detail pendidikan berdasarkan ID"
+          },
+          "response": [
+            {
+              "name": "Get Education by ID Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/education/550e8400-e29b-41d4-a716-446655440000",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "education",
+                    "550e8400-e29b-41d4-a716-446655440000"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"institute_name\": \"MIT\",\n        \"major\": \"Computer Science and Engineering\",\n        \"start_month\": \"August\",\n        \"start_year\": \"2018\",\n        \"end_month\": \"May\",\n        \"end_year\": \"2022\",\n        \"caption\": \"Bachelor of Science in Computer Science and Engineering\",\n        \"photo\": \"uploads/education/mit.jpg\",\n        \"created_at\": \"2023-11-28T15:30:00Z\",\n        \"updated_at\": \"2023-11-28T16:45:00Z\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Education by User ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/users/{{userId}}/education?limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{userId}}", "education"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah data pendidikan per halaman"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Offset untuk pagination"
+                }
+              ]
+            },
+            "description": "Mendapatkan daftar pendidikan dari pengguna tertentu"
+          },
+          "response": [
+            {
+              "name": "Get Education by User ID Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/users/661f9511-f3a2-41d5-b882-557535440123/education?limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "users",
+                    "661f9511-f3a2-41d5-b882-557535440123",
+                    "education"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"educations\": [\n            {\n                \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n                \"institute_name\": \"MIT\",\n                \"major\": \"Computer Science and Engineering\",\n                \"start_month\": \"August\",\n                \"start_year\": \"2018\",\n                \"end_month\": \"May\",\n                \"end_year\": \"2022\",\n                \"caption\": \"Bachelor of Science in Computer Science and Engineering\",\n                \"photo\": \"uploads/education/mit.jpg\",\n                \"created_at\": \"2023-11-28T15:30:00Z\",\n                \"updated_at\": \"2023-11-28T16:45:00Z\"\n            },\n            {\n                \"id\": \"661f9511-f3a2-41d5-b882-557535440456\",\n                \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n                \"institute_name\": \"Stanford University\",\n                \"major\": \"Artificial Intelligence\",\n                \"start_month\": \"September\",\n                \"start_year\": \"2022\",\n                \"end_month\": null,\n                \"end_year\": null,\n                \"caption\": \"Master's in Artificial Intelligence\",\n                \"photo\": \"uploads/education/stanford.jpg\",\n                \"created_at\": \"2023-11-29T10:20:00Z\",\n                \"updated_at\": \"2023-11-29T10:20:00Z\"\n            }\n        ],\n        \"total\": 2\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Upload Education Photo",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "photo",
+                  "type": "file",
+                  "src": "/path/to/education-certificate.jpg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/education/photo",
+              "host": ["{{base_url}}"],
+              "path": ["api", "education", "photo"]
+            },
+            "description": "Upload foto/sertifikat pendidikan"
+          },
+          "response": [
+            {
+              "name": "Upload Education Photo Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "photo",
+                      "type": "file",
+                      "src": "/path/to/education-certificate.jpg"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/education/photo",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "education", "photo"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"photo\": \"uploads/education/661f9511-f3a2-41d5-b882-557535440123/certificate-1706278392.jpg\"\n    }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Experience",
+      "description": "Endpoints untuk mengelola data pengalaman kerja pengguna",
+      "item": [
+        {
+          "name": "Create Experience",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"job_title\": \"Software Engineer\",\n  \"company_name\": \"Google\",\n  \"start_month\": \"June\",\n  \"start_year\": \"2018\",\n  \"end_month\": \"December\",\n  \"end_year\": \"2021\",\n  \"caption\": \"Worked on various projects including search and cloud platforms.\",\n  \"photo\": \"uploads/experience/google.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/experience",
+              "host": ["{{base_url}}"],
+              "path": ["api", "experience"]
+            },
+            "description": "Menambahkan data pengalaman kerja baru untuk pengguna saat ini"
+          },
+          "response": [
+            {
+              "name": "Create Experience Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"job_title\": \"Software Engineer\",\n  \"company_name\": \"Google\",\n  \"start_month\": \"June\",\n  \"start_year\": \"2018\",\n  \"end_month\": \"December\",\n  \"end_year\": \"2021\",\n  \"caption\": \"Worked on various projects including search and cloud platforms.\",\n  \"photo\": \"uploads/experience/google.jpg\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/experience",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "experience"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 201,\n    \"status\": \"CREATED\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"job_title\": \"Software Engineer\",\n        \"company_name\": \"Google\",\n        \"start_month\": \"June\",\n        \"start_year\": \"2018\",\n        \"end_month\": \"December\",\n        \"end_year\": \"2021\",\n        \"caption\": \"Worked on various projects including search and cloud platforms.\",\n        \"photo\": \"uploads/experience/google.jpg\",\n        \"created_at\": \"2023-11-28T15:30:00Z\",\n        \"updated_at\": \"2023-11-28T15:30:00Z\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Experience",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"job_title\": \"Senior Software Engineer\",\n  \"company_name\": \"Google\",\n  \"start_month\": \"June\",\n  \"start_year\": \"2018\",\n  \"end_month\": \"December\",\n  \"end_year\": \"2021\",\n  \"caption\": \"Led development of search algorithms and cloud infrastructure.\",\n  \"photo\": \"uploads/experience/google_updated.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/experience/{{experienceId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "experience", "{{experienceId}}"]
+            },
+            "description": "Memperbarui data pengalaman kerja pengguna"
+          },
+          "response": [
+            {
+              "name": "Update Experience Success",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"job_title\": \"Senior Software Engineer\",\n  \"company_name\": \"Google\",\n  \"start_month\": \"June\",\n  \"start_year\": \"2018\",\n  \"end_month\": \"December\",\n  \"end_year\": \"2021\",\n  \"caption\": \"Led development of search algorithms and cloud infrastructure.\",\n  \"photo\": \"uploads/experience/google_updated.jpg\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/experience/550e8400-e29b-41d4-a716-446655440000",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "experience",
+                    "550e8400-e29b-41d4-a716-446655440000"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"job_title\": \"Senior Software Engineer\",\n        \"company_name\": \"Google\",\n        \"start_month\": \"June\",\n        \"start_year\": \"2018\",\n        \"end_month\": \"December\",\n        \"end_year\": \"2021\",\n        \"caption\": \"Led development of search algorithms and cloud infrastructure.\",\n        \"photo\": \"uploads/experience/google_updated.jpg\",\n        \"created_at\": \"2023-11-28T15:30:00Z\",\n        \"updated_at\": \"2023-11-28T16:45:00Z\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Experience",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/experience/{{experienceId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "experience", "{{experienceId}}"]
+            },
+            "description": "Menghapus data pengalaman kerja pengguna"
+          },
+          "response": [
+            {
+              "name": "Delete Experience Success",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/experience/550e8400-e29b-41d4-a716-446655440000",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "experience",
+                    "550e8400-e29b-41d4-a716-446655440000"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": \"Experience deleted successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Experience by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/experience/{{experienceId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "experience", "{{experienceId}}"]
+            },
+            "description": "Mendapatkan detail pengalaman kerja berdasarkan ID"
+          },
+          "response": [
+            {
+              "name": "Get Experience by ID Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/experience/550e8400-e29b-41d4-a716-446655440000",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "experience",
+                    "550e8400-e29b-41d4-a716-446655440000"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"job_title\": \"Senior Software Engineer\",\n        \"company_name\": \"Google\",\n        \"start_month\": \"June\",\n        \"start_year\": \"2018\",\n        \"end_month\": \"December\",\n        \"end_year\": \"2021\",\n        \"caption\": \"Led development of search algorithms and cloud infrastructure.\",\n        \"photo\": \"uploads/experience/google_updated.jpg\",\n        \"created_at\": \"2023-11-28T15:30:00Z\",\n        \"updated_at\": \"2023-11-28T16:45:00Z\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Experience by User ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/users/{{userId}}/experience?limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{userId}}", "experience"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah data pengalaman per halaman"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Offset untuk pagination"
+                }
+              ]
+            },
+            "description": "Mendapatkan daftar pengalaman kerja dari pengguna tertentu"
+          },
+          "response": [
+            {
+              "name": "Get Experience by User ID Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/users/661f9511-f3a2-41d5-b882-557535440123/experience?limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "users",
+                    "661f9511-f3a2-41d5-b882-557535440123",
+                    "experience"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"experiences\": [\n            {\n                \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n                \"job_title\": \"Senior Software Engineer\",\n                \"company_name\": \"Google\",\n                \"start_month\": \"June\",\n                \"start_year\": \"2018\",\n                \"end_month\": \"December\",\n                \"end_year\": \"2021\",\n                \"caption\": \"Led development of search algorithms and cloud infrastructure.\",\n                \"photo\": \"uploads/experience/google_updated.jpg\",\n                \"created_at\": \"2023-11-28T15:30:00Z\",\n                \"updated_at\": \"2023-11-28T16:45:00Z\"\n            },\n            {\n                \"id\": \"661f9511-f3a2-41d5-b882-557535440456\",\n                \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n                \"job_title\": \"Full Stack Developer\",\n                \"company_name\": \"Facebook\",\n                \"start_month\": \"January\",\n                \"start_year\": \"2022\",\n                \"end_month\": null,\n                \"end_year\": null,\n                \"caption\": \"Currently working on React infrastructure and developer tools.\",\n                \"photo\": \"uploads/experience/facebook.jpg\",\n                \"created_at\": \"2023-11-29T10:20:00Z\",\n                \"updated_at\": \"2023-11-29T10:20:00Z\"\n            }\n        ],\n        \"total\": 2\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Upload Experience Photo",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "photo",
+                  "type": "file",
+                  "src": "/path/to/company-logo.jpg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/experience/photo",
+              "host": ["{{base_url}}"],
+              "path": ["api", "experience", "photo"]
+            },
+            "description": "Upload foto/logo perusahaan untuk pengalaman kerja"
+          },
+          "response": [
+            {
+              "name": "Upload Experience Photo Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "photo",
+                      "type": "file",
+                      "src": "/path/to/company-logo.jpg"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/experience/photo",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "experience", "photo"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"photo\": \"uploads/experience/661f9511-f3a2-41d5-b882-557535440123/company-logo-1706278392.jpg\"\n    }\n}"
+            }
+          ]
+        }
+      ]
     }
   ],
   "variable": [
     {
       "key": "base_url",
-      "value": "http://localhost:8080",
+      "value": "http://localhost:3000",
       "type": "string"
     },
     {
