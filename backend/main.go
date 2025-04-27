@@ -12,7 +12,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	_ "github.com/lib/pq"
-)
+) 
 
 func main() {
 	helper.LoadEnv()

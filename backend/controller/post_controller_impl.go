@@ -66,7 +66,7 @@ func (controller *PostControllerImpl) Update(writer http.ResponseWriter, request
 	// Parse post_id from path
 	postIdStr := params.ByName("postId")
 	postId, err := uuid.Parse(postIdStr)
-	if err != nil {
+	if err != nil {	
 		panic(exception.NewBadRequestError("Invalid post ID format"))
 	}
 
