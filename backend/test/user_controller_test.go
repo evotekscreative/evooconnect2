@@ -19,7 +19,9 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
+
 	// "github.com/go-playground/validator/v10"
 	"github.com/julienschmidt/httprouter"
 	_ "github.com/lib/pq"
@@ -82,9 +84,10 @@ func createJWTToken(userId uuid.UUID) string {
 }
 
 func setupUserRouter(db *sql.DB) http.Handler {
+	validate := validator.New()
 	// User dependencies
 	userRepository := repository.NewUserRepository()
-	userService := service.NewUserService(userRepository, db)
+	userService := service.NewUserService(userRepository, db, validate)
 	userController := controller.NewUserController(userService)
 
 	// Create router

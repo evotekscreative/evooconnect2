@@ -13,4 +13,5 @@ type AuthController interface {
 	VerifyEmail(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	ForgotPassword(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	ResetPassword(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+	GoogleAuth(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 }

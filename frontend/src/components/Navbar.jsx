@@ -49,6 +49,11 @@ const Navbar = () => {
     };
   }, []);
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    window.location.href = '/login';
+  };
+
   return (
     <nav className={`flex items-center justify-between px-4 sm:px-8 md:px-16 py-[13px] bg-sky-500 text-white shadow-sm relative font-sans sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'shadow-lg' : ''}`}>
       {/* Left: Logo + Hamburger Menu (mobile) */}
@@ -176,7 +181,7 @@ const Navbar = () => {
                   <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
                     <Link to="/edit-profile" className="flex items-center gap-2">Edit Profile</Link>
                   </li>
-                  <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Logout</li>
+                  <li onClick={() => handleLogout()} className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Logout</li>
                 </ul>
               </div>
             )}

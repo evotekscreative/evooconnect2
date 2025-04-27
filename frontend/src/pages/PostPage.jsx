@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import Case from "../components/Case.jsx";
 
-const PostPage = () => {
+const   PostPage = () => {
     // Mock data for the sidebar (you can replace with actual data from props or state)
     const [profileImage] = useState("https://i.pravatar.cc/48");
     const [fullName] = useState("Muhammad Bintang Asyidqy");

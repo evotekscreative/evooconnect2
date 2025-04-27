@@ -4,6 +4,7 @@ import (
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/service"
+	// "fmt"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -17,6 +18,34 @@ func NewAuthController(authService service.AuthService) AuthController {
 	return &AuthControllerImpl{
 		AuthService: authService,
 	}
+}
+
+// Add this new method to your AuthControllerImpl
+func (controller *AuthControllerImpl) GoogleAuth(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Parse request body to get Google token
+	googleAuthRequest := web.GoogleAuthRequest{}
+	helper.ReadFromRequestBody(request, &googleAuthRequest)
+
+	// Call service to authenticate with Google
+	authResponse, err := controller.AuthService.GoogleAuth(request.Context(), googleAuthRequest)
+	if err != nil {
+		webResponse := web.WebResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD REQUEST",
+			Data:   err.Error(),
+		}
+		helper.WriteToResponseBody(writer, webResponse)
+		return
+	}
+
+	// Create success response
+	webResponse := web.WebResponse{
+		Code:   http.StatusOK,
+		Status: "OK",
+		Data:   authResponse,
+	}
+
+	helper.WriteToResponseBody(writer, webResponse)
 }
 
 func (controller *AuthControllerImpl) Login(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
@@ -65,17 +94,30 @@ func (controller *AuthControllerImpl) SendVerificationEmail(writer http.Response
 	helper.WriteToResponseBody(writer, webResponse)
 }
 
-func (controller *AuthControllerImpl) VerifyEmail(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	verificationRequest := web.VerificationRequest{}
-	helper.ReadFromRequestBody(request, &verificationRequest)
+// controller/auth_controller.go
 
-	messageResponse := controller.AuthService.VerifyEmail(request.Context(), verificationRequest)
+func (controller *AuthControllerImpl) VerifyEmail(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Baca body request yang hanya berisi token verifikasi
+	verifyRequest := web.VerificationRequest{}
+	helper.ReadFromRequestBody(request, &verifyRequest)
+
+	// Debug untuk melihat context yang diterima
+	// userID := request.Context().Value("user_id")
+	// email := request.Context().Value("email")
+	// fmt.Printf("VerifyEmail controller - Context values: user_id=%v, email=%v\n", userID, email)
+
+	// Panggil service
+	response := controller.AuthService.VerifyEmail(request.Context(), verifyRequest)
+
+	// Buat response
 	webResponse := web.WebResponse{
 		Code:   200,
 		Status: "OK",
-		Data:   messageResponse,
+		Data:   response,
 	}
 
+	// Kirim response
+	writer.Header().Add("Content-Type", "application/json")
 	helper.WriteToResponseBody(writer, webResponse)
 }
 

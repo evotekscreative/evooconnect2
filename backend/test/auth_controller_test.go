@@ -1,6 +1,7 @@
 package test
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"evoconnect/backend/app"
@@ -8,12 +9,14 @@ import (
 	"evoconnect/backend/exception"
 	"evoconnect/backend/helper"
 	"evoconnect/backend/middleware"
+	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
 	"evoconnect/backend/service"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -114,6 +117,41 @@ func setupEmailTest() {
 		// Just log or store the email information for assertions
 		return nil
 	}
+}
+
+func TestGoogleAuth(t *testing.T) {
+	// You need to get a real token and set it as an environment variable
+	// before running this test. See the HTML example above for how to get one.
+	token := os.Getenv("GOOGLE_ID_TOKEN")
+	if token == "" {
+		t.Skip("Skipping test: GOOGLE_ID_TOKEN environment variable not set")
+	}
+
+	requestBody := map[string]string{
+		"token": token,
+	}
+
+	requestBytes, _ := json.Marshal(requestBody)
+	request, _ := http.NewRequest("POST", "http://localhost:3000/api/auth/google", bytes.NewBuffer(requestBytes))
+	request.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	response, err := client.Do(request)
+	assert.NoError(t, err)
+	defer response.Body.Close()
+
+	responseBytes, _ := io.ReadAll(response.Body)
+	var webResponse web.WebResponse
+	json.Unmarshal(responseBytes, &webResponse)
+
+	assert.Equal(t, 200, webResponse.Code)
+	assert.Equal(t, "OK", webResponse.Status)
+	assert.NotNil(t, webResponse.Data)
+
+	// You can further assert on the data depending on your response structure
+	data := webResponse.Data.(map[string]interface{})
+	assert.NotEmpty(t, data["token"])
+	assert.NotNil(t, data["user"])
 }
 
 func TestRegisterSuccess(t *testing.T) {
