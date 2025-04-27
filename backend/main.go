@@ -23,7 +23,7 @@ func main() {
 	jwtSecret := helper.GetEnv("JWT_SECRET_KEY", "your-secret-key")
 
 	userRepository := repository.NewUserRepository()
-	userService := service.NewUserService(userRepository, db)
+	userService := service.NewUserService(userRepository, db, validate)
 	userController := controller.NewUserController(userService)
 
 	authService := service.NewAuthService(userRepository, db, validate, jwtSecret)

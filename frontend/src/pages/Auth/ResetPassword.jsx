@@ -1,49 +1,53 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom"; // Import useNavigate
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const ForgotPassword = () => {
-  const [email, setEmail] = useState("");
+const ResetPassword = () => {
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [message, setMessage] = useState("");
-  const [messageColor, setMessageColor] = useState(""); 
+  const [messageColor, setMessageColor] = useState("");
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate(); // Inisialisasi useNavigate
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setSubmitted(false); // reset submitted state untuk menampilkan pesan baru
-  
+    setSubmitted(false); // Reset submitted state untuk menampilkan pesan baru
+
+    if (password !== confirmPassword) {
+      setMessage("Passwords do not match. Please try again.");
+      setMessageColor("text-red-600");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await axios.post("http://localhost:3000/api/auth/forgot-password", {
-        email,
+      const response = await axios.post("http://localhost:3000/api/auth/reset-password", {
+        password,
       });
 
-      setMessage("We’ve sent you an email with instructions to reset your password. Check your inbox for a reset link");
+      setMessage("Your password has been reset successfully.");
       setMessageColor("text-green-600");
-      
-      // Setelah berhasil mengirim, alihkan ke halaman verifikasi
-        navigate("/reset-password"); // Ganti '/verify-email' dengan route halaman verifikasi email yang sesuai
+
+      // Setelah berhasil reset, alihkan ke halaman login
+        navigate("/login"); // Ganti dengan route halaman login yang sesuai
 
     } catch (error) {
-      if (error.response && error.response.status === 404) {
-        setMessage("No account found with that email.");
-      } else {
-        setMessage("Something went wrong. Please try again later.");
-      }
+      setMessage("Something went wrong. Please try again later.");
       setMessageColor("text-red-600");
+      setLoading(false);
     }
-  
+
     setSubmitted(true);
-    setLoading(false);
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8">
         <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
-          Forgot Your Password?
+          Reset Your Password
         </h2>
 
         {submitted ? (
@@ -54,22 +58,40 @@ const ForgotPassword = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label
-                htmlFor="email"
+                htmlFor="password"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Email address
+                New Password
               </label>
               <input
-                id="email"
-                type="email"
+                id="password"
+                type="password"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                placeholder="guest@example.com"
+                placeholder="Enter your new password"
               />
             </div>
-          
+
+            <div>
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Confirm New Password
+              </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                placeholder="Confirm your new password"
+              />
+            </div>
+
             <button
               type="submit"
               disabled={loading}
@@ -100,23 +122,27 @@ const ForgotPassword = () => {
                       d="M4 12a8 8 0 018-8v8z"
                     ></path>
                   </svg>
-                  Sending...
+                  Resetting...
                 </span>
               ) : (
-                "Send Reset Link"
+                "Reset Password"
               )}
             </button>
           </form>
         )}
 
         <div className="text-center mt-6">
-          <Link to="/login" className="text-blue-600 hover:underline text-sm">
-            Back to login
-          </Link>
+          <button
+            onClick={() => navigate("/login")}
+            className="text-blue-600 hover:underline text-sm"
+          >
+            Back to Login
+          </button>
         </div>
       </div>
     </div>
   );
 };
 
-export default ForgotPassword;
+export default ResetPassword;
+1

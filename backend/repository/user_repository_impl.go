@@ -6,6 +6,7 @@ import (
 	"errors"
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/domain"
+	// "fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -46,6 +47,8 @@ func (repository *UserRepositoryImpl) Update(ctx context.Context, tx *sql.Tx, us
         website = $8, phone = $9, headline = $10, about = $11, 
         skills = $12, socials = $13, photo = $14, 
         updated_at = $15 WHERE id = $16`
+
+	// fmt.Printf("User: %+v\n", user)
 
 	var skillsValue, socialsValue interface{}
 
@@ -236,6 +239,22 @@ func (repository *UserRepositoryImpl) FindByResetToken(ctx context.Context, tx *
 	}
 }
 
+func (repository *UserRepositoryImpl) FindByVerificationToken(ctx context.Context, tx *sql.Tx, token string) (domain.User, error) {
+	SQL := "SELECT id, name, email, password, is_verified, verification_token, verification_expires, created_at, updated_at FROM users WHERE verification_token = $1 AND verification_expires > $2"
+	rows, err := tx.QueryContext(ctx, SQL, token, time.Now())
+	helper.PanicIfError(err)
+	defer rows.Close()
+
+	user := domain.User{}
+	if rows.Next() {
+		err := rows.Scan(&user.Id, &user.Name, &user.Email, &user.Password, &user.IsVerified, &user.VerificationToken, &user.VerificationExpires, &user.CreatedAt, &user.UpdatedAt)
+		helper.PanicIfError(err)
+		return user, nil
+	} else {
+		return user, errors.New("invalid or expired verification token")
+	}
+}
+
 func (repository *UserRepositoryImpl) UpdatePassword(ctx context.Context, tx *sql.Tx, userId uuid.UUID, hashedPassword string) error {
 	SQL := "UPDATE users SET password = $1, reset_token = NULL, reset_expires = NULL, updated_at = $2 WHERE id = $3"
 	_, err := tx.ExecContext(ctx, SQL, hashedPassword, time.Now(), userId)
@@ -287,4 +306,10 @@ func (repository *UserRepositoryImpl) IsRateLimited(ctx context.Context, tx *sql
 	}
 
 	return count >= maxAttempts, nil
+}
+
+func (repository *UserRepositoryImpl) UpdateVerificationStatus(ctx context.Context, tx *sql.Tx, userId uuid.UUID, isVerified bool) error {
+	SQL := "UPDATE users SET is_verified = $1, verification_token = NULL, verification_expires = NULL WHERE id = $2"
+	_, err := tx.ExecContext(ctx, SQL, isVerified, userId)
+	return err
 }

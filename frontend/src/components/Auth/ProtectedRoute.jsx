@@ -1,15 +1,53 @@
-// src/components/ProtectedRoute.jsx
-import { Navigate } from 'react-router-dom';
-import Cookies from 'js-cookie';
+import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+// import Cookies from 'js-cookie';
+
 
 const ProtectedRoute = ({ children }) => {
-  const token = Cookies.get('token');
+  const token = localStorage.getItem('token');
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [authState, setAuthState] = useState({ loading: true, verified: false });
 
-  if (!token) {
-    return <Navigate to="/login" replace />;
+  useEffect(() => {
+    const verifyAuth = async () => {
+      if (!token) {
+        navigate('/login', { state: { from: location }, replace: true });
+        return;
+      }
+
+      try {
+        const response = await axios.get('http://localhost:3000/api/user/profile', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        const user = response.data.data;
+        if (!user.is_verified && location.pathname !== '/verify-email') {
+          navigate('/verify-email', {
+            state: {
+              from: location,
+              email: user.email // Pass the user's email
+            },
+            replace: true
+          });
+        } else {
+          setAuthState({ loading: false, verified: true });
+        }
+      } catch (error) {
+        localStorage.removeItem('token');
+        navigate('/login', { state: { from: location }, replace: true });
+      }
+    };
+
+    verifyAuth();
+  }, [token, location, navigate]);
+
+  if (authState.loading) {
+    return <div>Loading...</div>;
   }
 
-  return children;
+  return authState.verified ? children : null;
 };
 
 export default ProtectedRoute;
