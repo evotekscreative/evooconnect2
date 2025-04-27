@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import logo from "../assets/img/logo1.png";
 
-export default function HelpPage() {
+ const HelpPage = () => {
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = (e) => {
@@ -185,4 +185,5 @@ export default function HelpPage() {
     </div>
   );
 }
+export default HelpPage;
  
