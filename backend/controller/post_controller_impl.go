@@ -302,3 +302,37 @@ func (controller *PostControllerImpl) UnlikePost(writer http.ResponseWriter, req
 
 	helper.WriteToResponseBody(writer, webResponse)
 }
+
+// New method for uploading post images
+func (controller *PostControllerImpl) UploadImages(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Set maximum upload size - 10MB
+	request.ParseMultipartForm(10 << 20) // 10MB
+
+	// Get user_id from context
+	userIdString, ok := request.Context().Value("user_id").(string)
+	if !ok {
+		panic(exception.NewUnauthorizedError("Unauthorized access"))
+	}
+
+	userId, err := uuid.Parse(userIdString)
+	if err != nil {
+		panic(exception.NewBadRequestError("Invalid user ID format"))
+	}
+
+	// Get files from form
+	files := request.MultipartForm.File["images"]
+	if len(files) == 0 {
+		panic(exception.NewBadRequestError("No images provided"))
+	}
+
+	// Call service to save images
+	fileResponse := controller.PostService.UploadImages(request.Context(), userId, files)
+
+	webResponse := web.WebResponse{
+		Code:   200,
+		Status: "OK",
+		Data:   fileResponse,
+	}
+
+	helper.WriteToResponseBody(writer, webResponse)
+}
