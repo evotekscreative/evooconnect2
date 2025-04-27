@@ -1,77 +1,15 @@
 {
   "info": {
     "_postman_id": "86feb434-313f-4ca7-8481-0eeb31dab372",
-    "name": "EVOConnect",
-    "schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+    "name": "EvoConnect API",
+    "description": "Dokumentasi API untuk platform EvoConnect - Jaringan sosial profesional untuk menghubungkan para profesional teknologi.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "36636210"
   },
   "item": [
     {
-      "name": "User",
-      "item": [
-        {
-          "name": "GET Profile",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": {
-                "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InZlcmlmeS50ZXN0QGV4YW1wbGUuY29tIiwiZXhwIjoxNzQ1Mjk0MjI4LCJ1c2VyX2lkIjo2fQ.R6dOEyMNuqvUL5bPnDVIj4XNzqTYehLudxgYmBOMlvM"
-              }
-            },
-            "method": "GET",
-            "header": [],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "message",
-                  "value": "woi apa kabs",
-                  "type": "text",
-                  "disabled": true
-                },
-                {
-                  "key": "X-CSRF-TOKEN",
-                  "value": "hKQ8JdlEl0Bj8lNuQYamO3yxrHIJ9PvCqAqt9nvD",
-                  "type": "text",
-                  "disabled": true
-                }
-              ]
-            },
-            "url": "http://localhost:3000/api/user/profile"
-          },
-          "response": []
-        },
-        {
-          "name": "UPDATE Profile",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": {
-                "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InZlcmlmeS50ZXN0QGV4YW1wbGUuY29tIiwiZXhwIjoxNzQ1Mjk0MjI4LCJ1c2VyX2lkIjo2fQ.R6dOEyMNuqvUL5bPnDVIj4XNzqTYehLudxgYmBOMlvM"
-              }
-            },
-            "method": "PUT",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"name\": \"John Doe\",\r\n  \"username\": \"johndoe\",\r\n  \"email\": \"john@example.com\",\r\n  \"birtxhdate\": \"1990-01-01\",\r\n  \"gender\": \"male\",\r\n  \"location\": \"Jakarta\",\r\n  \"organization\": \"Evoconnect\",\r\n  \"website\": \"https://johndoe.dev\",\r\n  \"phone\": \"08123456789\",\r\n  \"headline\": \"Fullstack Developer\",\r\n  \"about\": \"Passionate about building tech that matters.\",\r\n  \"skills\": [\"Go\", \"React\", \"Docker\"],\r\n  \"socials\": [\r\n    { \"platform\": \"github\", \"username\": \"johndoe\" },\r\n    { \"platform\": \"twitter\", \"username\": \"johndev\" }\r\n  ],\r\n  \"photo\": \"uploads/photos/johndoe.jpg\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": "http://localhost:3000/api/user/profile"
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Authenticate",
+      "name": "Authentication",
+      "description": "Endpoints untuk autentikasi pengguna dan manajemen akun",
       "item": [
         {
           "name": "Register",
@@ -79,143 +17,795 @@
             "method": "POST",
             "header": [
               {
-                "key": "X-API-Key",
-                "value": "RAHASIA",
-                "type": "text"
+                "key": "Content-Type",
+                "value": "application/json"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\" : \"verqwsify.test@example.com\", \r\n    \"password\" : \"password123\", \r\n    \"name\": \"agan\"\r\n}",
+              "raw": "{\n    \"email\": \"newuser@example.com\",\n    \"password\": \"securepassword123\",\n    \"name\": \"New User\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             },
-            "url": "http://localhost:3000/api/auth/register"
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Mendaftarkan pengguna baru di platform EvoConnect"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Register Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email\": \"newuser@example.com\",\n    \"password\": \"securepassword123\",\n    \"name\": \"New User\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/auth/register",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "register"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 201,\n    \"status\": \"CREATED\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"New User\",\n        \"email\": \"newuser@example.com\",\n        \"is_verified\": false,\n        \"created_at\": \"2023-11-28T14:30:00Z\"\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Login",
           "request": {
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\" : \"verify.test@example.com\", \r\n    \"password\" : \"password123\"\r\n}",
+              "raw": "{\n    \"email\": \"user@example.com\", \n    \"password\": \"password123\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             },
-            "url": "http://localhost:3000/api/auth/login"
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Login ke platform EvoConnect untuk mendapatkan token autentikasi"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Login Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email\": \"user@example.com\", \n    \"password\": \"password123\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/auth/login",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "login"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InVzZXJAZXhhbXBsZS5jb20iLCJleHAiOjE3NDUxNjQyMjgsInVzZXJfaWQiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAifQ.abc123def456\",\n        \"user\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"User Example\",\n            \"email\": \"user@example.com\",\n            \"is_verified\": true,\n            \"created_at\": \"2023-11-01T10:00:00Z\",\n            \"updated_at\": \"2023-11-01T10:00:00Z\"\n        }\n    }\n}"
+            }
+          ]
         },
         {
-          "name": "Send Verify Email",
+          "name": "Send Verification Email",
           "request": {
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\" : \"muhamadafghanalzena@gmail.com\"\r\n}",
+              "raw": "{\n    \"email\": \"user@example.com\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             },
-            "url": "http://localhost:3000/api/auth/verify/send"
+            "url": {
+              "raw": "{{base_url}}/api/auth/verify/send",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "verify", "send"]
+            },
+            "description": "Mengirimkan email verifikasi ke alamat email pengguna"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Send Verification Email Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email\": \"user@example.com\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/auth/verify/send",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "verify", "send"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"message\": \"Verification email sent\"\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Verify Email",
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": {
-                "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im11aGFtYWRhZmdoYW5hbHplbmFAZ21haWwuY29tIiwiZXhwIjoxNzQ1MTU2MDc4LCJ1c2VyX2lkIjoyfQ._YRymDKcnQ4QK8bXc74FaKNhvAWJYVUCrxoXvm41Qto"
-              }
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
             },
             "method": "POST",
             "header": [
               {
-                "key": "Authorization",
-                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im11aGFtYWRhZmdoYW5hbHplbmFAZ21haWwuY29tIiwiZXhwIjoxNzQ1MTU2MDc4LCJ1c2VyX2lkIjoyfQ._YRymDKcnQ4QK8bXc74FaKNhvAWJYVUCrxoXvm41Qto",
-                "type": "text",
-                "disabled": true
+                "key": "Content-Type",
+                "value": "application/json"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"token\": \"864576\"\r\n}",
+              "raw": "{\n    \"token\": \"123456\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             },
-            "url": "http://localhost:3000/api/auth/verify"
+            "url": {
+              "raw": "{{base_url}}/api/auth/verify",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "verify"]
+            },
+            "description": "Verifikasi email pengguna dengan token verifikasi yang dikirim melalui email"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Verify Email Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"token\": \"123456\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/auth/verify",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "verify"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"message\": \"Email successfully verified\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"user@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/forgot-password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "forgot-password"]
+            },
+            "description": "Mengirim email reset password ke alamat email pengguna"
+          },
+          "response": [
+            {
+              "name": "Forgot Password Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email\": \"user@example.com\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/auth/forgot-password",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "forgot-password"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"message\": \"Password reset email sent\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"token\": \"abcdef123456\",\n    \"password\": \"newpassword123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/reset-password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "reset-password"]
+            },
+            "description": "Reset password pengguna dengan token yang dikirim melalui email"
+          },
+          "response": [
+            {
+              "name": "Reset Password Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"token\": \"abcdef123456\",\n    \"password\": \"newpassword123\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/auth/reset-password",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "reset-password"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"message\": \"Password successfully reset\"\n    }\n}"
+            }
+          ]
         }
       ]
     },
     {
-      "name": "Post",
+      "name": "User Profile",
+      "description": "Endpoints untuk manajemen profil pengguna",
       "item": [
         {
-          "name": "Posts",
-          "description": "Endpoints for managing posts",
-          "item": [
+          "name": "Get Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/user/profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "profile"]
+            },
+            "description": "Mendapatkan data profil pengguna saat ini"
+          },
+          "response": [
             {
-              "name": "Create Post",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{token}}"
-                  }
-                ],
+              "name": "Get Profile Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
                 "url": {
-                  "raw": "http://localhost:3000/api/posts",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
-                  "path": ["api", "posts"]
-                },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"content\": \"This is my first post!\",\n  \"images\": [\"uploads/images/image1.jpg\", \"uploads/images/image2.jpg\"],\n  \"visibility\": \"public\"\n}"
+                  "raw": "{{base_url}}/api/user/profile",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "user", "profile"]
                 }
               },
-              "response": []
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"John Doe\",\n        \"email\": \"john@example.com\",\n        \"username\": \"johndoe\",\n        \"birthdate\": \"1990-01-01\",\n        \"gender\": \"male\",\n        \"location\": \"Jakarta\",\n        \"organization\": \"EvoConnect\",\n        \"website\": \"https://johndoe.dev\",\n        \"phone\": \"08123456789\",\n        \"headline\": \"Fullstack Developer\",\n        \"about\": \"Passionate about building tech that matters.\",\n        \"skills\": [\"Go\", \"React\", \"Docker\"],\n        \"socials\": [\n            { \"platform\": \"github\", \"username\": \"johndoe\" },\n            { \"platform\": \"twitter\", \"username\": \"johndev\" }\n        ],\n        \"photo\": \"https://example.com/photos/johndoe.jpg\",\n        \"is_verified\": true,\n        \"created_at\": \"2023-10-15T08:00:00Z\",\n        \"updated_at\": \"2023-11-20T14:30:00Z\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
             },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"username\": \"johndoe\",\n  \"email\": \"john@example.com\",\n  \"birthdate\": \"1990-01-01\",\n  \"gender\": \"male\",\n  \"location\": \"Jakarta\",\n  \"organization\": \"EvoConnect\",\n  \"website\": \"https://johndoe.dev\",\n  \"phone\": \"08123456789\",\n  \"headline\": \"Fullstack Developer\",\n  \"about\": \"Passionate about building tech that matters.\",\n  \"skills\": [\"Go\", \"React\", \"Docker\"],\n  \"socials\": [\n    { \"platform\": \"github\", \"username\": \"johndoe\" },\n    { \"platform\": \"twitter\", \"username\": \"johndev\" }\n  ],\n  \"photo\": \"uploads/photos/johndoe.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/user/profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "profile"]
+            },
+            "description": "Memperbarui data profil pengguna saat ini"
+          },
+          "response": [
             {
-              "name": "Get All Posts",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{token}}"
+              "name": "Update Profile Success",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"John Doe\",\n  \"username\": \"johndoe\",\n  \"email\": \"john@example.com\",\n  \"birthdate\": \"1990-01-01\",\n  \"gender\": \"male\",\n  \"location\": \"Jakarta\",\n  \"organization\": \"EvoConnect\",\n  \"website\": \"https://johndoe.dev\",\n  \"phone\": \"08123456789\",\n  \"headline\": \"Fullstack Developer\",\n  \"about\": \"Passionate about building tech that matters.\",\n  \"skills\": [\"Go\", \"React\", \"Docker\"],\n  \"socials\": [\n    { \"platform\": \"github\", \"username\": \"johndoe\" },\n    { \"platform\": \"twitter\", \"username\": \"johndev\" }\n  ],\n  \"photo\": \"uploads/photos/johndoe.jpg\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
                   }
-                ],
+                },
                 "url": {
-                  "raw": "http://localhost:3000/api/posts?limit=10&offset=0",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{base_url}}/api/user/profile",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "user", "profile"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"John Doe\",\n        \"email\": \"john@example.com\",\n        \"username\": \"johndoe\",\n        \"birthdate\": \"1990-01-01\",\n        \"gender\": \"male\",\n        \"location\": \"Jakarta\",\n        \"organization\": \"EvoConnect\",\n        \"website\": \"https://johndoe.dev\",\n        \"phone\": \"08123456789\",\n        \"headline\": \"Fullstack Developer\",\n        \"about\": \"Passionate about building tech that matters.\",\n        \"skills\": [\"Go\", \"React\", \"Docker\"],\n        \"socials\": [\n            { \"platform\": \"github\", \"username\": \"johndoe\" },\n            { \"platform\": \"twitter\", \"username\": \"johndev\" }\n        ],\n        \"photo\": \"uploads/photos/johndoe.jpg\",\n        \"is_verified\": true,\n        \"created_at\": \"2023-10-15T08:00:00Z\",\n        \"updated_at\": \"2023-11-28T15:00:00Z\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get User By ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/users/{{userId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{userId}}"]
+            },
+            "description": "Mendapatkan profil pengguna berdasarkan ID"
+          },
+          "response": [
+            {
+              "name": "Get User By ID Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/users/550e8400-e29b-41d4-a716-446655440000",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "users",
+                    "550e8400-e29b-41d4-a716-446655440000"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"John Doe\",\n        \"username\": \"johndoe\",\n        \"headline\": \"Fullstack Developer\",\n        \"photo\": \"https://example.com/photos/johndoe.jpg\",\n        \"organization\": \"EvoConnect\",\n        \"location\": \"Jakarta\",\n        \"connections_count\": 124,\n        \"is_connected\": false,\n        \"is_following\": true\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Upload Profile Photo",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "photo",
+                  "type": "file",
+                  "src": "/path/to/photo.jpg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/user/photo",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "photo"]
+            },
+            "description": "Upload foto profil pengguna"
+          },
+          "response": [
+            {
+              "name": "Upload Profile Photo Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "photo",
+                      "type": "file",
+                      "src": "/path/to/photo.jpg"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/user/photo",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "user", "photo"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"photo\": \"uploads/photos/550e8400-e29b-41d4-a716-446655440000/profile.jpg\",\n        \"updated_at\": \"2023-11-28T15:10:00Z\"\n    }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Posts",
+      "description": "Endpoints untuk manajemen postingan",
+      "item": [
+        {
+          "name": "Create Post",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"This is my first post on EvoConnect!\",\n  \"images\": [\"uploads/images/image1.jpg\", \"uploads/images/image2.jpg\"],\n  \"visibility\": \"public\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/posts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "posts"]
+            },
+            "description": "Membuat postingan baru"
+          },
+          "response": [
+            {
+              "name": "Create Post Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"content\": \"This is my first post on EvoConnect!\",\n  \"images\": [\"uploads/images/image1.jpg\", \"uploads/images/image2.jpg\"],\n  \"visibility\": \"public\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/posts",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "posts"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 201,\n    \"status\": \"CREATED\",\n    \"data\": {\n        \"id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n        \"content\": \"This is my first post on EvoConnect!\",\n        \"images\": [\"uploads/images/image1.jpg\", \"uploads/images/image2.jpg\"],\n        \"visibility\": \"public\",\n        \"likes_count\": 0,\n        \"comments_count\": 0,\n        \"is_liked\": false,\n        \"user\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"John Doe\",\n            \"username\": \"johndoe\",\n            \"photo\": \"uploads/photos/johndoe.jpg\",\n            \"headline\": \"Fullstack Developer\"\n        },\n        \"created_at\": \"2023-11-28T15:20:00Z\",\n        \"updated_at\": \"2023-11-28T15:20:00Z\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Upload Post Images",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "images",
+                  "type": "file",
+                  "src": "/path/to/image1.jpg"
+                },
+                {
+                  "key": "images",
+                  "type": "file",
+                  "src": "/path/to/image2.jpg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/posts/images",
+              "host": ["{{base_url}}"],
+              "path": ["api", "posts", "images"]
+            },
+            "description": "Upload gambar untuk postingan"
+          },
+          "response": [
+            {
+              "name": "Upload Post Images Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "images",
+                      "type": "file",
+                      "src": "/path/to/image1.jpg"
+                    },
+                    {
+                      "key": "images",
+                      "type": "file",
+                      "src": "/path/to/image2.jpg"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/posts/images",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "posts", "images"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"images\": [\n            \"uploads/posts/550e8400-e29b-41d4-a716-446655440000/image1.jpg\",\n            \"uploads/posts/550e8400-e29b-41d4-a716-446655440000/image2.jpg\"\n        ]\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get All Posts",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/posts?limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "posts"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah postingan per halaman"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Offset untuk pagination"
+                }
+              ]
+            },
+            "description": "Mendapatkan semua postingan dengan pagination"
+          },
+          "response": [
+            {
+              "name": "Get All Posts Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/posts?limit=10&offset=0",
+                  "host": ["{{base_url}}"],
                   "path": ["api", "posts"],
                   "query": [
                     {
@@ -229,44 +819,67 @@
                   ]
                 }
               },
-              "response": []
-            },
-            {
-              "name": "Get Post By ID",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{token}}"
-                  }
-                ],
-                "url": {
-                  "raw": "http://localhost:3000/api/posts/{{postId}}",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
-                  "path": ["api", "posts", "{{postId}}"]
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
                 }
-              },
-              "response": []
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"posts\": [\n            {\n                \"id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n                \"content\": \"This is my first post on EvoConnect!\",\n                \"images\": [\"uploads/images/image1.jpg\", \"uploads/images/image2.jpg\"],\n                \"visibility\": \"public\",\n                \"likes_count\": 5,\n                \"comments_count\": 2,\n                \"is_liked\": true,\n                \"user\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                    \"name\": \"John Doe\",\n                    \"username\": \"johndoe\",\n                    \"photo\": \"uploads/photos/johndoe.jpg\",\n                    \"headline\": \"Fullstack Developer\"\n                },\n                \"created_at\": \"2023-11-27T10:20:00Z\",\n                \"updated_at\": \"2023-11-27T10:20:00Z\"\n            },\n            {\n                \"id\": \"b2c3d4e5-f6g7-5b4c-9d8e-0f1g2h3i4j5k\",\n                \"content\": \"Another post with some tech insights\",\n                \"images\": [],\n                \"visibility\": \"public\",\n                \"likes_count\": 12,\n                \"comments_count\": 3,\n                \"is_liked\": false,\n                \"user\": {\n                    \"id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n                    \"name\": \"Jane Smith\",\n                    \"username\": \"janesmith\",\n                    \"photo\": \"uploads/photos/janesmith.jpg\",\n                    \"headline\": \"UX Designer\"\n                },\n                \"created_at\": \"2023-11-26T15:30:00Z\",\n                \"updated_at\": \"2023-11-26T15:30:00Z\"\n            }\n        ],\n        \"total\": 42,\n        \"limit\": 10,\n        \"offset\": 0\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Posts By User ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
             },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/users/{{userId}}/posts?limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{userId}}", "posts"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah postingan per halaman"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Offset untuk pagination"
+                }
+              ]
+            },
+            "description": "Mendapatkan semua postingan dari user tertentu dengan pagination"
+          },
+          "response": [
             {
-              "name": "Get Posts By User ID",
-              "request": {
+              "name": "Get Posts By User ID Success",
+              "originalRequest": {
                 "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{token}}"
-                  }
-                ],
+                "header": [],
                 "url": {
-                  "raw": "http://localhost:3000/api/users/{{userId}}/posts?limit=10&offset=0",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
-                  "path": ["api", "users", "{{userId}}", "posts"],
+                  "raw": "{{base_url}}/api/users/550e8400-e29b-41d4-a716-446655440000/posts?limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "users",
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    "posts"
+                  ],
                   "query": [
                     {
                       "key": "limit",
@@ -279,99 +892,1485 @@
                   ]
                 }
               },
-              "response": []
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"posts\": [\n            {\n                \"id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n                \"content\": \"This is my first post on EvoConnect!\",\n                \"images\": [\"uploads/images/image1.jpg\", \"uploads/images/image2.jpg\"],\n                \"visibility\": \"public\",\n                \"likes_count\": 5,\n                \"comments_count\": 2,\n                \"is_liked\": true,\n                \"user\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                    \"name\": \"John Doe\",\n                    \"username\": \"johndoe\",\n                    \"photo\": \"uploads/photos/johndoe.jpg\",\n                    \"headline\": \"Fullstack Developer\"\n                },\n                \"created_at\": \"2023-11-27T10:20:00Z\",\n                \"updated_at\": \"2023-11-27T10:20:00Z\"\n            },\n            {\n                \"id\": \"c3d4e5f6-g7h8-6c5d-0e1f-2g3h4i5j6k7l\",\n                \"content\": \"Working on a new project with Go and React!\",\n                \"images\": [\"uploads/images/project.jpg\"],\n                \"visibility\": \"public\",\n                \"likes_count\": 8,\n                \"comments_count\": 1,\n                \"is_liked\": false,\n                \"user\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                    \"name\": \"John Doe\",\n                    \"username\": \"johndoe\",\n                    \"photo\": \"uploads/photos/johndoe.jpg\",\n                    \"headline\": \"Fullstack Developer\"\n                },\n                \"created_at\": \"2023-11-25T09:15:00Z\",\n                \"updated_at\": \"2023-11-25T09:15:00Z\"\n            }\n        ],\n        \"total\": 15,\n        \"limit\": 10,\n        \"offset\": 0,\n        \"user\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"John Doe\",\n            \"username\": \"johndoe\",\n            \"photo\": \"uploads/photos/johndoe.jpg\",\n            \"headline\": \"Fullstack Developer\"\n        }\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Post By ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
             },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/posts/{{postId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "posts", "{{postId}}"]
+            },
+            "description": "Mendapatkan detail postingan berdasarkan ID"
+          },
+          "response": [
             {
-              "name": "Update Post",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{token}}"
-                  }
-                ],
+              "name": "Get Post By ID Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
                 "url": {
-                  "raw": "http://localhost:3000/api/posts/{{postId}}",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
-                  "path": ["api", "posts", "{{postId}}"]
-                },
+                  "raw": "{{base_url}}/api/posts/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "posts",
+                    "a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n        \"content\": \"This is my first post on EvoConnect!\",\n        \"images\": [\"uploads/images/image1.jpg\", \"uploads/images/image2.jpg\"],\n        \"visibility\": \"public\",\n        \"likes_count\": 5,\n        \"comments_count\": 2,\n        \"is_liked\": true,\n        \"user\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"John Doe\",\n            \"username\": \"johndoe\",\n            \"photo\": \"uploads/photos/johndoe.jpg\",\n            \"headline\": \"Fullstack Developer\"\n        },\n        \"created_at\": \"2023-11-27T10:20:00Z\",\n        \"updated_at\": \"2023-11-27T10:20:00Z\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Post",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Updated post content with more details\",\n  \"images\": [\"uploads/images/updated.jpg\"],\n  \"visibility\": \"private\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/posts/{{postId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "posts", "{{postId}}"]
+            },
+            "description": "Memperbarui postingan berdasarkan ID"
+          },
+          "response": [
+            {
+              "name": "Update Post Success",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"content\": \"Updated post content\",\n  \"images\": [\"uploads/images/updated.jpg\"],\n  \"visibility\": \"private\"\n}"
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Delete Post",
-              "request": {
-                "method": "DELETE",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{token}}"
+                  "raw": "{\n  \"content\": \"Updated post content with more details\",\n  \"images\": [\"uploads/images/updated.jpg\"],\n  \"visibility\": \"private\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
                   }
-                ],
+                },
                 "url": {
-                  "raw": "http://localhost:3000/api/posts/{{postId}}",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
-                  "path": ["api", "posts", "{{postId}}"]
+                  "raw": "{{base_url}}/api/posts/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "posts",
+                    "a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d"
+                  ]
                 }
               },
-              "response": []
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n        \"content\": \"Updated post content with more details\",\n        \"images\": [\"uploads/images/updated.jpg\"],\n        \"visibility\": \"private\",\n        \"likes_count\": 5,\n        \"comments_count\": 2,\n        \"is_liked\": true,\n        \"user\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"John Doe\",\n            \"username\": \"johndoe\",\n            \"photo\": \"uploads/photos/johndoe.jpg\",\n            \"headline\": \"Fullstack Developer\"\n        },\n        \"created_at\": \"2023-11-27T10:20:00Z\",\n        \"updated_at\": \"2023-11-28T16:35:00Z\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Post",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
             },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/posts/{{postId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "posts", "{{postId}}"]
+            },
+            "description": "Menghapus postingan berdasarkan ID"
+          },
+          "response": [
             {
-              "name": "Like Post",
-              "request": {
+              "name": "Delete Post Success",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/posts/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "posts",
+                    "a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": \"Post deleted successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Like Post",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/posts/{{postId}}/like",
+              "host": ["{{base_url}}"],
+              "path": ["api", "posts", "{{postId}}", "like"]
+            },
+            "description": "Menyukai sebuah postingan"
+          },
+          "response": [
+            {
+              "name": "Like Post Success",
+              "originalRequest": {
                 "method": "POST",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{token}}"
-                  }
-                ],
+                "header": [],
                 "url": {
-                  "raw": "http://localhost:3000/api/posts/{{postId}}/like",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
-                  "path": ["api", "posts", "{{postId}}", "like"]
+                  "raw": "{{base_url}}/api/posts/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/like",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "posts",
+                    "a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d",
+                    "like"
+                  ]
                 }
               },
-              "response": []
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 201,\n    \"status\": \"CREATED\",\n    \"data\": {\n        \"post_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n        \"likes_count\": 6,\n        \"is_liked\": true\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Unlike Post",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
             },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/posts/{{postId}}/like",
+              "host": ["{{base_url}}"],
+              "path": ["api", "posts", "{{postId}}", "like"]
+            },
+            "description": "Batal menyukai sebuah postingan"
+          },
+          "response": [
             {
-              "name": "Unlike Post",
-              "request": {
+              "name": "Unlike Post Success",
+              "originalRequest": {
                 "method": "DELETE",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{token}}"
-                  }
-                ],
+                "header": [],
                 "url": {
-                  "raw": "http://localhost:3000/api/posts/{{postId}}/like",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
-                  "path": ["api", "posts", "{{postId}}", "like"]
+                  "raw": "{{base_url}}/api/posts/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/like",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "posts",
+                    "a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d",
+                    "like"
+                  ]
                 }
               },
-              "response": []
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"post_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n        \"likes_count\": 5,\n        \"is_liked\": false\n    }\n}"
             }
           ]
         }
       ]
+    },
+    {
+      "name": "Comments",
+      "description": "Endpoints untuk manajemen komentar pada postingan",
+      "item": [
+        {
+          "name": "Create Comment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Great post! I agree with your insights.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/posts/{{postId}}/comments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "posts", "{{postId}}", "comments"]
+            },
+            "description": "Menambahkan komentar pada sebuah postingan"
+          },
+          "response": [
+            {
+              "name": "Create Comment Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"content\": \"Great post! I agree with your insights.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/posts/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/comments",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "posts",
+                    "a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d",
+                    "comments"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 201,\n    \"status\": \"CREATED\",\n    \"data\": {\n        \"id\": \"d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m\",\n        \"post_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n        \"content\": \"Great post! I agree with your insights.\",\n        \"created_at\": \"2023-11-28T16:45:00Z\",\n        \"updated_at\": \"2023-11-28T16:45:00Z\",\n        \"user\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"John Doe\",\n            \"username\": \"johndoe\",\n            \"profile_photo\": \"uploads/photos/johndoe.jpg\",\n            \"is_online\": true\n        },\n        \"replies\": []\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Comments by Post ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/posts/{{postId}}/comments?limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "posts", "{{postId}}", "comments"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah komentar per halaman"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Offset untuk pagination"
+                }
+              ]
+            },
+            "description": "Mendapatkan semua komentar dari postingan tertentu"
+          },
+          "response": [
+            {
+              "name": "Get Comments Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/posts/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/comments?limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "posts",
+                    "a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d",
+                    "comments"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"comments\": [\n            {\n                \"id\": \"d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m\",\n                \"post_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n                \"content\": \"Great post! I agree with your insights.\",\n                \"created_at\": \"2023-11-28T16:45:00Z\",\n                \"updated_at\": \"2023-11-28T16:45:00Z\",\n                \"user\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                    \"name\": \"John Doe\",\n                    \"username\": \"johndoe\",\n                    \"profile_photo\": \"uploads/photos/johndoe.jpg\",\n                    \"is_online\": true\n                },\n                \"replies\": [\n                    {\n                        \"id\": \"e5f6g7h8-i9j0-8e7f-2g3h-4i5j6k7l8m9n\",\n                        \"post_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n                        \"parent_id\": \"d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m\",\n                        \"content\": \"Thanks for your comment!\",\n                        \"created_at\": \"2023-11-28T16:50:00Z\",\n                        \"updated_at\": \"2023-11-28T16:50:00Z\",\n                        \"user\": {\n                            \"id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n                            \"name\": \"Jane Smith\",\n                            \"username\": \"janesmith\",\n                            \"profile_photo\": \"uploads/photos/janesmith.jpg\",\n                            \"is_online\": false\n                        }\n                    }\n                ]\n            },\n            {\n                \"id\": \"f6g7h8i9-j0k1-9f8g-3h4i-5j6k7l8m9n0o\",\n                \"post_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n                \"content\": \"I have a question about the project you mentioned.\",\n                \"created_at\": \"2023-11-28T17:00:00Z\",\n                \"updated_at\": \"2023-11-28T17:00:00Z\",\n                \"user\": {\n                    \"id\": \"772g0622-g4b3-52e6-c993-668646551234\",\n                    \"name\": \"Alex Johnson\",\n                    \"username\": \"alexj\",\n                    \"profile_photo\": \"uploads/photos/alexj.jpg\",\n                    \"is_online\": true\n                },\n                \"replies\": []\n            }\n        ],\n        \"total\": 2\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Comment By ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/comments/{{commentId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "comments", "{{commentId}}"]
+            },
+            "description": "Mendapatkan detail komentar berdasarkan ID"
+          },
+          "response": [
+            {
+              "name": "Get Comment By ID Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/comments/d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "comments",
+                    "d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m\",\n        \"post_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n        \"content\": \"Great post! I agree with your insights.\",\n        \"created_at\": \"2023-11-28T16:45:00Z\",\n        \"updated_at\": \"2023-11-28T16:45:00Z\",\n        \"user\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"John Doe\",\n            \"username\": \"johndoe\",\n            \"profile_photo\": \"uploads/photos/johndoe.jpg\",\n            \"is_online\": true\n        },\n        \"replies\": [\n            {\n                \"id\": \"e5f6g7h8-i9j0-8e7f-2g3h-4i5j6k7l8m9n\",\n                \"post_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n                \"parent_id\": \"d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m\",\n                \"content\": \"Thanks for your comment!\",\n                \"created_at\": \"2023-11-28T16:50:00Z\",\n                \"updated_at\": \"2023-11-28T16:50:00Z\",\n                \"user\": {\n                    \"id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n                    \"name\": \"Jane Smith\",\n                    \"username\": \"janesmith\",\n                    \"profile_photo\": \"uploads/photos/janesmith.jpg\",\n                    \"is_online\": false\n                }\n            }\n        ]\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reply to Comment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Thanks for your comment!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/comments/{{commentId}}/replies",
+              "host": ["{{base_url}}"],
+              "path": ["api", "comments", "{{commentId}}", "replies"]
+            },
+            "description": "Menambahkan balasan pada sebuah komentar"
+          },
+          "response": [
+            {
+              "name": "Reply to Comment Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"content\": \"Thanks for your comment!\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/comments/d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m/replies",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "comments",
+                    "d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m",
+                    "replies"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 201,\n    \"status\": \"CREATED\",\n    \"data\": {\n        \"id\": \"e5f6g7h8-i9j0-8e7f-2g3h-4i5j6k7l8m9n\",\n        \"post_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n        \"parent_id\": \"d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m\",\n        \"content\": \"Thanks for your comment!\",\n        \"created_at\": \"2023-11-28T16:50:00Z\",\n        \"updated_at\": \"2023-11-28T16:50:00Z\",\n        \"user\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"John Doe\",\n            \"username\": \"johndoe\",\n            \"profile_photo\": \"uploads/photos/johndoe.jpg\",\n            \"is_online\": true\n        }\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Comment Replies",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/comments/{{commentId}}/replies?limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "comments", "{{commentId}}", "replies"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah balasan per halaman"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Offset untuk pagination"
+                }
+              ]
+            },
+            "description": "Mendapatkan semua balasan dari komentar tertentu"
+          },
+          "response": [
+            {
+              "name": "Get Comment Replies Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/comments/d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m/replies?limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "comments",
+                    "d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m",
+                    "replies"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"comments\": [\n            {\n                \"id\": \"e5f6g7h8-i9j0-8e7f-2g3h-4i5j6k7l8m9n\",\n                \"post_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n                \"parent_id\": \"d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m\",\n                \"content\": \"Thanks for your comment!\",\n                \"created_at\": \"2023-11-28T16:50:00Z\",\n                \"updated_at\": \"2023-11-28T16:50:00Z\",\n                \"user\": {\n                    \"id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n                    \"name\": \"Jane Smith\",\n                    \"username\": \"janesmith\",\n                    \"profile_photo\": \"uploads/photos/janesmith.jpg\",\n                    \"is_online\": false\n                }\n            }\n        ],\n        \"total\": 1\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Comment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Updated comment with additional thoughts.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/comments/{{commentId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "comments", "{{commentId}}"]
+            },
+            "description": "Memperbarui komentar berdasarkan ID"
+          },
+          "response": [
+            {
+              "name": "Update Comment Success",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"content\": \"Updated comment with additional thoughts.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/comments/d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "comments",
+                    "d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m\",\n        \"post_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n        \"content\": \"Updated comment with additional thoughts.\",\n        \"created_at\": \"2023-11-28T16:45:00Z\",\n        \"updated_at\": \"2023-11-28T17:15:00Z\",\n        \"user\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"John Doe\",\n            \"username\": \"johndoe\",\n            \"profile_photo\": \"uploads/photos/johndoe.jpg\",\n            \"is_online\": true\n        },\n        \"replies\": [\n            {\n                \"id\": \"e5f6g7h8-i9j0-8e7f-2g3h-4i5j6k7l8m9n\",\n                \"post_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n                \"parent_id\": \"d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m\",\n                \"content\": \"Thanks for your comment!\",\n                \"created_at\": \"2023-11-28T16:50:00Z\",\n                \"updated_at\": \"2023-11-28T16:50:00Z\",\n                \"user\": {\n                    \"id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n                    \"name\": \"Jane Smith\",\n                    \"username\": \"janesmith\",\n                    \"profile_photo\": \"uploads/photos/janesmith.jpg\",\n                    \"is_online\": false\n                }\n            }\n        ]\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Comment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/comments/{{commentId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "comments", "{{commentId}}"]
+            },
+            "description": "Menghapus komentar berdasarkan ID (termasuk semua balasannya)"
+          },
+          "response": [
+            {
+              "name": "Delete Comment Success",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/comments/d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "comments",
+                    "d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": \"Comment deleted successfully\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Network",
+      "description": "Endpoints untuk mengelola jaringan koneksi dan following",
+      "item": [
+        {
+          "name": "Follow User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/users/{{userId}}/follow",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{userId}}", "follow"]
+            },
+            "description": "Mengikuti pengguna lain"
+          },
+          "response": [
+            {
+              "name": "Follow User Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/users/661f9511-f3a2-41d5-b882-557535440123/follow",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "users",
+                    "661f9511-f3a2-41d5-b882-557535440123",
+                    "follow"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 201,\n    \"status\": \"CREATED\",\n    \"data\": {\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"is_following\": true,\n        \"followers_count\": 42\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Unfollow User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/users/{{userId}}/follow",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{userId}}", "follow"]
+            },
+            "description": "Berhenti mengikuti pengguna lain"
+          },
+          "response": [
+            {
+              "name": "Unfollow User Success",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/users/661f9511-f3a2-41d5-b882-557535440123/follow",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "users",
+                    "661f9511-f3a2-41d5-b882-557535440123",
+                    "follow"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"is_following\": false,\n        \"followers_count\": 41\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Following",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/users/{{userId}}/following?limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{userId}}", "following"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah following per halaman"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Offset untuk pagination"
+                }
+              ]
+            },
+            "description": "Mendapatkan daftar pengguna yang diikuti oleh pengguna tertentu"
+          },
+          "response": [
+            {
+              "name": "Get Following Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/users/550e8400-e29b-41d4-a716-446655440000/following?limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "users",
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    "following"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"users\": [\n            {\n                \"id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n                \"name\": \"Jane Smith\",\n                \"username\": \"janesmith\",\n                \"headline\": \"UX Designer\",\n                \"photo\": \"uploads/photos/janesmith.jpg\",\n                \"is_following\": true,\n                \"is_connected\": false\n            },\n            {\n                \"id\": \"772g0622-g4b3-52e6-c993-668646551234\",\n                \"name\": \"Alex Johnson\",\n                \"username\": \"alexj\",\n                \"headline\": \"Backend Developer\",\n                \"photo\": \"uploads/photos/alexj.jpg\",\n                \"is_following\": true,\n                \"is_connected\": true\n            }\n        ],\n        \"total\": 2,\n        \"limit\": 10,\n        \"offset\": 0\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Followers",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/users/{{userId}}/followers?limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{userId}}", "followers"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah followers per halaman"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Offset untuk pagination"
+                }
+              ]
+            },
+            "description": "Mendapatkan daftar pengikut dari pengguna tertentu"
+          },
+          "response": [
+            {
+              "name": "Get Followers Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/users/661f9511-f3a2-41d5-b882-557535440123/followers?limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "users",
+                    "661f9511-f3a2-41d5-b882-557535440123",
+                    "followers"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"users\": [\n            {\n                \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                \"name\": \"John Doe\",\n                \"username\": \"johndoe\",\n                \"headline\": \"Fullstack Developer\",\n                \"photo\": \"uploads/photos/johndoe.jpg\",\n                \"is_following\": false,\n                \"is_connected\": false\n            },\n            {\n                \"id\": \"883h1733-h5c4-63f7-d0a4-779757662345\",\n                \"name\": \"Sarah Williams\",\n                \"username\": \"sarahw\",\n                \"headline\": \"Frontend Engineer\",\n                \"photo\": \"uploads/photos/sarahw.jpg\",\n                \"is_following\": true,\n                \"is_connected\": true\n            }\n        ],\n        \"total\": 2,\n        \"limit\": 10,\n        \"offset\": 0\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Send Connection Request",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Hi, I'd like to connect with you on EvoConnect!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/{{userId}}/connect",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{userId}}", "connect"]
+            },
+            "description": "Mengirim permintaan koneksi ke pengguna lain"
+          },
+          "response": [
+            {
+              "name": "Send Connection Request Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"message\": \"Hi, I'd like to connect with you on EvoConnect!\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/users/661f9511-f3a2-41d5-b882-557535440123/connect",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "users",
+                    "661f9511-f3a2-41d5-b882-557535440123",
+                    "connect"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 201,\n    \"status\": \"CREATED\",\n    \"data\": {\n        \"id\": \"g7h8i9j0-k1l2-a0b1-c2d3-e4f5g6h7i8j9\",\n        \"status\": \"pending\",\n        \"created_at\": \"2023-11-28T18:00:00Z\",\n        \"receiver\": {\n            \"id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n            \"name\": \"Jane Smith\",\n            \"username\": \"janesmith\",\n            \"headline\": \"UX Designer\",\n            \"photo\": \"uploads/photos/janesmith.jpg\"\n        }\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Connection Requests",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/connections/requests?limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "connections", "requests"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah permintaan per halaman"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Offset untuk pagination"
+                }
+              ]
+            },
+            "description": "Mendapatkan daftar permintaan koneksi yang diterima"
+          },
+          "response": [
+            {
+              "name": "Get Connection Requests Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/connections/requests?limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "connections", "requests"],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"requests\": [\n            {\n                \"id\": \"h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0\",\n                \"status\": \"pending\",\n                \"message\": \"I'd like to add you to my professional network\",\n                \"created_at\": \"2023-11-27T14:30:00Z\",\n                \"sender\": {\n                    \"id\": \"883h1733-h5c4-63f7-d0a4-779757662345\",\n                    \"name\": \"Sarah Williams\",\n                    \"username\": \"sarahw\",\n                    \"headline\": \"Frontend Engineer\",\n                    \"photo\": \"uploads/photos/sarahw.jpg\"\n                }\n            }\n        ],\n        \"total\": 1,\n        \"limit\": 10,\n        \"offset\": 0\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Accept Connection Request",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/connections/requests/{{requestId}}/accept",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "connections",
+                "requests",
+                "{{requestId}}",
+                "accept"
+              ]
+            },
+            "description": "Menerima permintaan koneksi dari pengguna lain"
+          },
+          "response": [
+            {
+              "name": "Accept Connection Request Success",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/connections/requests/h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0/accept",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "connections",
+                    "requests",
+                    "h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0",
+                    "accept"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0\",\n        \"status\": \"accepted\",\n        \"created_at\": \"2023-11-27T14:30:00Z\",\n        \"updated_at\": \"2023-11-28T18:15:00Z\",\n        \"user\": {\n            \"id\": \"883h1733-h5c4-63f7-d0a4-779757662345\",\n            \"name\": \"Sarah Williams\",\n            \"username\": \"sarahw\",\n            \"headline\": \"Frontend Engineer\",\n            \"photo\": \"uploads/photos/sarahw.jpg\",\n            \"is_following\": false,\n            \"is_connected\": true\n        }\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reject Connection Request",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/connections/requests/{{requestId}}/reject",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "connections",
+                "requests",
+                "{{requestId}}",
+                "reject"
+              ]
+            },
+            "description": "Menolak permintaan koneksi dari pengguna lain"
+          },
+          "response": [
+            {
+              "name": "Reject Connection Request Success",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/connections/requests/h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0/reject",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "connections",
+                    "requests",
+                    "h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0",
+                    "reject"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0\",\n        \"status\": \"rejected\",\n        \"created_at\": \"2023-11-27T14:30:00Z\",\n        \"updated_at\": \"2023-11-28T18:15:00Z\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Connections",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/users/{{userId}}/connections?limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{userId}}", "connections"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah koneksi per halaman"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Offset untuk pagination"
+                }
+              ]
+            },
+            "description": "Mendapatkan daftar koneksi dari pengguna tertentu"
+          },
+          "response": [
+            {
+              "name": "Get Connections Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/users/550e8400-e29b-41d4-a716-446655440000/connections?limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "users",
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    "connections"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"users\": [\n            {\n                \"id\": \"883h1733-h5c4-63f7-d0a4-779757662345\",\n                \"name\": \"Sarah Williams\",\n                \"username\": \"sarahw\",\n                \"headline\": \"Frontend Engineer\",\n                \"photo\": \"uploads/photos/sarahw.jpg\",\n                \"is_following\": true,\n                \"is_connected\": true\n            },\n            {\n                \"id\": \"772g0622-g4b3-52e6-c993-668646551234\",\n                \"name\": \"Alex Johnson\",\n                \"username\": \"alexj\",\n                \"headline\": \"Backend Developer\",\n                \"photo\": \"uploads/photos/alexj.jpg\",\n                \"is_following\": true,\n                \"is_connected\": true\n            }\n        ],\n        \"total\": 2,\n        \"limit\": 10,\n        \"offset\": 0\n    }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Blog",
+      "description": "Endpoints untuk mengelola blog dan artikel",
+      "item": [
+        {
+          "name": "Create Blog",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{JWT_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"How to Build a Go Backend\",\n  \"category\": \"Tech\",\n  \"content\": \"This is a detailed tutorial on building Go backends.\",\n  \"image\": \"uploads/blogs/go-backend.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/blogs",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "blogs"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Blogs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/blogs",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "blogs"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Blog",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{JWT_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/blogs/{{blog_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "blogs", "{{blog_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get blog by slug",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/blogs/slug/{{blog_slug}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "blogs", "slug", "{{blog_slug}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "YOUR_JWT_TOKEN",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "550e8400-e29b-41d4-a716-446655440000",
+      "type": "string"
+    },
+    {
+      "key": "postId",
+      "value": "a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d",
+      "type": "string"
+    },
+    {
+      "key": "commentId",
+      "value": "d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m",
+      "type": "string"
+    },
+    {
+      "key": "requestId",
+      "value": "h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0",
+      "type": "string"
     }
   ]
 }
