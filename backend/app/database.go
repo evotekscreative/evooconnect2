@@ -31,7 +31,6 @@ func NewDB() *sql.DB {
 	config := GetDatabaseConfig()
 	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
 		config.Host, config.Port, config.User, config.Password, config.DbName, config.SSLMode)
-		fmt.Println("Connecting to database with DSN:", dsn)
 	db, err := sql.Open("postgres", dsn)
 	helper.PanicIfError(err)
 
@@ -39,6 +38,14 @@ func NewDB() *sql.DB {
 	db.SetMaxOpenConns(20)
 	db.SetConnMaxLifetime(60 * time.Minute)
 	db.SetConnMaxIdleTime(10 * time.Minute)
+
+	err = db.Ping()
+	if err != nil {
+		fmt.Println("Error connecting to database:", err)
+		return nil
+	}
+	fmt.Println("Connected to database")
+	helper.PanicIfError(err)
 
 	return db
 }
