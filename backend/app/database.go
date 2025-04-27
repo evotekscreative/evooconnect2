@@ -39,5 +39,13 @@ func NewDB() *sql.DB {
 	db.SetConnMaxLifetime(60 * time.Minute)
 	db.SetConnMaxIdleTime(10 * time.Minute)
 
+	err = db.Ping()
+	if err != nil {
+		fmt.Println("Error connecting to database:", err)
+		return nil
+	}
+	fmt.Println("Connected to database")
+	helper.PanicIfError(err)
+
 	return db
 }

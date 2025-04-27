@@ -1,72 +1,90 @@
+import { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
 function PreviewStep({ formData, onSubmit, onPrev }) {
-    const { title, category, content, images } = formData;
-    
-    return (
-      <div className="py-4">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">Preview Your Blog Post</h2>
-        <p className="text-gray-600 mb-6">
-          Review your blog post before publishing.
-        </p>
-        
-        <div className="bg-gray-50 p-6 rounded-lg">
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-700">Title</h3>
-            <div className="mt-2 text-xl font-bold text-gray-900">{title}</div>
-          </div>
-          
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-700">Category</h3>
-            <div className="mt-2">
-              <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                {category}
-              </span>
-            </div>
-          </div>
-          
-          {images.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">Images</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {images.map((image, index) => (
-                  <div key={index} className="relative">
+  const { title, category, content, images, date } = formData;
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const nextImage = () => {
+    setCurrentIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const prevImage = () => {
+    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  return (
+    <div className="py-7 bg-gray-50">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="space-y-6">
+          <div className="bg-white shadow-md rounded-lg overflow-hidden">
+            {images.length > 0 && (
+              <div className="relative overflow-hidden w-full h-[400px]">
+                <div
+                  className="flex transition-transform duration-500 ease-in-out"
+                  style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+                >
+                  {images.map((image, index) => (
                     <img
+                      key={index}
                       src={image.preview}
                       alt={`Image ${index + 1}`}
-                      className="w-full h-32 object-cover rounded-md"
+                      className="w-full h-[400px] object-cover flex-shrink-0"
                     />
-                  </div>
-                ))}
+                  ))}
+                </div>
+                {images.length > 1 && (
+                  <>
+                    <button
+                      onClick={prevImage}
+                      className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white/70 text-gray-800 rounded-full p-2 shadow hover:bg-white transition"
+                    >
+                      <ChevronLeft className="w-6 h-6" />
+                    </button>
+                    <button
+                      onClick={nextImage}
+                      className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white/70 text-gray-800 rounded-full p-2 shadow hover:bg-white transition"
+                    >
+                      <ChevronRight className="w-6 h-6" />
+                    </button>
+                  </>
+                )}
               </div>
+            )}
+            <div className="p-6">
+              <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                {category}
+              </span>
+              <h2 className="text-2xl font-semibold mt-3">{title}</h2>
+              <p className="text-sm text-gray-500 mb-1">Preview Mode</p>
+              <p className="text-xs text-gray-400 mb-4">Published on: {date}</p>
+              <div
+                className="prose max-w-none text-gray-700"
+                dangerouslySetInnerHTML={{ __html: content }}
+              />
             </div>
-          )}
-          
-          <div>
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">Content</h3>
-            <div 
-              className="prose max-w-none mt-2 p-4 bg-white rounded-md border border-gray-200 text-black"
-              dangerouslySetInnerHTML={{ __html: content }}
-            />
+          </div>
+
+          <div className="flex justify-between mt-6">
+            <button
+              type="button"
+              onClick={onPrev}
+              className="px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition"
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              onClick={onSubmit}
+              className="btn-primary text-white px-4 py-2 rounded-md font-medium hover:bg-blue-700 transition"
+            >
+              Publish Blog
+            </button>
           </div>
         </div>
-        
-        <div className="border-t border-gray-200 mt-8 pt-6 flex justify-between">
-          <button
-            type="button"
-            onClick={onPrev}
-            className="px-6 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition"
-          >
-            Previous
-          </button>
-          <button
-            type="button"
-            onClick={onSubmit}
-            className="btn-primary text-white px-6 py-2.5 rounded-md font-medium"
-          >
-            Publish Blog
-          </button>
-        </div>
       </div>
-    );
-  }
-  
-  export default PreviewStep;
+    </div>
+  );
+}
+
+export default PreviewStep;

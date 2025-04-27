@@ -2,144 +2,133 @@ package middleware
 
 import (
 	"context"
-	"evoconnect/backend/helper"
+	"encoding/json"
 	"evoconnect/backend/model/web"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
+	// "github.com/google/uuid"
 )
 
-type SelectiveAuthMiddleware struct {
-	Handler     http.Handler
-	JwtSecret   string
-	PublicPaths []string
+type AuthMiddleware struct {
+	Handler   http.Handler
+	JWTSecret string
 }
 
-func NewSelectiveAuthMiddleware(handler http.Handler, jwtSecret string) *SelectiveAuthMiddleware {
-	return &SelectiveAuthMiddleware{
+func NewAuthMiddleware(handler http.Handler, jwtSecret string) *AuthMiddleware {
+	return &AuthMiddleware{
 		Handler:   handler,
-		JwtSecret: jwtSecret,
-		PublicPaths: []string{
-			"/api/auth/login",
-			"/api/auth/register",
-			"/api/auth/verify/send",
-			"/api/auth/forgot-password",
-			"/api/auth/reset-password",
-			// Note: /api/auth/verify is protected and requires auth
-		},
+		JWTSecret: jwtSecret,
 	}
 }
 
-// Helper method to check if a path requires authentication
-func (middleware *SelectiveAuthMiddleware) CheckAuthFunc(path string) bool {
-	for _, publicPath := range middleware.PublicPaths {
-		if strings.HasPrefix(path, publicPath) {
-			return false // No auth required for public paths
-		}
-	}
-	return true // Auth required for all other paths
-}
+// middleware/auth_middleware.go
 
-func (middleware *SelectiveAuthMiddleware) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
-	path := request.URL.Path
-
-	// Check if authentication is required for this path
-	if !middleware.CheckAuthFunc(path) {
+func (middleware *AuthMiddleware) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+	// Skip authentication for these public endpoints only
+	if strings.Contains(request.URL.Path, "/auth/login") ||
+		strings.Contains(request.URL.Path, "/auth/register") ||
+		strings.Contains(request.URL.Path, "/auth/verify/send") || // Yang publik hanya endpoint untuk mengirim email verifikasi
+		strings.Contains(request.URL.Path, "/auth/forgot-password") ||
+		strings.Contains(request.URL.Path, "/auth/reset-password") ||
+		request.URL.Path == "/api/health" {
 		middleware.Handler.ServeHTTP(writer, request)
 		return
 	}
 
-	// This path requires authentication, check for token
+	// Semua endpoint lain termasuk /api/auth/verify memerlukan autentikasi
 	authHeader := request.Header.Get("Authorization")
-	if authHeader == "" {
+
+	// Debug untuk melihat header yang diterima
+	// fmt.Printf("Auth header received: %s\n", authHeader)
+
+	if !strings.Contains(authHeader, "Bearer ") {
+		// Return proper JSON response untuk error
 		writer.Header().Set("Content-Type", "application/json")
 		writer.WriteHeader(http.StatusUnauthorized)
 
-		webResponse := web.WebResponse{
+		response := web.WebResponse{
 			Code:   http.StatusUnauthorized,
 			Status: "UNAUTHORIZED",
-			Data:   "Missing Authorization header",
+			Data:   "Unauthorized access",
 		}
 
-		helper.WriteToResponseBody(writer, webResponse)
+		_ = json.NewEncoder(writer).Encode(response)
 		return
 	}
 
-	if !strings.HasPrefix(authHeader, "Bearer ") {
-		writer.Header().Set("Content-Type", "application/json")
-		writer.WriteHeader(http.StatusUnauthorized)
-
-		webResponse := web.WebResponse{
-			Code:   http.StatusUnauthorized,
-			Status: "UNAUTHORIZED",
-			Data:   "Invalid token format - missing Bearer prefix",
-		}
-
-		helper.WriteToResponseBody(writer, webResponse)
-		return
-	}
-
+	// Extract the token
 	tokenString := strings.Replace(authHeader, "Bearer ", "", 1)
 
-	// Parse and validate the token
+	// Parse and validate token
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+		if method, ok := token.Method.(*jwt.SigningMethodHMAC); !ok || method.Alg() != "HS256" {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(middleware.JwtSecret), nil
+		return []byte(middleware.JWTSecret), nil
 	})
 
 	if err != nil {
+		fmt.Printf("JWT Parse error: %v\n", err)
 		writer.Header().Set("Content-Type", "application/json")
 		writer.WriteHeader(http.StatusUnauthorized)
 
-		webResponse := web.WebResponse{
+		response := web.WebResponse{
+			Code:   http.StatusUnauthorized,
+			Status: "UNAUTHORIZED",
+			Data:   "Invalid token: " + err.Error(),
+		}
+
+		_ = json.NewEncoder(writer).Encode(response)
+		return
+	}
+
+	if !token.Valid {
+		writer.Header().Set("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusUnauthorized)
+
+		response := web.WebResponse{
 			Code:   http.StatusUnauthorized,
 			Status: "UNAUTHORIZED",
 			Data:   "Invalid token",
 		}
 
-		helper.WriteToResponseBody(writer, webResponse)
+		_ = json.NewEncoder(writer).Encode(response)
 		return
 	}
 
+	// Extract user info from token
 	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok || !token.Valid {
+	if !ok {
 		writer.Header().Set("Content-Type", "application/json")
 		writer.WriteHeader(http.StatusUnauthorized)
 
-		webResponse := web.WebResponse{
+		response := web.WebResponse{
 			Code:   http.StatusUnauthorized,
 			Status: "UNAUTHORIZED",
 			Data:   "Invalid token claims",
 		}
 
-		helper.WriteToResponseBody(writer, webResponse)
+		_ = json.NewEncoder(writer).Encode(response)
 		return
 	}
 
-	// Get user_id from claims
-	userID, ok := claims["user_id"].(float64)
-	if !ok {
-		writer.Header().Set("Content-Type", "application/json")
-		writer.WriteHeader(http.StatusUnauthorized)
+	// Get user_id and email from claims
+	userIdStr, _ := claims["user_id"].(string)
+	email, _ := claims["email"].(string)
 
-		webResponse := web.WebResponse{
-			Code:   http.StatusUnauthorized,
-			Status: "UNAUTHORIZED",
-			Data:   "Invalid token: missing user_id",
-		}
+	// Debug claims
+	// fmt.Printf("JWT Claims - user_id: %s, email: %s\n", userIdStr, email)
 
-		helper.WriteToResponseBody(writer, webResponse)
-		return
-	}
+	// Add to context
+	ctx := context.WithValue(request.Context(), "user_id", userIdStr)
+	ctx = context.WithValue(ctx, "email", email)
 
-	// Create context with user_id
-	ctx := context.WithValue(request.Context(), "user_id", int(userID))
-	request = request.WithContext(ctx)
+	// Create new request with updated context
+	newRequest := request.WithContext(ctx)
 
 	// Pass to next handler
-	middleware.Handler.ServeHTTP(writer, request)
+	middleware.Handler.ServeHTTP(writer, newRequest)
 }

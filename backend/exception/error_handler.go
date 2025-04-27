@@ -27,6 +27,10 @@ func ErrorHandler(writer http.ResponseWriter, request *http.Request, err interfa
 		return
 	}
 
+	if forbiddenError(writer, request, err) {
+		return
+	}
+
 	if tooManyRequestsError(writer, request, err) {
 		return
 	}
@@ -161,6 +165,25 @@ func tooManyRequestsError(writer http.ResponseWriter, request *http.Request, err
 		webResponse := web.WebResponse{
 			Code:   http.StatusTooManyRequests,
 			Status: "TOO_MANY_REQUESTS",
+			Data:   exception.Error,
+		}
+
+		helper.WriteToResponseBody(writer, webResponse)
+		return true
+	} else {
+		return false
+	}
+}
+
+func forbiddenError(writer http.ResponseWriter, request *http.Request, err interface{}) bool {
+	exception, ok := err.(ForbiddenError)
+	if ok {
+		writer.Header().Set("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusForbidden)
+
+		webResponse := web.WebResponse{
+			Code:   http.StatusForbidden,
+			Status: "FORBIDDEN",
 			Data:   exception.Error,
 		}
 

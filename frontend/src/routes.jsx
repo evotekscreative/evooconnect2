@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 import Login from "./pages/Auth/Login.jsx";
 import Register from "./pages/Auth/Register.jsx";
+import ForgotPassword from "./pages/Auth/ForgotPassword.jsx";
 import App from "./App";
 import Connections from "./pages/Connections.jsx";
 import PrivacyPolicy from "./pages/PrivacyPolicy.jsx";
@@ -17,15 +18,21 @@ import { Messages } from "./pages/Messages.jsx";
 import GroupPage from "./pages/GroupPage.jsx";
 import Blog from "./pages/Blog/Blog.jsx";
 import Notification from "./pages/Notification.jsx";
+import PostPage from "./pages/PostPage.jsx";
 import JobDashboard from "./pages/JobSaved.jsx";
 import HelpPage from "./pages/Help.jsx";
 import ProfilePage from "./pages/Profile.jsx";
 import ProfileEdit from "./pages/EditProfile.jsx";
+import ProtectedRoute from "./components/Auth/ProtectedRoute.jsx";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <App />,
+    element: (
+      <ProtectedRoute>
+        <App />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/login",
@@ -37,7 +44,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/forgot-password",
-    element: <div>Forgot Password Page</div>,
+    element: <ForgotPassword />,
   },
   {
     path: "/terms",
@@ -49,78 +56,150 @@ const router = createBrowserRouter([
   },
   {
     path: "/connections",
-    element: <Connections />,
+    element: (
+      <ProtectedRoute>
+        <Connections />
+      </ProtectedRoute>
+    ),
   },
 
   {
     path: "/jobs",
-    element: <Jobs />,
+    element: (
+      <ProtectedRoute>
+        <Jobs />
+      </ProtectedRoute>
+    ),
   },
 
   {
     path: "/jobs/:jobId",
-    element: <JobProfile />,
+    element: (
+      <ProtectedRoute>
+        <JobProfile />
+      </ProtectedRoute>
+    ),
   },
 
   {
     path: "/job-saved",
-    element: <JobDashboard />,
+    element: (
+      <ProtectedRoute>
+        <JobDashboard />
+      </ProtectedRoute>
+    ),
   },
 
   {
     path: "/help",
-    element: <HelpPage />,
+    element: (
+      <ProtectedRoute>
+        <HelpPage />
+      </ProtectedRoute>
+    ),
   },
 
   {
     path: "/profile",
-    element: <ProfilePage />,
+    element: (
+      <ProtectedRoute>
+        <ProfilePage />
+      </ProtectedRoute>
+    ),
   },
 
   {
     path: "/edit-profile",
-    element: <ProfileEdit />,
+    element: (
+      <ProtectedRoute>
+        <ProfileEdit />
+      </ProtectedRoute>
+    ),
   },
 
   {
     path: "/faq",
-    element: <Faq />,
+    element: (
+      <ProtectedRoute>
+        <Faq />
+      </ProtectedRoute>
+    ),
   },
   {
-    path: '/company-profile/:companyId',
-    element: <CompanyProfile />,
+    path: "/company-profile/:companyId",
+    element: (
+      <ProtectedRoute>
+        <CompanyProfile />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/groups",
-    element: <Groups />,
+    element: (
+      <ProtectedRoute>
+        <Groups />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/list-connection",
-    element: <ListConnection />,
+    element: (
+      <ProtectedRoute>
+        <ListConnection />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/messages",
-    element: <Messages />,
+    element: (
+      <ProtectedRoute>
+        <Messages />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/group-page",
-    element: <GroupPage />,
+    element: (
+      <ProtectedRoute>
+        <GroupPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/create-blog",
-    element: <CreateBlog />,
+    element: (
+      <ProtectedRoute>
+        <CreateBlog />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/blog",
-    element: <Blog />,
+    element: (
+      <ProtectedRoute>
+        <Blog />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/detail-blog/:id",
-    element: <BlogDetail />,
+    element: (
+      <ProtectedRoute>
+        <BlogDetail />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/notification",
-    element: <Notification />,
+    element: (
+      <ProtectedRoute>
+        <Notification />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/post-page",
+    element: <PostPage />,
   },
 ]);
 
