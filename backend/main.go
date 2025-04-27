@@ -34,8 +34,18 @@ func main() {
 	postService := service.NewPostService(postRepository, db, validate)
 	postController := controller.NewPostController(postService)
 
+	// Create comment repository, service, and controller instances
+	commentRepository := repository.NewCommentRepository()
+	commentService := service.NewCommentService(
+		commentRepository,
+		postRepository,
+		userRepository,
+		db,
+		validate)
+	commentController := controller.NewCommentController(commentService)
+
 	// Initialize router with all controllers
-	router := app.NewRouter(authController, userController, postController)
+	router := app.NewRouter(authController, userController, postController, commentController)
 
 	// Create middleware chain correctly by converting to http.Handler first
 	var handler http.Handler = router

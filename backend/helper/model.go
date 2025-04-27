@@ -99,3 +99,47 @@ func ToPostResponse(post domain.Post) web.PostResponse {
 		UpdatedAt: post.UpdatedAt,
 	}
 }
+
+// Fungsi untuk mengkonversi comment domain ke comment response
+func ToCommentResponse(comment domain.Comment) web.CommentResponse {
+	commentResponse := web.CommentResponse{
+		Id:        comment.Id,
+		PostId:    comment.PostId,
+		Content:   comment.Content,
+		CreatedAt: comment.CreatedAt,
+		UpdatedAt: comment.UpdatedAt,
+	}
+
+	if comment.ParentId != nil {
+		commentResponse.ParentId = comment.ParentId
+	}
+
+	if comment.User != nil {
+		commentResponse.User = web.CommentUserInfo{
+			Id:       comment.User.Id,
+			Name:     comment.User.Name,
+			Username: comment.User.Username,
+			Photo:    comment.User.Photo,
+		}
+	}
+
+	// Add replies if available
+	if len(comment.Replies) > 0 {
+		replies := make([]web.CommentResponse, 0)
+		for _, reply := range comment.Replies {
+			replies = append(replies, ToCommentResponse(reply))
+		}
+		commentResponse.Replies = replies
+	}
+
+	return commentResponse
+}
+
+// Fungsi untuk mengkonversi array comments ke array comment responses
+func ToCommentResponses(comments []domain.Comment) []web.CommentResponse {
+	commentResponses := make([]web.CommentResponse, 0)
+	for _, comment := range comments {
+		commentResponses = append(commentResponses, ToCommentResponse(comment))
+	}
+	return commentResponses
+}
