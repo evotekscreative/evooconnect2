@@ -2,6 +2,10 @@ package web
 
 import "evoconnect/backend/model/domain"
 
+type GoogleAuthRequest struct {
+	Token string `json:"token" validate:"required"`
+}
+
 // Request models
 type LoginRequest struct {
 	Email    string `json:"email" validate:"required,email"`

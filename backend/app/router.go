@@ -22,6 +22,7 @@ func NewRouter(
 	router := httprouter.New()
 
 	// Auth routes - all static paths
+	router.POST("/api/auth/google", authController.GoogleAuth)
 	router.POST("/api/auth/login", authController.Login)
 	router.POST("/api/auth/register", authController.Register)
 	router.POST("/api/auth/verify/send", authController.SendVerificationEmail)

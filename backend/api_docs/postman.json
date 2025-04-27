@@ -12,6 +12,65 @@
       "description": "Endpoints untuk autentikasi pengguna dan manajemen akun",
       "item": [
         {
+          "name": "Google Authentication",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"token\": \"GOOGLE_JWT_TOKEN_HERE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/google",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "google"]
+            },
+            "description": "Authenticate user with Google OAuth token"
+          },
+          "response": [
+            {
+              "name": "Google Auth Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"token\": \"GOOGLE_JWT_TOKEN_HERE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/auth/google",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "google"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"token\": \"JWT_TOKEN_HERE\",\n        \"user\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"Muhamad Afghan Alzena\",\n            \"email\": \"muhamadafghanalzena@gmail.com\",\n            \"username\": \"muhamad-afghan-alzena-231425\",\n            \"is_verified\": true,\n            \"created_at\": \"2025-04-27T18:30:00Z\"\n        }\n    }\n}"
+            }
+          ]
+        },
+        {
           "name": "Register",
           "request": {
             "method": "POST",
