@@ -4,7 +4,7 @@ type UpdateProfileRequest struct {
 	Name         string      `json:"name" validate:"required"`
 	Email        string      `json:"email" validate:"required,email"`
 	Username     string      `json:"username" validate:"required,max=100"`
-	Birthdate    string      `json:"birthdate" validae:"required"` // Ubah menjadi string
+	Birthdate    string      `json:"birthdate"`
 	Gender       string      `json:"gender" validate:"max=20"`
 	Location     string      `json:"location" validate:"max=100"`
 	Organization string      `json:"organization" validate:"max=100"`

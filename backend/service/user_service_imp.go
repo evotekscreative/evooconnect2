@@ -3,27 +3,32 @@ package service
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"evoconnect/backend/exception"
 	"evoconnect/backend/helper"
-	"evoconnect/backend/model/domain"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
 	"time"
+
+	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 )
 
 type UserServiceImpl struct {
 	UserRepository repository.UserRepository
+	Validate       *validator.Validate
 	DB             *sql.DB
 }
 
-func NewUserService(userRepository repository.UserRepository, db *sql.DB) UserService {
+func NewUserService(userRepository repository.UserRepository, db *sql.DB, validate *validator.Validate) UserService {
 	return &UserServiceImpl{
 		UserRepository: userRepository,
+		Validate:       validate,
 		DB:             db,
 	}
 }
 
-func (service *UserServiceImpl) GetProfile(ctx context.Context, userId int) web.UserProfileResponse {
+func (service *UserServiceImpl) GetProfile(ctx context.Context, userId uuid.UUID) web.UserProfileResponse {
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
@@ -38,26 +43,37 @@ func (service *UserServiceImpl) GetProfile(ctx context.Context, userId int) web.
 	return helper.ToUserProfileResponse(user)
 }
 
-func (service *UserServiceImpl) UpdateProfile(ctx context.Context, userId int, request web.UpdateProfileRequest) web.UserProfileResponse {
+func (service *UserServiceImpl) UpdateProfile(ctx context.Context, userId uuid.UUID, request web.UpdateProfileRequest) web.UserProfileResponse {
+	err := service.Validate.Struct(request)
+	helper.PanicIfError(err)
+
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
-	// Get user from repository
+	// Find user first
 	user, err := service.UserRepository.FindById(ctx, tx, userId)
-	helper.PanicIfError(err)
+	if err != nil {
+		panic(exception.NewNotFoundError(err.Error()))
+	}
 
-	// Update user profile fields
+	if user.Username != request.Username {
+		_, err = service.UserRepository.FindByUsername(ctx, tx, request.Username)
+		if err == nil {
+			panic(exception.NewBadRequestError("Username already taken"))
+		}
+	}
+
+	// Update fields
 	user.Name = request.Name
-	user.Email = request.Email
-	user.Username = request.Username
 
-	// Parse birthdate if provided
+	// Convert birthdate string to time.Time if not empty
 	if request.Birthdate != "" {
 		birthdate, err := time.Parse("2006-01-02", request.Birthdate)
-		if err == nil {
-			user.Birthdate = birthdate
+		if err != nil {
+			panic(exception.NewBadRequestError("Invalid birthdate format. Use YYYY-MM-DD"))
 		}
+		user.Birthdate = birthdate
 	}
 
 	user.Gender = request.Gender
@@ -67,33 +83,36 @@ func (service *UserServiceImpl) UpdateProfile(ctx context.Context, userId int, r
 	user.Phone = request.Phone
 	user.Headline = request.Headline
 	user.About = request.About
+	user.Username = request.Username
 
-	// Convert skills to JSONB
-	var skills domain.JSONB
-	if skillsSlice, ok := request.Skills.([]interface{}); ok && len(skillsSlice) > 0 {
-		for _, skill := range skillsSlice {
-			skills = append(skills, skill)
+	// Convert skills and socials to JSON string
+	if request.Skills != nil {
+		skillsJSON, err := json.Marshal(request.Skills)
+		helper.PanicIfError(err)
+		user.Skills = sql.NullString{
+			String: string(skillsJSON),
+			Valid:  true,
 		}
-		user.Skills = skills
+	} else {
+		user.Skills = sql.NullString{Valid: false}
 	}
 
-	// Convert socials to SocialMedia
-	var socials domain.SocialMedia
-	if socialsSlice, ok := request.Socials.([]interface{}); ok && len(socialsSlice) > 0 {
-		for _, social := range socialsSlice {
-			if socialMap, ok := social.(map[string]interface{}); ok {
-				socials = append(socials, socialMap)
-			}
+	if request.Socials != nil {
+		socialsJSON, err := json.Marshal(request.Socials)
+		helper.PanicIfError(err)
+		user.Socials = sql.NullString{
+			String: string(socialsJSON),
+			Valid:  true,
 		}
-		user.Socials = socials
+	} else {
+		user.Socials = sql.NullString{Valid: false}
 	}
 
-	user.Photo = request.Photo
-	user.UpdatedAt = time.Now()
+	// Update photo if provided
+	if request.Photo != "" {
+		user.Photo = request.Photo
+	}
 
-	// Update user in database
 	updatedUser := service.UserRepository.Update(ctx, tx, user)
-
-	// Return updated profile
 	return helper.ToUserProfileResponse(updatedUser)
 }

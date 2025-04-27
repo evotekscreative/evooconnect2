@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import logo from "../assets/img/logo1.png";
 
-export default function HelpPage() {
+ const HelpPage = () => {
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = (e) => {
@@ -29,7 +29,7 @@ export default function HelpPage() {
         <div className="flex justify-between items-center flex-wrap gap-4 px-6">
           {/* Kiri - Logo + Search */}
           <div className="flex items-center gap-6 flex-wrap">
-            <img src={logo} alt="Evo Connect Logo" className="h-8 w-90" />
+            <img src={logo} alt="EvoConnect Logo" className="h-8 w-90" />
             <input
               type="text"
               placeholder="Search people, jobs & more"
@@ -185,4 +185,5 @@ export default function HelpPage() {
     </div>
   );
 }
+export default HelpPage;
  

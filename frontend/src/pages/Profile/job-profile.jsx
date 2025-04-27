@@ -9,16 +9,26 @@ export default function NewPage() {
     const [clickedSave, setClickedSave] = useState(false);
     const [clickedApply, setClickedApply] = useState(false);
     const [savedJobs, setSavedJobs] = useState([]);
+    const [appliedJobs, setAppliedJobs] = useState([]);
 
-    // Load saved jobs from localStorage when component mounts
+    // Load saved and applied jobs from localStorage when component mounts
     useEffect(() => {
         const saved = localStorage.getItem('savedJobs');
+        const applied = localStorage.getItem('appliedJobs');
+        
         if (saved) {
             const parsedSavedJobs = JSON.parse(saved);
             setSavedJobs(parsedSavedJobs);
-            // Check if current job is already saved
             if (parsedSavedJobs.some(job => job.id === parseInt(jobId))) {
                 setClickedSave(true);
+            }
+        }
+        
+        if (applied) {
+            const parsedAppliedJobs = JSON.parse(applied);
+            setAppliedJobs(parsedAppliedJobs);
+            if (parsedAppliedJobs.some(job => job.id === parseInt(jobId))) {
+                setClickedApply(true);
             }
         }
     }, [jobId]);
@@ -26,11 +36,9 @@ export default function NewPage() {
     const handleSaveClick = () => {
         let updatedSavedJobs;
         if (!clickedSave) {
-            // Add job to saved jobs
             updatedSavedJobs = [...savedJobs, job];
             setClickedSave(true);
         } else {
-            // Remove job from saved jobs
             updatedSavedJobs = savedJobs.filter(j => j.id !== job.id);
             setClickedSave(false);
         }
@@ -39,7 +47,20 @@ export default function NewPage() {
     };
 
     const handleApplyClick = () => {
-        setClickedApply(true);
+        if (!clickedApply) {
+            const updatedAppliedJobs = [...appliedJobs, job];
+            setAppliedJobs(updatedAppliedJobs);
+            setClickedApply(true);
+            localStorage.setItem('appliedJobs', JSON.stringify(updatedAppliedJobs));
+            
+            // Also save the job if not already saved
+            if (!clickedSave) {
+                const updatedSavedJobs = [...savedJobs, job];
+                setSavedJobs(updatedSavedJobs);
+                setClickedSave(true);
+                localStorage.setItem('savedJobs', JSON.stringify(updatedSavedJobs));
+            }
+        }
     };
 
     const data = [
@@ -117,6 +138,7 @@ export default function NewPage() {
                                 <button
                                     className={`bg-blue-500 text-white text-sm py-2 px-4 rounded-md ${clickedApply ? 'bg-green-500' : ''}`}
                                     onClick={handleApplyClick}
+                                    disabled={clickedApply}
                                 >
                                     {clickedApply ? 'Applied' : 'Apply'}
                                 </button>
@@ -128,7 +150,7 @@ export default function NewPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                         {/* Left Sidebar */}
                         <div className="lg:col-span-1 space-y-4">
-                            <div className="bg-gray-50 p-4 rounded-lg text-center shadow-sm">
+                            <div className="bg-gray-50 p-4 rounded-lg text-center shadow-lg">
                                 <img
                                     src={job1}
                                     alt="Company Logo"
@@ -153,7 +175,7 @@ export default function NewPage() {
                                 </div>
                             </div>
 
-                            <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
+                            <div className="bg-gray-50 p-4 rounded-lg shadow-lg">
                                 <div className="flex items-center justify-between mb-2">
                                     <p className="font-semibold text-sm">Photos</p>
                                     <a href="#" className="text-[#0A66C2] text-xs hover:underline">
@@ -166,14 +188,14 @@ export default function NewPage() {
                         {/* Main Info */}
                         <div className="lg:col-span-2 space-y-6">
                             {/* Overview */}
-                            <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
+                            <div className="bg-gray-50 p-4 rounded-lg shadow-lg">
                                 <h2 className="text-xl font-semibold mb-2">Overview</h2>
                                 <hr />
                                 <p className="text-sm text-gray-600 mt-3">{job.overview}</p>
                             </div>
 
                             {/* Job Details */}
-                            <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
+                            <div className="bg-gray-50 p-4 rounded-lg shadow-lg">
                                 <h2 className="text-xl font-semibold mb-5">Job Details</h2>
 
                                 <div className="grid grid-cols-1 gap-y-2 text-sm text-gray-600 mt-2">
@@ -202,7 +224,7 @@ export default function NewPage() {
                             <hr className="my-4 border-gray-200" />
 
                             {/* About Us */}
-                            <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
+                            <div className="bg-gray-50 p-4 rounded-lg shadow-lg">
                                 <div className="flex items-center mb-3">
                                     <img
                                         src={job1}
@@ -238,7 +260,7 @@ export default function NewPage() {
                                 Set alert for jobs
                             </button>
 
-                            <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
+                            <div className="bg-gray-50 p-4 rounded-lg shadow-lg">
                                 <p className="font-semibold text-sm mb-2">Similar Jobs</p>
                                 <div className="space-y-2">
                                     <div className="border border-gray-200 p-3 rounded-lg hover:shadow-md transition">
@@ -253,7 +275,7 @@ export default function NewPage() {
                                                 <p className="text-xs text-[#0A66C2]">Spotify Inc.</p>
                                             </div>
                                         </div>
-                                        <div className="flex items-center text-gray-500 text-xs mt-2">
+                                        <div className="flex items-center text-gray-500 text-xs mt-2 space-x-4">
                                             <svg
                                                 xmlns="http://www.w3.org/2000/svg"
                                                 width="14"
