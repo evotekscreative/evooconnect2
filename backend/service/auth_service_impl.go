@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
 	"evoconnect/backend/exception"
 	"evoconnect/backend/helper"
@@ -10,13 +9,18 @@ import (
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
 	"fmt"
-	"net/http"
+	"math/rand"
+	"regexp"
+	"strings"
+
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/oauth2"
+	googleOAuth "google.golang.org/api/oauth2/v2"
 )
 
 type AuthServiceImpl struct {
@@ -60,6 +64,123 @@ func generateRandomToken() string {
 	}
 	n := int(b[0])<<24 | int(b[1])<<16 | int(b[2])<<8 | int(b[3])
 	return fmt.Sprintf("%06d", n%900000+100000)
+}
+
+// Add this method to your AuthServiceImpl
+func (service *AuthServiceImpl) GoogleAuth(ctx context.Context, request web.GoogleAuthRequest) (web.RegisterResponse, error) {
+	// Create an OAuth2 config for Google
+	config := &oauth2.Config{
+		ClientID:     helper.GetEnv("GOOGLE_CLIENT_ID", "YOUR_GOOGLE_CLIENT_ID"),         // Replace with your actual client ID
+		ClientSecret: helper.GetEnv("GOOGLE_CLIENT_SECRET", "YOUR_GOOGLE_CLIENT_SECRET"), // Replace with your actual client secret
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  "https://accounts.google.com/o/oauth2/auth",
+			TokenURL: "https://oauth2.googleapis.com/token",
+		},
+		Scopes: []string{
+			"https://www.googleapis.com/auth/userinfo.profile",
+			"https://www.googleapis.com/auth/userinfo.email",
+		},
+	}
+
+	// Exchange the token
+	token := &oauth2.Token{
+		AccessToken: request.Token,
+	}
+
+	// Get an HTTP client with the token
+	httpClient := config.Client(ctx, token)
+
+	// Create the OAuth2 service
+	service2, err := googleOAuth.New(httpClient)
+	if err != nil {
+		return web.RegisterResponse{}, err
+	}
+
+	// Get the user info
+	userInfo, err := service2.Userinfo.Get().Do()
+	// fmt.Printf("Creating new user: %+v\n", userInfo)
+	if err != nil {
+		return web.RegisterResponse{}, err
+	}
+
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Check if user exists by email
+	existingUser, err := service.UserRepository.FindByEmail(ctx, tx, userInfo.Email)
+	if err == nil {
+		// User exists, generate token and return
+		jwtToken := service.generateToken(existingUser)
+		return web.RegisterResponse{
+			Token: jwtToken,
+			User:  existingUser,
+		}, nil
+	}
+
+	// User doesn't exist, create new account
+	// Generate username from name (slug + 6 random digits)
+	username := generateUsernameFromName(userInfo.Name)
+
+	// Create random password (user can reset it later if needed)
+	randomPassword := generateRandomString(12)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(randomPassword), bcrypt.DefaultCost)
+	helper.PanicIfError(err)
+
+	newUser := domain.User{
+		Id:         uuid.New(),
+		Name:       userInfo.Name,
+		Email:      userInfo.Email,
+		Username:   username,
+		Password:   string(hashedPassword),
+		IsVerified: true, // Google account emails are verified
+		Photo:      userInfo.Picture,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
+
+	savedUser := service.UserRepository.Save(ctx, tx, newUser)
+	jwtToken := service.generateToken(savedUser)
+
+	return web.RegisterResponse{
+		Token: jwtToken,
+		User:  savedUser,
+	}, nil
+}
+
+// Helper function to generate username from name
+func generateUsernameFromName(name string) string {
+	// Convert name to lowercase
+	slug := strings.ToLower(name)
+
+	// Replace spaces with hyphens
+	slug = strings.ReplaceAll(slug, " ", "-")
+
+	// Remove special characters
+	slug = regexp.MustCompile(`[^a-z0-9\-]`).ReplaceAllString(slug, "")
+
+	// Ensure no double hyphens
+	for strings.Contains(slug, "--") {
+		slug = strings.ReplaceAll(slug, "--", "-")
+	}
+
+	// Trim hyphens from ends
+	slug = strings.Trim(slug, "-")
+
+	// Add 6 random digits
+	randomDigits := fmt.Sprintf("%06d", rand.Intn(1000000))
+
+	return slug + "-" + randomDigits
+}
+
+// Helper function to generate random string
+func generateRandomString(length int) string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[rand.Intn(len(charset))]
+	}
+	return string(b)
 }
 
 func (service *AuthServiceImpl) Login(ctx context.Context, request web.LoginRequest) web.LoginResponse {

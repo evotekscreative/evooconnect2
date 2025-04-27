@@ -12,9 +12,8 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	_ "github.com/lib/pq"
-)
-	
-// In the main function, remove debugging lines
+) 
+
 func main() {
 	helper.LoadEnv()
 	db := app.NewDB()
@@ -26,8 +25,14 @@ func main() {
 	userService := service.NewUserService(userRepository, db, validate)
 	userController := controller.NewUserController(userService)
 
+	// Initialize auth components
 	authService := service.NewAuthService(userRepository, db, validate, jwtSecret)
 	authController := controller.NewAuthController(authService)
+
+	// Initialize blog components
+	blogRepository := repository.NewBlogRepository(db)
+	blogService := service.NewBlogService(blogRepository)
+	blogController := controller.NewBlogController(blogService)
 
 	// Initialize post dependencies
 	postRepository := repository.NewPostRepository()
@@ -36,25 +41,27 @@ func main() {
 
 	// Create comment repository, service, and controller instances
 	commentRepository := repository.NewCommentRepository()
-	commentService := service.NewCommentService(
-		commentRepository,
-		postRepository,
-		userRepository,
-		db,
-		validate)
+	commentService := service.NewCommentService(commentRepository, postRepository, userRepository, db, validate)
 	commentController := controller.NewCommentController(commentService)
 
+	educationRepository := repository.NewEducationRepository()
+	educationService := service.NewEducationService(educationRepository, userRepository, db, validate)
+	educationController := controller.NewEducationController(educationService)
+
+	// Experience
+	experienceRepository := repository.NewExperienceRepository()
+	experienceService := service.NewExperienceService(experienceRepository, userRepository, db, validate)
+	experienceController := controller.NewExperienceController(experienceService)
+
 	// Initialize router with all controllers
-	router := app.NewRouter(authController, userController, postController, commentController)
+	router := app.NewRouter(authController, userController, blogController, postController, commentController, educationController, experienceController)
 
-	// Create middleware chain correctly by converting to http.Handler first
+	// Create middleware chain
 	var handler http.Handler = router
-
-	// Apply middlewares
 	handler = middleware.NewAuthMiddleware(handler, jwtSecret)
 	handler = middleware.CORSMiddleware(handler)
 
-	// Start the server with the wrapped handler
+	// Start server
 	server := http.Server{
 		Addr:    "localhost:3000",
 		Handler: handler,
