@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS posts (
 );
 
 -- Create an index for faster querying by user_id
-CREATE INDEX idx_posts_user_id ON posts(user_id);
+CREATE INDEX  IF NOT EXISTS idx_posts_user_id ON posts(user_id);
 
 -- Create a table for post likes
 CREATE TABLE IF NOT EXISTS post_likes (
