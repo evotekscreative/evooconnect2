@@ -343,7 +343,7 @@ export default function ProfilePage() {
                     </span>
                   ))}
                 </div>
-              ) : (
+              ) : (   
                 <p className="text-base text-gray-500 mt-1">
                   No skills added yet.
                 </p>
