@@ -18,6 +18,7 @@ func NewRouter(
 	commentController controller.CommentController,
 	educationController controller.EducationController,
 	experienceController controller.ExperienceController,
+	connectionController controller.ConnectionController,
 ) *httprouter.Router {
 	router := httprouter.New()
 
@@ -60,6 +61,12 @@ func NewRouter(
 	// Blog routes with parameters
 	router.GET("/api/blogs/slug/:slug", blogController.GetBySlug)
 	router.DELETE("/api/blogs/:blogId", blogController.Delete)
+	router.PUT("/api/blogs/:blogId", blogController.Update)
+	router.GET("/api/blogs/random", blogController.GetRandomBlogs)
+
+
+	// blog routes static paths first
+	router.POST("/api/blogs/:blogId/upload-photo", blogController.UploadPhoto)
 
 	// Education routes with parameters
 	router.PUT("/api/education/:educationId", educationController.Update)
@@ -88,6 +95,12 @@ func NewRouter(
 	router.GET("/api/posts/:postId", postController.FindById)
 	router.PUT("/api/posts/:postId", postController.Update)
 	router.DELETE("/api/posts/:postId", postController.Delete)
+
+	router.GET("/api/connections/requests", connectionController.GetConnectionRequests)
+	router.PUT("/api/connections/requests/:requestId/accept", connectionController.AcceptConnectionRequest)
+	router.PUT("/api/connections/requests/:requestId/reject", connectionController.RejectConnectionRequest)
+	router.GET("/api/users/:userId/connections", connectionController.GetConnections)
+	router.POST("/api/users/:userId/connect", connectionController.SendConnectionRequest)
 
 	uploadFS := http.FileServer(http.Dir("uploads"))
 
