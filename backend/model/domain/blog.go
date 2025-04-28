@@ -7,8 +7,9 @@ type Blog struct {
 	Slug      string
 	Category  string
 	Content   string
-	Image     string
+	ImagePath string `json:"image_path"` // Ubah dari Image ke ImagePath
 	UserID    string
 	CreatedAt string
 	UpdatedAt string
 }
+

@@ -1,11 +1,11 @@
 CREATE TABLE tb_blog (
-    id TEXT PRIMARY KEY,
+    id UUID PRIMARY KEY,
     title TEXT NOT NULL,
     slug TEXT NOT NULL UNIQUE,
     category TEXT NOT NULL,
     content TEXT NOT NULL,
-    image TEXT,
-    user_id TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    image_path TEXT, -- Ubah nama kolom untuk lebih spesifik
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
