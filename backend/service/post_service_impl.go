@@ -8,6 +8,12 @@ import (
 	"evoconnect/backend/model/domain"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
+	"fmt"
+	"io"
+	"mime/multipart"
+	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -219,4 +225,93 @@ func (service *PostServiceImpl) UnlikePost(ctx context.Context, postId uuid.UUID
 	post.IsLiked = false
 
 	return helper.ToPostResponse(post)
+}
+
+// New method to upload post images
+func (service *PostServiceImpl) UploadImages(ctx context.Context, userId uuid.UUID, fileHeaders []*multipart.FileHeader) web.UploadPostImagesResponse {
+	// Create upload directory if it doesn't exist
+	uploadDir := "uploads/posts/" + userId.String()
+	err := os.MkdirAll(uploadDir, 0755)
+	helper.PanicIfError(err)
+
+	var uploadedFiles []string
+
+	// Process each file
+	for _, fileHeader := range fileHeaders {
+		// Validate file type
+		if !isValidImageType(fileHeader) {
+			panic(exception.NewBadRequestError("Invalid file type. Only image files are allowed"))
+		}
+
+		// Generate unique filename
+		filename := generateUniqueFilename(fileHeader.Filename)
+		filepath := uploadDir + "/" + filename
+
+		// Open the uploaded file
+		file, err := fileHeader.Open()
+		helper.PanicIfError(err)
+		defer file.Close()
+
+		// Create destination file
+		dst, err := os.Create(filepath)
+		helper.PanicIfError(err)
+		defer dst.Close()
+
+		// Copy file contents
+		_, err = io.Copy(dst, file)
+		helper.PanicIfError(err)
+
+		// Store relative path
+		uploadedFiles = append(uploadedFiles, filepath)
+	}
+
+	return web.UploadPostImagesResponse{
+		Filenames: uploadedFiles,
+	}
+}
+
+// Helper function to validate image types
+func isValidImageType(fileHeader *multipart.FileHeader) bool {
+	// Open the uploaded file
+	file, err := fileHeader.Open()
+	if err != nil {
+		return false
+	}
+	defer file.Close()
+
+	// Read first 512 bytes for MIME type detection
+	buffer := make([]byte, 512)
+	_, err = file.Read(buffer)
+	if err != nil {
+		return false
+	}
+
+	// Seek back to beginning of file
+	_, err = file.Seek(0, 0)
+	if err != nil {
+		return false
+	}
+
+	// Check MIME type
+	mimeType := http.DetectContentType(buffer)
+	validTypes := map[string]bool{
+		"image/jpeg": true,
+		"image/png":  true,
+		"image/gif":  true,
+		"image/webp": true,
+	}
+
+	return validTypes[mimeType]
+}
+
+// Helper function to generate a unique filename
+func generateUniqueFilename(originalFilename string) string {
+	// Extract file extension
+	extension := filepath.Ext(originalFilename)
+
+	// Generate timestamp-based unique name
+	timestamp := time.Now().UnixNano()
+	randomString := fmt.Sprintf("%d", timestamp)
+
+	return randomString + extension
 }

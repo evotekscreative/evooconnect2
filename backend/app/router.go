@@ -13,11 +13,16 @@ import (
 func NewRouter(
 	authController controller.AuthController,
 	userController controller.UserController,
+	blogController controller.BlogController,
 	postController controller.PostController,
+	commentController controller.CommentController,
+	educationController controller.EducationController,
+	experienceController controller.ExperienceController,
 ) *httprouter.Router {
 	router := httprouter.New()
 
-	// Auth routes
+	// Auth routes - all static paths
+	router.POST("/api/auth/google", authController.GoogleAuth)
 	router.POST("/api/auth/login", authController.Login)
 	router.POST("/api/auth/register", authController.Register)
 	router.POST("/api/auth/verify/send", authController.SendVerificationEmail)
@@ -25,17 +30,64 @@ func NewRouter(
 	router.POST("/api/auth/forgot-password", authController.ForgotPassword)
 	router.POST("/api/auth/reset-password", authController.ResetPassword)
 
+	// User routes - all static paths
 	router.GET("/api/user/profile", userController.GetProfile)
 	router.PUT("/api/user/profile", userController.UpdateProfile)
 
+	// Blog routes - static paths first
+	router.POST("/api/blogs", blogController.Create)
+	router.GET("/api/blogs", blogController.FindAll)
+
+	// Post routes - static paths first
+	router.POST("/api/posts/images", postController.UploadImages)
 	router.POST("/api/posts", postController.Create)
 	router.GET("/api/posts", postController.FindAll)
+
+	// Comment routes - static paths only
+	router.GET("/api/comments/:commentId", commentController.GetById)
+	router.PUT("/api/comments/:commentId", commentController.Update)
+	router.DELETE("/api/comments/:commentId", commentController.Delete)
+	router.POST("/api/comments/:commentId/replies", commentController.Reply)
+	router.GET("/api/comments/:commentId/replies", commentController.GetReplies)
+
+	// Education routes - static paths first
+	router.POST("/api/education", educationController.Create)
+
+	// Experience routes - static paths first
+	router.POST("/api/experience", experienceController.Create)
+	router.POST("/api/experience/photo", experienceController.UploadPhoto)
+
+	// Blog routes with parameters
+	router.GET("/api/blogs/slug/:slug", blogController.GetBySlug)
+	router.DELETE("/api/blogs/:blogId", blogController.Delete)
+
+	// Education routes with parameters
+	router.PUT("/api/education/:educationId", educationController.Update)
+	router.DELETE("/api/education/:educationId", educationController.Delete)
+	router.GET("/api/education/:educationId", educationController.GetById)
+	router.GET("/api/users/:userId/education", educationController.GetByUserId)
+
+	// Experience routes with parameters
+	router.PUT("/api/experience/:experienceId", experienceController.Update)
+	router.DELETE("/api/experience/:experienceId", experienceController.Delete)
+	router.GET("/api/experience/:experienceId", experienceController.GetById)
+	router.GET("/api/users/:userId/experience", experienceController.GetByUserId)
+
+	// Post like routes - carefully ordered to avoid conflicts
+	router.POST("/api/post-actions/:postId/like", postController.LikePost)
+	router.DELETE("/api/post-actions/:postId/like", postController.UnlikePost)
+
+	// Post comment routes - carefully ordered to avoid conflicts
+	router.POST("/api/post-comments/:postId", commentController.Create)
+	router.GET("/api/post-comments/:postId", commentController.GetByPostId)
+
+	// User post routes
+	router.GET("/api/users/:userId/posts", postController.FindByUserId)
+
+	// Post routes with parameters - last because they're most generic
 	router.GET("/api/posts/:postId", postController.FindById)
 	router.PUT("/api/posts/:postId", postController.Update)
 	router.DELETE("/api/posts/:postId", postController.Delete)
-	router.GET("/api/users/:userId/posts", postController.FindByUserId)
-	router.POST("/api/posts/:postId/like", postController.LikePost)
-	router.DELETE("/api/posts/:postId/like", postController.UnlikePost)
 
 	// Add custom NotFound handler
 	router.NotFound = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {

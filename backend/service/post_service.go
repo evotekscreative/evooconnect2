@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"evoconnect/backend/model/web"
+	"mime/multipart"
 
 	"github.com/google/uuid"
 )
@@ -16,4 +17,5 @@ type PostService interface {
 	FindByUserId(ctx context.Context, targetUserId uuid.UUID, limit, offset int, currentUserId uuid.UUID) []web.PostResponse
 	LikePost(ctx context.Context, postId uuid.UUID, userId uuid.UUID) web.PostResponse
 	UnlikePost(ctx context.Context, postId uuid.UUID, userId uuid.UUID) web.PostResponse
+	UploadImages(ctx context.Context, userId uuid.UUID, fileHeaders []*multipart.FileHeader) web.UploadPostImagesResponse
 }
