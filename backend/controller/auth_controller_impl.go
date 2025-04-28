@@ -20,6 +20,34 @@ func NewAuthController(authService service.AuthService) AuthController {
 	}
 }
 
+// Add this new method to your AuthControllerImpl
+func (controller *AuthControllerImpl) GoogleAuth(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Parse request body to get Google token
+	googleAuthRequest := web.GoogleAuthRequest{}
+	helper.ReadFromRequestBody(request, &googleAuthRequest)
+
+	// Call service to authenticate with Google
+	authResponse, err := controller.AuthService.GoogleAuth(request.Context(), googleAuthRequest)
+	if err != nil {
+		webResponse := web.WebResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD REQUEST",
+			Data:   err.Error(),
+		}
+		helper.WriteToResponseBody(writer, webResponse)
+		return
+	}
+
+	// Create success response
+	webResponse := web.WebResponse{
+		Code:   http.StatusOK,
+		Status: "OK",
+		Data:   authResponse,
+	}
+
+	helper.WriteToResponseBody(writer, webResponse)
+}
+
 func (controller *AuthControllerImpl) Login(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	loginRequest := web.LoginRequest{}
 	helper.ReadFromRequestBody(request, &loginRequest)
