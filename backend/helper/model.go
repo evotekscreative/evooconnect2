@@ -99,3 +99,97 @@ func ToPostResponse(post domain.Post) web.PostResponse {
 		UpdatedAt: post.UpdatedAt,
 	}
 }
+
+// Fungsi untuk mengkonversi comment domain ke comment response
+func ToCommentResponse(comment domain.Comment) web.CommentResponse {
+	commentResponse := web.CommentResponse{
+		Id:        comment.Id,
+		PostId:    comment.PostId,
+		Content:   comment.Content,
+		CreatedAt: comment.CreatedAt,
+		UpdatedAt: comment.UpdatedAt,
+	}
+
+	if comment.ParentId != nil {
+		commentResponse.ParentId = comment.ParentId
+	}
+
+	if comment.User != nil {
+		commentResponse.User = web.CommentUserInfo{
+			Id:       comment.User.Id,
+			Name:     comment.User.Name,
+			Username: comment.User.Username,
+			Photo:    comment.User.Photo,
+		}
+	}
+
+	// Add replies if available
+	if len(comment.Replies) > 0 {
+		replies := make([]web.CommentResponse, 0)
+		for _, reply := range comment.Replies {
+			replies = append(replies, ToCommentResponse(reply))
+		}
+		commentResponse.Replies = replies
+	}
+
+	return commentResponse
+}
+
+// Fungsi untuk mengkonversi array comments ke array comment responses
+func ToCommentResponses(comments []domain.Comment) []web.CommentResponse {
+	commentResponses := make([]web.CommentResponse, 0)
+	for _, comment := range comments {
+		commentResponses = append(commentResponses, ToCommentResponse(comment))
+	}
+	return commentResponses
+}
+
+func ToEducationResponse(education domain.UserEducation) web.EducationResponse {
+	return web.EducationResponse{
+		Id:            education.Id,
+		UserId:        education.UserId,
+		InstituteName: education.InstituteName,
+		Major:         education.Major,
+		StartMonth:    education.StartMonth,
+		StartYear:     education.StartYear,
+		EndMonth:      education.EndMonth,
+		EndYear:       education.EndYear,
+		Caption:       education.Caption,
+		Photo:         education.Photo,
+		CreatedAt:     education.CreatedAt,
+		UpdatedAt:     education.UpdatedAt,
+	}
+}
+
+func ToEducationResponses(educations []domain.UserEducation) []web.EducationResponse {
+	var educationResponses []web.EducationResponse
+	for _, education := range educations {
+		educationResponses = append(educationResponses, ToEducationResponse(education))
+	}
+	return educationResponses
+}
+
+func ToExperienceResponse(experience domain.UserExperience) web.ExperienceResponse {
+	return web.ExperienceResponse{
+		Id:          experience.Id.String(),
+		UserId:      experience.UserId.String(),
+		JobTitle:    experience.JobTitle,
+		CompanyName: experience.CompanyName,
+		StartMonth:  experience.StartMonth,
+		StartYear:   experience.StartYear,
+		EndMonth:    experience.EndMonth,
+		EndYear:     experience.EndYear,
+		Caption:     experience.Caption,
+		Photo:       experience.Photo,
+		CreatedAt:   experience.CreatedAt,
+		UpdatedAt:   experience.UpdatedAt,
+	}
+}
+
+func ToExperienceResponses(experiences []domain.UserExperience) []web.ExperienceResponse {
+	var experienceResponses []web.ExperienceResponse
+	for _, experience := range experiences {
+		experienceResponses = append(experienceResponses, ToExperienceResponse(experience))
+	}
+	return experienceResponses
+}
