@@ -2383,7 +2383,7 @@
           "response": []
         },
         {
-          "name": "Get blog by slug",
+          "name": "Get Blog by Slug",
           "request": {
             "method": "GET",
             "header": [],
@@ -2394,6 +2394,106 @@
               "port": "3000",
               "path": ["api", "blogs", "slug", "{{blog_slug}}"]
             }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Random Blogs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/blogs/random?limit=3",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "blogs", "random"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "3",
+                  "description": "Jumlah blog random yang ingin diambil"
+                }
+              ]
+            },
+            "description": "Mengambil sejumlah blog secara acak berdasarkan parameter limit."
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Blog Photo",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{JWT_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "photo",
+                  "type": "file",
+                  "src": "/path/to/photo.jpg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/blogs/{{blog_id}}/photo",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "blogs", "{{blog_id}}", "photo"]
+            },
+            "description": "Mengupload foto untuk blog tertentu berdasarkan ID blog."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Blog by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{JWT_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Blog Title\",\n  \"category\": \"Technology\",\n  \"content\": \"Updated content for the blog.\",\n  \"image\": \"uploads/blogs/updated-image.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/blogs/{{blog_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "blogs", "{{blog_id}}"]
+            },
+            "description": "Memperbarui blog berdasarkan ID blog."
           },
           "response": []
         }
