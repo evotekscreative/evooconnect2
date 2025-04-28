@@ -61,6 +61,12 @@ func NewRouter(
 	// Blog routes with parameters
 	router.GET("/api/blogs/slug/:slug", blogController.GetBySlug)
 	router.DELETE("/api/blogs/:blogId", blogController.Delete)
+	router.PUT("/api/blogs/:blogId", blogController.Update)
+	router.GET("/api/blogs/random", blogController.GetRandomBlogs)
+
+
+	// blog routes static paths first
+	router.POST("/api/blogs/:blogId/upload-photo", blogController.UploadPhoto)
 
 	// Education routes with parameters
 	router.PUT("/api/education/:educationId", educationController.Update)
