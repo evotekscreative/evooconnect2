@@ -12,7 +12,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	_ "github.com/lib/pq"
-) 
+)
 
 func main() {
 	helper.LoadEnv()
@@ -53,9 +53,22 @@ func main() {
 	experienceService := service.NewExperienceService(experienceRepository, userRepository, db, validate)
 	experienceController := controller.NewExperienceController(experienceService)
 
-	// Initialize router with all controllers
-	router := app.NewRouter(authController, userController, blogController, postController, commentController, educationController, experienceController)
+	// Initialize connection components
+	connectionRepository := repository.NewConnectionRepository()
+	connectionService := service.NewConnectionService(connectionRepository, userRepository, db, validate)
+	connectionController := controller.NewConnectionController(connectionService)
 
+	// Initialize router with all controllers
+	router := app.NewRouter(
+		authController,
+		userController,
+		blogController,
+		postController,
+		commentController,
+		educationController,
+		experienceController,
+		connectionController,
+	)
 	// Create middleware chain
 	var handler http.Handler = router
 	handler = middleware.NewAuthMiddleware(handler, jwtSecret)
