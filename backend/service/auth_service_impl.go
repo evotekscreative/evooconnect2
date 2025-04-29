@@ -41,10 +41,11 @@ func NewAuthService(userRepository repository.UserRepository, db *sql.DB, valida
 }
 
 func (service *AuthServiceImpl) generateToken(user domain.User) string {
+	var expIn int = helper.GetEnvInt("JWT_EXPIRES_IN", 24)
 	claims := jwt.MapClaims{
 		"user_id": user.Id.String(),
 		"email":   user.Email,
-		"exp":     helper.GetEnvInt("JWT_EXPIRES_IN", 24),
+		"exp":     time.Now().Add(time.Duration(expIn) * time.Hour).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
