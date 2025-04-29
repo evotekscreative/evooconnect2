@@ -1,4 +1,4 @@
-Collecting workspace informationStill updating workspace index. Falling back to using the latest remote code index only. Response may be less accurate.# EvoConnect - Professional Social Networking Platform
+# EvoConnect - Professional Social Networking Platform
 
 EvoConnect is a full-stack social networking platform designed for professional connections, job hunting, and career development. It features a modern UI with various social networking capabilities similar to LinkedIn, including profiles, connections, job postings, company pages, blogging, and messaging.
 
