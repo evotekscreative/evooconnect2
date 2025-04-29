@@ -12,4 +12,5 @@ type AuthService interface {
 	VerifyEmail(ctx context.Context, request web.VerificationRequest) web.MessageResponse
 	ForgotPassword(ctx context.Context, request web.EmailRequest) web.MessageResponse
 	ResetPassword(ctx context.Context, request web.ResetPasswordRequest) web.MessageResponse
+	GoogleAuth(ctx context.Context, request web.GoogleAuthRequest) (web.RegisterResponse, error) // Add this line
 }

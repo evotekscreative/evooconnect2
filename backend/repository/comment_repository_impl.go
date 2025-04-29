@@ -387,3 +387,4 @@ func (repository *CommentRepositoryImpl) CountRepliesByParentId(ctx context.Cont
 
 	return count, nil
 }
+

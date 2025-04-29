@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // Import useNavigate
+import axios from "axios";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -7,27 +8,35 @@ const ForgotPassword = () => {
   const [message, setMessage] = useState("");
   const [messageColor, setMessageColor] = useState(""); 
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate(); // Inisialisasi useNavigate
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setSubmitted(false); // reset submitted state untuk menampilkan pesan baru
+  
+    try {
+      const response = await axios.post("http://localhost:3000/api/auth/forgot-password", {
+        email,
+      });
 
-    setTimeout(() => {
-      const fakeEmailDatabase = ["user@example.com", "admin@site.com"];
+      setMessage("We’ve sent you an email with instructions to reset your password. Check your inbox for a reset link");
+      setMessageColor("text-green-600");
+      
+      // Setelah berhasil mengirim, alihkan ke halaman verifikasi
+        navigate("/reset-password"); // Ganti '/verify-email' dengan route halaman verifikasi email yang sesuai
 
-      if (fakeEmailDatabase.includes(email)) {
-        setMessage(
-          "We’ve sent you an email with instructions to reset your password. Check your inbox for a reset link"
-        );
-        setMessageColor("text-green-600");
-      } else {
+    } catch (error) {
+      if (error.response && error.response.status === 404) {
         setMessage("No account found with that email.");
-        setMessageColor("text-red-600");
+      } else {
+        setMessage("Something went wrong. Please try again later.");
       }
-
-      setSubmitted(true);
-      setLoading(false);
-    }, 2000);
+      setMessageColor("text-red-600");
+    }
+  
+    setSubmitted(true);
+    setLoading(false);
   };
 
   return (
