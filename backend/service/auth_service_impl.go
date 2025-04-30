@@ -41,10 +41,11 @@ func NewAuthService(userRepository repository.UserRepository, db *sql.DB, valida
 }
 
 func (service *AuthServiceImpl) generateToken(user domain.User) string {
+	var expIn int = helper.GetEnvInt("JWT_EXPIRES_IN", 24)
 	claims := jwt.MapClaims{
 		"user_id": user.Id.String(),
 		"email":   user.Email,
-		"exp":     time.Now().Add(24 * time.Hour).Unix(), // Token expires in 24 hours
+		"exp":     time.Now().Add(time.Duration(expIn) * time.Hour).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -596,4 +597,3 @@ func (service *AuthServiceImpl) logFailedResetAttempt(ctx context.Context, tx *s
 	// You would need to implement this method in your UserRepository
 	return service.UserRepository.LogFailedAttempt(ctx, tx, clientIP, "password_reset", token)
 }
-

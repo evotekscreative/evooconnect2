@@ -44,3 +44,13 @@ func GetEnvInt(key string, fallback int) int {
 	}
 	return fallback
 }
+
+// GetEnvBool returns environment variable as boolean or default value
+func GetEnvBool(key string, fallback bool) bool {
+	if value, exists := os.LookupEnv(key); exists && value != "" {
+		if boolVal, err := strconv.ParseBool(value); err == nil {
+			return boolVal
+		}
+	}
+	return fallback
+}
