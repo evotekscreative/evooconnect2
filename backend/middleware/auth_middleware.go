@@ -29,10 +29,12 @@ func NewAuthMiddleware(handler http.Handler, jwtSecret string) *AuthMiddleware {
 func (middleware *AuthMiddleware) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	// Skip authentication for these public endpoints only
 	if strings.Contains(request.URL.Path, "/auth/login") ||
+		strings.Contains(request.URL.Path, "/auth/google") ||
 		strings.Contains(request.URL.Path, "/auth/register") ||
-		strings.Contains(request.URL.Path, "/auth/verify/send") || // Yang publik hanya endpoint untuk mengirim email verifikasi
+		strings.Contains(request.URL.Path, "/auth/verify/send") ||
 		strings.Contains(request.URL.Path, "/auth/forgot-password") ||
 		strings.Contains(request.URL.Path, "/auth/reset-password") ||
+		strings.Contains(request.URL.Path, "/uploads") ||
 		request.URL.Path == "/api/health" {
 		middleware.Handler.ServeHTTP(writer, request)
 		return

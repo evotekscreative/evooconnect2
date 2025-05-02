@@ -276,7 +276,8 @@ const JobDashboard = () => {
                 onClick={() => navigate('/jobs')}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-lg transition-colors"
               >
-                Browse Jobs
+                <Link to="/jobs">Browse Jobs</Link>
+                
               </button>
             </div>
           )}

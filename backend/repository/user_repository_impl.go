@@ -20,7 +20,6 @@ func NewUserRepository() UserRepository {
 }
 
 func (repository *UserRepositoryImpl) Save(ctx context.Context, tx *sql.Tx, user domain.User) domain.User {
-	// Generate a new UUID if not provided
 	if user.Id == uuid.Nil {
 		user.Id = uuid.New()
 	}
