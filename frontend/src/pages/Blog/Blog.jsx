@@ -12,8 +12,10 @@ const Blog = () => {
 
   useEffect(() => {
     const storedBlogs = JSON.parse(localStorage.getItem("blogs")) || [];
-    setBlogs(storedBlogs.reverse()); // Tampilkan yang terbaru di atas
+    setBlogs(storedBlogs.reverse());
+    localStorage.setItem("cachedBlogs", JSON.stringify(storedBlogs));
   }, []);
+  
 
   const totalPages = Math.ceil(blogs.length / itemsPerPage);
   const totalGroups = Math.ceil(totalPages / 3);

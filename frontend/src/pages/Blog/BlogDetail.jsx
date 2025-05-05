@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Case from "../../components/Case";
-import { Pencil } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { categories } from "../../components/Blog/CategoryStep";
+import axios from "axios";
 
 const BlogDetail = () => {
   const { id } = useParams();
@@ -11,10 +12,15 @@ const BlogDetail = () => {
   const [showEdit, setShowEdit] = useState(false);
   const [article, setArticle] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [randomPosts, setRandomPosts] = useState([]);
 
   useEffect(() => {
-    const blogs = JSON.parse(localStorage.getItem("blogs")) || [];
-    const foundBlog = blogs.find((blog) => blog.id === id);
+    const cachedBlogs = JSON.parse(localStorage.getItem("blogs")) || [];
+    const otherBlogs = cachedBlogs.filter((b) => b.id !== id);
+    const shuffled = otherBlogs.sort(() => 0.5 - Math.random());
+    setRandomPosts(shuffled.slice(0, 3));
+
+    const foundBlog = cachedBlogs.find((blog) => blog.id === id);
     if (foundBlog) {
       setArticle(foundBlog);
     } else {
@@ -24,22 +30,52 @@ const BlogDetail = () => {
   }, [id, navigate]);
 
   const handlePrev = () => {
-    setCurrentImageIndex((prev) =>
-      prev === 0 ? article.images.length - 1 : prev - 1
-    );
+    if (article?.images) {
+      setCurrentImageIndex((prev) =>
+        prev === 0 ? article.images.length - 1 : prev - 1
+      );
+    }
   };
 
   const handleNext = () => {
-    setCurrentImageIndex((prev) =>
-      prev === article.images.length - 1 ? 0 : prev + 1
-    );
+    if (article?.images) {
+      setCurrentImageIndex((prev) =>
+        prev === article.images.length - 1 ? 0 : prev + 1
+      );
+    }
+  };
+
+  const handleDelete = async () => {
+    const confirmDelete = window.confirm("Apakah Anda yakin ingin menghapus blog ini?");
+    if (!confirmDelete) return;
+
+    try {
+      // Hapus dari server (opsional, jika ada API)
+      const apiUrl = `${process.env.REACT_APP_API_URL}/blogs/${article.id}`;
+      await axios.delete(apiUrl).catch(() => {}); // Optional: lewatkan error jika hanya local
+
+      const blogs = JSON.parse(localStorage.getItem("blogs")) || [];
+      const filtered = blogs.filter((b) => b.id !== article.id);
+      localStorage.setItem("blogs", JSON.stringify(filtered));
+
+      alert("Blog telah dihapus.");
+      navigate("/blog");
+    } catch (error) {
+      console.error("Gagal menghapus blog:", error);
+      if (error.response) {
+        alert(`Error: ${error.response.data.message || "Gagal menghapus blog."}`);
+      } else if (error.request) {
+        alert("Error: Tidak dapat terhubung ke server.");
+      } else {
+        alert("Error: Terjadi kesalahan saat menghapus blog.");
+      }
+    }
   };
 
   if (!article) {
     return (
       <Case>
         <div className="flex flex-col items-center justify-center py-20 text-xl text-gray-700">
-          <div className="text-6xl mb-4">😢</div>
           <p className="mb-6">Blog tidak ditemukan</p>
           <a
             href="/"
@@ -62,12 +98,14 @@ const BlogDetail = () => {
               <div className="bg-white shadow-md rounded-lg overflow-hidden relative">
                 {/* Gambar carousel */}
                 <div className="relative h-[400px]">
-                  <img
-                    className="w-full h-full object-cover"
-                    src={article.images[currentImageIndex]}
-                    alt="Blog"
-                  />
-                  {article.images.length > 1 && (
+                  {article?.images?.[currentImageIndex] && (
+                    <img
+                      className="w-full h-full object-cover"
+                      src={article.images[currentImageIndex]?.base64 || article.images[currentImageIndex]}
+                      alt="Blog"
+                    />
+                  )}
+                  {article?.images?.length > 1 && (
                     <>
                       <button
                         onClick={handlePrev}
@@ -144,18 +182,21 @@ const BlogDetail = () => {
               </div>
             </div>
 
-            {/* Sidebar */}
+            {/* Sidebar Random Posts */}
             <div className="space-y-6">
               <div className="bg-white shadow-md rounded-lg p-6">
-                <h5 className="text-lg font-semibold mb-4">Popular Posts</h5>
+                <h5 className="text-lg font-semibold mb-4">Random Post</h5>
                 <div className="space-y-3">
-                  {["Possimus aut mollitia eum ipsum", "Nulla malesuada mauris non nulla", "Focus on creating and growing"].map((title, index) => (
-                    <div key={index}>
-                      <a href="#" className="text-blue-600 font-medium hover:underline">
-                        {title}
+                  {randomPosts.map((post) => (
+                    <div key={post.id}>
+                      <a
+                        href={`/detail-blog/${post.id}`}
+                        className="text-blue-600 font-medium hover:underline"
+                      >
+                        {post.title}
                       </a>
-                      <p className="text-gray-500 text-sm">April 05, 2020</p>
-                      {index < 2 && <hr />}
+                      <p className="text-gray-500 text-sm">{post.date}</p>
+                      <hr />
                     </div>
                   ))}
                 </div>
@@ -163,6 +204,14 @@ const BlogDetail = () => {
             </div>
           </div>
         </div>
+
+        {/* Tombol Hapus */}
+        <button
+          className="fixed bottom-24 right-6 bg-red-500 hover:bg-red-400 text-white p-3 rounded-full shadow-lg transition"
+          onClick={handleDelete}
+        >
+          <Trash2 className="w-5 h-5" />
+        </button>
 
         {/* Tombol Edit */}
         <button
@@ -221,7 +270,7 @@ const BlogDetail = () => {
                       if (file) {
                         const reader = new FileReader();
                         reader.onloadend = () => {
-                          setArticle({ ...article, images: [reader.result] });
+                          setArticle({ ...article, images: [{ base64: reader.result }] });
                         };
                         reader.readAsDataURL(file);
                       }
@@ -229,26 +278,28 @@ const BlogDetail = () => {
                     className="w-full px-3 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-black"
                   />
                 </div>
-              </div>
-              {/* Content */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mt-4 mb-1">
-                  Content
-                </label>
-                <textarea
-                  rows={6}
-                  value={article.content}
-                  onChange={(e) => {
-                    const cleanedContent = e.target.value.replace(/<\/?p>/g, "");
-                    setArticle({ ...article, content: cleanedContent });
-                  }}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200 text-sm"
-                />
-              </div>
 
+                {/* Konten */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mt-4 mb-1">
+                    Content
+                  </label>
+                  <textarea
+                    rows={6}
+                    value={article.content}
+                    onChange={(e) => {
+                      const cleanedContent = e.target.value.replace(/<\/?p>/g, "");
+                      setArticle({ ...article, content: cleanedContent });
+                    }}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200 text-sm"
+                  />
+                </div>
+              </div>
               <div className="text-right mt-6">
                 <button
                   onClick={() => {
+                    const confirmSave = window.confirm("Apakah Anda ingin menyimpan perubahan?");
+                    if (!confirmSave) return;
                     const blogs = JSON.parse(localStorage.getItem("blogs")) || [];
                     const updated = blogs.map((b) => (b.id === article.id ? article : b));
                     localStorage.setItem("blogs", JSON.stringify(updated));
