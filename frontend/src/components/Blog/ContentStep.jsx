@@ -12,24 +12,36 @@ function ContentStep({ content, images, onContentChange, onImagesChange, onNext,
     setError('');
   };
   
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const files = Array.from(e.target.files);
-    
-    // Check if any file is not an image
+  
+    // Cek validasi gambar
     const invalidFile = files.find(file => !file.type.startsWith('image/'));
     if (invalidFile) {
       setError('Only image files are allowed');
       return;
     }
-    
-    // Create preview URLs for the images
-    const newImages = files.map(file => ({
-      file,
-      preview: URL.createObjectURL(file)
-    }));
-    
-    onImagesChange([...images, ...newImages]);
+  
+    // Konversi ke base64
+    const toBase64 = (file) => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+      });
+    };
+  
+    const base64Images = await Promise.all(
+      files.map(async (file) => {
+        const base64 = await toBase64(file);
+        return { base64, preview: URL.createObjectURL(file) };
+      })
+    );
+  
+    onImagesChange([...images, ...base64Images]);
   };
+  
   
   const handleRemoveImage = (indexToRemove) => {
     onImagesChange(images.filter((_, index) => index !== indexToRemove));
