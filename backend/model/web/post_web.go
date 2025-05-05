@@ -28,7 +28,7 @@ type PostResponse struct {
 	LikesCount int           `json:"likes_count"`
 	Visibility string        `json:"visibility"`
 	IsLiked    bool          `json:"is_liked"`
-	User       UserMinimal   `json:"user"`
+	User       UserShort     `json:"user"`
 	CreatedAt  time.Time     `json:"created_at"`
 	UpdatedAt  time.Time     `json:"updated_at"`
 	Comments   []interface{} `json:"comments"` // Will be populated later if needed

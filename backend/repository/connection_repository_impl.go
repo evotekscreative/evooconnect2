@@ -347,3 +347,69 @@ func (repository *ConnectionRepositoryImpl) FindConnectionsByUserId(ctx context.
 
 	return connections, count
 }
+
+func (repository *ConnectionRepositoryImpl) IsConnected(ctx context.Context, tx *sql.Tx, currentUserId, userId uuid.UUID) bool {
+	// Ensure user IDs are consistently ordered for uniqueness
+	userIds := []uuid.UUID{currentUserId, userId}
+	sort.Slice(userIds, func(i, j int) bool {
+		return userIds[i].String() < userIds[j].String()
+	})
+
+	SQL := `SELECT EXISTS (
+				SELECT 1 FROM connections 
+				WHERE (user_id_1 = $1 AND user_id_2 = $2)
+			)`
+
+	var exists bool
+	err := tx.QueryRowContext(ctx, SQL, userIds[0], userIds[1]).Scan(&exists)
+	helper.PanicIfError(err)
+
+	return exists
+}
+
+func (repository *ConnectionRepositoryImpl) UpdateRequest(ctx context.Context, tx *sql.Tx, request domain.ConnectionRequest) domain.ConnectionRequest {
+	SQL := `
+        UPDATE connection_requests
+        SET status = $1, updated_at = $2
+        WHERE id = $3
+        RETURNING id, sender_id, receiver_id, status, created_at, updated_at
+    `
+	row := tx.QueryRowContext(ctx, SQL, request.Status, time.Now(), request.Id)
+
+	var updatedRequest domain.ConnectionRequest
+	err := row.Scan(
+		&updatedRequest.Id,
+		&updatedRequest.SenderId,
+		&updatedRequest.ReceiverId,
+		&updatedRequest.Status,
+		&updatedRequest.CreatedAt,
+		&updatedRequest.UpdatedAt,
+	)
+	helper.PanicIfError(err)
+
+	return updatedRequest
+}
+
+func (repository *ConnectionRepositoryImpl) FindRequest(ctx context.Context, tx *sql.Tx, senderId, receiverId uuid.UUID) (domain.ConnectionRequest, error) {
+	SQL := `
+        SELECT id, sender_id, receiver_id, status, created_at, updated_at
+        FROM connection_requests
+        WHERE sender_id = $1 AND receiver_id = $2
+    `
+	row := tx.QueryRowContext(ctx, SQL, senderId, receiverId)
+
+	var request domain.ConnectionRequest
+	err := row.Scan(
+		&request.Id,
+		&request.SenderId,
+		&request.ReceiverId,
+		&request.Status,
+		&request.CreatedAt,
+		&request.UpdatedAt,
+	)
+	if err != nil {
+		return request, err
+	}
+
+	return request, nil
+}
