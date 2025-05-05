@@ -73,7 +73,7 @@ function PeopleYouMightKnow() {
               <div className="mr-3 relative">
                 <img 
                   className="w-10 h-10 rounded-full" 
-                  src={person.profile_photo_url || '/img/default-avatar.png'} 
+                  src={person.profile_photo_url || '/img/default-photo.png'} 
                   alt={person.name} 
                 />
                 <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ${

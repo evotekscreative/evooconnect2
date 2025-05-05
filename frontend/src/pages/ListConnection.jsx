@@ -12,14 +12,14 @@ export default function ConnectionList() {
       name: 'Jane Doe',
       role: 'Developer',
       connected: true,
-      image: 'https://i.pravatar.cc/100?img=1',
+      image: 'https://i.prphoto.cc/100?img=1',
     },
     {
       id: 2,
       name: 'John Smith',
       role: 'Designer',
       connected: false,
-      image: 'https://i.pravatar.cc/100?img=2',
+      image: 'https://i.prphoto.cc/100?img=2',
     },
   ]);
 
