@@ -12,7 +12,7 @@ const BlogDetail = () => {
     author: "Author Name",
     date: "April 18, 2025",
     image: "https://via.placeholder.com/600x300",
-    avatar: "https://via.placeholder.com/32",
+    photo: "https://via.placeholder.com/32",
   };
 
   if (!article) {

@@ -26,6 +26,7 @@ import ProtectedRoute from "./components/Auth/ProtectedRoute.jsx";
 import VerifyEmail from "./pages/Auth/VerifyEmail.jsx";
 import ResetPassword from "./pages/Auth/ResetPassword.jsx";
 import IsGuest from "./components/Auth/IsGuest.jsx";
+import SinglePost from "./pages/SinglePost.jsx";
 
 const router = createBrowserRouter([
   {
@@ -212,7 +213,11 @@ const router = createBrowserRouter([
     element: (
         <ResetPassword />
     )
-  }
+  },
+{
+  path : "/post/:postId",
+   element : <SinglePost />
+}
 ]);
 
 export default router;

@@ -36,7 +36,7 @@ function ProfileBox() {
     <div className="bg-white rounded-lg shadow-sm border mb-3 text-center overflow-hidden">
       <div className="border-b px-3 py-4">
         <img 
-          src={user.profile_image || '/img/default-avatar.png'} 
+          src={user.profile_image || '/img/default-photo.png'} 
           className="mx-auto rounded-full mt-2 w-[75px] h-[75px] object-cover"
           alt={user.name} 
         />

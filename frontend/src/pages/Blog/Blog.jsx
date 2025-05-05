@@ -12,7 +12,7 @@ const dummyArticles = Array.from({ length: 30 }, (_, i) => ({
   author: "Author Name",
   date: "April 18, 2025",
   image: "https://via.placeholder.com/600x300",
-  avatar: "https://via.placeholder.com/32",
+  photo: "https://via.placeholder.com/32",
 }));
 
 const Blog = () => {
@@ -84,7 +84,7 @@ const Blog = () => {
                 <div className="flex items-center justify-between p-4 border-t text-sm text-gray-500">
                   <div className="flex items-center gap-2">
                     <img
-                      src={article.avatar}
+                      src={article.photo}
                       className="w-8 h-8 rounded-full"
                       alt="Author"
                     />
