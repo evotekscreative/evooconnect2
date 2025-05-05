@@ -21,16 +21,18 @@ import (
 )
 
 type PostServiceImpl struct {
-	PostRepository repository.PostRepository
-	DB             *sql.DB
-	Validate       *validator.Validate
+	PostRepository       repository.PostRepository
+	ConnectionRepository repository.ConnectionRepository
+	DB                   *sql.DB
+	Validate             *validator.Validate
 }
 
-func NewPostService(postRepository repository.PostRepository, db *sql.DB, validate *validator.Validate) PostService {
+func NewPostService(postRepository repository.PostRepository, connectionRepository repository.ConnectionRepository, db *sql.DB, validate *validator.Validate) PostService {
 	return &PostServiceImpl{
-		PostRepository: postRepository,
-		DB:             db,
-		Validate:       validate,
+		PostRepository:       postRepository,
+		ConnectionRepository: connectionRepository,
+		DB:                   db,
+		Validate:             validate,
 	}
 }
 
@@ -126,7 +128,16 @@ func (service *PostServiceImpl) FindById(ctx context.Context, postId uuid.UUID, 
 
 	post, err := service.PostRepository.FindById(ctx, tx, postId)
 	if err != nil {
-		panic(exception.NewNotFoundError(err.Error()))
+		panic(exception.NewNotFoundError("Post not found"))
+	}
+
+	// Ambil ID user yang sedang login
+	currentUserIdStr, ok := ctx.Value("user_id").(string)
+	if ok {
+		currentUserId, err := uuid.Parse(currentUserIdStr)
+		if err == nil && post.User != nil && post.UserId != currentUserId {
+			post.User.IsConnected = service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, post.UserId)
+		}
 	}
 
 	// Check if the current user has liked this post
@@ -140,16 +151,32 @@ func (service *PostServiceImpl) FindAll(ctx context.Context, limit, offset int, 
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
+	// Error 1: Fungsi FindAll hanya mengembalikan 1 nilai, bukan 2
 	posts := service.PostRepository.FindAll(ctx, tx, limit, offset)
 
+	// Ambil ID user yang sedang login
+	currentUserIdStr, ok := ctx.Value("user_id").(string)
+	if ok {
+		currentUserId, _ = uuid.Parse(currentUserIdStr)
+		// if err == nil {
+		// 	// Cek koneksi untuk setiap post
+		// 	for i := range posts {
+		// 		if posts[i].User != nil && posts[i].UserId != currentUserId {
+		// 			posts[i].User.IsConnected = service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, posts[i].UserId)
+		// 		}
+		// 	}
+		// }
+	}
 	// Check which posts the current user has liked
 	var postResponses []web.PostResponse
 	for _, post := range posts {
 		post.IsLiked = service.PostRepository.IsLiked(ctx, tx, post.Id, currentUserId)
+		post.User.IsConnected = service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, post.UserId)
 		postResponses = append(postResponses, helper.ToPostResponse(post))
 	}
 
 	return postResponses
+
 }
 
 func (service *PostServiceImpl) FindByUserId(ctx context.Context, targetUserId uuid.UUID, limit, offset int, currentUserId uuid.UUID) []web.PostResponse {

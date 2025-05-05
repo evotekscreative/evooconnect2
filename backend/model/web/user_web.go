@@ -20,6 +20,7 @@ type UpdateProfileRequest struct {
 	Skills       interface{} `json:"skills"`
 	Socials      interface{} `json:"socials"`
 	Photo        string      `json:"photo"`
+	IsConnected  bool        `json:"is_connected"`
 }
 
 type SocialMediaRequest struct {
@@ -47,15 +48,17 @@ type UserProfileResponse struct {
 	IsVerified   bool        `json:"is_verified"`
 	CreatedAt    string      `json:"created_at"`
 	UpdatedAt    string      `json:"updated_at"`
+	IsConnected  bool        `json:"is_connected"`
 }
 
 type UserMinimal struct {
-	Id       uuid.UUID `json:"id"`
-	Name     string    `json:"name"`
-	Username string    `json:"username"`
-	Photo    string    `json:"photo"`
-	Email    string    `json:"email"`
-	Headline string    `json:"headline,omitempty"`
+	Id          uuid.UUID `json:"id"`
+	Name        string    `json:"name"`
+	Username    string    `json:"username"`
+	Photo       string    `json:"photo"`
+	Email       string    `json:"email"`
+	Headline    string    `json:"headline,omitempty"`
+	IsConnected bool      `json:"is_connected"`
 }
 
 type SocialMediaResponse struct {

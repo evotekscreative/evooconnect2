@@ -80,6 +80,7 @@ type User struct {
 	Socials             sql.NullString `json:"socials"`
 	Photo               string         `json:"photo"`
 	IsVerified          bool           `json:"is_verified"`
+	IsConnected         bool           `json:"is_connected"`
 	VerificationToken   string         `json:"-"`
 	VerificationExpires time.Time      `json:"-"`
 	ResetToken          string         `json:"-"`
