@@ -85,6 +85,17 @@ func ToUserProfileResponse(user domain.User, isConnected ...bool) web.UserProfil
 	}
 }
 
+func ToUserShortResponse(user domain.User, isConnected bool) web.UserShort {
+	return web.UserShort{
+		Id:          user.Id,
+		Name:        user.Name,
+		Username:    user.Username,
+		Photo:       &user.Photo,
+		Headline:    &user.Headline,
+		IsConnected: isConnected,
+	}
+}
+
 func ToPostResponse(post domain.Post) web.PostResponse {
 	return web.PostResponse{
 		Id:         post.Id,
