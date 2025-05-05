@@ -10,6 +10,7 @@ import {
   Eye,
   Bookmark,
   GraduationCap,
+  Pencil,
   Instagram,
   Facebook,
   Twitter,
@@ -31,21 +32,27 @@ const socialPlatforms = [
 export default function ProfilePage() {
   const [showExperienceModal, setShowExperienceModal] = useState(false);
   const [showEducationModal, setShowEducationModal] = useState(false);
+  const [showEditEducationModal, setEditShowEducationModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [educations, setEducation] = useState([]);
+  const [editingEducation, setEditingEducation] = useState(null);
 
+  // Education Form State
   const [educationForm, setEducationForm] = useState({
-    degree: "",
-    schoolName: "",
+    major: "",
+    institute_name: "",
     location: "",
-    startMonth: "Month",
-    startYear: "Year",
-    endMonth: "Month",
-    endYear: "Year",
-    description: "",
+    start_month: "Month",
+    start_year: "Year",
+    end_month: "Month",
+    end_year: "Year",
+    caption: "",
     schoolLogo: null,
   });
 
-  const [isLoading, setIsLoading] = useState(true);
+  // User Data State
   const [user, setUser] = useState({
+    id: "",
     name: "",
     headline: "",
     about: "",
@@ -56,6 +63,7 @@ export default function ProfilePage() {
     educations: []
   });
 
+  // Sample post data
   const [post] = useState([
     {
       id: 1,
@@ -95,18 +103,20 @@ export default function ProfilePage() {
     },
   ]);
 
-  // Form states
+  // Experience Form State
   const [experienceForm, setExperienceForm] = useState({
     jobTitle: "",
     companyName: "",
     location: "",
-    startMonth: "Month",
-    startYear: "Year",
-    endMonth: "Month",
-    endYear: "Year",
-    description: "",
-    logoCompany: null,
+    start_month: "Month",
+    start_year: "Year",
+    end_month: "Month",
+    end_year: "Year",
+    caption: "",
+    photo: null,
   });
+
+  // Date options
   const months = [
     "Month",
     "January",
@@ -122,12 +132,13 @@ export default function ProfilePage() {
     "November",
     "December",
   ];
+
   const years = [
     "Year",
     ...Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i),
   ];
 
-  // Modify the useEffect in Profile.jsx to handle updates
+  // Fetch user profile data
   const fetchProfile = async () => {
     const token = localStorage.getItem("token");
     setIsLoading(true);
@@ -147,9 +158,9 @@ export default function ProfilePage() {
         });
       }
 
+      // Handle skills data
       let userSkills = [];
       if (response.data.data.skills && response.data.data.skills.Valid) {
-        // Handle both array and single string cases
         userSkills = Array.isArray(response.data.data.skills.String)
           ? response.data.data.skills.String
           : response.data.data.skills.String
@@ -158,10 +169,11 @@ export default function ProfilePage() {
       }
 
       setUser({
+        id: response.data.data.id || "",
         name: response.data.data.name || "",
         headline: response.data.data.headline || "",
         about: response.data.data.about || "",
-        skills: response.data.data.skills || [],
+        skills: userSkills,
         socials: socialsObject,
         photo: response.data.data.photo || null,
         experiences: response.data.data.experiences || [],
@@ -176,20 +188,226 @@ export default function ProfilePage() {
     }
   };
 
+  const fetchEducations = async () => {
+    const token = localStorage.getItem("token");
+    setIsLoading(true);
+
+    try {
+      const response = await axios.get(`http://localhost:3000/api/users/${user.id}/education`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      setEducation(response.data.data.educations);
+    } catch (error) {
+      console.error("Failed to fetch education:", error);
+      toast.error("Failed to load education data");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  // Handle Delete Education
+  const handleDeleteEducation = async (educationId) => {
+    const token = localStorage.getItem("token");
+    setIsLoading(true);
+
+    try {
+      await axios.delete(`http://localhost:3000/api/education/${educationId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      // Refresh education data
+      await fetchEducations();
+      toast.success("Education deleted successfully!");
+
+      // Close modal if open
+      setEditShowEducationModal(false);
+      setEditingEducation(null);
+
+    } catch (error) {
+      console.error("Failed to delete education:", error);
+      toast.error("Failed to delete education. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchProfile();
   }, []);
 
+  useEffect(() => {
+    if (user.id) {
+      fetchEducations();
+    }
+  }, [user.id])
 
-  const socialPlatforms = [
-    { name: "instagram", icon: <Instagram className="w-5 h-5" />, color: "text-pink-500" },
-    { name: "facebook", icon: <Facebook className="w-5 h-5" />, color: "text-blue-500" },
-    { name: "twitter", icon: <Twitter className="w-5 h-5" />, color: "text-blue-400" },
-    { name: "linkedin", icon: <Linkedin className="w-5 h-5" />, color: "text-blue-700" },
-    { name: "github", icon: <Github className="w-5 h-5" />, color: "text-black" },
-  ];
+  // Handle Education Form Submission
+  const handleEducationSubmit = async (e) => {
+    e.preventDefault();
 
-  const handleExperienceSubmit = (e) => {
+    // Validation
+    if (!educationForm.major || !educationForm.institute_name) {
+      toast.error("Please fill out all required fields.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const token = localStorage.getItem("token");
+
+      // Format dates for API
+      const formattedData = {
+        ...educationForm,
+        start_date: `${educationForm.start_month} ${educationForm.start_year}`,
+        end_date: educationForm.end_month === "Month" || educationForm.end_year === "Year"
+          ? "Present"
+          : `${educationForm.end_month} ${educationForm.end_year}`
+      };
+
+      // save image to /api/education/photo
+      const formData = new FormData();
+      formData.append("photo", educationForm.schoolLogo);
+      const uploadResponse = await axios.post("http://localhost:3000/api/education/photo", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`
+        },
+      });
+
+      formattedData.photo = uploadResponse.data.data.photo;
+
+      // Send to API
+      await axios.post('http://localhost:3000/api/education', formattedData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      // Refresh education data
+      await fetchEducations();
+
+      toast.success("Education added successfully!");
+
+      // Close modal and reset form
+      setShowEducationModal(false);
+      setEducationForm({
+        major: "",
+        institute_name: "",
+        location: "",
+        start_month: "Month",
+        start_year: "Year",
+        end_month: "Month",
+        end_year: "Year",
+        caption: "",
+        schoolLogo: null,
+      });
+
+    } catch (error) {
+      console.error("Failed to add education:", error);
+      toast.error("Failed to add education. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle Edit Education
+  const handleEditEducation = (edu) => {
+    // Split month and year from dates
+    const startParts = edu.start_date ? edu.start_date.split(' ') : ['Month', 'Year'];
+    const endParts = edu.end_date === 'Present' ? ['Month', 'Year'] : (edu.end_date ? edu.end_date.split(' ') : ['Month', 'Year']);
+
+    setEditingEducation(edu);
+    setEducationForm({
+      major: edu.major || "",
+      institute_name: edu.institute_name || "",
+      location: edu.location || "",
+      start_month: startParts[0] || "Month",
+      start_year: startParts[1] || "Year",
+      end_month: endParts[0] || "Month",
+      end_year: endParts[1] || "Year",
+      caption: edu.caption || "",
+      schoolLogo: null,
+    });
+    setEditShowEducationModal(true);
+  };
+
+  // Handle Edit Education Form Submission
+  const handleEditEducationSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!educationForm.major || !educationForm.institute_name) {
+      toast.error("Please fill out all required fields.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const token = localStorage.getItem("token");
+      const formattedData = {
+        ...educationForm,
+        start_date: `${educationForm.start_month} ${educationForm.start_year}`,
+        end_date: educationForm.end_month === "Month" || educationForm.end_year === "Year"
+          ? "Present"
+          : `${educationForm.end_month} ${educationForm.end_year}`
+      };
+
+      // If new logo uploaded
+      if (educationForm.schoolLogo) {
+        const formData = new FormData();
+        formData.append("photo", educationForm.schoolLogo);
+        const uploadResponse = await axios.post("http://localhost:3000/api/education/photo", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`
+          },
+        });
+        formattedData.photo = uploadResponse.data.data.photo;
+      } else {
+        formattedData.photo = editingEducation.photo;
+      }
+
+      // Send update request
+      await axios.put(`http://localhost:3000/api/education/${editingEducation.id}`, formattedData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      // Refresh education data
+      await fetchEducations();
+
+      toast.success("Education updated successfully!");
+      setEditShowEducationModal(false);
+      setEditingEducation(null);
+      setEducationForm({
+        major: "",
+        institute_name: "",
+        location: "",
+        start_month: "Month",
+        start_year: "Year",
+        end_month: "Month",
+        end_year: "Year",
+        caption: "",
+        schoolLogo: null,
+      });
+
+    } catch (error) {
+      console.error("Failed to update education:", error);
+      toast.error("Failed to update education. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle Experience Form Submission
+  const handleExperienceSubmit = async (e) => {
     e.preventDefault();
     const newExperience = {
       ...experienceForm,
@@ -198,48 +416,23 @@ export default function ProfilePage() {
     setUser(prev => ({
       ...prev,
       experiences: [...prev.experiences, newExperience],
-      skills: userSkills || [],
     }));
     setShowExperienceModal(false);
     setExperienceForm({
       jobTitle: "",
       companyName: "",
       location: "",
-      startMonth: "Month",
-      startYear: "Year",
-      endMonth: "Month",
-      endYear: "Year",
-      description: "",
-      logoCompany: null,
+      start_month: "Month",
+      start_year: "Year",
+      end_month: "Month",
+      end_year: "Year",
+      caption: "",
+      photo: null,
     });
     toast.success("Experience added successfully!");
   };
 
-  const handleEducationSubmit = (e) => {
-    e.preventDefault();
-    const newEducation = {
-      ...educationForm,
-      id: Date.now(),
-    };
-    setUser(prev => ({
-      ...prev,
-      educations: [...prev.educations, newEducation]
-    }));
-    setShowEducationModal(false);
-    setEducationForm({
-      degree: "",
-      schoolName: "",
-      location: "",
-      startMonth: "Month",
-      startYear: "Year",
-      endMonth: "Month",
-      endYear: "Year",
-      description: "",
-      schoolLogo: null,
-    });
-    toast.success("Education added successfully!");
-  };
-
+  // Handle Form Changes
   const handleExperienceChange = (e) => {
     const { name, value } = e.target;
     setExperienceForm({
@@ -259,7 +452,7 @@ export default function ProfilePage() {
   const handleExperienceFileChange = (e) => {
     setExperienceForm({
       ...experienceForm,
-      logoCompany: e.target.files[0],
+      photo: e.target.files[0],
     });
   };
 
@@ -270,13 +463,10 @@ export default function ProfilePage() {
     });
   };
 
+  // Format date for display
   const formatDate = (month, year) => {
     if (month === "Month" || year === "Year") return "";
     return `${month} ${year}`;
-  };
-
-  const handleSaveSocials = (data) => {
-    setSocialMedia(data);
   };
 
   // Scroll handlers for post
@@ -293,7 +483,7 @@ export default function ProfilePage() {
   };
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <div className="flex justify-center items-center h-screen">Loading...</div>;
   }
 
   return (
@@ -339,6 +529,7 @@ export default function ProfilePage() {
                   </span>
                   <span className="font-bold text-lg">85</span>
                 </div>
+                {/* </Link> */}
                 <Link
                   to="/job-saved"
                   className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md"
@@ -367,7 +558,7 @@ export default function ProfilePage() {
                     </span>
                   ))}
                 </div>
-              ) : (   
+              ) : (
                 <p className="text-base text-gray-500 mt-1">
                   No skills added yet
                 </p>
@@ -401,7 +592,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-
           {/* Right Main Section */}
           <div className="w-full md:w-2/3 space-y-4">
             {/* About Section */}
@@ -431,7 +621,35 @@ export default function ProfilePage() {
                 <div className="mt-6 space-y-8">
                   {user.experiences.map((exp) => (
                     <div key={exp.id} className="border-b pb-6 last:border-b-0 last:pb-0">
-                      {/* ... (experience item rendering) */}
+                      <div className="flex gap-4">
+                        {exp.photo ? (
+                          <img
+                            src={exp.photo}
+                            alt="Company logo"
+                            className="w-12 h-12 rounded-md object-cover"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-md bg-gray-100 flex items-center justify-center">
+                            <Briefcase className="text-gray-400" />
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <h4 className="font-semibold">{exp.jobTitle}</h4>
+                          <p className="text-gray-600">{exp.companyName}</p>
+                          <p className="text-gray-500 text-sm">
+                            {formatDate(exp.start_month, exp.start_year)} -{" "}
+                            {exp.end_month === "Month" || exp.end_year === "Year"
+                              ? "Present"
+                              : formatDate(exp.end_month, exp.end_year)}
+                          </p>
+                          {exp.location && (
+                            <p className="text-gray-500 text-sm">{exp.location}</p>
+                          )}
+                          {exp.caption && (
+                            <p className="text-gray-600 mt-2">{exp.caption}</p>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -460,11 +678,49 @@ export default function ProfilePage() {
                 </button>
               </div>
 
-              {user.educations?.length > 0 ? (
+              {educations?.length > 0 ? (
                 <div className="mt-6 space-y-8">
-                  {user.educations.map((edu) => (
-                    <div key={edu.id} className="border-b pb-6 last:border-b-0 last:pb-0">
-                      {/* ... (education item rendering) */}
+                  {educations.map((edu) => (
+                    <div key={edu.id} className="border-b pb-6 last:border-b-0 last:pb-0 relative group">
+                      <div className="flex gap-4">
+                        {edu.photo ? (
+                          <img
+                            src={"http://localhost:3000/" + edu.photo}
+                            alt="School logo"
+                            className="w-12 h-12 rounded-md object-cover"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-md bg-gray-100 flex items-center justify-center">
+                            <GraduationCap className="text-gray-400" />
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <h4 className="font-semibold">{edu.major}</h4>
+                          <p className="text-gray-600">{edu.institute_name}</p>
+                          <p className="text-gray-500 text-sm">
+                            {formatDate(edu.start_month, edu.start_year)} -{" "}
+                            {edu.end_month === "Month" || edu.end_year === "Year"
+                              ? "Present"
+                              : formatDate(edu.end_month, edu.end_year)}
+                          </p>
+                          {edu.location && (
+                            <p className="text-gray-500 text-sm">{edu.location}</p>
+                          )}
+                          {edu.caption && (
+                            <p className="text-gray-600 mt-2">{edu.caption}</p>
+                          )}
+                        </div>
+
+                        {/* Edit and Delete Buttons */}
+                        <div className="flex items-center justify-center pr-4 gap-2">
+                          <button
+                            className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition"
+                            onClick={() => handleEditEducation(edu)}
+                          >
+                            <Pencil size={16} className="text-gray-600 hover:text-[#00AEEF]" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -563,6 +819,8 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Experience Modal */}
       {showExperienceModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl">
@@ -608,25 +866,25 @@ export default function ProfilePage() {
                     </label>
                     <div className="flex gap-2">
                       <select
-                        name="startMonth"
+                        name="start_month"
                         className="border px-2 py-1 rounded w-1/2 focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
-                        value={experienceForm.startMonth}
+                        value={experienceForm.start_month}
                         onChange={handleExperienceChange}
                         required
                       >
                         {months.map((month, index) => (
-                          <option key={index}>{month}</option>
+                          <option key={index} value={month}>{month}</option>
                         ))}
                       </select>
                       <select
-                        name="startYear"
+                        name="start_year"
                         className="border px-2 py-1 rounded w-1/2 focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
-                        value={experienceForm.startYear}
+                        value={experienceForm.start_year}
                         onChange={handleExperienceChange}
                         required
                       >
                         {years.map((year, index) => (
-                          <option key={index}>{year}</option>
+                          <option key={index} value={year}>{year}</option>
                         ))}
                       </select>
                     </div>
@@ -637,23 +895,23 @@ export default function ProfilePage() {
                     </label>
                     <div className="flex gap-2">
                       <select
-                        name="endMonth"
+                        name="end_month"
                         className="border px-2 py-1 rounded w-1/2 focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
-                        value={experienceForm.endMonth}
+                        value={experienceForm.end_month}
                         onChange={handleExperienceChange}
                       >
                         {months.map((month, index) => (
-                          <option key={index}>{month}</option>
+                          <option key={index} value={month}>{month}</option>
                         ))}
                       </select>
                       <select
-                        name="endYear"
+                        name="end_year"
                         className="border px-2 py-1 rounded w-1/2 focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
-                        value={experienceForm.endYear}
+                        value={experienceForm.end_year}
                         onChange={handleExperienceChange}
                       >
                         {years.map((year, index) => (
-                          <option key={index}>{year}</option>
+                          <option key={index} value={year}>{year}</option>
                         ))}
                       </select>
                     </div>
@@ -662,11 +920,11 @@ export default function ProfilePage() {
 
                 <div>
                   <textarea
-                    name="description"
+                    name="caption"
                     placeholder="Description"
                     className="w-full border px-3 py-2 rounded focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
                     rows={4}
-                    value={experienceForm.description}
+                    value={experienceForm.caption}
                     onChange={handleExperienceChange}
                   />
                 </div>
@@ -703,7 +961,7 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* Education Modal */}
+      {/* Add Education Modal */}
       {showEducationModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl">
@@ -716,19 +974,19 @@ export default function ProfilePage() {
                 <div className="grid grid-cols-1 gap-4">
                   <input
                     type="text"
-                    name="degree"
+                    name="major"
                     placeholder="Degree *"
                     className="w-full border px-3 py-2 rounded focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
-                    value={educationForm.degree}
+                    value={educationForm.major}
                     onChange={handleEducationChange}
                     required
                   />
                   <input
                     type="text"
-                    name="schoolName"
+                    name="institute_name"
                     placeholder="School Name *"
                     className="w-full border px-3 py-2 rounded focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
-                    value={educationForm.schoolName}
+                    value={educationForm.institute_name}
                     onChange={handleEducationChange}
                     required
                   />
@@ -749,25 +1007,25 @@ export default function ProfilePage() {
                     </label>
                     <div className="flex gap-2">
                       <select
-                        name="startMonth"
+                        name="start_month"
                         className="border px-2 py-1 rounded w-1/2 focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
-                        value={educationForm.startMonth}
+                        value={educationForm.start_month}
                         onChange={handleEducationChange}
                         required
                       >
                         {months.map((month, index) => (
-                          <option key={index}>{month}</option>
+                          <option key={index} value={month}>{month}</option>
                         ))}
                       </select>
                       <select
-                        name="startYear"
+                        name="start_year"
                         className="border px-2 py-1 rounded w-1/2 focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
-                        value={educationForm.startYear}
+                        value={educationForm.start_year}
                         onChange={handleEducationChange}
                         required
                       >
                         {years.map((year, index) => (
-                          <option key={index}>{year}</option>
+                          <option key={index} value={year}>{year}</option>
                         ))}
                       </select>
                     </div>
@@ -778,23 +1036,23 @@ export default function ProfilePage() {
                     </label>
                     <div className="flex gap-2">
                       <select
-                        name="endMonth"
+                        name="end_month"
                         className="border px-2 py-1 rounded w-1/2 focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
-                        value={educationForm.endMonth}
+                        value={educationForm.end_month}
                         onChange={handleEducationChange}
                       >
                         {months.map((month, index) => (
-                          <option key={index}>{month}</option>
+                          <option key={index} value={month}>{month}</option>
                         ))}
                       </select>
                       <select
-                        name="endYear"
+                        name="end_year"
                         className="border px-2 py-1 rounded w-1/2 focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
-                        value={educationForm.endYear}
+                        value={educationForm.end_year}
                         onChange={handleEducationChange}
                       >
                         {years.map((year, index) => (
-                          <option key={index}>{year}</option>
+                          <option key={index} value={year}>{year}</option>
                         ))}
                       </select>
                     </div>
@@ -803,11 +1061,11 @@ export default function ProfilePage() {
 
                 <div>
                   <textarea
-                    name="description"
+                    name="caption"
                     placeholder="Description"
                     className="w-full border px-3 py-2 rounded focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
                     rows={4}
-                    value={educationForm.description}
+                    value={educationForm.caption}
                     onChange={handleEducationChange}
                   />
                 </div>
@@ -835,9 +1093,182 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   className="px-4 py-2 rounded bg-[#00AEEF] text-white hover:bg-[#0099d6] transition"
+                  disabled={isLoading}
                 >
-                  Save Education
+                  {isLoading ? "Saving..." : "Save Education"}
                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Education Modal */}
+      {showEditEducationModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl">
+            <div className="flex items-center gap-2 mb-4">
+              <GraduationCap size={20} className="text-[#00AEEF]" />
+              <h2 className="text-xl font-bold">Edit Education</h2>
+            </div>
+            <form onSubmit={handleEditEducationSubmit}>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-4">
+                  <input
+                    type="text"
+                    name="major"
+                    placeholder="Degree *"
+                    className="w-full border px-3 py-2 rounded focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
+                    value={educationForm.major}
+                    onChange={handleEducationChange}
+                    required
+                  />
+                  <input
+                    type="text"
+                    name="institute_name"
+                    placeholder="School Name *"
+                    className="w-full border px-3 py-2 rounded focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
+                    value={educationForm.institute_name}
+                    onChange={handleEducationChange}
+                    required
+                  />
+                  <input
+                    type="text"
+                    name="location"
+                    placeholder="Location (City, Country)"
+                    className="w-full border px-3 py-2 rounded focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
+                    value={educationForm.location}
+                    onChange={handleEducationChange}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Start Date *
+                    </label>
+                    <div className="flex gap-2">
+                      <select
+                        name="start_month"
+                        className="border px-2 py-1 rounded w-1/2 focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
+                        value={educationForm.start_month}
+                        onChange={handleEducationChange}
+                        required
+                      >
+                        {months.map((month, index) => (
+                          <option key={index} value={month}>{month}</option>
+                        ))}
+                      </select>
+                      <select
+                        name="start_year"
+                        className="border px-2 py-1 rounded w-1/2 focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
+                        value={educationForm.start_year}
+                        onChange={handleEducationChange}
+                        required
+                      >
+                        {years.map((year, index) => (
+                          <option key={index} value={year}>{year}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      End Date
+                    </label>
+                    <div className="flex gap-2">
+                      <select
+                        name="end_month"
+                        className="border px-2 py-1 rounded w-1/2 focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
+                        value={educationForm.end_month}
+                        onChange={handleEducationChange}
+                      >
+                        {months.map((month, index) => (
+                          <option key={index} value={month}>{month}</option>
+                        ))}
+                      </select>
+                      <select
+                        name="end_year"
+                        className="border px-2 py-1 rounded w-1/2 focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
+                        value={educationForm.end_year}
+                        onChange={handleEducationChange}
+                      >
+                        {years.map((year, index) => (
+                          <option key={index} value={year}>{year}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <textarea
+                    name="caption"
+                    placeholder="Description"
+                    className="w-full border px-3 py-2 rounded focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
+                    rows={4}
+                    value={educationForm.caption}
+                    onChange={handleEducationChange}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    School Logo
+                  </label>
+                  <input
+                    type="file"
+                    className="w-full border px-3 py-2 rounded focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
+                    onChange={handleEducationFileChange}
+                  />
+                  {editingEducation?.photo && !educationForm.schoolLogo && (
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500">Current logo:</p>
+                      <img
+                        src={"http://localhost:3000/" + editingEducation.photo}
+                        alt="Current school logo"
+                        className="h-12 mt-1"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-between mt-6">
+                <button
+                  type="button"
+                  className="px-4 py-2 rounded border hover:bg-gray-50 transition text-red-500 hover:text-red-700"
+                  onClick={() => {
+                    if (editingEducation?.id) {
+                      if (window.confirm("Are you sure you want to delete this education?")) {
+                        handleDeleteEducation(editingEducation.id);
+                      }
+                    }
+                  }}
+                  disabled={isLoading}
+                >
+                  Delete Education
+                </button>
+
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    className="px-4 py-2 rounded border hover:bg-gray-50 transition"
+                    onClick={() => {
+                      setEditShowEducationModal(false);
+                      setEditingEducation(null);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded bg-[#00AEEF] text-white hover:bg-[#0099d6] transition"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Updating..." : "Update Education"}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

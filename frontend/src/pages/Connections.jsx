@@ -51,6 +51,7 @@ export default function ConnectionSuggestions() {
     },
   ]);
 
+  // invitations state
   const [invitations, setInvitations] = useState([
     {
       id: 4,
