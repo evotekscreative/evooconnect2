@@ -114,12 +114,21 @@ func (r *BlogRepositoryImpl) FindUserByID(ctx context.Context, userID uuid.UUID)
     row := r.DB.QueryRowContext(ctx, query, userID)
 
     var user domain.User
-    err := row.Scan(&user.Id, &user.Name, &user.Username, &user.Photo)
+    var photo sql.NullString // Gunakan sql.NullString untuk menangani NULL
+
+    err := row.Scan(&user.Id, &user.Name, &user.Username, &photo)
     if err != nil {
         if err == sql.ErrNoRows {
             return domain.User{}, fmt.Errorf("user not found")
         }
         return domain.User{}, err
+    }
+
+    // Konversi sql.NullString ke string
+    if photo.Valid {
+        user.Photo = photo.String
+    } else {
+        user.Photo = "" // Berikan nilai default jika NULL
     }
 
     return user, nil

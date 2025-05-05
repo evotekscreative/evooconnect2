@@ -19,6 +19,7 @@ func NewRouter(
 	educationController controller.EducationController,
 	experienceController controller.ExperienceController,
 	commentBlogController controller.CommentBlogController,
+	connectionController controller.ConnectionController,
 ) *httprouter.Router {
 	router := httprouter.New()
 
@@ -94,6 +95,28 @@ func NewRouter(
 	router.GET("/api/users/:userId/posts", postController.FindByUserId)
 
 	// NotFound handler
+	router.GET("/api/connections/requests", connectionController.GetConnectionRequests)
+	router.PUT("/api/connections/requests/:requestId/accept", connectionController.AcceptConnectionRequest)
+	router.PUT("/api/connections/requests/:requestId/reject", connectionController.RejectConnectionRequest)
+	router.GET("/api/users/:userId/connections", connectionController.GetConnections)
+	router.POST("/api/users/:userId/connect", connectionController.SendConnectionRequest)
+
+	uploadFS := http.FileServer(http.Dir("uploads"))
+
+	// Add custom file server handler to serve static files
+	router.GET("/uploads/*filepath", func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		// Remove /uploads prefix from path
+		r.URL.Path = ps.ByName("filepath")
+
+		// Set headers for browser caching
+		w.Header().Set("Cache-Control", "public, max-age=31536000")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+
+		// Serve the file
+		uploadFS.ServeHTTP(w, r)
+	})
+
+	// Add custom NotFound handler
 	router.NotFound = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Content-Type", "application/json")
 		writer.WriteHeader(http.StatusNotFound)

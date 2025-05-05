@@ -56,7 +56,6 @@ function PreviewStep({ formData, onSubmit, onPrev }) {
                 {category}
               </span>
               <h2 className="text-2xl font-semibold mt-3">{title}</h2>
-              <p className="text-sm text-gray-500 mb-1">Preview Mode</p>
               <p className="text-xs text-gray-400 mb-4">Published on: {date}</p>
               <div
                 className="prose max-w-none text-gray-700"

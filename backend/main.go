@@ -10,9 +10,9 @@ import (
     "fmt"
     "net/http"
 
-    "github.com/go-playground/validator/v10"
-    _ "github.com/lib/pq"
-)
+	"github.com/go-playground/validator/v10"
+	_ "github.com/lib/pq"
+) 
 
 func main() {
     // Load environment variables
@@ -51,32 +51,18 @@ func main() {
     educationService := service.NewEducationService(educationRepository, userRepository, db, validate)
     educationController := controller.NewEducationController(educationService)
 
-    // Initialize experience components
-    experienceRepository := repository.NewExperienceRepository()
-    experienceService := service.NewExperienceService(experienceRepository, userRepository, db, validate)
-    experienceController := controller.NewExperienceController(experienceService)
+	// Experience
+	experienceRepository := repository.NewExperienceRepository()
+	experienceService := service.NewExperienceService(experienceRepository, userRepository, db, validate)
+	experienceController := controller.NewExperienceController(experienceService)
 
-    // Initialize comment blog components
-    commentBlogRepository := repository.NewCommentBlogRepository()
-    commentBlogService := service.NewCommentBlogService(commentBlogRepository, blogRepository, userRepository, db, validate)
-    commentBlogController := controller.NewCommentBlogController(commentBlogService)
+	// Initialize router with all controllers
+	router := app.NewRouter(authController, userController, blogController, postController, commentController, educationController, experienceController)
 
-    // Initialize router with all controllers
-    router := app.NewRouter(
-        authController,
-        userController,
-        blogController,
-        postController,
-        commentController,
-        educationController,
-        experienceController,
-        commentBlogController, // Add commentBlogController here
-    )
-
-    // Create middleware chain
-    var handler http.Handler = router
-    handler = middleware.NewAuthMiddleware(handler, jwtSecret)
-    handler = middleware.CORSMiddleware(handler)
+	// Create middleware chain
+	var handler http.Handler = router
+	handler = middleware.NewAuthMiddleware(handler, jwtSecret)
+	handler = middleware.CORSMiddleware(handler)
 
     // Start server
     server := http.Server{
