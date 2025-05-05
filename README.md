@@ -1,8 +1,6 @@
-Collecting workspace informationStill updating workspace index. Falling back to using the latest remote code index only. Response may be less accurate.# EvoConnect - Professional Social Networking Platform
+# EvoConnect - Professional Social Networking Platform
 
 EvoConnect is a full-stack social networking platform designed for professional connections, job hunting, and career development. It features a modern UI with various social networking capabilities similar to LinkedIn, including profiles, connections, job postings, company pages, blogging, and messaging.
-
-!EvoConnect
 
 ## Table of Contents
 - Project Overview
@@ -64,7 +62,7 @@ Before you begin, ensure you have the following installed:
 
 - [Node.js](https://nodejs.org/) (v14 or later)
 - [Go](https://golang.org/dl/) (v1.16 or later)
-- [MySQL](https://dev.mysql.com/downloads/) or [PostgreSQL](https://www.postgresql.org/download/) database
+- [PostgreSQL](https://www.postgresql.org/download/) database
 - [Git](https://git-scm.com/downloads)
 
 ## Getting Started
@@ -199,7 +197,7 @@ evoconnect/
 
 API documentation is available in the following formats:
 
-- **Swagger**: Access at `http://localhost:8080/swagger/index.html` when the backend server is running
+<!-- - **Swagger**: Access at `http://localhost:8080/swagger/index.html` when the backend server is running -->
 - **Postman Collection**: Available at postman.json
 
 ## Contributing

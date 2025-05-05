@@ -15,16 +15,18 @@ import (
 )
 
 type UserServiceImpl struct {
-	UserRepository repository.UserRepository
-	Validate       *validator.Validate
-	DB             *sql.DB
+	UserRepository       repository.UserRepository
+	ConnectionRepository repository.ConnectionRepository
+	DB                   *sql.DB
+	Validate             *validator.Validate
 }
 
-func NewUserService(userRepository repository.UserRepository, db *sql.DB, validate *validator.Validate) UserService {
+func NewUserService(userRepository repository.UserRepository, connectionRepository repository.ConnectionRepository, db *sql.DB, validate *validator.Validate) UserService {
 	return &UserServiceImpl{
-		UserRepository: userRepository,
-		Validate:       validate,
-		DB:             db,
+		UserRepository:       userRepository,
+		ConnectionRepository: connectionRepository,
+		DB:                   db,
+		Validate:             validate,
 	}
 }
 
@@ -115,4 +117,84 @@ func (service *UserServiceImpl) UpdateProfile(ctx context.Context, userId uuid.U
 
 	updatedUser := service.UserRepository.Update(ctx, tx, user)
 	return helper.ToUserProfileResponse(updatedUser)
+}
+
+func (service *UserServiceImpl) GetByUsername(ctx context.Context, username string) web.UserProfileResponse {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	user, err := service.UserRepository.FindByUsername(ctx, tx, username)
+	if err != nil {
+		panic(exception.NewNotFoundError("User not found"))
+	}
+
+	// Cek apakah user saat ini sedang melihat profil orang lain
+	currentUserIdStr, ok := ctx.Value("user_id").(string)
+	var isConnected bool
+
+	if ok {
+		// User sedang login, cek status koneksi
+		currentUserId, err := uuid.Parse(currentUserIdStr)
+		if err == nil && currentUserId != user.Id {
+			// Hanya cek koneksi jika bukan profil sendiri
+			isConnected = service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, user.Id)
+		}
+	}
+
+	userResponse := helper.ToUserProfileResponse(user)
+	userResponse.IsConnected = isConnected
+
+	return userResponse
+}
+
+func (service *UserServiceImpl) UploadPhotoProfile(ctx context.Context, userId uuid.UUID, fileName string) web.UserProfileResponse {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Find user first
+	user, err := service.UserRepository.FindById(ctx, tx, userId)
+	if err != nil {
+		panic(exception.NewNotFoundError(err.Error()))
+	}
+
+	// Update photo field
+	user.Photo = fileName
+
+	updatedUser := service.UserRepository.Update(ctx, tx, user)
+	return helper.ToUserProfileResponse(updatedUser)
+}
+
+func (service *UserServiceImpl) GetPeoples(ctx context.Context, limit int, offset int, currentUserIdStr string) []web.UserProfileResponse {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Parse current user ID
+	currentUserId, err := uuid.Parse(currentUserIdStr)
+	if err != nil {
+		panic(exception.NewBadRequestError(err.Error()))
+	}
+
+	// Get users not connected with current user
+	users, err := service.UserRepository.FindUsersNotConnectedWith(ctx, tx, currentUserId, limit, offset)
+	if err != nil {
+		panic(exception.NewInternalServerError(err.Error()))
+	}
+
+	// Convert to response objects
+	var userResponses []web.UserProfileResponse
+	for _, user := range users {
+		// Check if user is already connected or has pending request
+		isConnected := service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, user.Id)
+		// hasPendingRequest := service.ConnectionRepository.CheckPendingRequest(ctx, tx, currentUserId, user.Id)
+
+		userResponse := helper.ToUserProfileResponse(user, isConnected)
+		// userResponse.HasPendingRequest = hasPendingRequest
+
+		userResponses = append(userResponses, userResponse)
+	}
+
+	return userResponses
 }

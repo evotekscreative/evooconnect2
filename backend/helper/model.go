@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"evoconnect/backend/model/domain"
 	"evoconnect/backend/model/web"
+	// "evoconnect/backend/repository"
 )
 
 // func ToCategoryResponse(category domain.Category) web.CategoryResponse {
@@ -21,7 +22,7 @@ import (
 //		return categoryResponses
 //	}
 
-func ToUserProfileResponse(user domain.User) web.UserProfileResponse {
+func ToUserProfileResponse(user domain.User, isConnected ...bool) web.UserProfileResponse {
 	// Definisikan nilai default untuk skills dan socials
 	var skillsInterface, socialsInterface interface{}
 
@@ -56,6 +57,11 @@ func ToUserProfileResponse(user domain.User) web.UserProfileResponse {
 		birthdate = user.Birthdate.Format("2006-01-02")
 	}
 
+	connected := false
+	if len(isConnected) > 0 {
+		connected = isConnected[0]
+	}
+
 	return web.UserProfileResponse{
 		ID:           user.Id,
 		Name:         user.Name,
@@ -73,6 +79,7 @@ func ToUserProfileResponse(user domain.User) web.UserProfileResponse {
 		Socials:      socialsInterface,
 		Photo:        user.Photo,
 		IsVerified:   user.IsVerified,
+		IsConnected:  connected,
 		CreatedAt:    user.CreatedAt.Format("2006-01-02T15:04:05Z"),
 		UpdatedAt:    user.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 	}
@@ -87,13 +94,13 @@ func ToPostResponse(post domain.Post) web.PostResponse {
 		LikesCount: post.LikesCount,
 		Visibility: post.Visibility,
 		IsLiked:    post.IsLiked,
-		User: web.UserMinimal{
-			Id:       post.User.Id,
-			Name:     post.User.Name,
-			Username: post.User.Username,
-			Photo:    post.User.Photo,
-			Email:    post.User.Email,
-			Headline: post.User.Headline,
+		User: web.UserShort{
+			Id:          post.User.Id,
+			Name:        post.User.Name,
+			Username:    post.User.Username,
+			Photo:       &post.User.Photo,
+			Headline:    &post.User.Headline,
+			IsConnected: post.User.IsConnected,
 		},
 		CreatedAt: post.CreatedAt,
 		UpdatedAt: post.UpdatedAt,
