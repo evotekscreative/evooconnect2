@@ -13,7 +13,7 @@ func ToBlogResponse(blog domain.Blog) web.BlogResponse {
         Slug:      blog.Slug,
         Category:  blog.Category,
         Content:   blog.Content,
-        Image:     blog.ImagePath,
+        Photo:     blog.ImagePath,
         UserID:    blog.UserID,
         CreatedAt: blog.CreatedAt,
         UpdatedAt: blog.UpdatedAt,
