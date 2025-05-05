@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import Cookies from 'js-cookie';
 import logo from '../../assets/img/logoB.png'; 
 import googleIcon from '../../assets/img/google-icon.jpg';
 import Alert from '../../components/Auth/Alert';
