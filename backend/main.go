@@ -57,7 +57,15 @@ func main() {
 	experienceController := controller.NewExperienceController(experienceService)
 
 	// Initialize router with all controllers
-	router := app.NewRouter(authController, userController, blogController, postController, commentController, educationController, experienceController)
+	commentBlogRepository := repository.NewCommentBlogRepository()
+	commentBlogService := service.NewCommentBlogService(commentBlogRepository, blogRepository, userRepository, db, validate)
+	commentBlogController := controller.NewCommentBlogController(commentBlogService)
+
+	connectionRepository := repository.NewConnectionRepository()
+	connectionService := service.NewConnectionService(connectionRepository, userRepository, db, validate)
+	connectionController := controller.NewConnectionController(connectionService)
+
+	router := app.NewRouter(authController, userController, blogController, postController, commentController, educationController, experienceController, commentBlogController, connectionController)
 
 	// Create middleware chain
 	var handler http.Handler = router

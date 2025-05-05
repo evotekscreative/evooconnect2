@@ -2582,6 +2582,112 @@
       ]
     },
     {
+      "name": "Blog Comment",
+      "description": "Endpoint untuk mengelola komentar blog dan reply-nya",
+      "item": [
+        {
+          "name": "Create Blog Comment",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{JWT_TOKEN}}", "type": "string" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"this is comment blog\",\n  \"parent_id\": null\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/blog-comments/{{blogId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "blog-comments", "{{blogId}}"]
+            }
+          }
+        },
+        {
+          "name": "Reply to Comment",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{JWT_TOKEN}}", "type": "string" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"This is reply\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/blog/comments/{{commentId}}/replies",
+              "host": ["{{base_url}}"],
+              "path": ["api", "blog", "comments", "{{commentId}}", "replies"]
+            }
+          }
+        },
+        {
+          "name": "Get Replies for Comment",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/blog/comments/{{commentId}}/replies",
+              "host": ["{{base_url}}"],
+              "path": ["api", "blog", "comments", "{{commentId}}", "replies"]
+            }
+          }
+        },
+        {
+          "name": "Update Comment",
+          "request": {
+            "method": "PUT",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{JWT_TOKEN}}", "type": "string" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Komentar ini sudah diperbarui.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/blog/comments/{{commentblogId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "blog", "comments", "{{commentblogId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get All Comments in Blog",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/blog-comments/{{blogId}}?limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "blog-comments", "{{blogId}}"],
+              "query": [
+                { "key": "limit", "value": "10" },
+                { "key": "offset", "value": "0" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Comment",
+          "request": {
+            "method": "DELETE",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{JWT_TOKEN}}", "type": "string" }] },
+            "url": {
+              "raw": "{{base_url}}/api/blog/comments/{{commentblogId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "blog", "comments", "{{commentblogId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Comment by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/blog/comments/{{commentblogId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "blog", "comments", "{{commentblogId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Education",
       "description": "Endpoints untuk mengelola data pendidikan pengguna",
       "item": [
