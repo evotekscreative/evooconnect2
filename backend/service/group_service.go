@@ -2,8 +2,10 @@ package service
 
 import (
 	"context"
+	"mime/multipart"
 
 	"evoconnect/backend/model/web"
+
 	"github.com/google/uuid"
 )
 
@@ -15,6 +17,7 @@ type GroupService interface {
 	FindById(ctx context.Context, groupId uuid.UUID) web.GroupResponse
 	FindAll(ctx context.Context, limit, offset int) []web.GroupResponse
 	FindMyGroups(ctx context.Context, userId uuid.UUID) []web.GroupResponse
+	UploadPhoto(ctx context.Context, groupId, userId uuid.UUID, file multipart.File, fileHeader *multipart.FileHeader) string
 
 	// Member management
 	AddMember(ctx context.Context, groupId, userId, newMemberId uuid.UUID) web.GroupMemberResponse

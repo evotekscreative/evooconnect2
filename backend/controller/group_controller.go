@@ -14,6 +14,7 @@ type GroupController interface {
 	FindById(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	FindAll(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	FindMyGroups(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+	UploadPhoto(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 
 	// Member management
 	AddMember(writer http.ResponseWriter, request *http.Request, params httprouter.Params)

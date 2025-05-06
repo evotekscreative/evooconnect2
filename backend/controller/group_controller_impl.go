@@ -2,10 +2,12 @@ package controller
 
 import (
 	"encoding/json"
+	"evoconnect/backend/exception"
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/service"
 	"net/http"
+	"path/filepath"
 	"strconv"
 
 	"github.com/google/uuid"
@@ -40,6 +42,60 @@ func (controller *GroupControllerImpl) Create(writer http.ResponseWriter, reques
 		Status: "CREATED",
 		Data:   groupResponse,
 	}
+	helper.WriteToResponseBody(writer, webResponse)
+}
+
+func (controller *GroupControllerImpl) UploadPhoto(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Parse multipart form with 10 MB max memory
+	err := request.ParseMultipartForm(10 << 20) // 10 MB
+	if err != nil {
+		panic(exception.NewBadRequestError("Failed to parse form: " + err.Error()))
+	}
+
+	// Get file from form
+	file, handler, err := request.FormFile("photo")
+	if err != nil {
+		panic(exception.NewBadRequestError("No file uploaded or invalid file field"))
+	}
+	defer file.Close()
+
+	// Check file type
+	ext := filepath.Ext(handler.Filename)
+	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" {
+		panic(exception.NewBadRequestError("Only JPG, JPEG and PNG files are allowed"))
+	}
+
+	// Get user_id from context (set by JWT middleware)
+	userIdString, ok := request.Context().Value("user_id").(string)
+	if !ok {
+		panic(exception.NewUnauthorizedError("Unauthorized access"))
+	}
+
+	// Parse user_id
+	userId, err := uuid.Parse(userIdString)
+	if err != nil {
+		panic(exception.NewBadRequestError("Invalid user ID format"))
+	}
+
+	// Parse group_id from URL params
+	groupId, err := uuid.Parse(params.ByName("groupId"))
+	if err != nil {
+		panic(exception.NewBadRequestError("Invalid group ID format"))
+	}
+
+	// Call service to upload file
+	filePath := controller.GroupService.UploadPhoto(request.Context(), groupId, userId, file, handler)
+
+	// Create response
+	webResponse := web.WebResponse{
+		Code:   http.StatusOK,
+		Status: "OK",
+		Data: map[string]string{
+			"photo": filePath,
+		},
+	}
+
+	// Write response
 	helper.WriteToResponseBody(writer, webResponse)
 }
 
