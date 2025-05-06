@@ -1997,6 +1997,61 @@
           ]
         },
         {
+          "name": "Disconnect User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/api/users/{{userId}}/connect",
+            "description": "Removes a connection between the current user and another user. Both users will no longer be connected."
+          },
+          "response": [
+            {
+              "name": "Disconnect Success",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{base_url}}/api/users/661f9511-f3a2-41d5-b882-557535440123/connect"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"message\": \"Successfully disconnected\",\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"disconnected_at\": \"2025-05-06T15:30:45Z\"\n    }\n}"
+            },
+            {
+              "name": "Disconnect Error - Not Connected",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{base_url}}/api/users/772g0622-g4b3-52e6-c993-668646551234/connect"
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"code\": 400,\n    \"status\": \"BAD REQUEST\",\n    \"data\": \"You are not connected with this user\"\n}"
+            }
+          ]
+        },
+        {
           "name": "Get Peoples",
           "request": {
             "method": "GET",

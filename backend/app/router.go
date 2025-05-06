@@ -105,6 +105,7 @@ func NewRouter(
 	router.PUT("/api/connections/requests/:requestId/reject", connectionController.RejectConnectionRequest)
 	router.GET("/api/users/:userId/connections", connectionController.GetConnections)
 	router.POST("/api/users/:userId/connect", connectionController.SendConnectionRequest)
+	router.DELETE("/api/users/:userId/connect", connectionController.Disconnect)
 
 	router.POST("/api/groups", groupController.Create)
 	router.GET("/api/groups", groupController.FindAll)
@@ -114,13 +115,11 @@ func NewRouter(
 	router.DELETE("/api/groups/:groupId", groupController.Delete)
 	router.POST("/api/groups/:groupId/photo", groupController.UploadPhoto)
 
-	// Group member management routes
 	router.POST("/api/groups/:groupId/members/:userId", groupController.AddMember)
 	router.DELETE("/api/groups/:groupId/members/:userId", groupController.RemoveMember)
 	router.PUT("/api/groups/:groupId/members/:userId/role", groupController.UpdateMemberRole)
 	router.GET("/api/groups/:groupId/members", groupController.FindMembers)
 
-	// Group invitation management routes
 	router.POST("/api/groups/:groupId/invitations/:userId", groupController.CreateInvitation)
 	router.PUT("/api/invitations/:invitationId/accept", groupController.AcceptInvitation)
 	router.PUT("/api/invitations/:invitationId/reject", groupController.RejectInvitation)

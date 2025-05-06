@@ -12,4 +12,5 @@ type ConnectionController interface {
 	AcceptConnectionRequest(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	RejectConnectionRequest(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	GetConnections(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+	Disconnect(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 }
