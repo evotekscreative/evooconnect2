@@ -77,6 +77,9 @@ export default function SocialNetworkFeed() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showPostOptions, setShowPostOptions] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [selectedReason, setSelectedReason] = useState("");
+  const [customReason, setCustomReason] = useState("");
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -154,6 +157,10 @@ export default function SocialNetworkFeed() {
     if (!post) {
       console.error("Post not found");
       return;
+    }
+
+    if (action === "report") {
+      setShowReportModal(true);
     }
 
     switch (action) {
@@ -388,8 +395,8 @@ export default function SocialNetworkFeed() {
       console.error("Post failed:", error);
       setError(
         error.response?.data?.message ||
-          error.message ||
-          "Failed to create post. Please try again."
+        error.message ||
+        "Failed to create post. Please try again."
       );
     } finally {
       setIsLoading(false);
@@ -433,8 +440,8 @@ export default function SocialNetworkFeed() {
           const replies = cachedReplies
             ? JSON.parse(cachedReplies)
             : Array.isArray(comment.replies)
-            ? comment.replies
-            : [];
+              ? comment.replies
+              : [];
 
           return {
             ...comment,
@@ -514,7 +521,7 @@ export default function SocialNetworkFeed() {
   const fetchAllReplies = async (commentId) => {
     try {
       setLoadingComments((prev) => ({ ...prev, [commentId]: true }));
-  
+
       const userToken = localStorage.getItem("token");
       const response = await axios.get(
         `http://localhost:3000/api/comments/${commentId}/replies?limit=100`,
@@ -524,18 +531,18 @@ export default function SocialNetworkFeed() {
           },
         }
       );
-  
+
       const replies = Array.isArray(response.data?.data)
         ? response.data.data
         : [];
-  
+
       setAllReplies((prev) => ({
         ...prev,
         [commentId]: replies,
       }));
-  
+
       localStorage.setItem(`replies_${commentId}`, JSON.stringify(replies));
-  
+
       // Update comment replies count
       setComments((prev) => {
         const updatedComments = { ...prev };
@@ -563,7 +570,7 @@ export default function SocialNetworkFeed() {
       setLoadingComments((prev) => ({ ...prev, [commentId]: false }));
     }
   };
-  
+
   useEffect(() => {
     // Muat cache replies saat komponen dimount
     const loadCachedReplies = () => {
@@ -628,7 +635,7 @@ export default function SocialNetworkFeed() {
       console.error("Gagal menambahkan komentar:", error);
       setCommentError(
         error.response?.data?.message ||
-          "Terjadi kesalahan saat menambahkan komentar. Silakan coba lagi."
+        "Terjadi kesalahan saat menambahkan komentar. Silakan coba lagi."
       );
     }
   };
@@ -705,14 +712,14 @@ export default function SocialNetworkFeed() {
       console.error("Failed to add reply:", error);
       setCommentError(
         error.response?.data?.message ||
-          "Failed to add reply. Please try again."
+        "Failed to add reply. Please try again."
       );
     }
   };
 
   const toggleReplies = async (commentId) => {
     if (!commentId) return;
-  
+
     // Jika belum ada data di state atau cache, fetch dari API
     if (!allReplies[commentId] || allReplies[commentId].length === 0) {
       const cachedReplies = localStorage.getItem(`replies_${commentId}`);
@@ -730,7 +737,7 @@ export default function SocialNetworkFeed() {
         await fetchAllReplies(commentId);
       }
     }
-  
+
     setExpandedReplies((prev) => ({
       ...prev,
       [commentId]: !prev[commentId],
@@ -897,11 +904,10 @@ export default function SocialNetworkFeed() {
 
   const renderLikeButton = (post) => (
     <button
-      className={`px-2 md:px-3 py-1 rounded text-xs md:text-sm flex items-center ${
-        post.isLiked
+      className={`px-2 md:px-3 py-1 rounded text-xs md:text-sm flex items-center ${post.isLiked
           ? "bg-blue-100 text-blue-600"
           : "bg-sky-100 hover:bg-sky-200 text-blue-500"
-      }`}
+        }`}
       onClick={() => handleLikePost(post.id, post.isLiked)}
     >
       <ThumbsUp size={12} className="mr-1" />
@@ -1418,9 +1424,8 @@ export default function SocialNetworkFeed() {
 
       {/* Left Sidebar - Profile Section */}
       <div
-        className={`${
-          showMobileMenu ? "block" : "hidden"
-        } md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pr-2 lg:pr-4`}
+        className={`${showMobileMenu ? "block" : "hidden"
+          } md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pr-2 lg:pr-4`}
       >
         <div className="bg-white rounded-lg shadow mb-4 p-4 text-center">
           <div className="flex justify-center mb-3">
@@ -1474,9 +1479,8 @@ export default function SocialNetworkFeed() {
 
       {/* Main Content - Feed */}
       <div
-        className={`w-full ${
-          showMobileMenu ? "hidden" : "block"
-        } md:block md:w-full lg:w-1/2 px-0 md:px-1`}
+        className={`w-full ${showMobileMenu ? "hidden" : "block"
+          } md:block md:w-full lg:w-1/2 px-0 md:px-1`}
       >
         <div
           id="post-form"
@@ -1485,11 +1489,10 @@ export default function SocialNetworkFeed() {
           {/* Tabs */}
           <div className="flex border-b pb-2 space-x-1">
             <button
-              className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${
-                activeTab === "update"
+              className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${activeTab === "update"
                   ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
                   : "text-gray-500 hover:text-blue-500"
-              }`}
+                }`}
               onClick={() => setActiveTab("update")}
             >
               <SquarePen size={16} className="mr-2" />
@@ -1497,11 +1500,10 @@ export default function SocialNetworkFeed() {
               <span className="sm:hidden">Update</span>
             </button>
             <button
-              className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${
-                activeTab === "article"
+              className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${activeTab === "article"
                   ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
                   : "text-gray-500 hover:text-blue-500"
-              }`}
+                }`}
               onClick={() => setActiveTab("article")}
             >
               <NotebookPen size={16} className="mr-2" />
@@ -1541,11 +1543,10 @@ export default function SocialNetworkFeed() {
                     >
                       <span
                         onClick={() => handleVisibilityChange(type)}
-                        className={`p-1 rounded-full cursor-pointer transition ${
-                          postVisibility === type
+                        className={`p-1 rounded-full cursor-pointer transition ${postVisibility === type
                             ? "bg-blue-600"
                             : "bg-gray-400"
-                        } text-white`}
+                          } text-white`}
                       >
                         {icon}
                       </span>
@@ -1558,11 +1559,10 @@ export default function SocialNetworkFeed() {
                   </button>
                 </Tooltip>
                 <Button
-                  className={`px-4 py-2 text-sm transition-colors duration-300 ease-in-out ${
-                    isLoading
+                  className={`px-4 py-2 text-sm transition-colors duration-300 ease-in-out ${isLoading
                       ? "bg-gray-400 text-white cursor-not-allowed"
                       : "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700"
-                  }`}
+                    }`}
                   onClick={handlePostSubmit}
                   disabled={isLoading}
                 >
@@ -1646,11 +1646,10 @@ export default function SocialNetworkFeed() {
                     >
                       <span
                         onClick={() => handleVisibilityChange(type)}
-                        className={`p-1 rounded-full cursor-pointer transition ${
-                          postVisibility === type
+                        className={`p-1 rounded-full cursor-pointer transition ${postVisibility === type
                             ? "bg-blue-600"
                             : "bg-gray-400"
-                        } text-white`}
+                          } text-white`}
                       >
                         {icon}
                       </span>
@@ -1752,11 +1751,10 @@ export default function SocialNetworkFeed() {
                 {/* Post Actions */}
                 <div className="border-t px-4 py-2 flex justify-between">
                   <button
-                    className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${
-                      post.isLiked
+                    className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${post.isLiked
                         ? "text-blue-600 bg-blue-50"
                         : "text-blue-600 hover:bg-blue-100"
-                    }`}
+                      }`}
                     onClick={() => handleLikePost(post.id, post.isLiked)}
                   >
                     <ThumbsUp size={14} className="mr-2" />
@@ -1930,6 +1928,72 @@ export default function SocialNetworkFeed() {
         </div>
       )}
 
+      {showReportModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-md mx-4 p-5">
+            <h3 className="text-lg font-semibold mb-4">Laporkan posting ini</h3>
+            <p className="mb-3 text-sm text-gray-600">Pilih kebijakan kami yang berlaku</p>
+
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {[
+                "Pelecehan", "Penipuan", "Spam", "Misinformasi", "Ujaran kebencian",
+                "Ancaman atau kekerasan", "Menyakiti diri sendiri", "Konten sadis",
+                "Organisasi berbahaya atau ekstremis", "Konten seksual", "Akun palsu",
+                "Eksploitasi anak", "Produk dan layanan ilegal", "Pelanggaran", "Lainnya"
+              ].map((reason) => (
+                <button
+                  key={reason}
+                  className={`py-2 px-3 text-sm border rounded-full ${selectedReason === reason
+                      ? "bg-blue-100 border-blue-500 text-blue-700"
+                      : "bg-white hover:bg-gray-100"
+                    }`}
+                  onClick={() => setSelectedReason(reason)}
+                >
+                  {reason}
+                </button>
+              ))}
+            </div>
+
+            {selectedReason === "Lainnya" && (
+              <textarea
+                className="w-full p-2 border rounded mb-3 text-sm"
+                rows={3}
+                placeholder="Jelaskan alasan Anda melaporkan postingan ini"
+                value={customReason}
+                onChange={(e) => setCustomReason(e.target.value)}
+              />
+            )}
+
+            <div className="flex justify-end gap-2">
+              <button
+                className="text-gray-500 hover:text-gray-700"
+                onClick={() => {
+                  setShowReportModal(false);
+                  setSelectedReason("");
+                  setCustomReason("");
+                }}
+              >
+                Batal
+              </button>
+              <button
+                className={`px-4 py-2 rounded text-white ${selectedReason ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-300 cursor-not-allowed"
+                  }`}
+                disabled={!selectedReason}
+                onClick={() => {
+                  // Lakukan POST report ke backend atau tampilkan alert dulu
+                  console.log("Report submitted:", selectedReason === "Lainnya" ? customReason : selectedReason);
+                  setShowReportModal(false);
+                  setSelectedReason("");
+                  setCustomReason("");
+                }}
+              >
+                Laporkan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showEditModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg w-full max-w-md p-6">
@@ -2020,11 +2084,10 @@ export default function SocialNetworkFeed() {
                   <button
                     key={type}
                     onClick={() => setPostVisibility(type)}
-                    className={`flex items-center px-3 py-2 rounded-md text-sm ${
-                      postVisibility === type
+                    className={`flex items-center px-3 py-2 rounded-md text-sm ${postVisibility === type
                         ? "bg-blue-100 text-blue-700"
                         : "bg-gray-100 text-gray-700"
-                    }`}
+                      }`}
                   >
                     {icon}
                     <span className="ml-2">{label}</span>
@@ -2062,9 +2125,8 @@ export default function SocialNetworkFeed() {
 
       {/* Right Sidebar */}
       <div
-        className={`${
-          showMobileMenu ? "block" : "hidden"
-        } md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pl-2 lg:pr-4`}
+        className={`${showMobileMenu ? "block" : "hidden"
+          } md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pl-2 lg:pr-4`}
       >
         {/* People You Might Know */}
         <div className="bg-white rounded-lg shadow mb-4 p-3">
@@ -2358,9 +2420,8 @@ export default function SocialNetworkFeed() {
                 {selectedPost.images.map((_, index) => (
                   <button
                     key={index}
-                    className={`w-2 h-2 md:w-3 md:h-3 rounded-full ${
-                      selectedImageIndex === index ? "bg-white" : "bg-gray-500"
-                    }`}
+                    className={`w-2 h-2 md:w-3 md:h-3 rounded-full ${selectedImageIndex === index ? "bg-white" : "bg-gray-500"
+                      }`}
                     onClick={() => setSelectedImageIndex(index)}
                   />
                 ))}
@@ -2475,19 +2536,18 @@ export default function SocialNetworkFeed() {
 
                             {(comment.repliesCount > 0 ||
                               allReplies[comment.id]?.length > 0) && (
-                              <button
-                                className="text-gray-500 text-xs hover:underline"
-                                onClick={() => toggleReplies(comment.id)}
-                              >
-                                {expandedReplies[comment.id]
-                                  ? "Hide replies"
-                                  : `View replies (${
-                                      comment.repliesCount ||
-                                      allReplies[comment.id]?.length ||
-                                      0
+                                <button
+                                  className="text-gray-500 text-xs hover:underline"
+                                  onClick={() => toggleReplies(comment.id)}
+                                >
+                                  {expandedReplies[comment.id]
+                                    ? "Hide replies"
+                                    : `View replies (${comment.repliesCount ||
+                                    allReplies[comment.id]?.length ||
+                                    0
                                     })`}
-                              </button>
-                            )}
+                                </button>
+                              )}
                           </div>
 
                           {/* Dropdown menu */}
