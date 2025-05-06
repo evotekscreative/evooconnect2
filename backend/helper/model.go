@@ -85,6 +85,17 @@ func ToUserProfileResponse(user domain.User, isConnected ...bool) web.UserProfil
 	}
 }
 
+func ToUserShortResponse(user domain.User, isConnected bool) web.UserShort {
+	return web.UserShort{
+		Id:          user.Id,
+		Name:        user.Name,
+		Username:    user.Username,
+		Photo:       &user.Photo,
+		Headline:    &user.Headline,
+		IsConnected: isConnected,
+	}
+}
+
 func ToPostResponse(post domain.Post) web.PostResponse {
 	return web.PostResponse{
 		Id:         post.Id,
@@ -199,4 +210,79 @@ func ToExperienceResponses(experiences []domain.UserExperience) []web.Experience
 		experienceResponses = append(experienceResponses, ToExperienceResponse(experience))
 	}
 	return experienceResponses
+}
+
+// Add this to helper/converter.go or wherever your helper functions are
+func ToGroupResponse(group domain.Group) web.GroupResponse {
+	return web.GroupResponse{
+		Id:           group.Id,
+		Name:         group.Name,
+		Description:  group.Description,
+		Rule:         group.Rule,
+		Image:        group.Image,
+		PrivacyLevel: group.PrivacyLevel,
+		InvitePolicy: group.InvitePolicy,
+		CreatorId:    group.CreatorId,
+		CreatedAt:    group.CreatedAt,
+		UpdatedAt:    group.UpdatedAt,
+	}
+}
+
+func ToUserBriefResponse(user domain.User) web.UserBriefResponse {
+	return web.UserBriefResponse{
+		Id:          user.Id,
+		Name:        user.Name,
+		Username:    user.Username,
+		Photo:       user.Photo,
+		IsVerified:  user.IsVerified,
+		Email:       user.Email,
+		Headline:    user.Headline,
+		IsConnected: false,
+		CreatedAt:   user.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		UpdatedAt:   user.UpdatedAt.Format("2006-01-02T15:04:05Z"),
+	}
+}
+
+func ToGroupMemberBriefs(members []domain.GroupMember) []web.GroupMemberBrief {
+	var groupMemberBriefs []web.GroupMemberBrief
+	for _, member := range members {
+		groupMemberBriefs = append(groupMemberBriefs, web.GroupMemberBrief{
+			UserId:   member.UserId,
+			Role:     member.Role,
+			JoinedAt: member.JoinedAt,
+			IsActive: member.IsActive,
+		})
+	}
+	return groupMemberBriefs
+}
+
+func ToGroupMemberResponse(member domain.GroupMember) web.GroupMemberResponse {
+	return web.GroupMemberResponse{
+		GroupId:  member.GroupId,
+		UserId:   member.UserId,
+		Role:     member.Role,
+		JoinedAt: member.JoinedAt.Format("2006-01-02T15:04:05Z"),
+		IsActive: member.IsActive,
+	}
+}
+
+func ToGroupInvitationResponse(invitation domain.GroupInvitation) web.GroupInvitationResponse {
+	return web.GroupInvitationResponse{
+		Id:        invitation.Id,
+		GroupId:   invitation.GroupId,
+		InviterId: invitation.InviterId,
+		InviteeId: invitation.InviteeId,
+		Status:    invitation.Status,
+		CreatedAt: invitation.CreatedAt,
+		UpdatedAt: invitation.UpdatedAt,
+		// Group, Inviter, and Invitee will be populated separately
+	}
+}
+
+func ToGroupInvitationResponses(invitations []domain.GroupInvitation) []web.GroupInvitationResponse {
+	var responses []web.GroupInvitationResponse
+	for _, invitation := range invitations {
+		responses = append(responses, ToGroupInvitationResponse(invitation))
+	}
+	return responses
 }

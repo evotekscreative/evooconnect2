@@ -166,7 +166,7 @@ func (service *UserServiceImpl) UploadPhotoProfile(ctx context.Context, userId u
 	return helper.ToUserProfileResponse(updatedUser)
 }
 
-func (service *UserServiceImpl) GetPeoples(ctx context.Context, limit int, offset int, currentUserIdStr string) []web.UserProfileResponse {
+func (service *UserServiceImpl) GetPeoples(ctx context.Context, limit int, offset int, currentUserIdStr string) []web.UserShort {
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
@@ -184,13 +184,13 @@ func (service *UserServiceImpl) GetPeoples(ctx context.Context, limit int, offse
 	}
 
 	// Convert to response objects
-	var userResponses []web.UserProfileResponse
+	var userResponses []web.UserShort
 	for _, user := range users {
 		// Check if user is already connected or has pending request
 		isConnected := service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, user.Id)
 		// hasPendingRequest := service.ConnectionRepository.CheckPendingRequest(ctx, tx, currentUserId, user.Id)
 
-		userResponse := helper.ToUserProfileResponse(user, isConnected)
+		userResponse := helper.ToUserShortResponse(user, isConnected)
 		// userResponse.HasPendingRequest = hasPendingRequest
 
 		userResponses = append(userResponses, userResponse)
