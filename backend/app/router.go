@@ -19,6 +19,7 @@ func NewRouter(
 	educationController controller.EducationController,
 	experienceController controller.ExperienceController,
 	connectionController controller.ConnectionController,
+	groupController controller.GroupController,
 ) *httprouter.Router {
 	router := httprouter.New()
 
@@ -104,6 +105,25 @@ func NewRouter(
 	router.PUT("/api/connections/requests/:requestId/reject", connectionController.RejectConnectionRequest)
 	router.GET("/api/users/:userId/connections", connectionController.GetConnections)
 	router.POST("/api/users/:userId/connect", connectionController.SendConnectionRequest)
+
+	router.POST("/api/groups", groupController.Create)
+	router.GET("/api/groups", groupController.FindAll)
+	router.GET("/api/my-groups", groupController.FindMyGroups)
+	router.GET("/api/groups/:groupId", groupController.FindById)
+	router.PUT("/api/groups/:groupId", groupController.Update)
+	router.DELETE("/api/groups/:groupId", groupController.Delete)
+
+	// Group member management routes
+	router.POST("/api/groups/:groupId/members/:userId", groupController.AddMember)
+	router.DELETE("/api/groups/:groupId/members/:userId", groupController.RemoveMember)
+	router.PUT("/api/groups/:groupId/members/:userId/role", groupController.UpdateMemberRole)
+	router.GET("/api/groups/:groupId/members", groupController.FindMembers)
+
+	// Group invitation management routes
+	router.POST("/api/groups/:groupId/invitations/:userId", groupController.CreateInvitation)
+	router.PUT("/api/invitations/:invitationId/accept", groupController.AcceptInvitation)
+	router.PUT("/api/invitations/:invitationId/reject", groupController.RejectInvitation)
+	router.GET("/api/my-invitations", groupController.FindMyInvitations)
 
 	uploadFS := http.FileServer(http.Dir("uploads"))
 
