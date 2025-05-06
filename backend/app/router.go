@@ -112,6 +112,7 @@ func NewRouter(
 	router.GET("/api/groups/:groupId", groupController.FindById)
 	router.PUT("/api/groups/:groupId", groupController.Update)
 	router.DELETE("/api/groups/:groupId", groupController.Delete)
+	router.POST("/api/groups/:groupId/photo", groupController.UploadPhoto)
 
 	// Group member management routes
 	router.POST("/api/groups/:groupId/members/:userId", groupController.AddMember)
