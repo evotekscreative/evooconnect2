@@ -21,4 +21,5 @@ type ConnectionRepository interface {
 	IsConnected(ctx context.Context, tx *sql.Tx, currentUserId, userId uuid.UUID) bool
 	UpdateRequest(ctx context.Context, tx *sql.Tx, request domain.ConnectionRequest) domain.ConnectionRequest
 	FindRequest(ctx context.Context, tx *sql.Tx, senderId, receiverId uuid.UUID) (domain.ConnectionRequest, error)
+	Disconnect(ctx context.Context, tx *sql.Tx, userId1, userId2 uuid.UUID) error
 }

@@ -57,6 +57,19 @@ func main() {
 	experienceService := service.NewExperienceService(experienceRepository, userRepository, db, validate)
 	experienceController := controller.NewExperienceController(experienceService)
 
+	groupRepository := repository.NewGroupRepository()
+	groupMemberRepository := repository.NewGroupMemberRepository()
+	groupInvitationRepository := repository.NewGroupInvitationRepository()
+	groupService := service.NewGroupService(
+		db,
+		groupRepository,
+		groupMemberRepository,
+		groupInvitationRepository,
+		userRepository,
+		validate,
+	)
+	groupController := controller.NewGroupController(groupService)
+
 	// Initialize router with all controllers
 	router := app.NewRouter(
 		authController,
@@ -67,6 +80,7 @@ func main() {
 		educationController,
 		experienceController,
 		connectionController,
+		groupController,
 	)
 	// Create middleware chain
 	var handler http.Handler = router

@@ -209,3 +209,36 @@ func (controller *ConnectionControllerImpl) GetConnections(writer http.ResponseW
 
 	helper.WriteToResponseBody(writer, webResponse)
 }
+
+func (controller *ConnectionControllerImpl) Disconnect(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Get user ID from context (set by JWT middleware)
+	userIdString, ok := request.Context().Value("user_id").(string)
+	if !ok {
+		panic(exception.NewUnauthorizedError("Unauthorized access"))
+	}
+
+	// Parse user ID
+	userId, err := uuid.Parse(userIdString)
+	if err != nil {
+		panic(exception.NewBadRequestError("Invalid user ID format"))
+	}
+
+	// Parse target user ID from URL params
+	targetUserId, err := uuid.Parse(params.ByName("userId"))
+	if err != nil {
+		panic(exception.NewBadRequestError("Invalid target user ID format"))
+	}
+
+	// Call service to disconnect
+	response := controller.ConnectionService.Disconnect(request.Context(), userId, targetUserId)
+
+	// Create web response
+	webResponse := web.WebResponse{
+		Code:   200,
+		Status: "OK",
+		Data:   response,
+	}
+
+	// Write response
+	helper.WriteToResponseBody(writer, webResponse)
+}
