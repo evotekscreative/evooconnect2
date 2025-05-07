@@ -11,13 +11,12 @@ import (
 
 type GroupService interface {
 	// Group management
-	Create(ctx context.Context, userId uuid.UUID, request web.CreateGroupRequest) web.GroupResponse
+	Create(ctx context.Context, userId uuid.UUID, request web.CreateGroupRequest, file *multipart.FileHeader) web.GroupResponse
 	Update(ctx context.Context, groupId, userId uuid.UUID, request web.UpdateGroupRequest) web.GroupResponse
 	Delete(ctx context.Context, groupId, userId uuid.UUID)
 	FindById(ctx context.Context, groupId uuid.UUID) web.GroupResponse
 	FindAll(ctx context.Context, limit, offset int) []web.GroupResponse
 	FindMyGroups(ctx context.Context, userId uuid.UUID) []web.GroupResponse
-	UploadPhoto(ctx context.Context, groupId, userId uuid.UUID, file multipart.File, fileHeader *multipart.FileHeader) string
 
 	// Member management
 	AddMember(ctx context.Context, groupId, userId, newMemberId uuid.UUID) web.GroupMemberResponse

@@ -3,11 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"io"
 	"mime/multipart"
-	"os"
-	"path/filepath"
 	"time"
 
 	"evoconnect/backend/exception"
@@ -46,15 +42,20 @@ func NewGroupService(
 	}
 }
 
-func (service *GroupServiceImpl) Create(ctx context.Context, userId uuid.UUID, request web.CreateGroupRequest) web.GroupResponse {
+func (service *GroupServiceImpl) Create(ctx context.Context, userId uuid.UUID, request web.CreateGroupRequest, file *multipart.FileHeader) web.GroupResponse {
 	err := service.Validate.Struct(request)
 	helper.PanicIfError(err)
 
 	tx, err := service.DB.Begin()
-	if err != nil {
-		panic(err)
-	}
+	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
+
+	image, err := file.Open()
+	helper.PanicIfError(err)
+	defer image.Close()
+
+	uploadResult, err := helper.UploadImage(image, file, helper.DirGroups, userId.String(), "images")
+	helper.PanicIfError(err)
 
 	// Create group
 	group := domain.Group{
@@ -70,7 +71,9 @@ func (service *GroupServiceImpl) Create(ctx context.Context, userId uuid.UUID, r
 	}
 
 	// Handle image
-	if request.Image != "" {
+	if uploadResult != nil {
+		group.Image = &uploadResult.RelativePath
+	} else if request.Image != "" {
 		group.Image = &request.Image
 	}
 
@@ -88,57 +91,6 @@ func (service *GroupServiceImpl) Create(ctx context.Context, userId uuid.UUID, r
 	service.MemberRepository.AddMember(ctx, tx, member)
 
 	return helper.ToGroupResponse(group)
-}
-
-func (service *GroupServiceImpl) UploadPhoto(ctx context.Context, groupId, userId uuid.UUID, file multipart.File, fileHeader *multipart.FileHeader) string {
-	tx, err := service.DB.Begin()
-	if err != nil {
-		panic(err)
-	}
-	defer helper.CommitOrRollback(tx)
-
-	// Check if the group exists
-	group, err := service.GroupRepository.FindById(ctx, tx, groupId)
-	if err != nil {
-		panic(exception.NewNotFoundError("group not found"))
-	}
-
-	// Check if user is admin of the group
-	if !service.isGroupAdmin(ctx, tx, groupId, userId) {
-		panic(exception.NewForbiddenError("only group admin can update group photo"))
-	}
-
-	// Create directory if it doesn't exist
-	uploadDir := fmt.Sprintf("uploads/groups/%s", groupId)
-	err = os.MkdirAll(uploadDir, os.ModePerm)
-	if err != nil {
-		panic(exception.NewInternalServerError("failed to create upload directory: " + err.Error()))
-	}
-
-	// Generate unique filename with timestamp
-	filename := fmt.Sprintf("group-%d%s", time.Now().Unix(), filepath.Ext(fileHeader.Filename))
-	filepath := fmt.Sprintf("%s/%s", uploadDir, filename)
-
-	// Save the file
-	dst, err := os.Create(filepath)
-	if err != nil {
-		panic(exception.NewInternalServerError("failed to create file: " + err.Error()))
-	}
-	defer dst.Close()
-
-	// Copy the uploaded file to the destination file
-	_, err = io.Copy(dst, file)
-	if err != nil {
-		panic(exception.NewInternalServerError("failed to save file: " + err.Error()))
-	}
-
-	// Update the group in the database with the new image path
-	imagePath := filepath
-	group.Image = &imagePath
-	group.UpdatedAt = time.Now()
-	service.GroupRepository.Update(ctx, tx, group)
-
-	return filepath
 }
 
 func (service *GroupServiceImpl) Update(ctx context.Context, groupId, userId uuid.UUID, request web.UpdateGroupRequest) web.GroupResponse {

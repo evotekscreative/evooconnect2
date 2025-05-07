@@ -23,19 +23,37 @@ func NewPostController(postService service.PostService) PostController {
 }
 
 func (controller *PostControllerImpl) Create(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	// Get user_id from context that was set by auth middleware
+	// Parse multipart form with 10 MB max memory
+	err := request.ParseMultipartForm(10 << 20) // 10 MB
+	if err != nil {
+		panic(exception.NewBadRequestError("Failed to parse form: " + err.Error()))
+	}
+
 	userId, err := helper.GetUserIdFromToken(request)
 	helper.PanicIfError(err)
 
-	createPostRequest := web.CreatePostRequest{}
-	helper.ReadFromRequestBody(request, &createPostRequest)
+	// Extract post data from form
+	content := request.FormValue("content")
+	visibility := request.FormValue("visibility")
 
-	postResponse := controller.PostService.Create(request.Context(), userId, createPostRequest)
+	// Create post request
+	postRequest := web.CreatePostRequest{
+		Content:    content,
+		Visibility: visibility,
+	}
 
+	// Handle image uploads
+	form := request.MultipartForm
+	files := form.File["images"]
+
+	// Call service to create post with images
+	response := controller.PostService.Create(request.Context(), userId, postRequest, files)
+
+	// Create web response
 	webResponse := web.WebResponse{
 		Code:   201,
 		Status: "CREATED",
-		Data:   postResponse,
+		Data:   response,
 	}
 
 	writer.WriteHeader(http.StatusCreated)
@@ -43,26 +61,42 @@ func (controller *PostControllerImpl) Create(writer http.ResponseWriter, request
 }
 
 func (controller *PostControllerImpl) Update(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	// Get user_id from context that was set by auth middleware
-	userId, err := helper.GetUserIdFromToken(request)
-	helper.PanicIfError(err)
+	// Parse multipart form with 10 MB max memory
+	err := request.ParseMultipartForm(10 << 20) // 10 MB
+	if err != nil {
+		panic(exception.NewBadRequestError("Failed to parse form: " + err.Error()))
+	}
 
-	// Parse post_id from path
-	postIdStr := params.ByName("postId")
-	postId, err := uuid.Parse(postIdStr)
+	// Get post ID from path params
+	postId, err := uuid.Parse(params.ByName("postId"))
 	if err != nil {
 		panic(exception.NewBadRequestError("Invalid post ID format"))
 	}
 
-	updatePostRequest := web.UpdatePostRequest{}
-	helper.ReadFromRequestBody(request, &updatePostRequest)
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
-	postResponse := controller.PostService.Update(request.Context(), postId, userId, updatePostRequest)
+	// Extract post data from form
+	content := request.FormValue("content")
+	visibility := request.FormValue("visibility")
 
+	// Create update request
+	updateRequest := web.UpdatePostRequest{
+		Content:    content,
+		Visibility: visibility,
+	}
+
+	form := request.MultipartForm
+	files := form.File["images"]
+
+	// Call service to update post with new images
+	response := controller.PostService.Update(request.Context(), postId, userId, updateRequest, files)
+
+	// Create web response
 	webResponse := web.WebResponse{
 		Code:   200,
 		Status: "OK",
-		Data:   postResponse,
+		Data:   response,
 	}
 
 	helper.WriteToResponseBody(writer, webResponse)
@@ -233,32 +267,6 @@ func (controller *PostControllerImpl) UnlikePost(writer http.ResponseWriter, req
 		Code:   200,
 		Status: "OK",
 		Data:   postResponse,
-	}
-
-	helper.WriteToResponseBody(writer, webResponse)
-}
-
-// New method for uploading post images
-func (controller *PostControllerImpl) UploadImages(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	// Set maximum upload size - 10MB
-	request.ParseMultipartForm(10 << 20) // 10MB
-
-	userId, err := helper.GetUserIdFromToken(request)
-	helper.PanicIfError(err)
-
-	// Get files from form
-	files := request.MultipartForm.File["images"]
-	if len(files) == 0 {
-		panic(exception.NewBadRequestError("No images provided"))
-	}
-
-	// Call service to save images
-	fileResponse := controller.PostService.UploadImages(request.Context(), userId, files)
-
-	webResponse := web.WebResponse{
-		Code:   200,
-		Status: "OK",
-		Data:   fileResponse,
 	}
 
 	helper.WriteToResponseBody(writer, webResponse)
