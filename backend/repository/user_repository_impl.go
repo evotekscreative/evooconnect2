@@ -160,7 +160,20 @@ func (repository *UserRepositoryImpl) FindByEmail(ctx context.Context, tx *sql.T
 }
 
 func (repository *UserRepositoryImpl) FindByUsername(ctx context.Context, tx *sql.Tx, username string) (domain.User, error) {
-	SQL := "SELECT id, name, email, username, password, is_verified, created_at, updated_at FROM users WHERE username = $1"
+	SQL := `SELECT id, name, email, 
+		   COALESCE(username, '') as username, 
+		   COALESCE(birthdate, '0001-01-01') as birthdate, 
+		   COALESCE(gender, '') as gender,
+		   COALESCE(location, '') as location, 
+		   COALESCE(organization, '') as organization, 
+		   COALESCE(website, '') as website, 
+		   COALESCE(phone, '') as phone, 
+		   COALESCE(headline, '') as headline, 
+		   COALESCE(about, '') as about, 
+		   skills, socials, 
+		   COALESCE(photo, '') as photo, 
+		   created_at, updated_at 
+		   FROM users WHERE username = $1`
 	rows, err := tx.QueryContext(ctx, SQL, username)
 	helper.PanicIfError(err)
 	defer rows.Close()
@@ -172,8 +185,17 @@ func (repository *UserRepositoryImpl) FindByUsername(ctx context.Context, tx *sq
 			&user.Name,
 			&user.Email,
 			&user.Username,
-			&user.Password,
-			&user.IsVerified,
+			&user.Birthdate,
+			&user.Gender,
+			&user.Location,
+			&user.Organization,
+			&user.Website,
+			&user.Phone,
+			&user.Headline,
+			&user.About,
+			&user.Skills,
+			&user.Socials,
+			&user.Photo,
 			&user.CreatedAt,
 			&user.UpdatedAt)
 		helper.PanicIfError(err)
@@ -311,4 +333,53 @@ func (repository *UserRepositoryImpl) UpdateVerificationStatus(ctx context.Conte
 	SQL := "UPDATE users SET is_verified = $1, verification_token = NULL, verification_expires = NULL WHERE id = $2"
 	_, err := tx.ExecContext(ctx, SQL, isVerified, userId)
 	return err
+}
+
+func (repository *UserRepositoryImpl) FindUsersNotConnectedWith(ctx context.Context, tx *sql.Tx, currentUserId uuid.UUID, limit int, offset int) ([]domain.User, error) {
+	query := `
+        SELECT u.id, u.name, u.email, 
+               COALESCE(u.username, '') as username, 
+               COALESCE(u.birthdate, '0001-01-01') as birthdate, 
+               COALESCE(u.gender, '') as gender,
+               COALESCE(u.location, '') as location, 
+               COALESCE(u.organization, '') as organization, 
+               COALESCE(u.website, '') as website, 
+               COALESCE(u.phone, '') as phone, 
+               COALESCE(u.headline, '') as headline, 
+               COALESCE(u.about, '') as about, 
+               u.skills, u.socials, 
+               COALESCE(u.photo, '') as photo, 
+               u.created_at, u.updated_at
+        FROM users u
+        WHERE u.id != $1
+        AND NOT EXISTS (
+            SELECT 1 FROM connections c 
+            WHERE (c.user_id_1 = $2 AND c.user_id_2 = u.id)
+            OR (c.user_id_1 = u.id AND c.user_id_2 = $3)
+        )
+        ORDER BY u.created_at DESC
+        LIMIT $4 OFFSET $5
+    `
+
+	rows, err := tx.QueryContext(ctx, query, currentUserId, currentUserId, currentUserId, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []domain.User
+	for rows.Next() {
+		var user domain.User
+		err := rows.Scan(
+			&user.Id, &user.Name, &user.Email, &user.Username, &user.Birthdate, &user.Gender,
+			&user.Location, &user.Organization, &user.Website, &user.Phone, &user.Headline,
+			&user.About, &user.Skills, &user.Socials, &user.Photo, &user.CreatedAt, &user.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	return users, nil
 }

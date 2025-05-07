@@ -8,6 +8,8 @@ import (
 	"evoconnect/backend/model/domain"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
+	"evoconnect/backend/utils"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
@@ -105,20 +107,20 @@ func (service *ConnectionServiceImpl) SendConnectionRequest(ctx context.Context,
 
 	// Prepare response
 	return web.ConnectionRequestResponse{
-		Id:        createdRequest.Id.String(),
+		Id:        createdRequest.Id,
 		Status:    string(createdRequest.Status),
 		Message:   createdRequest.Message,
 		CreatedAt: createdRequest.CreatedAt,
 		UpdatedAt: createdRequest.UpdatedAt,
 		Receiver: &web.UserShort{
-			Id:       receiver.Id.String(),
+			Id:       receiver.Id,
 			Name:     receiver.Name,
 			Username: receiver.Username,
 			Headline: optionalStringPtr(receiver.Headline),
 			Photo:    optionalStringPtr(receiver.Photo),
 		},
 		Sender: &web.UserShort{
-			Id:       sender.Id.String(),
+			Id:       sender.Id,
 			Name:     sender.Name,
 			Username: sender.Username,
 			Headline: optionalStringPtr(sender.Headline),
@@ -144,7 +146,7 @@ func (service *ConnectionServiceImpl) GetConnectionRequests(ctx context.Context,
 	var requestResponses []web.ConnectionRequestResponse
 	for _, request := range requests {
 		requestResponse := web.ConnectionRequestResponse{
-			Id:        request.Id.String(),
+			Id:        request.Id,
 			Status:    string(request.Status),
 			Message:   request.Message,
 			CreatedAt: request.CreatedAt,
@@ -154,7 +156,7 @@ func (service *ConnectionServiceImpl) GetConnectionRequests(ctx context.Context,
 		// Add sender info if available
 		if request.Sender != nil {
 			requestResponse.Sender = &web.UserShort{
-				Id:       request.Sender.Id.String(),
+				Id:       request.Sender.Id,
 				Name:     request.Sender.Name,
 				Username: request.Sender.Username,
 				Headline: optionalStringPtr(request.Sender.Headline),
@@ -216,20 +218,20 @@ func (service *ConnectionServiceImpl) AcceptConnectionRequest(ctx context.Contex
 
 	// Prepare response
 	return web.ConnectionRequestResponse{
-		Id:        updatedRequest.Id.String(),
+		Id:        updatedRequest.Id,
 		Status:    string(updatedRequest.Status),
 		Message:   updatedRequest.Message,
 		CreatedAt: updatedRequest.CreatedAt,
 		UpdatedAt: updatedRequest.UpdatedAt,
 		Sender: &web.UserShort{
-			Id:       sender.Id.String(),
+			Id:       sender.Id,
 			Name:     sender.Name,
 			Username: sender.Username,
 			Headline: optionalStringPtr(sender.Headline),
 			Photo:    optionalStringPtr(sender.Photo),
 		},
 		Receiver: &web.UserShort{
-			Id:       receiver.Id.String(),
+			Id:       receiver.Id,
 			Name:     receiver.Name,
 			Username: receiver.Username,
 			Headline: optionalStringPtr(receiver.Headline),
@@ -276,20 +278,20 @@ func (service *ConnectionServiceImpl) RejectConnectionRequest(ctx context.Contex
 
 	// Prepare response
 	return web.ConnectionRequestResponse{
-		Id:        updatedRequest.Id.String(),
+		Id:        updatedRequest.Id,
 		Status:    string(updatedRequest.Status),
 		Message:   updatedRequest.Message,
 		CreatedAt: updatedRequest.CreatedAt,
 		UpdatedAt: updatedRequest.UpdatedAt,
 		Sender: &web.UserShort{
-			Id:       sender.Id.String(),
+			Id:       sender.Id,
 			Name:     sender.Name,
 			Username: sender.Username,
 			Headline: optionalStringPtr(sender.Headline),
 			Photo:    optionalStringPtr(sender.Photo),
 		},
 		Receiver: &web.UserShort{
-			Id:       receiver.Id.String(),
+			Id:       receiver.Id,
 			Name:     receiver.Name,
 			Username: receiver.Username,
 			Headline: optionalStringPtr(receiver.Headline),
@@ -323,16 +325,11 @@ func (service *ConnectionServiceImpl) GetConnections(ctx context.Context, userId
 			continue
 		}
 
+		userShort := utils.ToUserShortWithConnection(ctx, tx, service.ConnectionRepository, userId, *otherUser)
 		connectionResponse := web.ConnectionResponse{
-			Id:        connection.Id.String(),
-			CreatedAt: connection.CreatedAt,
-			User: &web.UserShort{
-				Id:       otherUser.Id.String(),
-				Name:     otherUser.Name,
-				Username: otherUser.Username,
-				Headline: optionalStringPtr(otherUser.Headline),
-				Photo:    optionalStringPtr(otherUser.Photo),
-			},
+			Id:        connection.Id,
+			CreatedAt: connection.CreatedAt.Format("2006-01-02T15:04:05Z"),
+			User:      &userShort, // Buat pointer secara manual
 		}
 
 		connectionResponses = append(connectionResponses, connectionResponse)
@@ -341,5 +338,31 @@ func (service *ConnectionServiceImpl) GetConnections(ctx context.Context, userId
 	return web.ConnectionListResponse{
 		Connections: connectionResponses,
 		Total:       count,
+	}
+}
+
+func (service *ConnectionServiceImpl) Disconnect(ctx context.Context, userId, targetUserId uuid.UUID) web.DisconnectResponse {
+	tx, err := service.DB.Begin()
+	if err != nil {
+		panic(err)
+	}
+	defer helper.CommitOrRollback(tx)
+
+	// Check if the users are connected
+	isConnected := service.ConnectionRepository.CheckConnectionExists(ctx, tx, userId, targetUserId)
+	if !isConnected {
+		panic(exception.NewBadRequestError("You are not connected with this user"))
+	}
+
+	// Perform disconnect operation
+	err = service.ConnectionRepository.Disconnect(ctx, tx, userId, targetUserId)
+	if err != nil {
+		panic(exception.NewInternalServerError("Failed to disconnect users: " + err.Error()))
+	}
+
+	return web.DisconnectResponse{
+		Message:        "Successfully disconnected",
+		UserId:         targetUserId,
+		DisconnectedAt: time.Now(),
 	}
 }

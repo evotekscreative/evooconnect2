@@ -21,8 +21,12 @@ func main() {
 
 	jwtSecret := helper.GetEnv("JWT_SECRET_KEY", "your-secret-key")
 
+	connectionRepository := repository.NewConnectionRepository()
+
 	userRepository := repository.NewUserRepository()
-	userService := service.NewUserService(userRepository, db, validate)
+	connectionService := service.NewConnectionService(connectionRepository, userRepository, db, validate)
+	connectionController := controller.NewConnectionController(connectionService)
+	userService := service.NewUserService(userRepository, connectionRepository, db, validate)
 	userController := controller.NewUserController(userService)
 
 	// Initialize auth components
@@ -36,7 +40,7 @@ func main() {
 
 	// Initialize post dependencies
 	postRepository := repository.NewPostRepository()
-	postService := service.NewPostService(postRepository, db, validate)
+	postService := service.NewPostService(postRepository, connectionRepository, db, validate)
 	postController := controller.NewPostController(postService)
 
 	// Create comment repository, service, and controller instances
@@ -53,10 +57,18 @@ func main() {
 	experienceService := service.NewExperienceService(experienceRepository, userRepository, db, validate)
 	experienceController := controller.NewExperienceController(experienceService)
 
-	// Initialize connection components
-	connectionRepository := repository.NewConnectionRepository()
-	connectionService := service.NewConnectionService(connectionRepository, userRepository, db, validate)
-	connectionController := controller.NewConnectionController(connectionService)
+	groupRepository := repository.NewGroupRepository()
+	groupMemberRepository := repository.NewGroupMemberRepository()
+	groupInvitationRepository := repository.NewGroupInvitationRepository()
+	groupService := service.NewGroupService(
+		db,
+		groupRepository,
+		groupMemberRepository,
+		groupInvitationRepository,
+		userRepository,
+		validate,
+	)
+	groupController := controller.NewGroupController(groupService)
 
 	// Initialize router with all controllers
 	router := app.NewRouter(
@@ -68,6 +80,7 @@ func main() {
 		educationController,
 		experienceController,
 		connectionController,
+		groupController,
 	)
 	// Create middleware chain
 	var handler http.Handler = router

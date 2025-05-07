@@ -1,6 +1,10 @@
 package web
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 // ConnectionRequestCreate represents a request to create a connection request
 type ConnectionRequestCreate struct {
@@ -9,7 +13,7 @@ type ConnectionRequestCreate struct {
 
 // ConnectionRequestResponse represents a response for a connection request
 type ConnectionRequestResponse struct {
-	Id        string     `json:"id"`
+	Id        uuid.UUID  `json:"id"`
 	Status    string     `json:"status"`
 	Message   *string    `json:"message,omitempty"`
 	CreatedAt time.Time  `json:"created_at"`
@@ -26,8 +30,8 @@ type ConnectionRequestListResponse struct {
 
 // ConnectionResponse represents a response for a connection
 type ConnectionResponse struct {
-	Id        string     `json:"id"`
-	CreatedAt time.Time  `json:"created_at"`
+	Id        uuid.UUID  `json:"id"`
+	CreatedAt string     `json:"created_at"`
 	User      *UserShort `json:"user"`
 }
 
@@ -39,9 +43,16 @@ type ConnectionListResponse struct {
 
 // UserShort represents a shortened user response with basic info
 type UserShort struct {
-	Id       string  `json:"id"`
-	Name     string  `json:"name"`
-	Username string  `json:"username"`
-	Headline *string `json:"headline,omitempty"`
-	Photo    *string `json:"photo,omitempty"`
+	Id          uuid.UUID `json:"id"`
+	Name        string    `json:"name"`
+	Username    string    `json:"username"`
+	Headline    *string   `json:"headline,omitempty"`
+	Photo       *string   `json:"photo,omitempty"`
+	IsConnected bool      `json:"is_connected"`
+}
+
+type DisconnectResponse struct {
+	Message        string    `json:"message"`
+	UserId         uuid.UUID `json:"user_id"`
+	DisconnectedAt time.Time `json:"disconnected_at"`
 }

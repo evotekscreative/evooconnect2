@@ -6,6 +6,7 @@ import (
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/service"
 	"net/http"
+	"path/filepath"
 	"strconv"
 
 	"github.com/google/uuid"
@@ -28,16 +29,8 @@ func (controller *EducationControllerImpl) Create(writer http.ResponseWriter, re
 	helper.ReadFromRequestBody(request, &createRequest)
 
 	// Get user_id from context (set by JWT middleware)
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse user_id
-	userId, err := uuid.Parse(userIdString)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	// Call service to create education
 	educationResponse := controller.EducationService.Create(request.Context(), userId, createRequest)
@@ -66,16 +59,8 @@ func (controller *EducationControllerImpl) Update(writer http.ResponseWriter, re
 	}
 
 	// Get user_id from context (set by JWT middleware)
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse user_id
-	userId, err := uuid.Parse(userIdString)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	// Call service to update education
 	educationResponse := controller.EducationService.Update(request.Context(), educationId, userId, updateRequest)
@@ -99,16 +84,8 @@ func (controller *EducationControllerImpl) Delete(writer http.ResponseWriter, re
 	}
 
 	// Get user_id from context (set by JWT middleware)
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse user_id
-	userId, err := uuid.Parse(userIdString)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	// Call service to delete education
 	controller.EducationService.Delete(request.Context(), educationId, userId)
@@ -183,5 +160,48 @@ func (controller *EducationControllerImpl) GetByUserId(writer http.ResponseWrite
 	}
 
 	// Send response
+	helper.WriteToResponseBody(writer, webResponse)
+}
+
+func (controller *EducationControllerImpl) UploadPhoto(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Parse multipart form with 10 MB max memory
+	err := request.ParseMultipartForm(10 << 20) // 10 MB
+	if err != nil {
+		panic(exception.NewBadRequestError("Failed to parse form: " + err.Error()))
+	}
+
+	// Get file from form
+	file, handler, err := request.FormFile("photo")
+	if err != nil {
+		panic(exception.NewBadRequestError("No file uploaded or invalid file field"))
+	}
+	defer file.Close()
+
+	// Check file type
+	ext := filepath.Ext(handler.Filename)
+	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" {
+		panic(exception.NewBadRequestError("Only JPG, JPEG and PNG files are allowed"))
+	}
+
+	// Get user_id from context (set by JWT middleware)
+	userIdString, ok := request.Context().Value("user_id").(string)
+	if !ok {
+		panic(exception.NewUnauthorizedError("Unauthorized access"))
+	}
+
+	// Generate unique filename
+	userId := userIdString
+	filename := helper.SaveUploadedFile(file, "education", userId, ext)
+
+	// Create response
+	webResponse := web.WebResponse{
+		Code:   http.StatusOK,
+		Status: "OK",
+		Data: map[string]string{
+			"photo": filename,
+		},
+	}
+
+	// Write response
 	helper.WriteToResponseBody(writer, webResponse)
 }

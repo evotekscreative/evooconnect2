@@ -5,13 +5,13 @@ import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 function ContentStep({ content, images, onContentChange, onImagesChange, onNext, onPrev }) {
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
-
+  
   const handleContentChange = (event, editor) => {
     const data = editor.getData();
     onContentChange(data);
     setError('');
   };
-
+  
   const handleImageChange = async (e) => {
     const files = Array.from(e.target.files);
   
@@ -46,7 +46,7 @@ function ContentStep({ content, images, onContentChange, onImagesChange, onNext,
   const handleRemoveImage = (indexToRemove) => {
     onImagesChange(images.filter((_, index) => index !== indexToRemove));
   };
-
+  
   const handleNext = () => {
     if (!content.trim()) {
       setError('Please write some content for your blog');
@@ -61,7 +61,7 @@ function ContentStep({ content, images, onContentChange, onImagesChange, onNext,
       <p className="text-gray-600 mb-6">
         Express your ideas and share your knowledge with the world.
       </p>
-
+      
       <div className="mb-6">
         <label className="block mb-2 font-medium text-gray-700">
           Blog Content <span className="text-red-500">*</span>
@@ -72,27 +72,16 @@ function ContentStep({ content, images, onContentChange, onImagesChange, onNext,
             data={content}
             onChange={handleContentChange}
             config={{
-              toolbar: [
-                'heading',
-                '|',
-                'bold',
-                'italic',
-                'link',
-                'bulletedList',
-                'numberedList',
-                '|',
-                'undo',
-                'redo',
-              ],
+              toolbar: ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', '|', 'undo', 'redo'],
             }}
           />
         </div>
         {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
       </div>
-
+      
       <div className="mt-8 mb-6">
         <label className="block mb-2 font-medium text-gray-700">
-          Upload Image
+          Add Images
         </label>
         <div className="flex items-center mb-4">
           <button
@@ -104,7 +93,7 @@ function ContentStep({ content, images, onContentChange, onImagesChange, onNext,
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              Upload Image
+              Upload Images
             </div>
           </button>
           <input
@@ -112,33 +101,38 @@ function ContentStep({ content, images, onContentChange, onImagesChange, onNext,
             ref={fileInputRef}
             className="hidden"
             accept="image/*"
+            multiple
             onChange={handleImageChange}
           />
           <span className="ml-3 text-sm text-gray-500">
-            Only one image allowed for this blog post
+            Upload images to include in your blog post
           </span>
         </div>
-
+        
         {images.length > 0 && (
-          <div className="mt-4 relative w-48">
-            <img
-              src={images[0].preview}
-              alt="Preview"
-              className="w-full h-32 object-cover rounded-md"
-            />
-            <button
-              type="button"
-              onClick={handleRemoveImage}
-              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
+            {images.map((image, index) => (
+              <div key={index} className="relative">
+                <img
+                  src={image.preview}
+                  alt={`Preview ${index + 1}`}
+                  className="w-full h-32 object-cover rounded-md"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveImage(index)}
+                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ))}
           </div>
         )}
       </div>
-
+      
       <div className="border-t border-gray-200 mt-8 pt-6 flex justify-between">
         <button
           type="button"

@@ -1,15 +1,14 @@
 {
   "info": {
-    "_postman_id": "86feb434-313f-4ca7-8481-0eeb31dab372",
+    "_postman_id": "51e67482-908a-4d55-b3c8-8001caf62fbb",
     "name": "EvoConnect API",
     "description": "Dokumentasi API untuk platform EvoConnect - Jaringan sosial profesional untuk menghubungkan para profesional teknologi.",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
     "_exporter_id": "36636210"
   },
   "item": [
     {
       "name": "Authentication",
-      "description": "Endpoints untuk autentikasi pengguna dan manajemen akun",
       "item": [
         {
           "name": "Google Authentication",
@@ -30,11 +29,7 @@
                 }
               }
             },
-            "url": {
-              "raw": "{{base_url}}/api/auth/google",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "google"]
-            },
+            "url": "{{base_url}}/api/auth/google",
             "description": "Authenticate user with Google OAuth token"
           },
           "response": [
@@ -52,20 +47,18 @@
                     }
                   }
                 },
-                "url": {
-                  "raw": "{{base_url}}/api/auth/google",
-                  "host": ["{{base_url}}"],
-                  "path": ["api", "auth", "google"]
-                }
+                "url": "{{base_url}}/api/auth/google"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"token\": \"JWT_TOKEN_HERE\",\n        \"user\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"Muhamad Afghan Alzena\",\n            \"email\": \"muhamadafghanalzena@gmail.com\",\n            \"username\": \"muhamad-afghan-alzena-231425\",\n            \"is_verified\": true,\n            \"created_at\": \"2025-04-27T18:30:00Z\"\n        }\n    }\n}"
             }
           ]
@@ -89,11 +82,7 @@
                 }
               }
             },
-            "url": {
-              "raw": "{{base_url}}/api/auth/register",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "register"]
-            },
+            "url": "{{base_url}}/api/auth/register",
             "description": "Mendaftarkan pengguna baru di platform EvoConnect"
           },
           "response": [
@@ -111,20 +100,18 @@
                     }
                   }
                 },
-                "url": {
-                  "raw": "{{base_url}}/api/auth/register",
-                  "host": ["{{base_url}}"],
-                  "path": ["api", "auth", "register"]
-                }
+                "url": "{{base_url}}/api/auth/register"
               },
               "status": "Created",
               "code": 201,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 201,\n    \"status\": \"CREATED\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"New User\",\n        \"email\": \"newuser@example.com\",\n        \"is_verified\": false,\n        \"created_at\": \"2023-11-28T14:30:00Z\"\n    }\n}"
             }
           ]
@@ -148,11 +135,7 @@
                 }
               }
             },
-            "url": {
-              "raw": "{{base_url}}/api/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "login"]
-            },
+            "url": "{{base_url}}/api/auth/login",
             "description": "Login ke platform EvoConnect untuk mendapatkan token autentikasi"
           },
           "response": [
@@ -170,20 +153,18 @@
                     }
                   }
                 },
-                "url": {
-                  "raw": "{{base_url}}/api/auth/login",
-                  "host": ["{{base_url}}"],
-                  "path": ["api", "auth", "login"]
-                }
+                "url": "{{base_url}}/api/auth/login"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InVzZXJAZXhhbXBsZS5jb20iLCJleHAiOjE3NDUxNjQyMjgsInVzZXJfaWQiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAifQ.abc123def456\",\n        \"user\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"User Example\",\n            \"email\": \"user@example.com\",\n            \"is_verified\": true,\n            \"created_at\": \"2023-11-01T10:00:00Z\",\n            \"updated_at\": \"2023-11-01T10:00:00Z\"\n        }\n    }\n}"
             }
           ]
@@ -207,11 +188,7 @@
                 }
               }
             },
-            "url": {
-              "raw": "{{base_url}}/api/auth/verify/send",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "verify", "send"]
-            },
+            "url": "{{base_url}}/api/auth/verify/send",
             "description": "Mengirimkan email verifikasi ke alamat email pengguna"
           },
           "response": [
@@ -229,20 +206,18 @@
                     }
                   }
                 },
-                "url": {
-                  "raw": "{{base_url}}/api/auth/verify/send",
-                  "host": ["{{base_url}}"],
-                  "path": ["api", "auth", "verify", "send"]
-                }
+                "url": "{{base_url}}/api/auth/verify/send"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"message\": \"Verification email sent\"\n    }\n}"
             }
           ]
@@ -252,13 +227,9 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "POST",
             "header": [
@@ -276,11 +247,7 @@
                 }
               }
             },
-            "url": {
-              "raw": "{{base_url}}/api/auth/verify",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "verify"]
-            },
+            "url": "{{base_url}}/api/auth/verify",
             "description": "Verifikasi email pengguna dengan token verifikasi yang dikirim melalui email"
           },
           "response": [
@@ -298,20 +265,18 @@
                     }
                   }
                 },
-                "url": {
-                  "raw": "{{base_url}}/api/auth/verify",
-                  "host": ["{{base_url}}"],
-                  "path": ["api", "auth", "verify"]
-                }
+                "url": "{{base_url}}/api/auth/verify"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"message\": \"Email successfully verified\"\n    }\n}"
             }
           ]
@@ -335,11 +300,7 @@
                 }
               }
             },
-            "url": {
-              "raw": "{{base_url}}/api/auth/forgot-password",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "forgot-password"]
-            },
+            "url": "{{base_url}}/api/auth/forgot-password",
             "description": "Mengirim email reset password ke alamat email pengguna"
           },
           "response": [
@@ -357,20 +318,18 @@
                     }
                   }
                 },
-                "url": {
-                  "raw": "{{base_url}}/api/auth/forgot-password",
-                  "host": ["{{base_url}}"],
-                  "path": ["api", "auth", "forgot-password"]
-                }
+                "url": "{{base_url}}/api/auth/forgot-password"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"message\": \"Password reset email sent\"\n    }\n}"
             }
           ]
@@ -394,11 +353,7 @@
                 }
               }
             },
-            "url": {
-              "raw": "{{base_url}}/api/auth/reset-password",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "reset-password"]
-            },
+            "url": "{{base_url}}/api/auth/reset-password",
             "description": "Reset password pengguna dengan token yang dikirim melalui email"
           },
           "response": [
@@ -416,50 +371,40 @@
                     }
                   }
                 },
-                "url": {
-                  "raw": "{{base_url}}/api/auth/reset-password",
-                  "host": ["{{base_url}}"],
-                  "path": ["api", "auth", "reset-password"]
-                }
+                "url": "{{base_url}}/api/auth/reset-password"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"message\": \"Password successfully reset\"\n    }\n}"
             }
           ]
         }
-      ]
+      ],
+      "description": "Endpoints untuk autentikasi pengguna dan manajemen akun"
     },
     {
       "name": "User Profile",
-      "description": "Endpoints untuk manajemen profil pengguna",
       "item": [
         {
           "name": "Get Profile",
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/user/profile",
-              "host": ["{{base_url}}"],
-              "path": ["api", "user", "profile"]
-            },
+            "url": "{{base_url}}/api/user/profile",
             "description": "Mendapatkan data profil pengguna saat ini"
           },
           "response": [
@@ -468,20 +413,18 @@
               "originalRequest": {
                 "method": "GET",
                 "header": [],
-                "url": {
-                  "raw": "{{base_url}}/api/user/profile",
-                  "host": ["{{base_url}}"],
-                  "path": ["api", "user", "profile"]
-                }
+                "url": "{{base_url}}/api/user/profile"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"John Doe\",\n        \"email\": \"john@example.com\",\n        \"username\": \"johndoe\",\n        \"birthdate\": \"1990-01-01\",\n        \"gender\": \"male\",\n        \"location\": \"Jakarta\",\n        \"organization\": \"EvoConnect\",\n        \"website\": \"https://johndoe.dev\",\n        \"phone\": \"08123456789\",\n        \"headline\": \"Fullstack Developer\",\n        \"about\": \"Passionate about building tech that matters.\",\n        \"skills\": [\"Go\", \"React\", \"Docker\"],\n        \"socials\": [\n            { \"platform\": \"github\", \"username\": \"johndoe\" },\n            { \"platform\": \"twitter\", \"username\": \"johndev\" }\n        ],\n        \"photo\": \"https://example.com/photos/johndoe.jpg\",\n        \"is_verified\": true,\n        \"created_at\": \"2023-10-15T08:00:00Z\",\n        \"updated_at\": \"2023-11-20T14:30:00Z\"\n    }\n}"
             }
           ]
@@ -491,13 +434,9 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "PUT",
             "header": [
@@ -515,11 +454,7 @@
                 }
               }
             },
-            "url": {
-              "raw": "{{base_url}}/api/user/profile",
-              "host": ["{{base_url}}"],
-              "path": ["api", "user", "profile"]
-            },
+            "url": "{{base_url}}/api/user/profile",
             "description": "Memperbarui data profil pengguna saat ini"
           },
           "response": [
@@ -537,20 +472,18 @@
                     }
                   }
                 },
-                "url": {
-                  "raw": "{{base_url}}/api/user/profile",
-                  "host": ["{{base_url}}"],
-                  "path": ["api", "user", "profile"]
-                }
+                "url": "{{base_url}}/api/user/profile"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"John Doe\",\n        \"email\": \"john@example.com\",\n        \"username\": \"johndoe\",\n        \"birthdate\": \"1990-01-01\",\n        \"gender\": \"male\",\n        \"location\": \"Jakarta\",\n        \"organization\": \"EvoConnect\",\n        \"website\": \"https://johndoe.dev\",\n        \"phone\": \"08123456789\",\n        \"headline\": \"Fullstack Developer\",\n        \"about\": \"Passionate about building tech that matters.\",\n        \"skills\": [\"Go\", \"React\", \"Docker\"],\n        \"socials\": [\n            { \"platform\": \"github\", \"username\": \"johndoe\" },\n            { \"platform\": \"twitter\", \"username\": \"johndev\" }\n        ],\n        \"photo\": \"uploads/photos/johndoe.jpg\",\n        \"is_verified\": true,\n        \"created_at\": \"2023-10-15T08:00:00Z\",\n        \"updated_at\": \"2023-11-28T15:00:00Z\"\n    }\n}"
             }
           ]
@@ -560,21 +493,13 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/users/{{userId}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "users", "{{userId}}"]
-            },
+            "url": "{{base_url}}/api/users/{{userId}}",
             "description": "Mendapatkan profil pengguna berdasarkan ID"
           },
           "response": [
@@ -583,24 +508,18 @@
               "originalRequest": {
                 "method": "GET",
                 "header": [],
-                "url": {
-                  "raw": "{{base_url}}/api/users/550e8400-e29b-41d4-a716-446655440000",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "users",
-                    "550e8400-e29b-41d4-a716-446655440000"
-                  ]
-                }
+                "url": "{{base_url}}/api/users/550e8400-e29b-41d4-a716-446655440000"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"John Doe\",\n        \"username\": \"johndoe\",\n        \"headline\": \"Fullstack Developer\",\n        \"photo\": \"https://example.com/photos/johndoe.jpg\",\n        \"organization\": \"EvoConnect\",\n        \"location\": \"Jakarta\",\n        \"connections_count\": 124,\n        \"is_connected\": false,\n        \"is_following\": true\n    }\n}"
             }
           ]
@@ -610,13 +529,9 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "POST",
             "header": [],
@@ -630,11 +545,7 @@
                 }
               ]
             },
-            "url": {
-              "raw": "{{base_url}}/api/user/photo",
-              "host": ["{{base_url}}"],
-              "path": ["api", "user", "photo"]
-            },
+            "url": "{{base_url}}/api/user/photo",
             "description": "Upload foto profil pengguna"
           },
           "response": [
@@ -653,42 +564,36 @@
                     }
                   ]
                 },
-                "url": {
-                  "raw": "{{base_url}}/api/user/photo",
-                  "host": ["{{base_url}}"],
-                  "path": ["api", "user", "photo"]
-                }
+                "url": "{{base_url}}/api/user/photo"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"photo\": \"uploads/photos/550e8400-e29b-41d4-a716-446655440000/profile.jpg\",\n        \"updated_at\": \"2023-11-28T15:10:00Z\"\n    }\n}"
             }
           ]
         }
-      ]
+      ],
+      "description": "Endpoints untuk manajemen profil pengguna"
     },
     {
       "name": "Posts",
-      "description": "Endpoints untuk manajemen postingan",
       "item": [
         {
           "name": "Create Post",
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "POST",
             "header": [
@@ -706,11 +611,7 @@
                 }
               }
             },
-            "url": {
-              "raw": "{{base_url}}/api/posts",
-              "host": ["{{base_url}}"],
-              "path": ["api", "posts"]
-            },
+            "url": "{{base_url}}/api/posts",
             "description": "Membuat postingan baru"
           },
           "response": [
@@ -728,20 +629,18 @@
                     }
                   }
                 },
-                "url": {
-                  "raw": "{{base_url}}/api/posts",
-                  "host": ["{{base_url}}"],
-                  "path": ["api", "posts"]
-                }
+                "url": "{{base_url}}/api/posts"
               },
               "status": "Created",
               "code": 201,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 201,\n    \"status\": \"CREATED\",\n    \"data\": {\n        \"id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n        \"content\": \"This is my first post on EvoConnect!\",\n        \"images\": [\"uploads/images/image1.jpg\", \"uploads/images/image2.jpg\"],\n        \"visibility\": \"public\",\n        \"likes_count\": 0,\n        \"comments_count\": 0,\n        \"is_liked\": false,\n        \"user\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"John Doe\",\n            \"username\": \"johndoe\",\n            \"photo\": \"uploads/photos/johndoe.jpg\",\n            \"headline\": \"Fullstack Developer\"\n        },\n        \"created_at\": \"2023-11-28T15:20:00Z\",\n        \"updated_at\": \"2023-11-28T15:20:00Z\"\n    }\n}"
             }
           ]
@@ -751,13 +650,9 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "POST",
             "header": [],
@@ -776,11 +671,7 @@
                 }
               ]
             },
-            "url": {
-              "raw": "{{base_url}}/api/posts/images",
-              "host": ["{{base_url}}"],
-              "path": ["api", "posts", "images"]
-            },
+            "url": "{{base_url}}/api/posts/images",
             "description": "Upload gambar untuk postingan"
           },
           "response": [
@@ -804,20 +695,18 @@
                     }
                   ]
                 },
-                "url": {
-                  "raw": "{{base_url}}/api/posts/images",
-                  "host": ["{{base_url}}"],
-                  "path": ["api", "posts", "images"]
-                }
+                "url": "{{base_url}}/api/posts/images"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"filenames\": [\n            \"uploads/posts/550e8400-e29b-41d4-a716-446655440000/1673956307893425167.jpg\",\n            \"uploads/posts/550e8400-e29b-41d4-a716-446655440000/1673956307893497821.jpg\"\n        ]\n    }\n}"
             }
           ]
@@ -827,13 +716,9 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "GET",
             "header": [],
@@ -880,12 +765,14 @@
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"posts\": [\n            {\n                \"id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n                \"content\": \"This is my first post on EvoConnect!\",\n                \"images\": [\"uploads/images/image1.jpg\", \"uploads/images/image2.jpg\"],\n                \"visibility\": \"public\",\n                \"likes_count\": 5,\n                \"comments_count\": 2,\n                \"is_liked\": true,\n                \"user\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                    \"name\": \"John Doe\",\n                    \"username\": \"johndoe\",\n                    \"photo\": \"uploads/photos/johndoe.jpg\",\n                    \"headline\": \"Fullstack Developer\"\n                },\n                \"created_at\": \"2023-11-27T10:20:00Z\",\n                \"updated_at\": \"2023-11-27T10:20:00Z\"\n            },\n            {\n                \"id\": \"b2c3d4e5-f6g7-5b4c-9d8e-0f1g2h3i4j5k\",\n                \"content\": \"Another post with some tech insights\",\n                \"images\": [],\n                \"visibility\": \"public\",\n                \"likes_count\": 12,\n                \"comments_count\": 3,\n                \"is_liked\": false,\n                \"user\": {\n                    \"id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n                    \"name\": \"Jane Smith\",\n                    \"username\": \"janesmith\",\n                    \"photo\": \"uploads/photos/janesmith.jpg\",\n                    \"headline\": \"UX Designer\"\n                },\n                \"created_at\": \"2023-11-26T15:30:00Z\",\n                \"updated_at\": \"2023-11-26T15:30:00Z\"\n            }\n        ],\n        \"total\": 42,\n        \"limit\": 10,\n        \"offset\": 0\n    }\n}"
             }
           ]
@@ -895,13 +782,9 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "GET",
             "header": [],
@@ -953,12 +836,14 @@
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"posts\": [\n            {\n                \"id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n                \"content\": \"This is my first post on EvoConnect!\",\n                \"images\": [\"uploads/images/image1.jpg\", \"uploads/images/image2.jpg\"],\n                \"visibility\": \"public\",\n                \"likes_count\": 5,\n                \"comments_count\": 2,\n                \"is_liked\": true,\n                \"user\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                    \"name\": \"John Doe\",\n                    \"username\": \"johndoe\",\n                    \"photo\": \"uploads/photos/johndoe.jpg\",\n                    \"headline\": \"Fullstack Developer\"\n                },\n                \"created_at\": \"2023-11-27T10:20:00Z\",\n                \"updated_at\": \"2023-11-27T10:20:00Z\"\n            },\n            {\n                \"id\": \"c3d4e5f6-g7h8-6c5d-0e1f-2g3h4i5j6k7l\",\n                \"content\": \"Working on a new project with Go and React!\",\n                \"images\": [\"uploads/images/project.jpg\"],\n                \"visibility\": \"public\",\n                \"likes_count\": 8,\n                \"comments_count\": 1,\n                \"is_liked\": false,\n                \"user\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                    \"name\": \"John Doe\",\n                    \"username\": \"johndoe\",\n                    \"photo\": \"uploads/photos/johndoe.jpg\",\n                    \"headline\": \"Fullstack Developer\"\n                },\n                \"created_at\": \"2023-11-25T09:15:00Z\",\n                \"updated_at\": \"2023-11-25T09:15:00Z\"\n            }\n        ],\n        \"total\": 15,\n        \"limit\": 10,\n        \"offset\": 0,\n        \"user\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"John Doe\",\n            \"username\": \"johndoe\",\n            \"photo\": \"uploads/photos/johndoe.jpg\",\n            \"headline\": \"Fullstack Developer\"\n        }\n    }\n}"
             }
           ]
@@ -968,21 +853,13 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/posts/{{postId}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "posts", "{{postId}}"]
-            },
+            "url": "{{base_url}}/api/posts/{{postId}}",
             "description": "Mendapatkan detail postingan berdasarkan ID"
           },
           "response": [
@@ -991,24 +868,18 @@
               "originalRequest": {
                 "method": "GET",
                 "header": [],
-                "url": {
-                  "raw": "{{base_url}}/api/posts/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "posts",
-                    "a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d"
-                  ]
-                }
+                "url": "{{base_url}}/api/posts/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n        \"content\": \"This is my first post on EvoConnect!\",\n        \"images\": [\"uploads/images/image1.jpg\", \"uploads/images/image2.jpg\"],\n        \"visibility\": \"public\",\n        \"likes_count\": 5,\n        \"comments_count\": 2,\n        \"is_liked\": true,\n        \"user\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"John Doe\",\n            \"username\": \"johndoe\",\n            \"photo\": \"uploads/photos/johndoe.jpg\",\n            \"headline\": \"Fullstack Developer\"\n        },\n        \"created_at\": \"2023-11-27T10:20:00Z\",\n        \"updated_at\": \"2023-11-27T10:20:00Z\"\n    }\n}"
             }
           ]
@@ -1018,13 +889,9 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "PUT",
             "header": [
@@ -1042,11 +909,7 @@
                 }
               }
             },
-            "url": {
-              "raw": "{{base_url}}/api/posts/{{postId}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "posts", "{{postId}}"]
-            },
+            "url": "{{base_url}}/api/posts/{{postId}}",
             "description": "Memperbarui postingan berdasarkan ID"
           },
           "response": [
@@ -1064,24 +927,18 @@
                     }
                   }
                 },
-                "url": {
-                  "raw": "{{base_url}}/api/posts/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "posts",
-                    "a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d"
-                  ]
-                }
+                "url": "{{base_url}}/api/posts/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n        \"content\": \"Updated post content with more details\",\n        \"images\": [\"uploads/images/updated.jpg\"],\n        \"visibility\": \"private\",\n        \"likes_count\": 5,\n        \"comments_count\": 2,\n        \"is_liked\": true,\n        \"user\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"John Doe\",\n            \"username\": \"johndoe\",\n            \"photo\": \"uploads/photos/johndoe.jpg\",\n            \"headline\": \"Fullstack Developer\"\n        },\n        \"created_at\": \"2023-11-27T10:20:00Z\",\n        \"updated_at\": \"2023-11-28T16:35:00Z\"\n    }\n}"
             }
           ]
@@ -1091,21 +948,13 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "DELETE",
             "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/posts/{{postId}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "posts", "{{postId}}"]
-            },
+            "url": "{{base_url}}/api/posts/{{postId}}",
             "description": "Menghapus postingan berdasarkan ID"
           },
           "response": [
@@ -1114,24 +963,18 @@
               "originalRequest": {
                 "method": "DELETE",
                 "header": [],
-                "url": {
-                  "raw": "{{base_url}}/api/posts/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "posts",
-                    "a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d"
-                  ]
-                }
+                "url": "{{base_url}}/api/posts/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": \"Post deleted successfully\"\n}"
             }
           ]
@@ -1141,21 +984,13 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "POST",
             "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/posts/{{postId}}/like",
-              "host": ["{{base_url}}"],
-              "path": ["api", "posts", "{{postId}}", "like"]
-            },
+            "url": "{{base_url}}/api/posts/{{postId}}/like",
             "description": "Menyukai sebuah postingan"
           },
           "response": [
@@ -1164,25 +999,18 @@
               "originalRequest": {
                 "method": "POST",
                 "header": [],
-                "url": {
-                  "raw": "{{base_url}}/api/posts/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/like",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "posts",
-                    "a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d",
-                    "like"
-                  ]
-                }
+                "url": "{{base_url}}/api/posts/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/like"
               },
               "status": "Created",
               "code": 201,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 201,\n    \"status\": \"CREATED\",\n    \"data\": {\n        \"post_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n        \"likes_count\": 6,\n        \"is_liked\": true\n    }\n}"
             }
           ]
@@ -1192,21 +1020,13 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "DELETE",
             "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/posts/{{postId}}/like",
-              "host": ["{{base_url}}"],
-              "path": ["api", "posts", "{{postId}}", "like"]
-            },
+            "url": "{{base_url}}/api/posts/{{postId}}/like",
             "description": "Batal menyukai sebuah postingan"
           },
           "response": [
@@ -1215,47 +1035,36 @@
               "originalRequest": {
                 "method": "DELETE",
                 "header": [],
-                "url": {
-                  "raw": "{{base_url}}/api/posts/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/like",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "posts",
-                    "a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d",
-                    "like"
-                  ]
-                }
+                "url": "{{base_url}}/api/posts/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/like"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"post_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n        \"likes_count\": 5,\n        \"is_liked\": false\n    }\n}"
             }
           ]
         }
-      ]
+      ],
+      "description": "Endpoints untuk manajemen postingan"
     },
     {
       "name": "Comments",
-      "description": "Endpoints untuk manajemen komentar pada postingan",
       "item": [
         {
           "name": "Create Comment",
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "POST",
             "header": [
@@ -1273,11 +1082,7 @@
                 }
               }
             },
-            "url": {
-              "raw": "{{base_url}}/api/posts/{{postId}}/comments",
-              "host": ["{{base_url}}"],
-              "path": ["api", "posts", "{{postId}}", "comments"]
-            },
+            "url": "{{base_url}}/api/posts/{{postId}}/comments",
             "description": "Menambahkan komentar pada sebuah postingan"
           },
           "response": [
@@ -1295,25 +1100,18 @@
                     }
                   }
                 },
-                "url": {
-                  "raw": "{{base_url}}/api/posts/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/comments",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "posts",
-                    "a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d",
-                    "comments"
-                  ]
-                }
+                "url": "{{base_url}}/api/posts/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/comments"
               },
               "status": "Created",
               "code": 201,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 201,\n    \"status\": \"CREATED\",\n    \"data\": {\n        \"id\": \"d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m\",\n        \"post_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n        \"content\": \"Great post! I agree with your insights.\",\n        \"created_at\": \"2023-11-28T16:45:00Z\",\n        \"updated_at\": \"2023-11-28T16:45:00Z\",\n        \"user\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"John Doe\",\n            \"username\": \"johndoe\",\n            \"profile_photo\": \"uploads/photos/johndoe.jpg\",\n            \"is_online\": true\n        },\n        \"replies\": []\n    }\n}"
             }
           ]
@@ -1323,13 +1121,9 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "GET",
             "header": [],
@@ -1381,12 +1175,14 @@
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"comments\": [\n            {\n                \"id\": \"d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m\",\n                \"post_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n                \"content\": \"Great post! I agree with your insights.\",\n                \"created_at\": \"2023-11-28T16:45:00Z\",\n                \"updated_at\": \"2023-11-28T16:45:00Z\",\n                \"user\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                    \"name\": \"John Doe\",\n                    \"username\": \"johndoe\",\n                    \"profile_photo\": \"uploads/photos/johndoe.jpg\",\n                    \"is_online\": true\n                },\n                \"replies\": [\n                    {\n                        \"id\": \"e5f6g7h8-i9j0-8e7f-2g3h-4i5j6k7l8m9n\",\n                        \"post_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n                        \"parent_id\": \"d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m\",\n                        \"content\": \"Thanks for your comment!\",\n                        \"created_at\": \"2023-11-28T16:50:00Z\",\n                        \"updated_at\": \"2023-11-28T16:50:00Z\",\n                        \"user\": {\n                            \"id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n                            \"name\": \"Jane Smith\",\n                            \"username\": \"janesmith\",\n                            \"profile_photo\": \"uploads/photos/janesmith.jpg\",\n                            \"is_online\": false\n                        }\n                    }\n                ]\n            },\n            {\n                \"id\": \"f6g7h8i9-j0k1-9f8g-3h4i-5j6k7l8m9n0o\",\n                \"post_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n                \"content\": \"I have a question about the project you mentioned.\",\n                \"created_at\": \"2023-11-28T17:00:00Z\",\n                \"updated_at\": \"2023-11-28T17:00:00Z\",\n                \"user\": {\n                    \"id\": \"772g0622-g4b3-52e6-c993-668646551234\",\n                    \"name\": \"Alex Johnson\",\n                    \"username\": \"alexj\",\n                    \"profile_photo\": \"uploads/photos/alexj.jpg\",\n                    \"is_online\": true\n                },\n                \"replies\": []\n            }\n        ],\n        \"total\": 2\n    }\n}"
             }
           ]
@@ -1396,21 +1192,13 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/comments/{{commentId}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "comments", "{{commentId}}"]
-            },
+            "url": "{{base_url}}/api/comments/{{commentId}}",
             "description": "Mendapatkan detail komentar berdasarkan ID"
           },
           "response": [
@@ -1419,24 +1207,18 @@
               "originalRequest": {
                 "method": "GET",
                 "header": [],
-                "url": {
-                  "raw": "{{base_url}}/api/comments/d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "comments",
-                    "d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m"
-                  ]
-                }
+                "url": "{{base_url}}/api/comments/d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m\",\n        \"post_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n        \"content\": \"Great post! I agree with your insights.\",\n        \"created_at\": \"2023-11-28T16:45:00Z\",\n        \"updated_at\": \"2023-11-28T16:45:00Z\",\n        \"user\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"John Doe\",\n            \"username\": \"johndoe\",\n            \"profile_photo\": \"uploads/photos/johndoe.jpg\",\n            \"is_online\": true\n        },\n        \"replies\": [\n            {\n                \"id\": \"e5f6g7h8-i9j0-8e7f-2g3h-4i5j6k7l8m9n\",\n                \"post_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n                \"parent_id\": \"d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m\",\n                \"content\": \"Thanks for your comment!\",\n                \"created_at\": \"2023-11-28T16:50:00Z\",\n                \"updated_at\": \"2023-11-28T16:50:00Z\",\n                \"user\": {\n                    \"id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n                    \"name\": \"Jane Smith\",\n                    \"username\": \"janesmith\",\n                    \"profile_photo\": \"uploads/photos/janesmith.jpg\",\n                    \"is_online\": false\n                }\n            }\n        ]\n    }\n}"
             }
           ]
@@ -1446,13 +1228,9 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "POST",
             "header": [
@@ -1470,11 +1248,7 @@
                 }
               }
             },
-            "url": {
-              "raw": "{{base_url}}/api/comments/{{commentId}}/replies",
-              "host": ["{{base_url}}"],
-              "path": ["api", "comments", "{{commentId}}", "replies"]
-            },
+            "url": "{{base_url}}/api/comments/{{commentId}}/replies",
             "description": "Menambahkan balasan pada sebuah komentar"
           },
           "response": [
@@ -1492,25 +1266,18 @@
                     }
                   }
                 },
-                "url": {
-                  "raw": "{{base_url}}/api/comments/d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m/replies",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "comments",
-                    "d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m",
-                    "replies"
-                  ]
-                }
+                "url": "{{base_url}}/api/comments/d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m/replies"
               },
               "status": "Created",
               "code": 201,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 201,\n    \"status\": \"CREATED\",\n    \"data\": {\n        \"id\": \"e5f6g7h8-i9j0-8e7f-2g3h-4i5j6k7l8m9n\",\n        \"post_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n        \"parent_id\": \"d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m\",\n        \"content\": \"Thanks for your comment!\",\n        \"created_at\": \"2023-11-28T16:50:00Z\",\n        \"updated_at\": \"2023-11-28T16:50:00Z\",\n        \"user\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"John Doe\",\n            \"username\": \"johndoe\",\n            \"profile_photo\": \"uploads/photos/johndoe.jpg\",\n            \"is_online\": true\n        }\n    }\n}"
             }
           ]
@@ -1520,13 +1287,9 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "GET",
             "header": [],
@@ -1578,12 +1341,14 @@
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"comments\": [\n            {\n                \"id\": \"e5f6g7h8-i9j0-8e7f-2g3h-4i5j6k7l8m9n\",\n                \"post_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n                \"parent_id\": \"d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m\",\n                \"content\": \"Thanks for your comment!\",\n                \"created_at\": \"2023-11-28T16:50:00Z\",\n                \"updated_at\": \"2023-11-28T16:50:00Z\",\n                \"user\": {\n                    \"id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n                    \"name\": \"Jane Smith\",\n                    \"username\": \"janesmith\",\n                    \"profile_photo\": \"uploads/photos/janesmith.jpg\",\n                    \"is_online\": false\n                }\n            }\n        ],\n        \"total\": 1\n    }\n}"
             }
           ]
@@ -1593,13 +1358,9 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "PUT",
             "header": [
@@ -1617,11 +1378,7 @@
                 }
               }
             },
-            "url": {
-              "raw": "{{base_url}}/api/comments/{{commentId}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "comments", "{{commentId}}"]
-            },
+            "url": "{{base_url}}/api/comments/{{commentId}}",
             "description": "Memperbarui komentar berdasarkan ID"
           },
           "response": [
@@ -1639,24 +1396,18 @@
                     }
                   }
                 },
-                "url": {
-                  "raw": "{{base_url}}/api/comments/d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "comments",
-                    "d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m"
-                  ]
-                }
+                "url": "{{base_url}}/api/comments/d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m\",\n        \"post_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n        \"content\": \"Updated comment with additional thoughts.\",\n        \"created_at\": \"2023-11-28T16:45:00Z\",\n        \"updated_at\": \"2023-11-28T17:15:00Z\",\n        \"user\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"John Doe\",\n            \"username\": \"johndoe\",\n            \"profile_photo\": \"uploads/photos/johndoe.jpg\",\n            \"is_online\": true\n        },\n        \"replies\": [\n            {\n                \"id\": \"e5f6g7h8-i9j0-8e7f-2g3h-4i5j6k7l8m9n\",\n                \"post_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n                \"parent_id\": \"d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m\",\n                \"content\": \"Thanks for your comment!\",\n                \"created_at\": \"2023-11-28T16:50:00Z\",\n                \"updated_at\": \"2023-11-28T16:50:00Z\",\n                \"user\": {\n                    \"id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n                    \"name\": \"Jane Smith\",\n                    \"username\": \"janesmith\",\n                    \"profile_photo\": \"uploads/photos/janesmith.jpg\",\n                    \"is_online\": false\n                }\n            }\n        ]\n    }\n}"
             }
           ]
@@ -1666,21 +1417,13 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "DELETE",
             "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/comments/{{commentId}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "comments", "{{commentId}}"]
-            },
+            "url": "{{base_url}}/api/comments/{{commentId}}",
             "description": "Menghapus komentar berdasarkan ID (termasuk semua balasannya)"
           },
           "response": [
@@ -1689,46 +1432,36 @@
               "originalRequest": {
                 "method": "DELETE",
                 "header": [],
-                "url": {
-                  "raw": "{{base_url}}/api/comments/d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "comments",
-                    "d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m"
-                  ]
-                }
+                "url": "{{base_url}}/api/comments/d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": \"Comment deleted successfully\"\n}"
             }
           ]
         }
-      ]
+      ],
+      "description": "Endpoints untuk manajemen komentar pada postingan"
     },
     {
       "name": "Network Connections",
-      "description": "Endpoints untuk mengelola koneksi antar pengguna",
       "item": [
         {
           "name": "Send Connection Request",
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "POST",
             "header": [
@@ -1746,11 +1479,7 @@
                 }
               }
             },
-            "url": {
-              "raw": "{{base_url}}/api/users/{{userId}}/connect",
-              "host": ["{{base_url}}"],
-              "path": ["api", "users", "{{userId}}", "connect"]
-            },
+            "url": "{{base_url}}/api/users/{{userId}}/connect",
             "description": "Mengirim permintaan koneksi ke pengguna lain. Pesan bersifat opsional."
           },
           "response": [
@@ -1768,25 +1497,18 @@
                     }
                   }
                 },
-                "url": {
-                  "raw": "{{base_url}}/api/users/661f9511-f3a2-41d5-b882-557535440123/connect",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "users",
-                    "661f9511-f3a2-41d5-b882-557535440123",
-                    "connect"
-                  ]
-                }
+                "url": "{{base_url}}/api/users/661f9511-f3a2-41d5-b882-557535440123/connect"
               },
               "status": "Created",
               "code": 201,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 201,\n    \"status\": \"CREATED\",\n    \"data\": {\n        \"id\": \"g7h8i9j0-k1l2-a0b1-c2d3-e4f5g6h7i8j9\",\n        \"status\": \"pending\",\n        \"message\": \"Hi, I'd like to connect with you on EvoConnect!\",\n        \"created_at\": \"2023-11-28T18:00:00Z\",\n        \"updated_at\": \"2023-11-28T18:00:00Z\",\n        \"receiver\": {\n            \"id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n            \"name\": \"Jane Smith\",\n            \"username\": \"janesmith\",\n            \"headline\": \"UX Designer\",\n            \"photo\": \"uploads/photos/janesmith.jpg\"\n        }\n    }\n}"
             },
             {
@@ -1803,25 +1525,18 @@
                     }
                   }
                 },
-                "url": {
-                  "raw": "{{base_url}}/api/users/661f9511-f3a2-41d5-b882-557535440123/connect",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "users",
-                    "661f9511-f3a2-41d5-b882-557535440123",
-                    "connect"
-                  ]
-                }
+                "url": "{{base_url}}/api/users/661f9511-f3a2-41d5-b882-557535440123/connect"
               },
               "status": "Bad Request",
               "code": 400,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 400,\n    \"status\": \"BAD REQUEST\",\n    \"data\": \"Users are already connected\"\n}"
             },
             {
@@ -1838,25 +1553,18 @@
                     }
                   }
                 },
-                "url": {
-                  "raw": "{{base_url}}/api/users/661f9511-f3a2-41d5-b882-557535440123/connect",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "users",
-                    "661f9511-f3a2-41d5-b882-557535440123",
-                    "connect"
-                  ]
-                }
+                "url": "{{base_url}}/api/users/661f9511-f3a2-41d5-b882-557535440123/connect"
               },
               "status": "Bad Request",
               "code": 400,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 400,\n    \"status\": \"BAD REQUEST\",\n    \"data\": \"You've already sent a connection request to this user\"\n}"
             }
           ]
@@ -1866,13 +1574,9 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "GET",
             "header": [],
@@ -1919,12 +1623,14 @@
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"requests\": [\n            {\n                \"id\": \"h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0\",\n                \"status\": \"pending\",\n                \"message\": \"I'd like to add you to my professional network\",\n                \"created_at\": \"2023-11-27T14:30:00Z\",\n                \"updated_at\": \"2023-11-27T14:30:00Z\",\n                \"sender\": {\n                    \"id\": \"883h1733-h5c4-63f7-d0a4-779757662345\",\n                    \"name\": \"Sarah Williams\",\n                    \"username\": \"sarahw\",\n                    \"headline\": \"Frontend Engineer\",\n                    \"photo\": \"uploads/photos/sarahw.jpg\"\n                }\n            },\n            {\n                \"id\": \"j9k0l1m2-n3o4-c2d3-e4f5-g6h7i8j9k0l1\",\n                \"status\": \"pending\",\n                \"message\": null,\n                \"created_at\": \"2023-11-28T09:45:00Z\",\n                \"updated_at\": \"2023-11-28T09:45:00Z\",\n                \"sender\": {\n                    \"id\": \"994i2844-i6d5-74g8-e1b5-880868773456\",\n                    \"name\": \"Michael Brown\",\n                    \"username\": \"michaelb\",\n                    \"headline\": \"Product Manager\",\n                    \"photo\": \"uploads/photos/michaelb.jpg\"\n                }\n            }\n        ],\n        \"total\": 2\n    }\n}"
             },
             {
@@ -1950,12 +1656,14 @@
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"requests\": [],\n        \"total\": 0\n    }\n}"
             }
           ]
@@ -1965,27 +1673,13 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "PUT",
             "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/connections/requests/{{requestId}}/accept",
-              "host": ["{{base_url}}"],
-              "path": [
-                "api",
-                "connections",
-                "requests",
-                "{{requestId}}",
-                "accept"
-              ]
-            },
+            "url": "{{base_url}}/api/connections/requests/{{requestId}}/accept",
             "description": "Menerima permintaan koneksi dari pengguna lain. Hanya pengguna yang menerima permintaan yang dapat menerima permintaan tersebut."
           },
           "response": [
@@ -1994,26 +1688,18 @@
               "originalRequest": {
                 "method": "PUT",
                 "header": [],
-                "url": {
-                  "raw": "{{base_url}}/api/connections/requests/h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0/accept",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "connections",
-                    "requests",
-                    "h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0",
-                    "accept"
-                  ]
-                }
+                "url": "{{base_url}}/api/connections/requests/h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0/accept"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0\",\n        \"status\": \"accepted\",\n        \"message\": \"I'd like to add you to my professional network\",\n        \"created_at\": \"2023-11-27T14:30:00Z\",\n        \"updated_at\": \"2023-11-28T18:15:00Z\",\n        \"sender\": {\n            \"id\": \"883h1733-h5c4-63f7-d0a4-779757662345\",\n            \"name\": \"Sarah Williams\",\n            \"username\": \"sarahw\",\n            \"headline\": \"Frontend Engineer\",\n            \"photo\": \"uploads/photos/sarahw.jpg\"\n        },\n        \"receiver\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"John Doe\",\n            \"username\": \"johndoe\",\n            \"headline\": \"Fullstack Developer\",\n            \"photo\": \"uploads/photos/johndoe.jpg\"\n        }\n    }\n}"
             },
             {
@@ -2021,26 +1707,18 @@
               "originalRequest": {
                 "method": "PUT",
                 "header": [],
-                "url": {
-                  "raw": "{{base_url}}/api/connections/requests/non-existent-id/accept",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "connections",
-                    "requests",
-                    "non-existent-id",
-                    "accept"
-                  ]
-                }
+                "url": "{{base_url}}/api/connections/requests/non-existent-id/accept"
               },
               "status": "Not Found",
               "code": 404,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 404,\n    \"status\": \"NOT FOUND\",\n    \"data\": \"Connection request not found\"\n}"
             },
             {
@@ -2048,26 +1726,18 @@
               "originalRequest": {
                 "method": "PUT",
                 "header": [],
-                "url": {
-                  "raw": "{{base_url}}/api/connections/requests/h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0/accept",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "connections",
-                    "requests",
-                    "h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0",
-                    "accept"
-                  ]
-                }
+                "url": "{{base_url}}/api/connections/requests/h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0/accept"
               },
               "status": "Forbidden",
               "code": 403,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 403,\n    \"status\": \"FORBIDDEN\",\n    \"data\": \"You can only accept requests sent to you\"\n}"
             },
             {
@@ -2075,26 +1745,18 @@
               "originalRequest": {
                 "method": "PUT",
                 "header": [],
-                "url": {
-                  "raw": "{{base_url}}/api/connections/requests/h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0/accept",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "connections",
-                    "requests",
-                    "h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0",
-                    "accept"
-                  ]
-                }
+                "url": "{{base_url}}/api/connections/requests/h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0/accept"
               },
               "status": "Bad Request",
               "code": 400,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 400,\n    \"status\": \"BAD REQUEST\",\n    \"data\": \"Connection request is not pending\"\n}"
             }
           ]
@@ -2104,27 +1766,13 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "PUT",
             "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/connections/requests/{{requestId}}/reject",
-              "host": ["{{base_url}}"],
-              "path": [
-                "api",
-                "connections",
-                "requests",
-                "{{requestId}}",
-                "reject"
-              ]
-            },
+            "url": "{{base_url}}/api/connections/requests/{{requestId}}/reject",
             "description": "Menolak permintaan koneksi dari pengguna lain. Hanya pengguna yang menerima permintaan yang dapat menolak permintaan tersebut."
           },
           "response": [
@@ -2133,26 +1781,18 @@
               "originalRequest": {
                 "method": "PUT",
                 "header": [],
-                "url": {
-                  "raw": "{{base_url}}/api/connections/requests/h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0/reject",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "connections",
-                    "requests",
-                    "h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0",
-                    "reject"
-                  ]
-                }
+                "url": "{{base_url}}/api/connections/requests/h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0/reject"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0\",\n        \"status\": \"rejected\",\n        \"message\": \"I'd like to add you to my professional network\",\n        \"created_at\": \"2023-11-27T14:30:00Z\",\n        \"updated_at\": \"2023-11-28T18:15:00Z\",\n        \"sender\": {\n            \"id\": \"883h1733-h5c4-63f7-d0a4-779757662345\",\n            \"name\": \"Sarah Williams\",\n            \"username\": \"sarahw\",\n            \"headline\": \"Frontend Engineer\",\n            \"photo\": \"uploads/photos/sarahw.jpg\"\n        },\n        \"receiver\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"John Doe\",\n            \"username\": \"johndoe\",\n            \"headline\": \"Fullstack Developer\",\n            \"photo\": \"uploads/photos/johndoe.jpg\"\n        }\n    }\n}"
             },
             {
@@ -2160,26 +1800,18 @@
               "originalRequest": {
                 "method": "PUT",
                 "header": [],
-                "url": {
-                  "raw": "{{base_url}}/api/connections/requests/non-existent-id/reject",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "connections",
-                    "requests",
-                    "non-existent-id",
-                    "reject"
-                  ]
-                }
+                "url": "{{base_url}}/api/connections/requests/non-existent-id/reject"
               },
               "status": "Not Found",
               "code": 404,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 404,\n    \"status\": \"NOT FOUND\",\n    \"data\": \"Connection request not found\"\n}"
             },
             {
@@ -2187,26 +1819,18 @@
               "originalRequest": {
                 "method": "PUT",
                 "header": [],
-                "url": {
-                  "raw": "{{base_url}}/api/connections/requests/h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0/reject",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "connections",
-                    "requests",
-                    "h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0",
-                    "reject"
-                  ]
-                }
+                "url": "{{base_url}}/api/connections/requests/h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0/reject"
               },
               "status": "Forbidden",
               "code": 403,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 403,\n    \"status\": \"FORBIDDEN\",\n    \"data\": \"You can only reject requests sent to you\"\n}"
             },
             {
@@ -2214,26 +1838,18 @@
               "originalRequest": {
                 "method": "PUT",
                 "header": [],
-                "url": {
-                  "raw": "{{base_url}}/api/connections/requests/h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0/reject",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "connections",
-                    "requests",
-                    "h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0",
-                    "reject"
-                  ]
-                }
+                "url": "{{base_url}}/api/connections/requests/h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0/reject"
               },
               "status": "Bad Request",
               "code": 400,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 400,\n    \"status\": \"BAD REQUEST\",\n    \"data\": \"Connection request is not pending\"\n}"
             }
           ]
@@ -2243,13 +1859,9 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "GET",
             "header": [],
@@ -2301,12 +1913,14 @@
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"connections\": [\n            {\n                \"id\": \"a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6\",\n                \"created_at\": \"2023-11-28T12:30:00Z\",\n                \"user\": {\n                    \"id\": \"883h1733-h5c4-63f7-d0a4-779757662345\",\n                    \"name\": \"Sarah Williams\",\n                    \"username\": \"sarahw\",\n                    \"headline\": \"Frontend Engineer\",\n                    \"photo\": \"uploads/photos/sarahw.jpg\"\n                }\n            },\n            {\n                \"id\": \"b2c3d4e5-f6g7-h8i9-j0k1-l2m3n4o5p6q7\",\n                \"created_at\": \"2023-11-27T09:15:00Z\",\n                \"user\": {\n                    \"id\": \"772g0622-g4b3-52e6-c993-668646551234\",\n                    \"name\": \"Alex Johnson\",\n                    \"username\": \"alexj\",\n                    \"headline\": \"Backend Developer\",\n                    \"photo\": \"uploads/photos/alexj.jpg\"\n                }\n            }\n        ],\n        \"total\": 2\n    }\n}"
             },
             {
@@ -2337,12 +1951,14 @@
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"connections\": [],\n        \"total\": 0\n    }\n}"
             },
             {
@@ -2368,34 +1984,672 @@
               },
               "status": "Not Found",
               "code": 404,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 404,\n    \"status\": \"NOT FOUND\",\n    \"data\": \"User not found\"\n}"
             }
           ]
+        },
+        {
+          "name": "Disconnect User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/api/users/{{userId}}/connect",
+            "description": "Removes a connection between the current user and another user. Both users will no longer be connected."
+          },
+          "response": [
+            {
+              "name": "Disconnect Success",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{base_url}}/api/users/661f9511-f3a2-41d5-b882-557535440123/connect"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"message\": \"Successfully disconnected\",\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"disconnected_at\": \"2025-05-06T15:30:45Z\"\n    }\n}"
+            },
+            {
+              "name": "Disconnect Error - Not Connected",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{base_url}}/api/users/772g0622-g4b3-52e6-c993-668646551234/connect"
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"code\": 400,\n    \"status\": \"BAD REQUEST\",\n    \"data\": \"You are not connected with this user\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Peoples",
+          "request": {
+            "method": "GET",
+            "header": []
+          },
+          "response": []
         }
-      ]
+      ],
+      "description": "Endpoints untuk mengelola koneksi antar pengguna"
+    },
+    {
+      "name": "Group Management",
+      "item": [
+        {
+          "name": "Create Group",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Golang Developers Indonesia\",\n  \"description\": \"A community for Go developers in Indonesia to network and share knowledge\",\n  \"rule\": \"Be respectful and professional. No spam or self-promotion without contributing value.\",\n  \"image\": \"uploads/groups/golang-dev.jpg\",\n  \"privacy_level\": \"public\",\n  \"invite_policy\": \"admin\"\n}"
+            },
+            "url": "{{base_url}}/api/groups",
+            "description": "Create a new group where the authenticated user becomes the creator and admin"
+          },
+          "response": [
+            {
+              "name": "Create Group Success",
+              "originalRequest": {
+                "url": "{{base_url}}/api/groups"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"code\": 201,\n  \"status\": \"CREATED\",\n  \"data\": {\n    \"id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n    \"name\": \"Golang Developers Indonesia\",\n    \"description\": \"A community for Go developers in Indonesia to network and share knowledge\",\n    \"rule\": \"Be respectful and professional. No spam or self-promotion without contributing value.\",\n    \"image\": \"uploads/groups/golang-dev.jpg\",\n    \"privacy_level\": \"public\",\n    \"invite_policy\": \"admin\",\n    \"creator_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"creator\": {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"name\": \"John Doe\",\n      \"username\": \"johndoe\",\n      \"photo\": \"uploads/photos/johndoe.jpg\"\n    },\n    \"members\": [],\n    \"members_count\": 1,\n    \"created_at\": \"2023-11-28T10:20:00Z\",\n    \"updated_at\": \"2023-11-28T10:20:00Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Upload Group Photo",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "photo",
+                  "type": "file",
+                  "src": "/path/to/group-photo.jpg"
+                }
+              ]
+            },
+            "url": "{{base_url}}/api/groups/{{groupId}}/photo",
+            "description": "Upload a photo for a group (only group admins can upload)"
+          },
+          "response": [
+            {
+              "name": "Upload Group Photo Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "photo",
+                      "type": "file",
+                      "src": "/path/to/group-photo.jpg"
+                    }
+                  ]
+                },
+                "url": "{{base_url}}/api/groups/{{groupId}}/photo"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"photo\": \"uploads/groups/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/group-1706278392.jpg\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get All Groups",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/groups?limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "groups"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Get a list of all public groups with pagination"
+          },
+          "response": [
+            {
+              "name": "Get All Groups Success",
+              "originalRequest": {
+                "url": "{{base_url}}/api/groups?limit=10&offset=0"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": [\n    {\n      \"id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n      \"name\": \"Golang Developers Indonesia\",\n      \"description\": \"A community for Go developers in Indonesia to network and share knowledge\",\n      \"image\": \"uploads/groups/golang-dev.jpg\",\n      \"privacy_level\": \"public\",\n      \"creator\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"John Doe\",\n        \"username\": \"johndoe\",\n        \"photo\": \"uploads/photos/johndoe.jpg\"\n      },\n      \"members_count\": 12,\n      \"created_at\": \"2023-11-28T10:20:00Z\"\n    },\n    {\n      \"id\": \"b2c3d4e5-f6g7-5b4c-9d8e-0f1g2h3i4j5k\",\n      \"name\": \"React Indonesia\",\n      \"description\": \"For frontend developers working with React in Indonesia\",\n      \"image\": \"uploads/groups/react-ind.jpg\",\n      \"privacy_level\": \"public\",\n      \"creator\": {\n        \"id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"name\": \"Jane Smith\",\n        \"username\": \"janesmith\",\n        \"photo\": \"uploads/photos/janesmith.jpg\"\n      },\n      \"members_count\": 28,\n      \"created_at\": \"2023-11-25T14:30:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get My Groups",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/my-groups",
+            "description": "Get all groups that the authenticated user is a member of"
+          },
+          "response": [
+            {
+              "name": "Get My Groups Success",
+              "originalRequest": {
+                "url": "{{base_url}}/api/my-groups"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": [\n    {\n      \"id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n      \"name\": \"Golang Developers Indonesia\",\n      \"description\": \"A community for Go developers in Indonesia to network and share knowledge\",\n      \"image\": \"uploads/groups/golang-dev.jpg\",\n      \"privacy_level\": \"public\",\n      \"creator\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"John Doe\",\n        \"username\": \"johndoe\",\n        \"photo\": \"uploads/photos/johndoe.jpg\"\n      },\n      \"members_count\": 12,\n      \"created_at\": \"2023-11-28T10:20:00Z\"\n    },\n    {\n      \"id\": \"c3d4e5f6-g7h8-6c5d-0e1f-2g3h4i5j6k7l\",\n      \"name\": \"Backend Engineers\",\n      \"description\": \"Discussion group for backend development technologies and best practices\",\n      \"image\": \"uploads/groups/backend-eng.jpg\",\n      \"privacy_level\": \"private\",\n      \"creator\": {\n        \"id\": \"772g0622-g4b3-52e6-c993-668646551234\",\n        \"name\": \"Alex Johnson\",\n        \"username\": \"alexj\",\n        \"photo\": \"uploads/photos/alexj.jpg\"\n      },\n      \"members_count\": 8,\n      \"created_at\": \"2023-11-26T09:15:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Group By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/groups/{{groupId}}",
+            "description": "Get detailed information about a specific group by ID"
+          },
+          "response": [
+            {
+              "name": "Get Group By ID Success",
+              "originalRequest": {
+                "url": "{{base_url}}/api/groups/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n    \"name\": \"Golang Developers Indonesia\",\n    \"description\": \"A community for Go developers in Indonesia to network and share knowledge\",\n    \"rule\": \"Be respectful and professional. No spam or self-promotion without contributing value.\",\n    \"image\": \"uploads/groups/golang-dev.jpg\",\n    \"privacy_level\": \"public\",\n    \"invite_policy\": \"admin\",\n    \"creator_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"creator\": {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"name\": \"John Doe\",\n      \"username\": \"johndoe\",\n      \"photo\": \"uploads/photos/johndoe.jpg\"\n    },\n    \"members\": [\n      {\n        \"user_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"user\": {\n          \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n          \"name\": \"John Doe\",\n          \"username\": \"johndoe\",\n          \"photo\": \"uploads/photos/johndoe.jpg\"\n        },\n        \"role\": \"admin\",\n        \"joined_at\": \"2023-11-28T10:20:00Z\"\n      },\n      {\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"user\": {\n          \"id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n          \"name\": \"Jane Smith\",\n          \"username\": \"janesmith\",\n          \"photo\": \"uploads/photos/janesmith.jpg\"\n        },\n        \"role\": \"member\",\n        \"joined_at\": \"2023-11-28T11:45:00Z\"\n      }\n    ],\n    \"members_count\": 2,\n    \"created_at\": \"2023-11-28T10:20:00Z\",\n    \"updated_at\": \"2023-11-28T10:20:00Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Group",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Golang Developers Indonesia - Official\",\n  \"description\": \"The official community for Go developers in Indonesia to network and share knowledge\",\n  \"rule\": \"Be respectful and professional. No spam or self-promotion without contributing value.\",\n  \"image\": \"uploads/groups/golang-dev-updated.jpg\",\n  \"privacy_level\": \"public\",\n  \"invite_policy\": \"all_members\"\n}"
+            },
+            "url": "{{base_url}}/api/groups/{{groupId}}",
+            "description": "Update an existing group by ID (only group admin can update)"
+          },
+          "response": [
+            {
+              "name": "Update Group Success",
+              "originalRequest": {
+                "url": "{{base_url}}/api/groups/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n    \"name\": \"Golang Developers Indonesia - Official\",\n    \"description\": \"The official community for Go developers in Indonesia to network and share knowledge\",\n    \"rule\": \"Be respectful and professional. No spam or self-promotion without contributing value.\",\n    \"image\": \"uploads/groups/golang-dev-updated.jpg\",\n    \"privacy_level\": \"public\",\n    \"invite_policy\": \"all_members\",\n    \"creator_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"creator\": {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"name\": \"John Doe\",\n      \"username\": \"johndoe\",\n      \"photo\": \"uploads/photos/johndoe.jpg\"\n    },\n    \"members_count\": 2,\n    \"created_at\": \"2023-11-28T10:20:00Z\",\n    \"updated_at\": \"2023-11-28T15:30:00Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Group",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/api/groups/{{groupId}}",
+            "description": "Delete a group (only the creator can delete a group)"
+          },
+          "response": [
+            {
+              "name": "Delete Group Success",
+              "originalRequest": {
+                "url": "{{base_url}}/api/groups/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\"\n}"
+            }
+          ]
+        }
+      ],
+      "description": "Endpoints for creating, updating, deleting, and retrieving groups"
+    },
+    {
+      "name": "Group Membership",
+      "item": [
+        {
+          "name": "Add Member",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "POST",
+            "header": [],
+            "url": "{{base_url}}/api/groups/{{groupId}}/members/{{userId}}",
+            "description": "Add a user directly to a group (based on invite_policy, only admin or any member can add)"
+          },
+          "response": [
+            {
+              "name": "Add Member Success",
+              "originalRequest": {
+                "url": "{{base_url}}/api/groups/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/members/772g0622-g4b3-52e6-c993-668646551234"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"group_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n    \"user_id\": \"772g0622-g4b3-52e6-c993-668646551234\",\n    \"role\": \"member\",\n    \"joined_at\": \"2023-11-28T16:00:00Z\",\n    \"is_active\": true,\n    \"user\": {\n      \"id\": \"772g0622-g4b3-52e6-c993-668646551234\",\n      \"name\": \"Alex Johnson\",\n      \"username\": \"alexj\",\n      \"photo\": \"uploads/photos/alexj.jpg\"\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Remove Member",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/api/groups/{{groupId}}/members/{{userId}}",
+            "description": "Remove a member from a group (admin can remove any member, members can remove themselves)"
+          },
+          "response": [
+            {
+              "name": "Remove Member Success",
+              "originalRequest": {
+                "url": "{{base_url}}/api/groups/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/members/772g0622-g4b3-52e6-c993-668646551234"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Member Role",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"admin\"\n}"
+            },
+            "url": "{{base_url}}/api/groups/{{groupId}}/members/{{userId}}/role",
+            "description": "Change a member's role (only the group creator can change roles)"
+          },
+          "response": [
+            {
+              "name": "Update Member Role Success",
+              "originalRequest": {
+                "url": "{{base_url}}/api/groups/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/members/661f9511-f3a2-41d5-b882-557535440123/role"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"group_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n    \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n    \"role\": \"admin\",\n    \"joined_at\": \"2023-11-28T11:45:00Z\",\n    \"is_active\": true,\n    \"user\": {\n      \"id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n      \"name\": \"Jane Smith\",\n      \"username\": \"janesmith\",\n      \"photo\": \"uploads/photos/janesmith.jpg\"\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Group Members",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/groups/{{groupId}}/members",
+            "description": "Get all members of a specific group"
+          },
+          "response": [
+            {
+              "name": "Get Group Members Success",
+              "originalRequest": {
+                "url": "{{base_url}}/api/groups/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/members"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": [\n    {\n      \"group_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n      \"user_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"role\": \"admin\",\n      \"joined_at\": \"2023-11-28T10:20:00Z\",\n      \"is_active\": true,\n      \"user\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"John Doe\",\n        \"username\": \"johndoe\",\n        \"photo\": \"uploads/photos/johndoe.jpg\"\n      }\n    },\n    {\n      \"group_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n      \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n      \"role\": \"admin\",\n      \"joined_at\": \"2023-11-28T11:45:00Z\",\n      \"is_active\": true,\n      \"user\": {\n        \"id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"name\": \"Jane Smith\",\n        \"username\": \"janesmith\",\n        \"photo\": \"uploads/photos/janesmith.jpg\"\n      }\n    },\n    {\n      \"group_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n      \"user_id\": \"772g0622-g4b3-52e6-c993-668646551234\",\n      \"role\": \"member\",\n      \"joined_at\": \"2023-11-28T16:00:00Z\",\n      \"is_active\": true,\n      \"user\": {\n        \"id\": \"772g0622-g4b3-52e6-c993-668646551234\",\n        \"name\": \"Alex Johnson\",\n        \"username\": \"alexj\",\n        \"photo\": \"uploads/photos/alexj.jpg\"\n      }\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Leave Group",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/api/groups/{{groupId}}/leave",
+            "description": "Allows a user to leave a group they are a member of. If the user is the only admin, they cannot leave the group."
+          },
+          "response": [
+            {
+              "name": "Leave Group Success",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{base_url}}/api/groups/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/leave"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"message\": \"Successfully left the group\",\n    \"group_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n    \"user_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"left_at\": \"2025-05-07T10:15:22Z\"\n  }\n}"
+            },
+            {
+              "name": "Leave Group Error - Not a Member",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{base_url}}/api/groups/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/leave"
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 400,\n  \"status\": \"BAD REQUEST\",\n  \"data\": \"you are not a member of this group\"\n}"
+            },
+            {
+              "name": "Leave Group Error - Only Admin",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{base_url}}/api/groups/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/leave"
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 400,\n  \"status\": \"BAD REQUEST\",\n  \"data\": \"as the only admin, you cannot leave the group - transfer admin role first or delete the group\"\n}"
+            }
+          ]
+        }
+      ],
+      "description": "Endpoints for managing group membership"
+    },
+    {
+      "name": "Group Invitations",
+      "item": [
+        {
+          "name": "Create Invitation",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "POST",
+            "header": [],
+            "url": "{{base_url}}/api/groups/{{groupId}}/invitations/{{userId}}",
+            "description": "Send an invitation to a user to join a group (admin only if invite_policy is 'admin', any member if invite_policy is 'all_members')"
+          },
+          "response": [
+            {
+              "name": "Create Invitation Success",
+              "originalRequest": {
+                "url": "{{base_url}}/api/groups/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/invitations/883h1733-h5c4-63f7-d0a4-779757662345"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"id\": \"h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0\",\n    \"group_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n    \"inviter_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"invitee_id\": \"883h1733-h5c4-63f7-d0a4-779757662345\",\n    \"status\": \"pending\",\n    \"created_at\": \"2023-11-28T16:30:00Z\",\n    \"updated_at\": \"2023-11-28T16:30:00Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Accept Invitation",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "PUT",
+            "header": [],
+            "url": "{{base_url}}/api/invitations/{{invitationId}}/accept",
+            "description": "Accept a group invitation (only the invited user can accept)"
+          },
+          "response": [
+            {
+              "name": "Accept Invitation Success",
+              "originalRequest": {
+                "url": "{{base_url}}/api/invitations/h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0/accept"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"group_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n    \"user_id\": \"883h1733-h5c4-63f7-d0a4-779757662345\",\n    \"role\": \"member\",\n    \"joined_at\": \"2023-11-28T17:00:00Z\",\n    \"is_active\": true,\n    \"user\": {\n      \"id\": \"883h1733-h5c4-63f7-d0a4-779757662345\",\n      \"name\": \"Sarah Williams\",\n      \"username\": \"sarahw\",\n      \"photo\": \"uploads/photos/sarahw.jpg\"\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reject Invitation",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "PUT",
+            "header": [],
+            "url": "{{base_url}}/api/invitations/{{invitationId}}/reject",
+            "description": "Reject a group invitation (only the invited user can reject)"
+          },
+          "response": [
+            {
+              "name": "Reject Invitation Success",
+              "originalRequest": {
+                "url": "{{base_url}}/api/invitations/j9k0l1m2-n3o4-c2d3-e4f5-g6h7i8j9k0l1/reject"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get My Invitations",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/my-invitations",
+            "description": "Get all pending group invitations for the current user"
+          },
+          "response": [
+            {
+              "name": "Get My Invitations Success",
+              "originalRequest": {
+                "url": "{{base_url}}/api/my-invitations"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": [\n    {\n      \"id\": \"k1l2m3n4-o5p6-d3e4-f5g6-h7i8j9k0l1m2\",\n      \"group_id\": \"c3d4e5f6-g7h8-6c5d-0e1f-2g3h4i5j6k7l\",\n      \"group\": {\n        \"id\": \"c3d4e5f6-g7h8-6c5d-0e1f-2g3h4i5j6k7l\",\n        \"name\": \"Backend Engineers\",\n        \"description\": \"Discussion group for backend development technologies and best practices\",\n        \"image\": \"uploads/groups/backend-eng.jpg\",\n        \"privacy_level\": \"private\",\n        \"members_count\": 8\n      },\n      \"inviter_id\": \"772g0622-g4b3-52e6-c993-668646551234\",\n      \"inviter\": {\n        \"id\": \"772g0622-g4b3-52e6-c993-668646551234\",\n        \"name\": \"Alex Johnson\",\n        \"username\": \"alexj\",\n        \"photo\": \"uploads/photos/alexj.jpg\"\n      },\n      \"invitee_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"invitee\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"John Doe\",\n        \"username\": \"johndoe\",\n        \"photo\": \"uploads/photos/johndoe.jpg\"\n      },\n      \"status\": \"pending\",\n      \"created_at\": \"2023-11-28T12:45:00Z\",\n      \"updated_at\": \"2023-11-28T12:45:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ],
+      "description": "Endpoints for managing group invitations"
     },
     {
       "name": "Blog",
-      "description": "Endpoints untuk mengelola blog dan artikel",
       "item": [
         {
           "name": "Create Blog",
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{JWT_TOKEN}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{JWT_TOKEN}}"
+              }
             },
             "method": "POST",
             "header": [
@@ -2414,13 +2668,7 @@
                 }
               }
             },
-            "url": {
-              "raw": "http://localhost:3000/api/blogs",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
-              "path": ["api", "blogs"]
-            }
+            "url": "http://localhost:3000/api/blogs"
           },
           "response": []
         },
@@ -2429,13 +2677,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "http://localhost:3000/api/blogs",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
-              "path": ["api", "blogs"]
-            }
+            "url": "http://localhost:3000/api/blogs"
           },
           "response": []
         },
@@ -2444,23 +2686,13 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{JWT_TOKEN}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{JWT_TOKEN}}"
+              }
             },
             "method": "DELETE",
             "header": [],
-            "url": {
-              "raw": "http://localhost:3000/api/blogs/{{blog_id}}",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
-              "path": ["api", "blogs", "{{blog_id}}"]
-            }
+            "url": "http://localhost:3000/api/blogs/{{blog_id}}"
           },
           "response": []
         },
@@ -2469,34 +2701,24 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "http://localhost:3000/api/blogs/slug/{{blog_slug}}",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
-              "path": ["api", "blogs", "slug", "{{blog_slug}}"]
-            }
+            "url": "http://localhost:3000/api/blogs/slug/{{blog_slug}}"
           },
           "response": []
         }
-      ]
+      ],
+      "description": "Endpoints untuk mengelola blog dan artikel"
     },
     {
       "name": "Education",
-      "description": "Endpoints untuk mengelola data pendidikan pengguna",
       "item": [
         {
           "name": "Create Education",
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "POST",
             "header": [
@@ -2514,11 +2736,7 @@
                 }
               }
             },
-            "url": {
-              "raw": "{{base_url}}/api/education",
-              "host": ["{{base_url}}"],
-              "path": ["api", "education"]
-            },
+            "url": "{{base_url}}/api/education",
             "description": "Menambahkan data pendidikan baru untuk pengguna saat ini"
           },
           "response": [
@@ -2536,20 +2754,18 @@
                     }
                   }
                 },
-                "url": {
-                  "raw": "{{base_url}}/api/education",
-                  "host": ["{{base_url}}"],
-                  "path": ["api", "education"]
-                }
+                "url": "{{base_url}}/api/education"
               },
               "status": "Created",
               "code": 201,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 201,\n    \"status\": \"CREATED\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"institute_name\": \"Harvard University\",\n        \"major\": \"Computer Science\",\n        \"start_month\": \"September\",\n        \"start_year\": \"2018\",\n        \"end_month\": \"June\",\n        \"end_year\": \"2022\",\n        \"caption\": \"Bachelor of Science in Computer Science\",\n        \"photo\": \"uploads/education/harvard.jpg\",\n        \"created_at\": \"2023-11-28T15:30:00Z\",\n        \"updated_at\": \"2023-11-28T15:30:00Z\"\n    }\n}"
             }
           ]
@@ -2559,13 +2775,9 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "PUT",
             "header": [
@@ -2583,11 +2795,7 @@
                 }
               }
             },
-            "url": {
-              "raw": "{{base_url}}/api/education/{{educationId}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "education", "{{educationId}}"]
-            },
+            "url": "{{base_url}}/api/education/{{educationId}}",
             "description": "Memperbarui data pendidikan pengguna"
           },
           "response": [
@@ -2605,24 +2813,18 @@
                     }
                   }
                 },
-                "url": {
-                  "raw": "{{base_url}}/api/education/550e8400-e29b-41d4-a716-446655440000",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "education",
-                    "550e8400-e29b-41d4-a716-446655440000"
-                  ]
-                }
+                "url": "{{base_url}}/api/education/550e8400-e29b-41d4-a716-446655440000"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"institute_name\": \"MIT\",\n        \"major\": \"Computer Science and Engineering\",\n        \"start_month\": \"August\",\n        \"start_year\": \"2018\",\n        \"end_month\": \"May\",\n        \"end_year\": \"2022\",\n        \"caption\": \"Bachelor of Science in Computer Science and Engineering\",\n        \"photo\": \"uploads/education/mit.jpg\",\n        \"created_at\": \"2023-11-28T15:30:00Z\",\n        \"updated_at\": \"2023-11-28T16:45:00Z\"\n    }\n}"
             }
           ]
@@ -2632,21 +2834,13 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "DELETE",
             "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/education/{{educationId}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "education", "{{educationId}}"]
-            },
+            "url": "{{base_url}}/api/education/{{educationId}}",
             "description": "Menghapus data pendidikan pengguna"
           },
           "response": [
@@ -2655,24 +2849,18 @@
               "originalRequest": {
                 "method": "DELETE",
                 "header": [],
-                "url": {
-                  "raw": "{{base_url}}/api/education/550e8400-e29b-41d4-a716-446655440000",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "education",
-                    "550e8400-e29b-41d4-a716-446655440000"
-                  ]
-                }
+                "url": "{{base_url}}/api/education/550e8400-e29b-41d4-a716-446655440000"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": \"Education entry deleted successfully\"\n}"
             }
           ]
@@ -2682,11 +2870,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/education/{{educationId}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "education", "{{educationId}}"]
-            },
+            "url": "{{base_url}}/api/education/{{educationId}}",
             "description": "Mendapatkan detail pendidikan berdasarkan ID"
           },
           "response": [
@@ -2695,24 +2879,18 @@
               "originalRequest": {
                 "method": "GET",
                 "header": [],
-                "url": {
-                  "raw": "{{base_url}}/api/education/550e8400-e29b-41d4-a716-446655440000",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "education",
-                    "550e8400-e29b-41d4-a716-446655440000"
-                  ]
-                }
+                "url": "{{base_url}}/api/education/550e8400-e29b-41d4-a716-446655440000"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"institute_name\": \"MIT\",\n        \"major\": \"Computer Science and Engineering\",\n        \"start_month\": \"August\",\n        \"start_year\": \"2018\",\n        \"end_month\": \"May\",\n        \"end_year\": \"2022\",\n        \"caption\": \"Bachelor of Science in Computer Science and Engineering\",\n        \"photo\": \"uploads/education/mit.jpg\",\n        \"created_at\": \"2023-11-28T15:30:00Z\",\n        \"updated_at\": \"2023-11-28T16:45:00Z\"\n    }\n}"
             }
           ]
@@ -2770,12 +2948,14 @@
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"educations\": [\n            {\n                \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n                \"institute_name\": \"MIT\",\n                \"major\": \"Computer Science and Engineering\",\n                \"start_month\": \"August\",\n                \"start_year\": \"2018\",\n                \"end_month\": \"May\",\n                \"end_year\": \"2022\",\n                \"caption\": \"Bachelor of Science in Computer Science and Engineering\",\n                \"photo\": \"uploads/education/mit.jpg\",\n                \"created_at\": \"2023-11-28T15:30:00Z\",\n                \"updated_at\": \"2023-11-28T16:45:00Z\"\n            },\n            {\n                \"id\": \"661f9511-f3a2-41d5-b882-557535440456\",\n                \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n                \"institute_name\": \"Stanford University\",\n                \"major\": \"Artificial Intelligence\",\n                \"start_month\": \"September\",\n                \"start_year\": \"2022\",\n                \"end_month\": null,\n                \"end_year\": null,\n                \"caption\": \"Master's in Artificial Intelligence\",\n                \"photo\": \"uploads/education/stanford.jpg\",\n                \"created_at\": \"2023-11-29T10:20:00Z\",\n                \"updated_at\": \"2023-11-29T10:20:00Z\"\n            }\n        ],\n        \"total\": 2\n    }\n}"
             }
           ]
@@ -2785,13 +2965,9 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "POST",
             "header": [],
@@ -2805,11 +2981,7 @@
                 }
               ]
             },
-            "url": {
-              "raw": "{{base_url}}/api/education/photo",
-              "host": ["{{base_url}}"],
-              "path": ["api", "education", "photo"]
-            },
+            "url": "{{base_url}}/api/education/photo",
             "description": "Upload foto/sertifikat pendidikan"
           },
           "response": [
@@ -2828,42 +3000,36 @@
                     }
                   ]
                 },
-                "url": {
-                  "raw": "{{base_url}}/api/education/photo",
-                  "host": ["{{base_url}}"],
-                  "path": ["api", "education", "photo"]
-                }
+                "url": "{{base_url}}/api/education/photo"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"photo\": \"uploads/education/661f9511-f3a2-41d5-b882-557535440123/certificate-1706278392.jpg\"\n    }\n}"
             }
           ]
         }
-      ]
+      ],
+      "description": "Endpoints untuk mengelola data pendidikan pengguna"
     },
     {
       "name": "Experience",
-      "description": "Endpoints untuk mengelola data pengalaman kerja pengguna",
       "item": [
         {
           "name": "Create Experience",
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "POST",
             "header": [
@@ -2881,11 +3047,7 @@
                 }
               }
             },
-            "url": {
-              "raw": "{{base_url}}/api/experience",
-              "host": ["{{base_url}}"],
-              "path": ["api", "experience"]
-            },
+            "url": "{{base_url}}/api/experience",
             "description": "Menambahkan data pengalaman kerja baru untuk pengguna saat ini"
           },
           "response": [
@@ -2903,20 +3065,18 @@
                     }
                   }
                 },
-                "url": {
-                  "raw": "{{base_url}}/api/experience",
-                  "host": ["{{base_url}}"],
-                  "path": ["api", "experience"]
-                }
+                "url": "{{base_url}}/api/experience"
               },
               "status": "Created",
               "code": 201,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 201,\n    \"status\": \"CREATED\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"job_title\": \"Software Engineer\",\n        \"company_name\": \"Google\",\n        \"start_month\": \"June\",\n        \"start_year\": \"2018\",\n        \"end_month\": \"December\",\n        \"end_year\": \"2021\",\n        \"caption\": \"Worked on various projects including search and cloud platforms.\",\n        \"photo\": \"uploads/experience/google.jpg\",\n        \"created_at\": \"2023-11-28T15:30:00Z\",\n        \"updated_at\": \"2023-11-28T15:30:00Z\"\n    }\n}"
             }
           ]
@@ -2926,13 +3086,9 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "PUT",
             "header": [
@@ -2950,11 +3106,7 @@
                 }
               }
             },
-            "url": {
-              "raw": "{{base_url}}/api/experience/{{experienceId}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "experience", "{{experienceId}}"]
-            },
+            "url": "{{base_url}}/api/experience/{{experienceId}}",
             "description": "Memperbarui data pengalaman kerja pengguna"
           },
           "response": [
@@ -2972,24 +3124,18 @@
                     }
                   }
                 },
-                "url": {
-                  "raw": "{{base_url}}/api/experience/550e8400-e29b-41d4-a716-446655440000",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "experience",
-                    "550e8400-e29b-41d4-a716-446655440000"
-                  ]
-                }
+                "url": "{{base_url}}/api/experience/550e8400-e29b-41d4-a716-446655440000"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"job_title\": \"Senior Software Engineer\",\n        \"company_name\": \"Google\",\n        \"start_month\": \"June\",\n        \"start_year\": \"2018\",\n        \"end_month\": \"December\",\n        \"end_year\": \"2021\",\n        \"caption\": \"Led development of search algorithms and cloud infrastructure.\",\n        \"photo\": \"uploads/experience/google_updated.jpg\",\n        \"created_at\": \"2023-11-28T15:30:00Z\",\n        \"updated_at\": \"2023-11-28T16:45:00Z\"\n    }\n}"
             }
           ]
@@ -2999,21 +3145,13 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "DELETE",
             "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/experience/{{experienceId}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "experience", "{{experienceId}}"]
-            },
+            "url": "{{base_url}}/api/experience/{{experienceId}}",
             "description": "Menghapus data pengalaman kerja pengguna"
           },
           "response": [
@@ -3022,24 +3160,18 @@
               "originalRequest": {
                 "method": "DELETE",
                 "header": [],
-                "url": {
-                  "raw": "{{base_url}}/api/experience/550e8400-e29b-41d4-a716-446655440000",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "experience",
-                    "550e8400-e29b-41d4-a716-446655440000"
-                  ]
-                }
+                "url": "{{base_url}}/api/experience/550e8400-e29b-41d4-a716-446655440000"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": \"Experience deleted successfully\"\n}"
             }
           ]
@@ -3049,11 +3181,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/experience/{{experienceId}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "experience", "{{experienceId}}"]
-            },
+            "url": "{{base_url}}/api/experience/{{experienceId}}",
             "description": "Mendapatkan detail pengalaman kerja berdasarkan ID"
           },
           "response": [
@@ -3062,24 +3190,18 @@
               "originalRequest": {
                 "method": "GET",
                 "header": [],
-                "url": {
-                  "raw": "{{base_url}}/api/experience/550e8400-e29b-41d4-a716-446655440000",
-                  "host": ["{{base_url}}"],
-                  "path": [
-                    "api",
-                    "experience",
-                    "550e8400-e29b-41d4-a716-446655440000"
-                  ]
-                }
+                "url": "{{base_url}}/api/experience/550e8400-e29b-41d4-a716-446655440000"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"job_title\": \"Senior Software Engineer\",\n        \"company_name\": \"Google\",\n        \"start_month\": \"June\",\n        \"start_year\": \"2018\",\n        \"end_month\": \"December\",\n        \"end_year\": \"2021\",\n        \"caption\": \"Led development of search algorithms and cloud infrastructure.\",\n        \"photo\": \"uploads/experience/google_updated.jpg\",\n        \"created_at\": \"2023-11-28T15:30:00Z\",\n        \"updated_at\": \"2023-11-28T16:45:00Z\"\n    }\n}"
             }
           ]
@@ -3137,12 +3259,14 @@
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"experiences\": [\n            {\n                \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n                \"job_title\": \"Senior Software Engineer\",\n                \"company_name\": \"Google\",\n                \"start_month\": \"June\",\n                \"start_year\": \"2018\",\n                \"end_month\": \"December\",\n                \"end_year\": \"2021\",\n                \"caption\": \"Led development of search algorithms and cloud infrastructure.\",\n                \"photo\": \"uploads/experience/google_updated.jpg\",\n                \"created_at\": \"2023-11-28T15:30:00Z\",\n                \"updated_at\": \"2023-11-28T16:45:00Z\"\n            },\n            {\n                \"id\": \"661f9511-f3a2-41d5-b882-557535440456\",\n                \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n                \"job_title\": \"Full Stack Developer\",\n                \"company_name\": \"Facebook\",\n                \"start_month\": \"January\",\n                \"start_year\": \"2022\",\n                \"end_month\": null,\n                \"end_year\": null,\n                \"caption\": \"Currently working on React infrastructure and developer tools.\",\n                \"photo\": \"uploads/experience/facebook.jpg\",\n                \"created_at\": \"2023-11-29T10:20:00Z\",\n                \"updated_at\": \"2023-11-29T10:20:00Z\"\n            }\n        ],\n        \"total\": 2\n    }\n}"
             }
           ]
@@ -3152,13 +3276,9 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": {
+                "token": "{{token}}"
+              }
             },
             "method": "POST",
             "header": [],
@@ -3172,11 +3292,7 @@
                 }
               ]
             },
-            "url": {
-              "raw": "{{base_url}}/api/experience/photo",
-              "host": ["{{base_url}}"],
-              "path": ["api", "experience", "photo"]
-            },
+            "url": "{{base_url}}/api/experience/photo",
             "description": "Upload foto/logo perusahaan untuk pengalaman kerja"
           },
           "response": [
@@ -3195,25 +3311,24 @@
                     }
                   ]
                 },
-                "url": {
-                  "raw": "{{base_url}}/api/experience/photo",
-                  "host": ["{{base_url}}"],
-                  "path": ["api", "experience", "photo"]
-                }
+                "url": "{{base_url}}/api/experience/photo"
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"photo\": \"uploads/experience/661f9511-f3a2-41d5-b882-557535440123/company-logo-1706278392.jpg\"\n    }\n}"
             }
           ]
         }
-      ]
+      ],
+      "description": "Endpoints untuk mengelola data pengalaman kerja pengguna"
     }
   ],
   "variable": [
@@ -3244,6 +3359,16 @@
     },
     {
       "key": "requestId",
+      "value": "h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0",
+      "type": "string"
+    },
+    {
+      "key": "groupId",
+      "value": "a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d",
+      "type": "string"
+    },
+    {
+      "key": "invitationId",
       "value": "h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0",
       "type": "string"
     }

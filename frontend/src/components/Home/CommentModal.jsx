@@ -87,7 +87,7 @@ function CommentModal({ postId, isOpen, onClose }) {
         <div className="mr-3 relative">
           <img 
             className="w-10 h-10 rounded-full" 
-            src={comment.user.profile_photo_url || '/img/default-avatar.png'} 
+            src={comment.user.profile_photo_url || '/img/default-photo.png'} 
             alt={comment.user.name} 
           />
           <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ${

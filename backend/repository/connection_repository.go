@@ -18,4 +18,8 @@ type ConnectionRepository interface {
 	SaveConnection(ctx context.Context, tx *sql.Tx, connection domain.Connection) domain.Connection
 	CheckConnectionExists(ctx context.Context, tx *sql.Tx, userId1, userId2 uuid.UUID) bool
 	FindConnectionsByUserId(ctx context.Context, tx *sql.Tx, userId uuid.UUID, limit, offset int) ([]domain.Connection, int)
+	IsConnected(ctx context.Context, tx *sql.Tx, currentUserId, userId uuid.UUID) bool
+	UpdateRequest(ctx context.Context, tx *sql.Tx, request domain.ConnectionRequest) domain.ConnectionRequest
+	FindRequest(ctx context.Context, tx *sql.Tx, senderId, receiverId uuid.UUID) (domain.ConnectionRequest, error)
+	Disconnect(ctx context.Context, tx *sql.Tx, userId1, userId2 uuid.UUID) error
 }
