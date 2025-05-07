@@ -2439,6 +2439,80 @@
               "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": [\n    {\n      \"group_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n      \"user_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"role\": \"admin\",\n      \"joined_at\": \"2023-11-28T10:20:00Z\",\n      \"is_active\": true,\n      \"user\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"John Doe\",\n        \"username\": \"johndoe\",\n        \"photo\": \"uploads/photos/johndoe.jpg\"\n      }\n    },\n    {\n      \"group_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n      \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n      \"role\": \"admin\",\n      \"joined_at\": \"2023-11-28T11:45:00Z\",\n      \"is_active\": true,\n      \"user\": {\n        \"id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"name\": \"Jane Smith\",\n        \"username\": \"janesmith\",\n        \"photo\": \"uploads/photos/janesmith.jpg\"\n      }\n    },\n    {\n      \"group_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n      \"user_id\": \"772g0622-g4b3-52e6-c993-668646551234\",\n      \"role\": \"member\",\n      \"joined_at\": \"2023-11-28T16:00:00Z\",\n      \"is_active\": true,\n      \"user\": {\n        \"id\": \"772g0622-g4b3-52e6-c993-668646551234\",\n        \"name\": \"Alex Johnson\",\n        \"username\": \"alexj\",\n        \"photo\": \"uploads/photos/alexj.jpg\"\n      }\n    }\n  ]\n}"
             }
           ]
+        },
+        {
+          "name": "Leave Group",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/api/groups/{{groupId}}/leave",
+            "description": "Allows a user to leave a group they are a member of. If the user is the only admin, they cannot leave the group."
+          },
+          "response": [
+            {
+              "name": "Leave Group Success",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{base_url}}/api/groups/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/leave"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"message\": \"Successfully left the group\",\n    \"group_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n    \"user_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"left_at\": \"2025-05-07T10:15:22Z\"\n  }\n}"
+            },
+            {
+              "name": "Leave Group Error - Not a Member",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{base_url}}/api/groups/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/leave"
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 400,\n  \"status\": \"BAD REQUEST\",\n  \"data\": \"you are not a member of this group\"\n}"
+            },
+            {
+              "name": "Leave Group Error - Only Admin",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{base_url}}/api/groups/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/leave"
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 400,\n  \"status\": \"BAD REQUEST\",\n  \"data\": \"as the only admin, you cannot leave the group - transfer admin role first or delete the group\"\n}"
+            }
+          ]
         }
       ],
       "description": "Endpoints for managing group membership"
