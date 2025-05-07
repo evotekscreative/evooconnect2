@@ -9,6 +9,7 @@ import (
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
 	"evoconnect/backend/utils"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
@@ -337,5 +338,31 @@ func (service *ConnectionServiceImpl) GetConnections(ctx context.Context, userId
 	return web.ConnectionListResponse{
 		Connections: connectionResponses,
 		Total:       count,
+	}
+}
+
+func (service *ConnectionServiceImpl) Disconnect(ctx context.Context, userId, targetUserId uuid.UUID) web.DisconnectResponse {
+	tx, err := service.DB.Begin()
+	if err != nil {
+		panic(err)
+	}
+	defer helper.CommitOrRollback(tx)
+
+	// Check if the users are connected
+	isConnected := service.ConnectionRepository.CheckConnectionExists(ctx, tx, userId, targetUserId)
+	if !isConnected {
+		panic(exception.NewBadRequestError("You are not connected with this user"))
+	}
+
+	// Perform disconnect operation
+	err = service.ConnectionRepository.Disconnect(ctx, tx, userId, targetUserId)
+	if err != nil {
+		panic(exception.NewInternalServerError("Failed to disconnect users: " + err.Error()))
+	}
+
+	return web.DisconnectResponse{
+		Message:        "Successfully disconnected",
+		UserId:         targetUserId,
+		DisconnectedAt: time.Now(),
 	}
 }

@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -24,16 +23,8 @@ func NewUserController(userService service.UserService) UserController {
 
 func (controller *UserControllerImpl) GetProfile(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Get user_id from context that was set by auth middleware
-	userIdStr, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse string to UUID
-	userId, err := uuid.Parse(userIdStr)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	userResponse := controller.UserService.GetProfile(request.Context(), userId)
 
@@ -48,16 +39,8 @@ func (controller *UserControllerImpl) GetProfile(writer http.ResponseWriter, req
 
 func (controller *UserControllerImpl) UpdateProfile(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Get user_id from context that was set by auth middleware
-	userIdStr, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse string to UUID
-	userId, err := uuid.Parse(userIdStr)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	updateProfileRequest := web.UpdateProfileRequest{}
 	helper.ReadFromRequestBody(request, &updateProfileRequest)
@@ -89,16 +72,8 @@ func (controller *UserControllerImpl) GetByUsername(writer http.ResponseWriter, 
 
 func (controller *UserControllerImpl) UploadPhotoProfile(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Get user_id from context that was set by auth middleware
-	userIdStr, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse string to UUID
-	userId, err := uuid.Parse(userIdStr)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	// Parse the multipart form file from request
 	file, handler, err := request.FormFile("photo")

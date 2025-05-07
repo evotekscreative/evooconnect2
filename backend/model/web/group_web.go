@@ -88,3 +88,10 @@ type GroupBriefResponse struct {
 	PrivacyLevel string    `json:"privacy_level"`
 	MembersCount int       `json:"members_count"`
 }
+
+type LeaveGroupResponse struct {
+	Message string    `json:"message"`
+	GroupId uuid.UUID `json:"group_id"`
+	UserId  uuid.UUID `json:"user_id"`
+	LeftAt  time.Time `json:"left_at"`
+}

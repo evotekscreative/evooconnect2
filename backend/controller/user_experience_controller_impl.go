@@ -29,16 +29,8 @@ func (controller *ExperienceControllerImpl) Create(writer http.ResponseWriter, r
 	helper.ReadFromRequestBody(request, &createRequest)
 
 	// Get user_id from context (set by JWT middleware)
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse user_id
-	userId, err := uuid.Parse(userIdString)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	// Call service to create experience
 	experienceResponse := controller.ExperienceService.Create(request.Context(), userId, createRequest)
@@ -66,16 +58,8 @@ func (controller *ExperienceControllerImpl) Update(writer http.ResponseWriter, r
 	}
 
 	// Get user_id from context (set by JWT middleware)
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse user_id
-	userId, err := uuid.Parse(userIdString)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	// Call service to update experience
 	experienceResponse := controller.ExperienceService.Update(request.Context(), experienceId, userId, updateRequest)
@@ -99,16 +83,8 @@ func (controller *ExperienceControllerImpl) Delete(writer http.ResponseWriter, r
 	}
 
 	// Get user_id from context (set by JWT middleware)
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse user_id
-	userId, err := uuid.Parse(userIdString)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	// Call service to delete experience
 	controller.ExperienceService.Delete(request.Context(), experienceId, userId)

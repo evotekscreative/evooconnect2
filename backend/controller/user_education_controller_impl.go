@@ -29,16 +29,8 @@ func (controller *EducationControllerImpl) Create(writer http.ResponseWriter, re
 	helper.ReadFromRequestBody(request, &createRequest)
 
 	// Get user_id from context (set by JWT middleware)
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse user_id
-	userId, err := uuid.Parse(userIdString)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	// Call service to create education
 	educationResponse := controller.EducationService.Create(request.Context(), userId, createRequest)
@@ -67,16 +59,8 @@ func (controller *EducationControllerImpl) Update(writer http.ResponseWriter, re
 	}
 
 	// Get user_id from context (set by JWT middleware)
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse user_id
-	userId, err := uuid.Parse(userIdString)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	// Call service to update education
 	educationResponse := controller.EducationService.Update(request.Context(), educationId, userId, updateRequest)
@@ -100,16 +84,8 @@ func (controller *EducationControllerImpl) Delete(writer http.ResponseWriter, re
 	}
 
 	// Get user_id from context (set by JWT middleware)
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse user_id
-	userId, err := uuid.Parse(userIdString)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	// Call service to delete education
 	controller.EducationService.Delete(request.Context(), educationId, userId)

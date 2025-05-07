@@ -21,6 +21,7 @@ type GroupController interface {
 	RemoveMember(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	UpdateMemberRole(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	FindMembers(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+	LeaveGroup(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 
 	// Invitation management
 	CreateInvitation(writer http.ResponseWriter, request *http.Request, params httprouter.Params)

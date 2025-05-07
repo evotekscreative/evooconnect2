@@ -50,3 +50,9 @@ type UserShort struct {
 	Photo       *string   `json:"photo,omitempty"`
 	IsConnected bool      `json:"is_connected"`
 }
+
+type DisconnectResponse struct {
+	Message        string    `json:"message"`
+	UserId         uuid.UUID `json:"user_id"`
+	DisconnectedAt time.Time `json:"disconnected_at"`
+}
