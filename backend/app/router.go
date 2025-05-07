@@ -20,6 +20,7 @@ func NewRouter(
 	experienceController controller.ExperienceController,
 	commentBlogController controller.CommentBlogController,
 	connectionController controller.ConnectionController,
+	reportController controller.ReportController,
 ) *httprouter.Router {
 	router := httprouter.New()
 
@@ -93,6 +94,11 @@ func NewRouter(
 
 	// User-specific posts
 	router.GET("/api/users/:userId/posts", postController.FindByUserId)
+
+	// Routes report
+	// Tambahkan di bawah route lain:
+	router.POST("/api/reports/:userId/:targetType/:targetId", reportController.CreateReportHandler())
+
 
 	// NotFound handler
 	router.GET("/api/connections/requests", connectionController.GetConnectionRequests)
