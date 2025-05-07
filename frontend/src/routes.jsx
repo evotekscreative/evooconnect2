@@ -185,7 +185,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/detail-blog/:id",
+    path: "/blog-detail/:slug",
     element: (
       <ProtectedRoute>
         <BlogDetail />
