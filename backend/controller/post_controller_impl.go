@@ -24,16 +24,8 @@ func NewPostController(postService service.PostService) PostController {
 
 func (controller *PostControllerImpl) Create(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Get user_id from context that was set by auth middleware
-	userIdStr, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse string to UUID
-	userId, err := uuid.Parse(userIdStr)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	createPostRequest := web.CreatePostRequest{}
 	helper.ReadFromRequestBody(request, &createPostRequest)
@@ -52,21 +44,13 @@ func (controller *PostControllerImpl) Create(writer http.ResponseWriter, request
 
 func (controller *PostControllerImpl) Update(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Get user_id from context that was set by auth middleware
-	userIdStr, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse string to UUID
-	userId, err := uuid.Parse(userIdStr)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	// Parse post_id from path
 	postIdStr := params.ByName("postId")
 	postId, err := uuid.Parse(postIdStr)
-	if err != nil {	
+	if err != nil {
 		panic(exception.NewBadRequestError("Invalid post ID format"))
 	}
 
@@ -86,16 +70,8 @@ func (controller *PostControllerImpl) Update(writer http.ResponseWriter, request
 
 func (controller *PostControllerImpl) Delete(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Get user_id from context that was set by auth middleware
-	userIdStr, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse string to UUID
-	userId, err := uuid.Parse(userIdStr)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	// Parse post_id from path
 	postIdStr := params.ByName("postId")
@@ -117,16 +93,8 @@ func (controller *PostControllerImpl) Delete(writer http.ResponseWriter, request
 
 func (controller *PostControllerImpl) FindById(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Get user_id from context that was set by auth middleware
-	userIdStr, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse string to UUID
-	userId, err := uuid.Parse(userIdStr)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	// Parse post_id from path
 	postIdStr := params.ByName("postId")
@@ -148,16 +116,8 @@ func (controller *PostControllerImpl) FindById(writer http.ResponseWriter, reque
 
 func (controller *PostControllerImpl) FindAll(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Get user_id from context that was set by auth middleware
-	userIdStr, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse string to UUID
-	userId, err := uuid.Parse(userIdStr)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	// Get pagination parameters
 	limitStr := request.URL.Query().Get("limit")
@@ -192,16 +152,8 @@ func (controller *PostControllerImpl) FindAll(writer http.ResponseWriter, reques
 
 func (controller *PostControllerImpl) FindByUserId(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Get user_id from context that was set by auth middleware
-	currentUserIdStr, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse string to UUID
-	currentUserId, err := uuid.Parse(currentUserIdStr)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	currentUserId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	// Parse target user_id from path
 	targetUserIdStr := params.ByName("userId")
@@ -242,17 +194,8 @@ func (controller *PostControllerImpl) FindByUserId(writer http.ResponseWriter, r
 }
 
 func (controller *PostControllerImpl) LikePost(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	// Get user_id from context that was set by auth middleware
-	userIdStr, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse string to UUID
-	userId, err := uuid.Parse(userIdStr)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	// Parse post_id from path
 	postIdStr := params.ByName("postId")
@@ -274,16 +217,8 @@ func (controller *PostControllerImpl) LikePost(writer http.ResponseWriter, reque
 
 func (controller *PostControllerImpl) UnlikePost(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Get user_id from context that was set by auth middleware
-	userIdStr, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse string to UUID
-	userId, err := uuid.Parse(userIdStr)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	// Parse post_id from path
 	postIdStr := params.ByName("postId")
@@ -308,16 +243,8 @@ func (controller *PostControllerImpl) UploadImages(writer http.ResponseWriter, r
 	// Set maximum upload size - 10MB
 	request.ParseMultipartForm(10 << 20) // 10MB
 
-	// Get user_id from context
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	userId, err := uuid.Parse(userIdString)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	// Get files from form
 	files := request.MultipartForm.File["images"]

@@ -36,3 +36,11 @@ func SaveUploadedFile(file multipart.File, category string, userId string, fileE
 	// Return relative path with forward slashes for consistency across platforms
 	return strings.ReplaceAll(filepath, "\\", "/")
 }
+
+func ValidateImageFile(fileHeader *multipart.FileHeader) error {
+	ext := filepath.Ext(fileHeader.Filename)
+	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" {
+		return fmt.Errorf("only JPG, JPEG and PNG files are allowed")
+	}
+	return nil
+}

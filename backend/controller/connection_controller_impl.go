@@ -62,16 +62,8 @@ func (controller *ConnectionControllerImpl) SendConnectionRequest(writer http.Re
 
 func (controller *ConnectionControllerImpl) GetConnectionRequests(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Get user ID from context (set by JWT middleware)
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse user ID
-	userId, err := uuid.Parse(userIdString)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	// Parse pagination parameters
 	limitStr := request.URL.Query().Get("limit")
@@ -114,16 +106,8 @@ func (controller *ConnectionControllerImpl) AcceptConnectionRequest(writer http.
 	}
 
 	// Get user ID from context (set by JWT middleware)
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse user ID
-	userId, err := uuid.Parse(userIdString)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	// Call service to accept connection request
 	connectionResponse := controller.ConnectionService.AcceptConnectionRequest(request.Context(), userId, requestId)
@@ -146,16 +130,8 @@ func (controller *ConnectionControllerImpl) RejectConnectionRequest(writer http.
 	}
 
 	// Get user ID from context (set by JWT middleware)
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse user ID
-	userId, err := uuid.Parse(userIdString)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	// Call service to reject connection request
 	connectionResponse := controller.ConnectionService.RejectConnectionRequest(request.Context(), userId, requestId)
@@ -212,16 +188,8 @@ func (controller *ConnectionControllerImpl) GetConnections(writer http.ResponseW
 
 func (controller *ConnectionControllerImpl) Disconnect(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Get user ID from context (set by JWT middleware)
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse user ID
-	userId, err := uuid.Parse(userIdString)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	// Parse target user ID from URL params
 	targetUserId, err := uuid.Parse(params.ByName("userId"))

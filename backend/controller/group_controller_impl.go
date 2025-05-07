@@ -303,6 +303,33 @@ func (controller *GroupControllerImpl) FindMembers(writer http.ResponseWriter, r
 	helper.WriteToResponseBody(writer, webResponse)
 }
 
+// File: controller/group_controller_impl.go
+
+func (controller *GroupControllerImpl) LeaveGroup(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Get user ID from token
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+
+	// Parse group ID from URL params
+	groupId, err := uuid.Parse(params.ByName("groupId"))
+	if err != nil {
+		panic(exception.NewBadRequestError("invalid group ID format"))
+	}
+
+	// Call service to leave the group
+	response := controller.GroupService.LeaveGroup(request.Context(), groupId, userId)
+
+	// Create web response
+	webResponse := web.WebResponse{
+		Code:   200,
+		Status: "OK",
+		Data:   response,
+	}
+
+	// Write response
+	helper.WriteToResponseBody(writer, webResponse)
+}
+
 func (controller *GroupControllerImpl) CreateInvitation(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Get user ID from token
 	userId, err := helper.GetUserIdFromToken(request)

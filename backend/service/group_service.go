@@ -24,6 +24,7 @@ type GroupService interface {
 	RemoveMember(ctx context.Context, groupId, userId, memberId uuid.UUID)
 	UpdateMemberRole(ctx context.Context, groupId, userId, memberId uuid.UUID, role string) web.GroupMemberResponse
 	GetMembers(ctx context.Context, groupId uuid.UUID) []web.GroupMemberResponse
+	LeaveGroup(ctx context.Context, groupId, userId uuid.UUID) web.LeaveGroupResponse
 
 	// Invitation management
 	CreateInvitation(ctx context.Context, groupId, userId, inviteeId uuid.UUID) web.GroupInvitationResponse
