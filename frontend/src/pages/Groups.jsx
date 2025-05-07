@@ -236,7 +236,7 @@ export default function Groups() {
                           </div>
                           <div className="flex justify-between items-center mt-3">
                             <Link 
-                              to={`/group-page`}
+                              to={`/groups/:id`}
                               className="text-xs sm:text-sm text-blue-600 hover:underline"
                             >
                               View Group

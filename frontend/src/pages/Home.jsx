@@ -96,6 +96,7 @@ export default function SocialNetworkFeed() {
     if (userData) {
       const parsedUser = JSON.parse(userData);
       setCurrentUserId(parsedUser.id);
+      
     }
   }, []);
 
@@ -563,7 +564,7 @@ export default function SocialNetworkFeed() {
       setLoadingComments((prev) => ({ ...prev, [commentId]: false }));
     }
   };
-  
+
   useEffect(() => {
     // Muat cache replies saat komponen dimount
     const loadCachedReplies = () => {
@@ -1526,6 +1527,9 @@ export default function SocialNetworkFeed() {
                   onChange={(e) => setPostContent(e.target.value)}
                 />
               </div>
+              {error &&  (
+                <div className="text-red-500 text-center py-4">{error}</div>
+              )}
 
               {/* Visibility Options */}
               <div className="flex items-center justify-between px-2">
@@ -1578,6 +1582,7 @@ export default function SocialNetworkFeed() {
                   )}
                 </Button>
               </div>
+              
             </>
           ) : (
             <>
@@ -1603,6 +1608,9 @@ export default function SocialNetworkFeed() {
                   }}
                 />
               </div>
+              {error &&  (
+                <div className="text-red-500 text-center py-4">{error}</div>
+              )}
 
               {/* Image preview */}
               {articleImages.length > 0 && (
@@ -1690,8 +1698,6 @@ export default function SocialNetworkFeed() {
         <div className="p-0">
           {loadingPosts ? (
             <div className="text-center py-4">Memuat post...</div>
-          ) : error ? (
-            <div className="text-red-500 text-center py-4">{error}</div>
           ) : (
             posts.map((post) => (
               <div
@@ -2386,10 +2392,6 @@ export default function SocialNetworkFeed() {
             <div className="p-3 md:p-4 overflow-y-auto flex-1">
               {loadingComments[currentPostId] ? (
                 <div className="text-center py-4">Loading comments...</div>
-              ) : commentError ? (
-                <div className="text-red-500 text-center py-4">
-                  {commentError}
-                </div>
               ) : !Array.isArray(comments[currentPostId]) ||
                 comments[currentPostId].length === 0 ? (
                 <p className="text-gray-500 text-center py-4">
@@ -2631,6 +2633,11 @@ export default function SocialNetworkFeed() {
                   onKeyPress={(e) => e.key === "Enter" && handleAddComment()}
                 />
               </div>
+              {commentError && (
+                <span className="text-red-500 text-center text-xs  font-medium mb-4 ">
+                  {commentError}
+                </span>
+              )}
               <div className="flex justify-end">
                 <button
                   className="bg-blue-500 text-white px-3 md:px-4 py-1 rounded-lg text-xs md:text-sm"

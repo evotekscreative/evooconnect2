@@ -62,23 +62,31 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setAlertInfo({ show: false, type: '', message: '' });
-
+  
     if (!validate()) return;
-
+  
     setLoading(true);
-
+  
     try {
       const response = await axios.post('http://localhost:3000/api/auth/login', formData);
-      // Simpan token di cookies dan localStorage untuk konsistensi
-      // Cookies.set('token', response.data.data.token, { expires: 7 });
+      
+      // Simpan token dan data user
       localStorage.setItem("token", response.data.data.token);
-
+      
+      localStorage.setItem("userData", JSON.stringify({
+        id: response.data.data.id,
+        name: response.data.data.name,
+        email: response.data.data.email,
+        photo: response.data.data.photo,
+        // tambahkan data user lainnya sesuai response API
+      }));
+  
       setAlertInfo({
         show: true,
         type: 'success',
         message: 'Login successful!',
       });
-
+  
       const navigateTo = location.state?.from?.pathname || '/';
       navigate(navigateTo);
     } catch (error) {
