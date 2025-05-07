@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import Cookies from 'js-cookie';
-import logo from '../../assets/img/logoB.png'; 
+import logo from '../../assets/img/logoB.png';
 import googleIcon from '../../assets/img/google-icon.jpg';
 import Alert from '../../components/Auth/Alert';
 import '../../assets/css/style.css';
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 
 function Login() {
   const [formData, setFormData] = useState({
@@ -57,6 +57,64 @@ function Login() {
 
     setErrors(newErrors);
     return valid;
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      // Log the credential for debugging
+      console.log("Google credential:", credentialResponse.credential);
+
+      const response = await axios.post(
+        "http://localhost:3000/api/auth/google",
+        {
+          token: credentialResponse.credential,
+        }
+      );
+
+      // Check that the token is a valid JWT format with console.log
+      console.log("Backend response:", response.data);
+
+      if (!response.data.data?.token) {
+        throw new Error("No token received from server");
+      }
+
+      // Store JWT token
+      localStorage.setItem("token", response.data.data.token);
+
+      // Clear any stored name/email info from localStorage
+      localStorage.removeItem("register_name");
+      localStorage.removeItem("register_email");
+
+      // Show success message
+      setAlertInfo({
+        show: true,
+        type: "success",
+        message: "Registration successful!",
+      });
+
+      // Redirect to home after successful registration
+      setTimeout(() => {
+        navigate("/");
+      }, 1000);
+    } catch (error) {
+      console.error("Google auth error:", error);
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message:
+          error.response?.data?.data ||
+          error.message ||
+          "Registration with Google failed",
+      });
+    }
+  };
+
+  const handleGoogleError = () => {
+    setAlertInfo({
+      show: true,
+      type: 'error',
+      message: 'Google sign-in was canceled or failed'
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -114,7 +172,7 @@ function Login() {
                   Don't miss your next opportunity. Sign in to stay updated on your professional world.
                 </p>
               </div>
-              
+
               {/* Login Form */}
               <form onSubmit={handleSubmit}>
                 {/* Email Field */}
@@ -127,8 +185,8 @@ function Login() {
                         <circle cx="12" cy="7" r="4" />
                       </svg>
                     </div>
-                    <input 
-                      type="email" 
+                    <input
+                      type="email"
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
@@ -137,7 +195,7 @@ function Login() {
                   </div>
                   {errors.email && <span className="text-red-500 text-sm">{errors.email}</span>}
                 </div>
-                
+
                 {/* Password Field */}
                 <div className="mb-4">
                   <label className="block text-left mb-1 text-sm text-gray-600">Password</label>
@@ -148,8 +206,8 @@ function Login() {
                         <path d="M7 11V7a5 5 0 0110 0v4" />
                       </svg>
                     </div>
-                    <input 
-                      type="password" 
+                    <input
+                      type="password"
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
@@ -158,12 +216,12 @@ function Login() {
                   </div>
                   {errors.password && <span className="text-red-500 text-sm">{errors.password}</span>}
                 </div>
-                
+
                 {/* Remember Checkbox */}
                 <div className="flex items-center mb-4">
-                  <input 
-                    type="checkbox" 
-                    id="remember" 
+                  <input
+                    type="checkbox"
+                    id="remember"
                     name="remember"
                     checked={formData.remember}
                     onChange={handleChange}
@@ -173,14 +231,13 @@ function Login() {
                     Remember password
                   </label>
                 </div>
-                
+
                 {/* Submit Button */}
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={loading}
-                  className={`w-full btn-primary text-white py-2 px-4 rounded-md uppercase font-medium ${
-                    loading ? 'opacity-70 cursor-not-allowed' : ''
-                  }`}
+                  className={`w-full btn-primary text-white py-2 px-4 rounded-md uppercase font-medium ${loading ? 'opacity-70 cursor-not-allowed' : ''
+                    }`}
                 >
                   {loading ? 'Signing in...' : 'Sign in'}
                 </button>
@@ -189,14 +246,20 @@ function Login() {
                 <div className="border-b border-gray-200 mt-4 pb-4 text-center">
                   <p className="text-sm text-gray-500">Or login with</p>
                   <div className="flex justify-center items-center mt-4 mb-3">
-                    <a href="#" className="flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white hover:bg-gray-50">
-                      <img src={googleIcon} alt="Google Logo" className="w-5 h-5 mr-2" />
-                      <span className="text-sm">Login with Google</span>
-                    </a>
+                    <GoogleOAuthProvider clientId="630548216793-u72hegqjlqli4petjg5lsgkrp8fn0foc.apps.googleusercontent.com">
+                      <GoogleLogin
+                        onSuccess={handleGoogleSuccess}
+                        onError={handleGoogleError}
+                        useOneTap
+                        theme="outline"
+                        text="signin_with"
+                        shape="rectangular"
+                        logo_alignment="center"
+                        width="280"
+                      />
+                    </GoogleOAuthProvider>
                   </div>
                 </div>
-
-                {/* Footer */}
                 <div className="flex justify-between items-center py-4">
                   <Link to="/forgot-password" className="text-blue-600 hover:text-blue-800 text-sm">Forgot password?</Link>
                   <span className="text-sm">
@@ -212,10 +275,10 @@ function Login() {
       {/* Alert Component */}
       <div className="fixed top-5 right-5 z-50">
         {alertInfo.show && (
-          <Alert 
-            type={alertInfo.type} 
-            message={alertInfo.message} 
-            onClose={() => setAlertInfo({ ...alertInfo, show: false })} 
+          <Alert
+            type={alertInfo.type}
+            message={alertInfo.message}
+            onClose={() => setAlertInfo({ ...alertInfo, show: false })}
           />
         )}
       </div>
