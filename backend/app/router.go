@@ -44,7 +44,6 @@ func NewRouter(
 	router.GET("/api/blogs", blogController.FindAll)
 
 	// Post routes - static paths first
-	router.POST("/api/posts/images", postController.UploadImages)
 	router.POST("/api/posts", postController.Create)
 	router.GET("/api/posts", postController.FindAll)
 
@@ -113,12 +112,12 @@ func NewRouter(
 	router.GET("/api/groups/:groupId", groupController.FindById)
 	router.PUT("/api/groups/:groupId", groupController.Update)
 	router.DELETE("/api/groups/:groupId", groupController.Delete)
-	router.POST("/api/groups/:groupId/photo", groupController.UploadPhoto)
 
 	router.POST("/api/groups/:groupId/members/:userId", groupController.AddMember)
 	router.DELETE("/api/groups/:groupId/members/:userId", groupController.RemoveMember)
 	router.PUT("/api/groups/:groupId/members/:userId/role", groupController.UpdateMemberRole)
 	router.GET("/api/groups/:groupId/members", groupController.FindMembers)
+	router.POST("/api/groups/:groupId/join", groupController.JoinGroup)
 	router.DELETE("/api/groups/:groupId/leave", groupController.LeaveGroup)
 
 	router.POST("/api/groups/:groupId/invitations/:userId", groupController.CreateInvitation)
