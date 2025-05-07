@@ -729,3 +729,57 @@ func (service *GroupServiceImpl) LeaveGroup(ctx context.Context, groupId, userId
 
 	return leaveResponse
 }
+
+func (service *GroupServiceImpl) JoinPublicGroup(ctx context.Context, groupId, userId uuid.UUID) web.GroupMemberResponse {
+	tx, err := service.DB.Begin()
+	if err != nil {
+		panic(err)
+	}
+	defer helper.CommitOrRollback(tx)
+
+	// Check if the group exists
+	group, err := service.GroupRepository.FindById(ctx, tx, groupId)
+	if err != nil {
+		panic(exception.NewNotFoundError("group not found"))
+	}
+
+	// If the group is private, hide its existence with "not found" error
+	if group.PrivacyLevel == "private" {
+		panic(exception.NewNotFoundError("group not found"))
+	}
+
+	// Check if user is already a member
+	existingMember := service.MemberRepository.FindByGroupIdAndUserId(ctx, tx, groupId, userId)
+	if existingMember.GroupId != uuid.Nil {
+		if existingMember.IsActive {
+			panic(exception.NewBadRequestError("you are already a member of this group"))
+		} else {
+			// Reactivate membership if user was previously a member but inactive
+			existingMember.IsActive = true
+			existingMember = service.MemberRepository.UpdateMemberActive(ctx, tx, groupId, userId, true)
+
+			user, _ := service.UserRepository.FindById(ctx, tx, userId)
+			response := helper.ToGroupMemberResponse(existingMember)
+			response.User = helper.ToUserBriefResponse(user)
+			return response
+		}
+	}
+
+	// Add user as a new member
+	member := domain.GroupMember{
+		GroupId:  groupId,
+		UserId:   userId,
+		Role:     "member",
+		JoinedAt: time.Now(),
+		IsActive: true,
+	}
+
+	member = service.MemberRepository.AddMember(ctx, tx, member)
+
+	user, _ := service.UserRepository.FindById(ctx, tx, userId)
+
+	response := helper.ToGroupMemberResponse(member)
+	response.User = helper.ToUserBriefResponse(user)
+
+	return response
+}
