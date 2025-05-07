@@ -1,80 +1,31 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Case from "../components/Case";
 import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, LogOut, ArrowLeft, ChevronDown, ChevronUp, User, Check, X } from "lucide-react";
+import axios from 'axios';
+import { toast } from "sonner";
+
+const base_url = "http://localhost:3000";
 
 export default function Groups() {
   const [showModal, setShowModal] = useState(false);
   const [showAllAdminGroups, setShowAllAdminGroups] = useState(false);
   const [showAllJoinedGroups, setShowAllJoinedGroups] = useState(false);
-  const navigate = useNavigate(); 
-  
-  const [groups, setGroups] = useState([
-    {
-      id: 1,
-      name: "Web Developers",
-      members: 12,
-      isAdmin: true,
-      createdDate: "2023-05-15"
-    },
-    {
-      id: 2,
-      name: "Design Community",
-      members: 24,
-      isAdmin: false,
-      joinedDate: "2023-06-20"
-    },
-    {
-      id: 3,
-      name: "React Enthusiasts",
-      members: 8,
-      isAdmin: false,
-      joinedDate: "2023-07-10"
-    },
-    {
-      id: 4,
-      name: "JavaScript Masters",
-      members: 15,
-      isAdmin: true,
-      createdDate: "2023-08-05"
-    },
-  ]);
-
-  // Memisahkan grup admin dan grup yang diikuti
-  const adminGroups = groups.filter(group => group.isAdmin);
-  const joinedGroups = groups.filter(group => !group.isAdmin);
-
-  // Get first 3 groups for showcase
-  const showcaseAdminGroups = showAllAdminGroups ? adminGroups : adminGroups.slice(0, 3);
-  const showcaseJoinedGroups = showAllJoinedGroups ? joinedGroups : joinedGroups.slice(0, 3);
-
-  const handleDeleteGroup = (groupId) => {
-    if (window.confirm("Are you sure you want to delete this group? This action cannot be undone.")) {
-      setGroups(groups.filter(group => group.id !== groupId));
-    }
-  };
-
-  const handleLeaveGroup = (groupId) => {
-    if (window.confirm("Are you sure you want to leave this group? You'll need to be invited to join again.")) {
-      setGroups(groups.filter(group => group.id !== groupId));
-    }
-  };
-
-  const handleCreateGroup = (e) => {
-    e.preventDefault();
-    const form = e.target;
-    const newGroup = {
-      id: groups.length + 1,
-      name: form.groupName.value,
-      members: 1,
-      isAdmin: true,
-      createdDate: new Date().toISOString().split('T')[0] // Format YYYY-MM-DD
-    };
-    setGroups([...groups, newGroup]);
-    setShowModal(false);
-  };
-
   const [activeTab, setActiveTab] = useState('myGroups');
+  const navigate = useNavigate();
+  const [error, setError] = useState(null);
+
+  const [groupForm, setGroupForm] = useState({
+    name: "",
+    description: "",
+    rule: "",
+    privacy_level: "public",
+    invite_policy: "admin",
+    image: null,
+  });
+
+  const [groups, setGroups] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [invitations, setInvitations] = useState([
     {
       id: 1,
@@ -117,26 +68,150 @@ export default function Groups() {
     }
   ]);
 
+  useEffect(() => {
+    fetchGroups();
+  }, []);
+
+  const adminGroups = groups.filter((group) => group.is_admin);
+  const joinedGroups = groups.filter(group => !group.is_admin);
+
+  // Get first 3 groups for showcase
+  const showcaseAdminGroups = showAllAdminGroups ? adminGroups : adminGroups.slice(0, 3);
+  const showcaseJoinedGroups = showAllJoinedGroups ? joinedGroups : joinedGroups.slice(0, 3);
+
+  const handleLeaveGroup = async (groupId) => {
+    if (window.confirm("Are you sure you want to leave this group? You'll need to be invited to join again.")) {
+      try {
+        const token = localStorage.getItem("token");
+        await axios.delete(`${base_url}/api/groups/${groupId}/leave`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setGroups(groups.filter(group => group.id !== groupId));
+        toast.success("Successfully left the group");
+      } catch (error) {
+        console.error("Failed to leave group:", error);
+        toast.error("Failed to leave group");
+      }
+    }
+  };
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setGroupForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    setGroupForm((prev) => ({ ...prev, image: file }));
+  };
+
+  const fetchGroups = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${base_url}/api/groups`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setGroups(response.data.data || []);
+    } catch (error) {
+      console.error("Failed to fetch groups:", error);
+      toast.error("Failed to load groups");
+    }
+  };
+
+  const handleCreateGroup = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+  
+    try {
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
+      formData.append("name", groupForm.name);
+      formData.append("description", groupForm.description);
+      formData.append("rule", groupForm.rule);
+      formData.append("privacy_level", groupForm.privacy_level);
+      formData.append("invite_policy", groupForm.invite_policy);
+      if (groupForm.image) {
+        formData.append("image", groupForm.image);
+      }
+  
+      const createResponse = await axios.post(
+        `${base_url}/api/groups`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+  
+      const newGroup = createResponse.data;
+  
+      // Tambahkan grup baru ke state
+      setGroups((prev) => [newGroup, ...prev]);
+      toast.success("Group created successfully!");
+      setShowModal(false);
+      setGroupForm({
+        name: "",
+        description: "",
+        rule: "",
+        privacy_level: "public",
+        invite_policy: "admin",
+        image: null,
+      });
+    } catch (error) {
+      console.error("Failed to create group:", error);
+      toast.error("Failed to create group");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleDeleteGroup = async (groupId) => {
+    if (!window.confirm("Are you sure you want to delete this group?")) {
+      return;
+    }
+  
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`${base_url}/api/groups/${groupId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      // Hapus grup dari state
+      setGroups((prev) => prev.filter((group) => group.id !== groupId));
+      toast.success("Group deleted successfully!");
+    } catch (error) {
+      console.error("Failed to delete group:", error);
+      toast.error("Failed to delete group");
+    }
+  };
+
   const handleAcceptInvitation = (invitationId) => {
-    const updatedInvitations = invitations.map(inv => 
-      inv.id === invitationId ? {...inv, status: "accepted"} : inv
+    const updatedInvitations = invitations.map(inv =>
+      inv.id === invitationId ? { ...inv, status: "accepted" } : inv
     );
     setInvitations(updatedInvitations);
-    
+
     const acceptedInvitation = invitations.find(inv => inv.id === invitationId);
     const newGroup = {
       id: acceptedInvitation.group.id,
       name: acceptedInvitation.group.name,
       members: acceptedInvitation.group.members,
-      isAdmin: false,
+      is_admin: false,
       joinedDate: new Date().toISOString().split('T')[0]
     };
     setGroups([...groups, newGroup]);
   };
 
   const handleRejectInvitation = (invitationId) => {
-    const updatedInvitations = invitations.map(inv => 
-      inv.id === invitationId ? {...inv, status: "rejected"} : inv
+    const updatedInvitations = invitations.map(inv =>
+      inv.id === invitationId ? { ...inv, status: "rejected" } : inv
     );
     setInvitations(updatedInvitations);
   };
@@ -147,15 +222,15 @@ export default function Groups() {
     <Case>
       <div className="p-4 sm:p-6 bg-gray-100 min-h-screen">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
-          
+
           {/* Main Section */}
           <div className="lg:col-span-3 space-y-4 bg-white rounded-xl shadow p-4 sm:p-6">
-            
+
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-4">
               <div className="flex items-center">
-                <button 
-                  onClick={() => navigate(-1)} 
+                <button
+                  onClick={() => navigate(-1)}
                   className="mr-2 p-1 rounded-full hover:bg-gray-100"
                 >
                   <ArrowLeft size={20} className="text-gray-600" />
@@ -173,13 +248,13 @@ export default function Groups() {
             {/* Tabs */}
             <div className="border-b border-gray-300 mb-4">
               <div className="flex overflow-x-auto">
-                <button 
+                <button
                   onClick={() => setActiveTab('myGroups')}
                   className={`px-4 py-2 border-b-2 ${activeTab === 'myGroups' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'} font-medium whitespace-nowrap`}
                 >
                   My Groups
                 </button>
-                <button 
+                <button
                   onClick={() => setActiveTab('invitations')}
                   className={`px-4 py-2 border-b-2 ${activeTab === 'invitations' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'} font-medium whitespace-nowrap`}
                 >
@@ -218,35 +293,43 @@ export default function Groups() {
                       )}
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                      {showcaseAdminGroups.map((group) => (
-                        <div key={group.id} className="bg-white rounded-xl shadow p-3 sm:p-4 flex flex-col justify-between h-36 sm:h-40 border border-gray-200 hover:border-blue-300 transition-colors">
+                      {groups.map((group) => (
+                        <div
+                          key={group.id} // Pastikan properti `id` digunakan sebagai key
+                          className="bg-white rounded-xl shadow p-3 sm:p-4 flex flex-col justify-between h-36 sm:h-40 border border-gray-200 hover:border-blue-300 transition-colors"
+                        >
                           <div className="flex items-center space-x-2 sm:space-x-3 border-b pb-3">
-                            <div className="bg-blue-100 w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden flex items-center justify-center">
-                              <span className="text-blue-600 text-lg sm:text-xl font-bold">
-                                {group.name.charAt(0)}
-                              </span>
+                            <div className="bg-gray-200 w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden flex items-center justify-center">
+                              {group.image ? (
+                                <img
+                                  src={group.image}
+                                  alt={group.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <span>{group.name?.charAt(0) || "?"}</span>
+                              )}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="font-medium capitalize text-blue-500 truncate">{group.name}</div>
-                              <div className="text-gray-500 text-xs sm:text-sm">{group.members} Members</div>
-                              <span className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded whitespace-nowrap">
-                                Created on {group.createdDate}
+                              <div className="text-gray-500 text-xs sm:text-sm">{group.members_count || 0} Members</div>
+                              <span className="text-xs bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded whitespace-nowrap">
+                                Created on {group.created_at?.split('T')[0] || group.createdDate}
                               </span>
                             </div>
                           </div>
                           <div className="flex justify-between items-center mt-3">
-                            <Link 
-                              to={`/group-page`}
+                            <Link
+                              to={`/groups/${group.id}`}
                               className="text-xs sm:text-sm text-blue-600 hover:underline"
                             >
                               View Group
                             </Link>
-                            <button 
+                            <button
                               onClick={() => handleDeleteGroup(group.id)}
-                              className="flex items-center text-red-600 hover:text-red-800 text-xs sm:text-sm"
-                              title="Delete Group"
+                              className="text-xs sm:text-sm text-red-600 hover:underline"
                             >
-                              <Trash2 size={14} className="mr-1" /> Delete
+                              Delete
                             </button>
                           </div>
                         </div>
@@ -282,26 +365,33 @@ export default function Groups() {
                         <div key={group.id} className="bg-white rounded-xl shadow p-3 sm:p-4 flex flex-col justify-between h-36 sm:h-40 border border-gray-200 hover:border-blue-300 transition-colors">
                           <div className="flex items-center space-x-2 sm:space-x-3 border-b pb-3">
                             <div className="bg-gray-200 w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden flex items-center justify-center">
-                              <span className="text-gray-600 text-lg sm:text-xl font-bold">
-                                {group.name.charAt(0)}
-                              </span>
+                              {group.image ? (
+                                <img
+                                  src={group.image}
+                                  alt={group.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <span>{group.name?.charAt(0) || "?"}
+                                </span>
+                              )}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="font-medium capitalize text-blue-500 truncate">{group.name}</div>
-                              <div className="text-gray-500 text-xs sm:text-sm">{group.members} Members</div>
+                              <div className="text-gray-500 text-xs sm:text-sm">{group.members_count || 0} Members</div>
                               <span className="text-xs bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded whitespace-nowrap">
-                                Joined on {group.joinedDate}
+                                Joined on {group.joined_at?.split('T')[0] || group.joinedDate}
                               </span>
                             </div>
                           </div>
                           <div className="flex justify-between items-center mt-3">
-                            <Link 
+                            <Link
                               to={`/groups/${group.id}`}
                               className="text-xs sm:text-sm text-blue-600 hover:underline"
                             >
                               View Group
                             </Link>
-                            <button 
+                            <button
                               onClick={() => handleLeaveGroup(group.id)}
                               className="flex items-center text-gray-600 hover:text-gray-800 text-xs sm:text-sm"
                               title="Leave Group"
@@ -331,7 +421,7 @@ export default function Groups() {
             ) : (
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Pending Invitations</h3>
-                
+
                 {pendingInvitations.length > 0 ? (
                   <div className="space-y-3">
                     {pendingInvitations.map((invitation) => (
@@ -394,12 +484,11 @@ export default function Groups() {
                                 </p>
                               </div>
                             </div>
-                            <span 
-                              className={`text-xs px-2 py-1 rounded ${
-                                invitation.status === "accepted" 
-                                  ? "bg-green-100 text-green-800" 
-                                  : "bg-red-100 text-red-800"
-                              }`}
+                            <span
+                              className={`text-xs px-2 py-1 rounded ${invitation.status === "accepted"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                                }`}
                             >
                               {invitation.status === "accepted" ? "Accepted" : "Declined"}
                             </span>
@@ -413,7 +502,7 @@ export default function Groups() {
               </div>
             )}
           </div>
-          
+
           {/* Right Sidebar */}
           <div className="space-y-4">
             {/* Group Statistics */}
@@ -472,14 +561,22 @@ export default function Groups() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
             <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg w-full max-w-md">
               <h3 className="text-lg font-semibold mb-4">Create New Group</h3>
-              
+
+              {error && (
+                <div className="mb-4 p-2 bg-red-100 text-red-700 text-sm rounded">
+                  {error}
+                </div>
+              )}
+
               <form onSubmit={handleCreateGroup}>
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium">Group Name</label>
                     <input
                       type="text"
-                      name="groupName"
+                      name="name"
+                      value={groupForm.name}
+                      onChange={handleInputChange}
                       className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm sm:text-base"
                       placeholder="Enter group name"
                       required
@@ -489,9 +586,47 @@ export default function Groups() {
                     <label className="block text-sm font-medium">Description</label>
                     <textarea
                       name="description"
+                      value={groupForm.description}
+                      onChange={handleInputChange}
                       className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm sm:text-base"
                       placeholder="Enter group description"
+                      rows={3}
                     />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium">Rules</label>
+                    <textarea
+                      name="rule"
+                      value={groupForm.rule}
+                      onChange={handleInputChange}
+                      className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm sm:text-base"
+                      placeholder="Enter group rules"
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium">Privacy Level</label>
+                    <select
+                      name="privacy_level"
+                      value={groupForm.privacy_level}
+                      onChange={handleInputChange}
+                      className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm sm:text-base"
+                    >
+                      <option value="public">Public</option>
+                      <option value="private">Private</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium">Invite Policy</label>
+                    <select
+                      name="invite_policy"
+                      value={groupForm.invite_policy}
+                      onChange={handleInputChange}
+                      className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm sm:text-base"
+                    >
+                      <option value="admin">Admin Only</option>
+                      <option value="anyone">Anyone</option>
+                    </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium">Group Photo</label>
@@ -499,23 +634,33 @@ export default function Groups() {
                       type="file"
                       className="mt-1 text-sm"
                       accept="image/*"
+                      onChange={handleFileChange}
                     />
+                    {groupForm.image && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Selected: {groupForm.image.name}
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 <div className="mt-6 flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
                   <button
                     type="button"
-                    onClick={() => setShowModal(false)}
-                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 text-sm sm:text-base"
+                    onClick={() => {
+                      setShowModal(false);
+                      setError(null);
+                    }}
+                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm sm:text-base"
+                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded"
+                    disabled={isLoading}
                   >
-                    Create
+                    {isLoading ? "Creating..." : "Create Group"}
                   </button>
                 </div>
               </form>
