@@ -690,3 +690,42 @@ func (service *GroupServiceImpl) isGroupAdmin(ctx context.Context, tx *sql.Tx, g
 	member := service.MemberRepository.FindByGroupIdAndUserId(ctx, tx, groupId, userId)
 	return member.GroupId != uuid.Nil && member.Role == "admin"
 }
+
+func (service *GroupServiceImpl) LeaveGroup(ctx context.Context, groupId, userId uuid.UUID) web.LeaveGroupResponse {
+	tx, err := service.DB.Begin()
+	if err != nil {
+		panic(err)
+	}
+	defer helper.CommitOrRollback(tx)
+
+	group, err := service.GroupRepository.FindById(ctx, tx, groupId)
+	if err != nil {
+		panic(exception.NewNotFoundError("group not found"))
+	}
+
+	member := service.MemberRepository.FindByGroupIdAndUserId(ctx, tx, groupId, userId)
+	if member.GroupId == uuid.Nil {
+		panic(exception.NewNotFoundError("member not found in this group"))
+	}
+
+	if group.CreatorId == userId {
+		panic(exception.NewBadRequestError("group creator cannot leave the group"))
+	}
+
+	service.MemberRepository.RemoveMember(ctx, tx, groupId, userId)
+
+	// Optionally, you can also delete the group if it has no members left
+	if len(service.MemberRepository.FindByGroupId(ctx, tx, groupId)) == 0 {
+		service.GroupRepository.Delete(ctx, tx, groupId)
+	}
+
+	// Return a response indicating the user has left the group
+	leaveResponse := web.LeaveGroupResponse{
+		Message: "You have left the group",
+		GroupId: groupId,
+		UserId:  userId,
+		LeftAt:  time.Now(),
+	}
+
+	return leaveResponse
+}
