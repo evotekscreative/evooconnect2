@@ -15,10 +15,10 @@ import (
 )
 
 var validReasons = []string{
-	"Pelecehan", "Penipuan", "Spam", "Misinformasi", "Ujaran kebencian",
-	"Ancaman atau kekerasan", "Menyakiti diri sendiri", "Konten sadis",
-	"Organisasi berbahaya atau ekstremis", "Konten seksual", "Akun palsu",
-	"Eksploitasi anak", "Produk dan layanan ilegal", "Pelanggaran", "lainnya",
+	"Harassment", "Fraud", "Spam", "Missinformation", "Hate Speech",
+	"Threats or violence", "self-harm", "Graphic or violent content",
+	"Dangerous or extremist organizations", "Sexual Content", "Fake Account",
+	"Child Exploitation", "Illegal products and services", "Infringement", "Other",
 }
 
 type reportServiceImpl struct {
@@ -53,11 +53,11 @@ func NewReportService(
 
 func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportResponse, error) {
 	if !isValidReason(request.Reason) {
-		return web.ReportResponse{}, errors.New("alasan report tidak valid")
+		return web.ReportResponse{}, errors.New("invalid report reason")
 	}
 
-	if strings.ToLower(request.Reason) == "lainnya" && strings.TrimSpace(request.OtherReason) == "" {
-		return web.ReportResponse{}, errors.New("alasan lainnya harus diisi")
+	if strings.ToLower(request.Reason) == "Other" && strings.TrimSpace(request.OtherReason) == "" {
+		return web.ReportResponse{}, errors.New("other reason must be filled")
 	}
 
 	ctx := context.Background()
@@ -71,7 +71,7 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 	if request.TargetType != "blog" {
 		targetUUID, err = uuid.Parse(request.TargetID)
 		if err != nil {
-			return web.ReportResponse{}, errors.New("ID target tidak valid (harus UUID)")
+			return web.ReportResponse{}, errors.New("target ID is not valid (must be UUID)")
 		}
 	}
 
@@ -87,11 +87,11 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 	case "user":
 		_, err = s.userRepository.FindById(ctx, tx, targetUUID)
 	default:
-		return web.ReportResponse{}, errors.New("tipe konten tidak dikenali")
+		return web.ReportResponse{}, errors.New("unknown content type")
 	}
 
 	if err != nil {
-		return web.ReportResponse{}, fmt.Errorf("%s yang dilaporkan tidak ditemukan", request.TargetType)
+		return web.ReportResponse{}, fmt.Errorf("%s that was reported was not found", request.TargetType)
 	}
 
 	reported, err := s.reportRepository.HasReported(ctx, request.ReporterID, request.TargetType, request.TargetID)
@@ -99,7 +99,7 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 		return web.ReportResponse{}, err
 	}
 	if reported {
-		return web.ReportResponse{}, errors.New("kamu sudah pernah melaporkan konten ini")
+		return web.ReportResponse{}, errors.New("you have already reported this content")
 	}
 
 	report := domain.Report{

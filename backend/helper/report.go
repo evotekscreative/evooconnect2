@@ -8,22 +8,22 @@ import (
 )
 
 var allowedReasons = []string{
-	"Pelecehan", "Penipuan", "Spam", "Misinformasi", "Ujaran kebencian",
-	"Ancaman atau kekerasan", "Menyakiti diri sendiri", "Konten sadis",
-	"Organisasi berbahaya atau ekstremis", "Konten seksual", "Akun palsu",
-	"Eksploitasi anak", "Produk dan layanan ilegal", "Pelanggaran", "lainnya",
+	"Harassment", "Fraud", "Spam", "Missinformation", "Hate Speech",
+	"Threats or violence", "self-harm", "Graphic or violent content",
+	"Dangerous or extremist organizations", "Sexual Content", "Fake Account",
+	"Child Exploitation", "Illegal products and services", "Infringement", "Other",
 }
 
 func ValidateReport(reason, other string) error {
 	for _, allowed := range allowedReasons {
 		if reason == allowed {
-			if reason == "lainnya" && strings.TrimSpace(other) == "" {
-				return errors.New("alasan lainnya harus diisi")
+			if reason == "Other" && strings.TrimSpace(other) == "" {
+				return errors.New("other reasons must be filled in")
 			}
 			return nil
 		}
 	}
-	return errors.New("alasan report tidak valid")
+	return errors.New("reason the report is invalid")
 }
 
 func WriteJSON(w http.ResponseWriter, statusCode int, payload interface{}) {
