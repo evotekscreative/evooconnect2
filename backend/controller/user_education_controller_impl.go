@@ -5,8 +5,8 @@ import (
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/service"
+	"mime/multipart"
 	"net/http"
-	"path/filepath"
 	"strconv"
 
 	"github.com/google/uuid"
@@ -24,16 +24,28 @@ func NewEducationController(educationService service.EducationService) Education
 }
 
 func (controller *EducationControllerImpl) Create(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	// Read request body
-	createRequest := web.CreateEducationRequest{}
-	helper.ReadFromRequestBody(request, &createRequest)
+	// Parse multipart form with 10 MB max memory
+	err := helper.ParseMultipartForm(request, 10) // 10 MB limit
+	helper.PanicIfError(err)
 
 	// Get user_id from context (set by JWT middleware)
 	userId, err := helper.GetUserIdFromToken(request)
 	helper.PanicIfError(err)
 
+	// Read request body
+	createRequest := web.CreateEducationRequest{}
+	helper.ReadFromMultipartForm(request, &createRequest)
+
+	// Handle image uploads
+	var file *multipart.FileHeader = nil
+	form := request.MultipartForm
+	files := form.File["photo"]
+	if len(files) > 0 {
+		file = files[0]
+	}
+
 	// Call service to create education
-	educationResponse := controller.EducationService.Create(request.Context(), userId, createRequest)
+	educationResponse := controller.EducationService.Create(request.Context(), userId, createRequest, file)
 
 	// Create response
 	webResponse := web.WebResponse{
@@ -48,9 +60,24 @@ func (controller *EducationControllerImpl) Create(writer http.ResponseWriter, re
 }
 
 func (controller *EducationControllerImpl) Update(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Parse multipart form with 10 MB max memory
+	err := helper.ParseMultipartForm(request, 10) // 10 MB limit
+	helper.PanicIfError(err)
+
+	// Get user_id from context (set by JWT middleware)
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+
 	// Read request body
 	updateRequest := web.UpdateEducationRequest{}
-	helper.ReadFromRequestBody(request, &updateRequest)
+	helper.ReadFromMultipartForm(request, &updateRequest)
+
+	var file *multipart.FileHeader = nil
+	form := request.MultipartForm
+	files := form.File["photo"]
+	if len(files) > 0 {
+		file = files[0]
+	}
 
 	// Get education_id from URL params
 	educationId, err := uuid.Parse(params.ByName("educationId"))
@@ -58,12 +85,8 @@ func (controller *EducationControllerImpl) Update(writer http.ResponseWriter, re
 		panic(exception.NewBadRequestError("Invalid education ID format"))
 	}
 
-	// Get user_id from context (set by JWT middleware)
-	userId, err := helper.GetUserIdFromToken(request)
-	helper.PanicIfError(err)
-
 	// Call service to update education
-	educationResponse := controller.EducationService.Update(request.Context(), educationId, userId, updateRequest)
+	educationResponse := controller.EducationService.Update(request.Context(), educationId, userId, updateRequest, file)
 
 	// Create response
 	webResponse := web.WebResponse{
@@ -160,48 +183,5 @@ func (controller *EducationControllerImpl) GetByUserId(writer http.ResponseWrite
 	}
 
 	// Send response
-	helper.WriteToResponseBody(writer, webResponse)
-}
-
-func (controller *EducationControllerImpl) UploadPhoto(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	// Parse multipart form with 10 MB max memory
-	err := request.ParseMultipartForm(10 << 20) // 10 MB
-	if err != nil {
-		panic(exception.NewBadRequestError("Failed to parse form: " + err.Error()))
-	}
-
-	// Get file from form
-	file, handler, err := request.FormFile("photo")
-	if err != nil {
-		panic(exception.NewBadRequestError("No file uploaded or invalid file field"))
-	}
-	defer file.Close()
-
-	// Check file type
-	ext := filepath.Ext(handler.Filename)
-	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" {
-		panic(exception.NewBadRequestError("Only JPG, JPEG and PNG files are allowed"))
-	}
-
-	// Get user_id from context (set by JWT middleware)
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Generate unique filename
-	userId := userIdString
-	filename := helper.SaveUploadedFile(file, "education", userId, ext)
-
-	// Create response
-	webResponse := web.WebResponse{
-		Code:   http.StatusOK,
-		Status: "OK",
-		Data: map[string]string{
-			"photo": filename,
-		},
-	}
-
-	// Write response
 	helper.WriteToResponseBody(writer, webResponse)
 }

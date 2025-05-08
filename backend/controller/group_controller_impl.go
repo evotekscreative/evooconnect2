@@ -24,10 +24,8 @@ func NewGroupController(groupService service.GroupService) GroupController {
 }
 
 func (controller *GroupControllerImpl) Create(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	err := request.ParseMultipartForm(10 << 20) // 10 MB
-	if err != nil {
-		panic(exception.NewBadRequestError("Failed to parse form: " + err.Error()))
-	}
+	err := helper.ParseMultipartForm(request, 10) // 10 MB limit
+	helper.PanicIfError(err)
 
 	// Get user ID from token
 	userId, err := helper.GetUserIdFromToken(request)

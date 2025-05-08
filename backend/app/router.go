@@ -56,11 +56,9 @@ func NewRouter(
 
 	// Education routes - static paths first
 	router.POST("/api/education", educationController.Create)
-	router.POST("/api/education/photo", educationController.UploadPhoto)
 
 	// Experience routes - static paths first
 	router.POST("/api/experience", experienceController.Create)
-	router.POST("/api/experience/photo", experienceController.UploadPhoto)
 
 	// Blog routes with parameters
 	router.GET("/api/blogs/slug/:slug", blogController.GetBySlug)

@@ -8,6 +8,8 @@ import (
 	"evoconnect/backend/model/domain"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
+	"mime/multipart"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
@@ -33,7 +35,7 @@ func NewExperienceService(
 	}
 }
 
-func (service *ExperienceServiceImpl) Create(ctx context.Context, userId uuid.UUID, request web.ExperienceCreateRequest) web.ExperienceResponse {
+func (service *ExperienceServiceImpl) Create(ctx context.Context, userId uuid.UUID, request web.ExperienceCreateRequest, file *multipart.FileHeader) web.ExperienceResponse {
 	// Validate request
 	err := service.Validate.Struct(request)
 	helper.PanicIfError(err)
@@ -42,14 +44,19 @@ func (service *ExperienceServiceImpl) Create(ctx context.Context, userId uuid.UU
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
-	// Check if user exists
-	_, err = service.UserRepository.FindById(ctx, tx, userId)
-	if err != nil {
-		panic(exception.NewNotFoundError("User not found"))
+	var uploadResult *helper.UploadResult
+	if file != nil {
+		image, err := file.Open()
+		helper.PanicIfError(err)
+		defer image.Close()
+
+		uploadResult, err = helper.UploadImage(image, file, helper.DirExperience, userId.String(), "images")
+		helper.PanicIfError(err)
 	}
 
 	// Create experience
 	experience := domain.UserExperience{
+		Id:          uuid.New(),
 		UserId:      userId,
 		JobTitle:    request.JobTitle,
 		CompanyName: request.CompanyName,
@@ -58,7 +65,15 @@ func (service *ExperienceServiceImpl) Create(ctx context.Context, userId uuid.UU
 		EndMonth:    request.EndMonth,
 		EndYear:     request.EndYear,
 		Caption:     request.Caption,
-		Photo:       request.Photo,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+
+	// Handle image
+	if uploadResult != nil {
+		experience.Photo = &uploadResult.RelativePath
+	} else if request.Photo != nil && *request.Photo != "" {
+		experience.Photo = request.Photo
 	}
 
 	// Save experience
@@ -67,7 +82,7 @@ func (service *ExperienceServiceImpl) Create(ctx context.Context, userId uuid.UU
 	return helper.ToExperienceResponse(experience)
 }
 
-func (service *ExperienceServiceImpl) Update(ctx context.Context, experienceId uuid.UUID, userId uuid.UUID, request web.ExperienceUpdateRequest) web.ExperienceResponse {
+func (service *ExperienceServiceImpl) Update(ctx context.Context, experienceId uuid.UUID, userId uuid.UUID, request web.ExperienceUpdateRequest, file *multipart.FileHeader) web.ExperienceResponse {
 	// Validate request
 	err := service.Validate.Struct(request)
 	helper.PanicIfError(err)
@@ -87,6 +102,16 @@ func (service *ExperienceServiceImpl) Update(ctx context.Context, experienceId u
 		panic(exception.NewForbiddenError("You don't have permission to update this experience"))
 	}
 
+	var uploadResult *helper.UploadResult
+	if file != nil {
+		image, err := file.Open()
+		helper.PanicIfError(err)
+		defer image.Close()
+
+		uploadResult, err = helper.UploadImage(image, file, helper.DirExperience, userId.String(), "images")
+		helper.PanicIfError(err)
+	}
+
 	// Update the experience data
 	experience.JobTitle = request.JobTitle
 	experience.CompanyName = request.CompanyName
@@ -95,10 +120,13 @@ func (service *ExperienceServiceImpl) Update(ctx context.Context, experienceId u
 	experience.EndMonth = request.EndMonth
 	experience.EndYear = request.EndYear
 	experience.Caption = request.Caption
-
-	// Only update photo if provided
-	if request.Photo != nil {
-		experience.Photo = request.Photo
+	if uploadResult != nil {
+		// Delete old photo if it exists
+		if experience.Photo != nil {
+			err = helper.DeleteFile(*experience.Photo)
+			helper.PanicIfError(err)
+		}
+		experience.Photo = &uploadResult.RelativePath
 	}
 
 	// Update experience
@@ -123,8 +151,18 @@ func (service *ExperienceServiceImpl) Delete(ctx context.Context, experienceId u
 		panic(exception.NewForbiddenError("You don't have permission to delete this experience"))
 	}
 
+	experiencePhoto := experience.Photo
+
 	// Delete experience
 	service.ExperienceRepository.Delete(ctx, tx, experienceId)
+
+	if experiencePhoto != nil {
+		// Delete photo from storage
+		err = helper.DeleteFile(*experiencePhoto)
+		if err != nil {
+			panic(exception.NewInternalServerError(err.Error()))
+		}
+	}
 }
 
 func (service *ExperienceServiceImpl) GetById(ctx context.Context, experienceId uuid.UUID) web.ExperienceResponse {

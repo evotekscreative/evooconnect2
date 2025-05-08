@@ -12,5 +12,4 @@ type EducationController interface {
 	Delete(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	GetById(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	GetByUserId(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
-	UploadPhoto(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 }

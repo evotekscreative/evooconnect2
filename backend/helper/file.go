@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -209,6 +210,13 @@ func DeleteFile(filePath string) error {
 	}
 
 	return os.Remove(filePath)
+}
+
+func ParseMultipartForm(request *http.Request, maxMemory int64) error {
+	if err := request.ParseMultipartForm(maxMemory); err != nil {
+		return fmt.Errorf("failed to parse multipart form: %w", err)
+	}
+	return nil
 }
 
 // ///////////////////////////////////////////

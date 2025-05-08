@@ -186,12 +186,21 @@ func (service *PostServiceImpl) Delete(ctx context.Context, postId uuid.UUID, us
 		panic(exception.NewNotFoundError(err.Error()))
 	}
 
+	postImages := existingPost.Images
+
 	// Verify ownership
 	if existingPost.UserId != userId {
 		panic(exception.NewForbiddenError("You do not have permission to delete this post"))
 	}
 
 	service.PostRepository.Delete(ctx, tx, postId)
+
+	for _, image := range postImages {
+		err := helper.DeleteFile(image)
+		if err != nil {
+			panic(exception.NewInternalServerError(err.Error()))
+		}
+	}
 }
 
 func (service *PostServiceImpl) FindById(ctx context.Context, postId uuid.UUID, currentUserId uuid.UUID) web.PostResponse {
