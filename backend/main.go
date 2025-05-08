@@ -15,6 +15,7 @@ import (
 )
 
 func main() {
+	// Load environment variables
 	helper.LoadEnv()
 	db := app.NewDB()
 	validate := validator.New()
@@ -23,6 +24,7 @@ func main() {
 
 	connectionRepository := repository.NewConnectionRepository()
 
+	// Initialize user components
 	userRepository := repository.NewUserRepository()
 	connectionService := service.NewConnectionService(connectionRepository, userRepository, db, validate)
 	connectionController := controller.NewConnectionController(connectionService)
@@ -38,37 +40,35 @@ func main() {
 	blogService := service.NewBlogService(blogRepository)
 	blogController := controller.NewBlogController(blogService)
 
-	// Initialize post dependencies
+	// Initialize post components
 	postRepository := repository.NewPostRepository()
 	postService := service.NewPostService(postRepository, connectionRepository, db, validate)
 	postController := controller.NewPostController(postService)
 
-	// Create comment repository, service, and controller instances
+	// Initialize comment components
 	commentRepository := repository.NewCommentRepository()
 	commentService := service.NewCommentService(commentRepository, postRepository, userRepository, db, validate)
 	commentController := controller.NewCommentController(commentService)
 
+	// Initialize education components
 	educationRepository := repository.NewEducationRepository()
 	educationService := service.NewEducationService(educationRepository, userRepository, db, validate)
 	educationController := controller.NewEducationController(educationService)
 
-	// Experience
+	// Initialize experience components
 	experienceRepository := repository.NewExperienceRepository()
 	experienceService := service.NewExperienceService(experienceRepository, userRepository, db, validate)
 	experienceController := controller.NewExperienceController(experienceService)
 
-	groupRepository := repository.NewGroupRepository()
-	groupMemberRepository := repository.NewGroupMemberRepository()
-	groupInvitationRepository := repository.NewGroupInvitationRepository()
-	groupService := service.NewGroupService(
-		db,
-		groupRepository,
-		groupMemberRepository,
-		groupInvitationRepository,
-		userRepository,
-		validate,
-	)
-	groupController := controller.NewGroupController(groupService)
+	// Initialize blog comment components
+	commentBlogRepository := repository.NewCommentBlogRepository()
+	commentBlogService := service.NewCommentBlogService(commentBlogRepository, blogRepository, userRepository, db, validate)
+	commentBlogController := controller.NewCommentBlogController(commentBlogService)
+
+	// Initialize connection components
+	connectionRepository := repository.NewConnectionRepository()
+	connectionService := service.NewConnectionService(connectionRepository, userRepository, db, validate)
+	connectionController := controller.NewConnectionController(connectionService)
 
 	// Initialize router with all controllers
 	router := app.NewRouter(
@@ -79,9 +79,10 @@ func main() {
 		commentController,
 		educationController,
 		experienceController,
+		commentBlogController,
 		connectionController,
-		groupController,
 	)
+
 	// Create middleware chain
 	var handler http.Handler = router
 	handler = middleware.NewAuthMiddleware(handler, jwtSecret)
