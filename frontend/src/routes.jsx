@@ -161,7 +161,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/group-page",
+    path: "/groups/:id",
     element: (
       <ProtectedRoute>
         <GroupPage />
@@ -185,7 +185,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/detail-blog/:id",
+    path: "/blog-detail/:slug",
     element: (
       <ProtectedRoute>
         <BlogDetail />
@@ -206,7 +206,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/verify-email",
-    element: <ProtectedRoute><VerifyEmail /></ProtectedRoute>,
+    element: <VerifyEmail />,
   },
   {
     path: "/reset-password",

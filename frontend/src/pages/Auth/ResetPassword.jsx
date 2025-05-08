@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 
 const ResetPassword = () => {
+  const [token, setToken] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -10,14 +11,18 @@ const ResetPassword = () => {
   const [messageColor, setMessageColor] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Ambil email dari state navigasi
+  const email = location.state?.email || "";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setSubmitted(false); // Reset submitted state untuk menampilkan pesan baru
+    setSubmitted(false);
 
     if (password !== confirmPassword) {
-      setMessage("Passwords do not match. Please try again.");
+      setMessage("Password tidak cocok. Silakan coba lagi.");
       setMessageColor("text-red-600");
       setLoading(false);
       return;
@@ -25,43 +30,84 @@ const ResetPassword = () => {
 
     try {
       const response = await axios.post("http://localhost:3000/api/auth/reset-password", {
+        token,
         password,
+        email // Tambahkan email jika diperlukan oleh backend
       });
 
-      setMessage("Your password has been reset successfully.");
+      setMessage("Password berhasil direset. Silakan login dengan password baru Anda.");
       setMessageColor("text-green-600");
 
-      // Setelah berhasil reset, alihkan ke halaman login
-        navigate("/login"); // Ganti dengan route halaman login yang sesuai
+      // Setelah 2 detik, alihkan ke halaman login
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
 
     } catch (error) {
-      setMessage("Something went wrong. Please try again later.");
+      if (error.response && error.response.status === 400) {
+        setMessage("Token tidak valid atau sudah kadaluarsa.");
+      } else {
+        setMessage("Terjadi kesalahan. Silakan coba lagi nanti.");
+      }
       setMessageColor("text-red-600");
-      setLoading(false);
     }
 
     setSubmitted(true);
+    setLoading(false);
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8">
         <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
-          Reset Your Password
+          Reset Password
         </h2>
 
-        {submitted ? (
-          <div className={`text-center font-medium mb-4 ${messageColor}`}>
-            {message}
-          </div>
-        ) : (
+       
           <form onSubmit={handleSubmit} className="space-y-6">
+            {email && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  readOnly
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100"
+                />
+              </div>
+            )}
+            
+            <div>
+              <label
+                htmlFor="token"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Kode Verifikasi
+              </label>
+              <input
+                id="token"
+                type="text"
+                required
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                placeholder="Masukkan kode verifikasi"
+              />
+            </div>
+            {submitted && (
+          <span className={`text-center text-xs font-medium mb-4  ${messageColor}`}>
+            {message}
+          </span>
+            )}
+
             <div>
               <label
                 htmlFor="password"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                New Password
+                Password Baru
               </label>
               <input
                 id="password"
@@ -70,7 +116,7 @@ const ResetPassword = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                placeholder="Enter your new password"
+                placeholder="Masukkan password baru"
               />
             </div>
 
@@ -79,7 +125,7 @@ const ResetPassword = () => {
                 htmlFor="confirmPassword"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Confirm New Password
+                Konfirmasi Password Baru
               </label>
               <input
                 id="confirmPassword"
@@ -88,7 +134,7 @@ const ResetPassword = () => {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                placeholder="Confirm your new password"
+                placeholder="Konfirmasi password baru"
               />
             </div>
 
@@ -122,21 +168,20 @@ const ResetPassword = () => {
                       d="M4 12a8 8 0 018-8v8z"
                     ></path>
                   </svg>
-                  Resetting...
+                  Memproses...
                 </span>
               ) : (
                 "Reset Password"
               )}
             </button>
           </form>
-        )}
 
         <div className="text-center mt-6">
           <button
             onClick={() => navigate("/login")}
             className="text-blue-600 hover:underline text-sm"
           >
-            Back to Login
+            Kembali ke Login
           </button>
         </div>
       </div>
@@ -145,4 +190,3 @@ const ResetPassword = () => {
 };
 
 export default ResetPassword;
-1

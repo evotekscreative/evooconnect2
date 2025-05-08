@@ -23,6 +23,7 @@ const ProtectedRoute = ({ children }) => {
         });
         
         const user = response.data.data;
+        localStorage.setItem("user", JSON.stringify(user));
         if (!user.is_verified && location.pathname !== '/verify-email') {
           navigate('/verify-email', {
             state: {

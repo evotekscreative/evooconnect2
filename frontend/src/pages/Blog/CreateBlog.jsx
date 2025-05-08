@@ -1,331 +1,183 @@
-// BlogDetail.jsx
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import Case from "../../components/Case";
-import { Pencil, Trash2 } from "lucide-react";
-import { categories } from "../../components/Blog/CategoryStep";
-import axios from "axios";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import BlogFormStepper from '../../components/Blog/BlogFormStepper';
+import TitleStep from '../../components/Blog/TitleStep';
+import CategoryStep from '../../components/Blog/CategoryStep';
+import ContentStep from '../../components/Blog/ContentStep';
+import PreviewStep from '../../components/Blog/PreviewStep';
 
-const BlogDetail = () => {
-  const { id } = useParams();
+function CreateBlog() {
   const navigate = useNavigate();
-  const [showEdit, setShowEdit] = useState(false);
-  const [article, setArticle] = useState(null);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [randomPosts, setRandomPosts] = useState([]);
-  const [reviews, setReviews] = useState([]);
-  const [newComment, setNewComment] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [formData, setFormData] = useState({
+    title: '',
+    category: '',
+    content: '',
+    images: [],
+    date: new Date().toLocaleDateString(),
+  });
 
-  useEffect(() => {
-    const blogs = JSON.parse(localStorage.getItem("blogs")) || [];
-    const foundBlog = blogs.find((blog) => blog.id === id);
-    if (foundBlog) {
-      setArticle(foundBlog);
+  const steps = [
+    { id: 1, label: 'Title' },
+    { id: 2, label: 'Category' },
+    { id: 3, label: 'Content' },
+    { id: 4, label: 'Preview' },
+  ];
+
+  const handleStepChange = (direction) => {
+    if (direction === 'next') {
+      setCurrentStep((prevStep) => Math.min(prevStep + 1, steps.length));
     } else {
-      alert("Blog tidak ditemukan!");
-      navigate("/blog");
-    }
-
-    // Fetch random posts
-    const otherBlogs = blogs.filter((blog) => blog.id !== id);
-    const shuffled = otherBlogs.sort(() => 0.5 - Math.random());
-    setRandomPosts(shuffled.slice(0, 3));
-  }, [id, navigate]);
-
-  const handlePrev = () => {
-    if (article?.images) {
-      setCurrentImageIndex((prev) =>
-        prev === 0 ? article.images.length - 1 : prev - 1
-      );
+      setCurrentStep((prevStep) => Math.max(prevStep - 1, 1));
     }
   };
 
-  const handleNext = () => {
-    if (article?.images) {
-      setCurrentImageIndex((prev) =>
-        prev === article.images.length - 1 ? 0 : prev + 1
-      );
-    }
+  const handleFormChange = (field, value) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      [field]: value,
+    }));
   };
 
-  const handleDelete = async () => {
-    const confirmDelete = window.confirm("Apakah Anda yakin ingin menghapus blog ini?");
-    if (confirmDelete) {
-      try {
-        // Use environment variable for API URL
-        const apiUrl = `${process.env.REACT_APP_API_URL}/blogs/${id}`;
-        await axios.delete(apiUrl);
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      const token = localStorage.getItem('token');
 
-        // Update localStorage
-        const blogs = JSON.parse(localStorage.getItem("blogs")) || [];
-        const updatedBlogs = blogs.filter((blog) => blog.id !== id);
-        localStorage.setItem("blogs", JSON.stringify(updatedBlogs));
-
-        alert("Blog berhasil dihapus.");
-        navigate("/blog");
-      } catch (error) {
-        console.error("Gagal menghapus blog:", error);
-
-        // Display specific error message
-        if (error.response) {
-          alert(`Error: ${error.response.data.message || "Gagal menghapus blog."}`);
-        } else if (error.request) {
-          alert("Error: Tidak dapat terhubung ke server.");
-        } else {
-          alert("Error: Terjadi kesalahan saat menghapus blog.");
+      // 1. Create Blog (tanpa image dulu)
+      const createRes = await axios.post(
+        'http://localhost:3000/api/blogs',
+        {
+          title: formData.title,
+          category: formData.category,
+          content: formData.content,
+          date: formData.date,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
         }
+      );
+
+      const blogId = createRes.data.data.id;
+      const blogSlug = createRes.data.data.slug;
+      let uploadedImagePath = '';
+
+      // 2. Upload image (jika ada)
+      if (formData.images.length > 0) {
+        const formDataImage = new FormData();
+        formData.images.forEach((img) => {
+          if (img.file) {
+            formDataImage.append('photos', img.file);
+          }
+        });
+
+        const uploadRes = await axios.post(
+          `http://localhost:3000/api/blogs/${blogId}/upload-photo`,
+          formDataImage,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'multipart/form-data',
+            },
+          }
+        );
+
+        uploadedImagePath = uploadRes.data.data.photo;
+
+        // 3. Update blog dengan image path
+        await axios.put(
+          `http://localhost:3000/api/blogs/${blogId}`,
+          {
+            image: uploadedImagePath,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
       }
+
+      alert('Blog post created successfully!');
+      navigate(`/blog-detail/${blogSlug}`);
+      window.scrollTo(0, 0);
+    } catch (error) {
+      console.error('Error creating blog post:', error);
+      alert('Failed to create blog post.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleSaveChanges = async () => {
-    const confirmSave = window.confirm("Apakah Anda yakin ingin menyimpan perubahan?");
-    if (confirmSave) {
-      try {
-        const blogs = JSON.parse(localStorage.getItem("blogs")) || [];
-        const updated = blogs.map((b) => (b.id === article.id ? article : b));
-        localStorage.setItem("blogs", JSON.stringify(updated));
-        setShowEdit(false);
-        alert("Blog telah diperbarui!");
-      } catch (error) {
-        console.error("Gagal menyimpan perubahan:", error);
-        alert("Terjadi kesalahan saat menyimpan perubahan.");
-      }
+  const handleCancel = () => {
+    if (window.confirm('Are you sure you want to cancel? All progress will be lost.')) {
+      navigate('/blog');
     }
   };
 
-  const handleCommentSubmit = (e) => {
-    e.preventDefault();
-    if (!newComment.trim()) return;
-
-    const newReview = {
-      id: Date.now(),
-      user: "Anonymous",
-      date: new Date().toLocaleDateString(),
-      content: newComment,
-    };
-
-    setReviews([...reviews, newReview]);
-    setNewComment("");
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <TitleStep
+            title={formData.title}
+            onTitleChange={(value) => handleFormChange('title', value)}
+            onNext={() => handleStepChange('next')}
+            onCancel={handleCancel}
+          />
+        );
+      case 2:
+        return (
+          <CategoryStep
+            category={formData.category}
+            onCategoryChange={(value) => handleFormChange('category', value)}
+            onNext={() => handleStepChange('next')}
+            onPrev={() => handleStepChange('prev')}
+          />
+        );
+      case 3:
+        return (
+          <ContentStep
+            content={formData.content}
+            images={formData.images}
+            onContentChange={(value) => handleFormChange('content', value)}
+            onImagesChange={(value) => handleFormChange('images', value)}
+            onNext={() => handleStepChange('next')}
+            onPrev={() => handleStepChange('prev')}
+          />
+        );
+      case 4:
+        return (
+          <PreviewStep
+            formData={formData}
+            onSubmit={handleSubmit}
+            onPrev={() => handleStepChange('prev')}
+            isSubmitting={isSubmitting}
+          />
+        );
+      default:
+        return null;
+    }
   };
-
-  if (!article) {
-    return (
-      <Case>
-        <div className="flex flex-col items-center justify-center py-20 text-xl text-gray-700">
-          <p className="mb-6">Blog tidak ditemukan</p>
-          <a
-            href="/"
-            className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-          >
-            Kembali ke Beranda
-          </a>
-        </div>
-      </Case>
-    );
-  }
 
   return (
-    <Case>
-      <div className="relative py-10 bg-gray-50">
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Article Content */}
-            <div className="md:col-span-2 space-y-6">
-              <div className="bg-white shadow-md rounded-lg overflow-hidden relative">
-                {/* Image Carousel */}
-                <div className="relative h-[400px]">
-                  {article?.images?.[currentImageIndex] && (
-                    <img
-                      className="w-full h-full object-cover"
-                      src={article.images[currentImageIndex]}
-                      alt="Blog"
-                    />
-                  )}
-                  {article?.images?.length > 1 && (
-                    <>
-                      <button
-                        onClick={handlePrev}
-                        className="absolute top-1/2 left-2 transform -translate-y-1/2 bg-white/70 text-black p-2 rounded-full shadow hover:bg-white"
-                      >
-                        &lt;
-                      </button>
-                      <button
-                        onClick={handleNext}
-                        className="absolute top-1/2 right-2 transform -translate-y-1/2 bg-white/70 text-black p-2 rounded-full shadow hover:bg-white"
-                      >
-                        &gt;
-                      </button>
-                    </>
-                  )}
-                </div>
-
-                <div className="p-6">
-                  <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
-                    {article.category}
-                  </span>
-                  <h2 className="text-2xl font-semibold mt-3">{article.title}</h2>
-                  <p className="text-sm text-gray-500 mb-4">{article.date}</p>
-                  <div
-                    className="prose max-w-none text-gray-700"
-                    dangerouslySetInnerHTML={{ __html: article.content }}
-                  />
-                </div>
-              </div>
-
-              {/* Reviews Section */}
-              <div className="bg-white shadow-md rounded-lg p-6 space-y-4">
-                <h3 className="text-xl font-semibold">{reviews.length} Reviews</h3>
-                <div className="space-y-4 max-h-72 overflow-y-auto pr-2">
-                  {reviews.map((review) => (
-                    <div key={review.id} className="flex items-start gap-4 border-b pb-4">
-                      <img
-                        className="w-12 h-12 rounded-full object-cover"
-                        src="/img/profile.jpg"
-                        alt="User"
-                      />
-                      <div className="flex-1">
-                        <h5 className="font-semibold text-sm">
-                          {review.user}
-                          <span className="text-gray-400 text-xs ml-2">{review.date}</span>
-                        </h5>
-                        <p className="text-gray-700 text-sm">{review.content}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Comment Form */}
-              <div className="bg-white shadow-md rounded-lg p-6">
-                <h3 className="text-xl font-semibold mb-4">Leave a Comment</h3>
-                <form onSubmit={handleCommentSubmit}>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Review <span className="text-red-500">*</span>
-                    </label>
-                    <textarea
-                      rows="5"
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200 text-sm"
-                    ></textarea>
-                  </div>
-                  <button
-                    type="submit"
-                    className="bg-sky-500 hover:bg-sky-400 text-white font-semibold px-6 py-2 rounded transition"
-                  >
-                    Submit
-                  </button>
-                </form>
-              </div>
-            </div>
-
-            {/* Sidebar Random Posts */}
-            <div className="space-y-6">
-              <div className="bg-white shadow-md rounded-lg p-6">
-                <h5 className="text-lg font-semibold mb-4">Random Post</h5>
-                <div className="space-y-3">
-                  {randomPosts.map((post) => (
-                    <div key={post.id}>
-                      <a
-                        href={`/detail-blog/${post.id}`}
-                        className="text-blue-600 font-medium hover:underline"
-                      >
-                        {post.title}
-                      </a>
-                      <p className="text-gray-500 text-sm">{post.date}</p>
-                      <hr />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+    <div className="min-h-screen bg-gray-100">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          <BlogFormStepper steps={steps} currentStep={currentStep} />
+          <div className="bg-white rounded-lg shadow-md p-6 mt-8">
+            {renderStepContent()}
           </div>
         </div>
-
-        {/* Edit and Delete Buttons */}
-        <div className="fixed bottom-6 right-6 flex flex-col items-end gap-3">
-          <button
-            className="bg-red-500 hover:bg-red-400 text-white p-3 rounded-full shadow-lg transition"
-            onClick={handleDelete}
-          >
-            <Trash2 className="w-5 h-5" />
-          </button>
-          <button
-            className="bg-sky-500 hover:bg-blue-400 text-white p-3 rounded-full shadow-lg transition"
-            onClick={() => setShowEdit(true)}
-          >
-            <Pencil className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Edit Popup */}
-        {showEdit && (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-            <div className="bg-white max-w-3xl w-full p-6 rounded-xl shadow-lg relative overflow-y-auto max-h-[90vh]">
-              <button
-                onClick={() => setShowEdit(false)}
-                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Edit Blog</h2>
-              <div className="space-y-4">
-                {/* Title */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                  <input
-                    type="text"
-                    value={article.title}
-                    onChange={(e) => setArticle({ ...article, title: e.target.value })}
-                    className="w-full border px-3 py-2 rounded"
-                  />
-                </div>
-
-                {/* Category Dropdown */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                  <select
-                    value={article.category}
-                    onChange={(e) => setArticle({ ...article, category: e.target.value })}
-                    className="w-full border px-3 py-2 rounded"
-                  >
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Content */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
-                  <textarea
-                    rows={6}
-                    value={article.content}
-                    onChange={(e) => setArticle({ ...article, content: e.target.value })}
-                    className="w-full border px-3 py-2 rounded"
-                  />
-                </div>
-
-                {/* Save Button */}
-                <div className="text-right">
-                  <button
-                    onClick={handleSaveChanges}
-                    className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-2 rounded transition"
-                  >
-                    Save Changes
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
-    </Case>
+    </div>
   );
-};
+}
 
-export default BlogDetail;
+export default CreateBlog;
