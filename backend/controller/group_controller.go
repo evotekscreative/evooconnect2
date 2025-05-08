@@ -14,7 +14,6 @@ type GroupController interface {
 	FindById(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	FindAll(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	FindMyGroups(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
-	UploadPhoto(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 
 	// Member management
 	AddMember(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
@@ -22,6 +21,7 @@ type GroupController interface {
 	UpdateMemberRole(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	FindMembers(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	LeaveGroup(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+	JoinGroup(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 
 	// Invitation management
 	CreateInvitation(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
