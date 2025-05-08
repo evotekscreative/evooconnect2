@@ -421,5 +421,14 @@ func (repository *ConnectionRepositoryImpl) Disconnect(ctx context.Context, tx *
             (user_id_2 = $2 AND user_id_1 = $1)`
 
 	_, err := tx.ExecContext(ctx, SQL, userId1, userId2)
+	helper.PanicIfError(err)
+
+	SQLDeleteRequest := `DELETE FROM connection_requests WHERE
+			(sender_id = $1 AND receiver_id = $2) OR
+			(sender_id = $2 AND receiver_id = $1)`
+
+	_, err = tx.ExecContext(ctx, SQLDeleteRequest, userId1, userId2)
+	helper.PanicIfError(err)
+
 	return err
 }
