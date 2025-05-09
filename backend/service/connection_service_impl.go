@@ -367,7 +367,7 @@ func (service *ConnectionServiceImpl) Disconnect(ctx context.Context, userId, ta
 	}
 }
 
-func (service *ConnectionServiceImpl) CancelConnectionRequest(ctx context.Context, userId, requestId uuid.UUID) web.ConnectionRequestResponse {
+func (service *ConnectionServiceImpl) CancelConnectionRequest(ctx context.Context, userId, requestId uuid.UUID) web.WebResponse {
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
@@ -395,36 +395,9 @@ func (service *ConnectionServiceImpl) CancelConnectionRequest(ctx context.Contex
 		panic(exception.NewInternalServerError("Failed to cancel connection request: " + err.Error()))
 	}
 
-	// Get user info for response
-	sender, err := service.UserRepository.FindById(ctx, tx, request.SenderId)
-	if err != nil {
-		panic(exception.NewNotFoundError("Sender user not found"))
-	}
-
-	receiver, err := service.UserRepository.FindById(ctx, tx, request.ReceiverId)
-	if err != nil {
-		panic(exception.NewNotFoundError("Receiver user not found"))
-	}
-
-	return web.ConnectionRequestResponse{
-		Id:        request.Id,
-		Status:    string(domain.ConnectionStatusCancelled),
-		Message:   request.Message,
-		CreatedAt: request.CreatedAt,
-		UpdatedAt: time.Now(),
-		Sender: &web.UserShort{
-			Id:       sender.Id,
-			Name:     sender.Name,
-			Username: sender.Username,
-			Headline: optionalStringPtr(sender.Headline),
-			Photo:    optionalStringPtr(sender.Photo),
-		},
-		Receiver: &web.UserShort{
-			Id:       receiver.Id,
-			Name:     receiver.Name,
-			Username: receiver.Username,
-			Headline: optionalStringPtr(receiver.Headline),
-			Photo:    optionalStringPtr(receiver.Photo),
-		},
+	return web.WebResponse{
+		Code:   200,
+		Status: "OK",
+		Data:   "Connection request cancelled successfully",
 	}
 }
