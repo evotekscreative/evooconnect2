@@ -12,4 +12,5 @@ type UserController interface {
 	GetByUsername(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	UploadPhotoProfile(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	GetPeoples(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+	DeletePhotoProfile(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 }

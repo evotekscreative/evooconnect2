@@ -4,12 +4,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, LogOut, ArrowLeft, ChevronDown, ChevronUp, User, Check, X } from "lucide-react";
 import axios from 'axios';
 import { toast } from "sonner";
-import { useParams } from "react-router-dom";
 
 const base_url = "http://localhost:3000";
 
 export default function Groups() {
-  const {groupId} = useParams();
   const [showModal, setShowModal] = useState(false);
   const [showAllAdminGroups, setShowAllAdminGroups] = useState(false);
   const [showAllJoinedGroups, setShowAllJoinedGroups] = useState(false);
@@ -34,13 +32,14 @@ export default function Groups() {
 
   useEffect(() => {
     fetchGroupsData();
+    fetchInvitations();
   }, []);
 
   const fetchGroupsData = async () => {
     try {
       const token = localStorage.getItem("token");
       setIsLoading(true);
-
+      
       const [adminResponse, joinedResponse] = await Promise.all([
         axios.get(`${base_url}/api/my-groups`, {
           headers: { Authorization: `Bearer ${token}` }
@@ -50,22 +49,22 @@ export default function Groups() {
         })
       ]);
 
-      const adminGroupsData = Array.isArray(adminResponse.data)
+      const adminGroupsData = Array.isArray(adminResponse.data) 
         ? adminResponse.data.map(group => ({
-          ...group,
-          isAdmin: true,
-          createdDate: group.created_at ? group.created_at.split('T')[0] : new Date().toISOString().split('T')[0]
-        }))
+            ...group,
+            isAdmin: true,
+            createdDate: group.created_at ? group.created_at.split('T')[0] : new Date().toISOString().split('T')[0]
+          }))
         : [];
 
       const joinedGroupsData = Array.isArray(joinedResponse.data.data)
         ? joinedResponse.data.data
-          .filter(group => !adminGroupsData.some(adminGroup => adminGroup.id === group.id))
-          .map(group => ({
-            ...group,
-            isAdmin: false,
-            joinedDate: group.joined_at ? group.joined_at.split('T')[0] : new Date().toISOString().split('T')[0]
-          }))
+            .filter(group => !adminGroupsData.some(adminGroup => adminGroup.id === group.id))
+            .map(group => ({
+              ...group,
+              isAdmin: false,
+              joinedDate: group.joined_at ? group.joined_at.split('T')[0] : new Date().toISOString().split('T')[0]
+            }))
         : [];
 
       setAdminGroups(adminGroupsData);
@@ -80,25 +79,36 @@ export default function Groups() {
 
   const fetchInvitations = async () => {
     try {
+      setLoadingInvitations(true);
       const token = localStorage.getItem("token");
-      const response = await axios.get(`http://localhost:3000/api/groups/${groupId}/invitations`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const response = await axios.get(`${base_url}/api/invitations`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      setInvitations(response.data.data || []);
+      
+      // Map API response to our invitation format
+      const formattedInvitations = response.data.map(invite => ({
+        id: invite.id,
+        group: {
+          id: invite.group.id,
+          name: invite.group.name,
+          members: invite.group.members_count || 0,
+          image: invite.group.image
+        },
+        inviter: {
+          id: invite.inviter.id,
+          name: invite.inviter.name
+        },
+        status: "pending"
+      }));
+      
+      setInvitations(formattedInvitations);
     } catch (error) {
-      console.error("Error fetching invitations:", error);
-      toast.error("Failed to load invitations.");
+      console.error("Failed to fetch invitations:", error);
+      toast.error("Failed to load invitations");
+    } finally {
+      setLoadingInvitations(false);
     }
   };
-
-  // Call this function in useEffect
-  useEffect(() => {
-    if (groupId) {
-      fetchInvitations();
-    }
-  }, [groupId]);
 
   const showcaseAdminGroups = showAllAdminGroups ? adminGroups : adminGroups.slice(0, 3);
   const showcaseJoinedGroups = showAllJoinedGroups ? joinedGroups : joinedGroups.slice(0, 3);
@@ -199,46 +209,57 @@ export default function Groups() {
   const handleAcceptInvitation = async (invitationId) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.post(
-        `http://localhost:3000/api/groups/${groupId}/invitations/${invitationId}/accept`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      await axios.post(`${base_url}/api/invitations/${invitationId}/accept`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Update the invitation status
+      const updatedInvitations = invitations.map(inv =>
+        inv.id === invitationId ? { ...inv, status: "accepted" } : inv
       );
-      setInvitations((prev) => prev.filter((inv) => inv.id !== invitationId));
+      setInvitations(updatedInvitations);
+
+      // Add the group to joined groups
+      const acceptedInvitation = invitations.find(inv => inv.id === invitationId);
+      const newGroup = {
+        id: acceptedInvitation.group.id,
+        name: acceptedInvitation.group.name,
+        members_count: acceptedInvitation.group.members,
+        isAdmin: false,
+        joinedDate: new Date().toISOString().split('T')[0],
+        image: acceptedInvitation.group.image || ""
+      };
+      setJoinedGroups(prev => [...prev, newGroup]);
+
       toast.success("Invitation accepted successfully!");
     } catch (error) {
-      console.error("Error accepting invitation:", error);
-      toast.error("Failed to accept invitation.");
+      console.error("Failed to accept invitation:", error);
+      toast.error(error.response?.data?.message || "Failed to accept invitation");
     }
   };
 
   const handleRejectInvitation = async (invitationId) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.post(
-        `http://localhost:3000/api/groups/${groupId}/invitations/${invitationId}/reject`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      await axios.post(`${base_url}/api/invitations/${invitationId}/reject`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Update the invitation status
+      const updatedInvitations = invitations.map(inv =>
+        inv.id === invitationId ? { ...inv, status: "rejected" } : inv
       );
-      setInvitations((prev) => prev.filter((inv) => inv.id !== invitationId));
+      setInvitations(updatedInvitations);
+
       toast.success("Invitation rejected successfully!");
     } catch (error) {
-      console.error("Error rejecting invitation:", error);
-      toast.error("Failed to reject invitation.");
+      console.error("Failed to reject invitation:", error);
+      toast.error(error.response?.data?.message || "Failed to reject invitation");
     }
   };
 
   const pendingInvitations = invitations.filter(inv => inv.status === "pending");
   const processedInvitations = invitations.filter(inv => inv.status !== "pending");
-
 
   return (
     <Case>
@@ -279,6 +300,11 @@ export default function Groups() {
                   className={`px-4 py-2 border-b-2 ${activeTab === 'invitations' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'} font-medium whitespace-nowrap`}
                 >
                   Group Invitations
+                  {pendingInvitations.length > 0 && (
+                    <span className="ml-1 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
+                      {pendingInvitations.length}
+                    </span>
+                  )}
                 </button>
               </div>
             </div>
@@ -311,10 +337,10 @@ export default function Groups() {
                       {showcaseAdminGroups.map((group) => (
                         <div key={`admin-${group.id}`} className="bg-white rounded-xl shadow p-3 sm:p-4 flex flex-col justify-between h-36 sm:h-40 border border-gray-200 hover:border-blue-300 transition-colors">
                           <div className="flex items-center space-x-2 sm:space-x-3 border-b pb-3">
-                            <img
-                              className="w-10 h-10 rounded-full"
-                              src={group.image ? `${base_url}/${group.image}` : "/default-group.png"}
-                              alt="Group"
+                            <img 
+                              className="w-10 h-10 rounded-full" 
+                              src={group.image ? `${base_url}/${group.image}` : "/default-group.png"} 
+                              alt="Group" 
                               onError={(e) => {
                                 e.target.src = "/default-group.png";
                               }}
@@ -374,9 +400,9 @@ export default function Groups() {
                       {showcaseJoinedGroups.map((group) => (
                         <div key={`joined-${group.id}`} className="bg-white rounded-xl shadow p-3 sm:p-4 flex flex-col justify-between h-36 sm:h-40 border border-gray-200 hover:border-blue-300 transition-colors">
                           <div className="flex items-center space-x-2 sm:space-x-3 border-b pb-3">
-                            <img
-                              className="w-10 h-10 rounded-full"
-                              src={group.image ? `${base_url}/${group.image}` : "/default-group.png"}
+                            <img 
+                              className="w-10 h-10 rounded-full" 
+                              src={group.image ? `${base_url}/${group.image}` : "/default-group.png"} 
                               alt="Group"
                               onError={(e) => {
                                 e.target.src = "/default-group.png";
@@ -438,9 +464,9 @@ export default function Groups() {
                       <div key={`invite-${invitation.id}`} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                         <div className="flex items-start space-x-3">
                           <div className="flex-shrink-0">
-                            <img
-                              className="w-10 h-10 rounded-full"
-                              src={invitation.group.image ? `${base_url}/${invitation.group.image}` : "/default-group.png"}
+                            <img 
+                              className="w-10 h-10 rounded-full" 
+                              src={invitation.group.image ? `${base_url}/${invitation.group.image}` : "/default-group.png"} 
                               alt="Group"
                               onError={(e) => {
                                 e.target.src = "/default-group.png";
@@ -453,7 +479,7 @@ export default function Groups() {
                               Invited by <span className="font-medium">{invitation.inviter.name}</span>
                             </p>
                             <div className="mt-1 text-xs text-gray-500">
-                              {invitation.group.members_count} members
+                              {invitation.group.members} members
                             </div>
                           </div>
                         </div>
@@ -489,9 +515,9 @@ export default function Groups() {
                           <div key={`history-${invitation.id}`} className="flex items-center justify-between p-2 border-b">
                             <div className="flex items-center space-x-2">
                               <div className="flex-shrink-0">
-                                <img
-                                  className="w-8 h-8 rounded-full"
-                                  src={invitation.group.image ? `${base_url}/${invitation.group.image}` : "/default-group.png"}
+                                <img 
+                                  className="w-8 h-8 rounded-full" 
+                                  src={invitation.group.image ? `${base_url}/${invitation.group.image}` : "/default-group.png"} 
                                   alt="Group"
                                   onError={(e) => {
                                     e.target.src = "/default-group.png";
@@ -503,7 +529,7 @@ export default function Groups() {
                                   {invitation.inviter.name}'s invitation to {invitation.group.name}
                                 </p>
                                 <p className="text-xs text-gray-500">
-                                  {new Date(invitation.updated_at).toLocaleDateString()}
+                                  {new Date().toLocaleDateString()}
                                 </p>
                               </div>
                             </div>

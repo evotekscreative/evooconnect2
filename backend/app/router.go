@@ -37,6 +37,7 @@ func NewRouter(
 	router.PUT("/api/user/profile", userController.UpdateProfile)
 	router.GET("/api/user-profile/:username", userController.GetByUsername)
 	router.POST("/api/user/photo", userController.UploadPhotoProfile)
+	router.DELETE("/api/user/photo", userController.DeletePhotoProfile)
 	router.GET("/api/user-peoples", userController.GetPeoples)
 
 	// Blog routes - static paths first
