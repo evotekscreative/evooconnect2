@@ -55,8 +55,8 @@ const PostCard = forwardRef(({ post, onComment }, ref) => {
           <div className="mr-2 relative">
             <img 
               className="rounded-full w-10 h-10 object-cover" 
-              src={post.user?.profile_photo_url || '/img/default-avatar.png'} 
-              alt="User Avatar" 
+              src={post.user?.profile_photo_url || '/img/default-photo.png'} 
+              alt="User photo" 
             />
             <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ${
               post.user?.is_online ? 'bg-green-500' : 'bg-gray-400'

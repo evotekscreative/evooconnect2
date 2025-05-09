@@ -20,12 +20,11 @@ func main() {
     db := app.NewDB()
     validate := validator.New()
 
-    jwtSecret := helper.GetEnv("JWT_SECRET_KEY", "your-secret-key")
+	jwtSecret := helper.GetEnv("JWT_SECRET_KEY", "your-secret-key")
 
-    // Initialize user components
-    userRepository := repository.NewUserRepository()
-    userService := service.NewUserService(userRepository, db, validate)
-    userController := controller.NewUserController(userService)
+	userRepository := repository.NewUserRepository()
+	userService := service.NewUserService(userRepository, db, validate)
+	userController := controller.NewUserController(userService)
 
     // Initialize auth components
     authService := service.NewAuthService(userRepository, db, validate, jwtSecret)
@@ -36,10 +35,10 @@ func main() {
     blogService := service.NewBlogService(blogRepository)
     blogController := controller.NewBlogController(blogService)
 
-    // Initialize post components
-    postRepository := repository.NewPostRepository()
-    postService := service.NewPostService(postRepository, db, validate)
-    postController := controller.NewPostController(postService)
+	// Initialize post dependencies
+	postRepository := repository.NewPostRepository()
+	postService := service.NewPostService(postRepository, db, validate)
+	postController := controller.NewPostController(postService)
 
     // Initialize comment components
     commentRepository := repository.NewCommentRepository()
@@ -56,17 +55,22 @@ func main() {
 	experienceService := service.NewExperienceService(experienceRepository, userRepository, db, validate)
 	experienceController := controller.NewExperienceController(experienceService)
 
-	// Initialize router with all controllers
-	commentBlogRepository := repository.NewCommentBlogRepository()
-	commentBlogService := service.NewCommentBlogService(commentBlogRepository, blogRepository, userRepository, db, validate)
-	commentBlogController := controller.NewCommentBlogController(commentBlogService)
-
+	// Initialize connection components
 	connectionRepository := repository.NewConnectionRepository()
 	connectionService := service.NewConnectionService(connectionRepository, userRepository, db, validate)
 	connectionController := controller.NewConnectionController(connectionService)
 
-	router := app.NewRouter(authController, userController, blogController, postController, commentController, educationController, experienceController, commentBlogController, connectionController)
-
+	// Initialize router with all controllers
+	router := app.NewRouter(
+		authController,
+		userController,
+		blogController,
+		postController,
+		commentController,
+		educationController,
+		experienceController,
+		connectionController,
+	)
 	// Create middleware chain
 	var handler http.Handler = router
 	handler = middleware.NewAuthMiddleware(handler, jwtSecret)

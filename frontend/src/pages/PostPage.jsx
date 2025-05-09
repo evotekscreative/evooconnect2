@@ -10,7 +10,7 @@ import Case from "../components/Case.jsx";
 
 const   PostPage = () => {
     // Mock data for the sidebar (you can replace with actual data from props or state)
-    const [profileImage] = useState("https://i.pravatar.cc/48");
+    const [profileImage] = useState("https://i.prphoto.cc/48");
     const [fullName] = useState("Muhammad Bintang Asyidqy");
     const [headline] = useState("Internship at PT.Evolusi Teknologi Solusi | Fullstack Web Developer");
     const [skills] = useState(["JavaScript", "React", "Node.js", "HTML", "CSS"]);
@@ -102,7 +102,7 @@ const   PostPage = () => {
                             {/* Header */}
                             <div className="flex items-start gap-3">
                                 <img
-                                    src="https://i.pravatar.cc/48"
+                                    src="https://i.prphoto.cc/48"
                                     alt="profile"
                                     className="rounded-full w-12 h-12"
                                 />

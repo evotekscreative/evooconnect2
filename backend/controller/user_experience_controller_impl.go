@@ -5,8 +5,8 @@ import (
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/service"
+	"mime/multipart"
 	"net/http"
-	"path/filepath"
 	"strconv"
 
 	"github.com/google/uuid"
@@ -24,24 +24,28 @@ func NewExperienceController(experienceService service.ExperienceService) Experi
 }
 
 func (controller *ExperienceControllerImpl) Create(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	// Read request body
-	createRequest := web.ExperienceCreateRequest{}
-	helper.ReadFromRequestBody(request, &createRequest)
+	// Parse multipart form with 10 MB max memory
+	err := helper.ParseMultipartForm(request, 10) // 10 MB limit
+	helper.PanicIfError(err)
 
 	// Get user_id from context (set by JWT middleware)
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
-	// Parse user_id
-	userId, err := uuid.Parse(userIdString)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
+	// Read request body
+	createRequest := web.ExperienceCreateRequest{}
+	helper.ReadFromMultipartForm(request, &createRequest)
+
+	// Handle image uploads
+	var file *multipart.FileHeader = nil
+	form := request.MultipartForm
+	files := form.File["photo"]
+	if len(files) > 0 {
+		file = files[0]
 	}
 
 	// Call service to create experience
-	experienceResponse := controller.ExperienceService.Create(request.Context(), userId, createRequest)
+	experienceResponse := controller.ExperienceService.Create(request.Context(), userId, createRequest, file)
 
 	// Create response
 	webResponse := web.WebResponse{
@@ -55,9 +59,24 @@ func (controller *ExperienceControllerImpl) Create(writer http.ResponseWriter, r
 }
 
 func (controller *ExperienceControllerImpl) Update(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Parse multipart form with 10 MB max memory
+	err := helper.ParseMultipartForm(request, 10) // 10 MB limit
+	helper.PanicIfError(err)
+
+	// Get user_id from context (set by JWT middleware)
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+
 	// Read request body
 	updateRequest := web.ExperienceUpdateRequest{}
-	helper.ReadFromRequestBody(request, &updateRequest)
+	helper.ReadFromMultipartForm(request, &updateRequest)
+
+	var file *multipart.FileHeader = nil
+	form := request.MultipartForm
+	files := form.File["photo"]
+	if len(files) > 0 {
+		file = files[0]
+	}
 
 	// Get experience_id from URL params
 	experienceId, err := uuid.Parse(params.ByName("experienceId"))
@@ -65,20 +84,8 @@ func (controller *ExperienceControllerImpl) Update(writer http.ResponseWriter, r
 		panic(exception.NewBadRequestError("Invalid experience ID format"))
 	}
 
-	// Get user_id from context (set by JWT middleware)
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse user_id
-	userId, err := uuid.Parse(userIdString)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
-
 	// Call service to update experience
-	experienceResponse := controller.ExperienceService.Update(request.Context(), experienceId, userId, updateRequest)
+	experienceResponse := controller.ExperienceService.Update(request.Context(), experienceId, userId, updateRequest, file)
 
 	// Create response
 	webResponse := web.WebResponse{
@@ -99,16 +106,8 @@ func (controller *ExperienceControllerImpl) Delete(writer http.ResponseWriter, r
 	}
 
 	// Get user_id from context (set by JWT middleware)
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse user_id
-	userId, err := uuid.Parse(userIdString)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	// Call service to delete experience
 	controller.ExperienceService.Delete(request.Context(), experienceId, userId)
@@ -181,49 +180,6 @@ func (controller *ExperienceControllerImpl) GetByUserId(writer http.ResponseWrit
 		Code:   http.StatusOK,
 		Status: "OK",
 		Data:   experienceResponses,
-	}
-
-	// Write response
-	helper.WriteToResponseBody(writer, webResponse)
-}
-
-func (controller *ExperienceControllerImpl) UploadPhoto(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	// Parse multipart form with 10 MB max memory
-	err := request.ParseMultipartForm(10 << 20) // 10 MB
-	if err != nil {
-		panic(exception.NewBadRequestError("Failed to parse form: " + err.Error()))
-	}
-
-	// Get file from form
-	file, handler, err := request.FormFile("photo")
-	if err != nil {
-		panic(exception.NewBadRequestError("No file uploaded or invalid file field"))
-	}
-	defer file.Close()
-
-	// Check file type
-	ext := filepath.Ext(handler.Filename)
-	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" {
-		panic(exception.NewBadRequestError("Only JPG, JPEG and PNG files are allowed"))
-	}
-
-	// Get user_id from context (set by JWT middleware)
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Generate unique filename
-	userId := userIdString
-	filename := helper.SaveUploadedFile(file, "experience", userId, ext)
-
-	// Create response
-	webResponse := web.WebResponse{
-		Code:   http.StatusOK,
-		Status: "OK",
-		Data: map[string]string{
-			"photo": filename,
-		},
 	}
 
 	// Write response

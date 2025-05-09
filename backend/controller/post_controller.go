@@ -15,5 +15,4 @@ type PostController interface {
 	FindByUserId(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	LikePost(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	UnlikePost(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
-	UploadImages(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 }

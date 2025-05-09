@@ -13,4 +13,6 @@ type ConnectionService interface {
 	AcceptConnectionRequest(ctx context.Context, userId uuid.UUID, requestId uuid.UUID) web.ConnectionRequestResponse
 	RejectConnectionRequest(ctx context.Context, userId uuid.UUID, requestId uuid.UUID) web.ConnectionRequestResponse
 	GetConnections(ctx context.Context, userId uuid.UUID, limit, offset int) web.ConnectionListResponse
+	Disconnect(ctx context.Context, userId, targetUserId uuid.UUID) web.DisconnectResponse
+	CancelConnectionRequest(ctx context.Context, userId, toUserId uuid.UUID) string
 }

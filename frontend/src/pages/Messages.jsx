@@ -64,7 +64,7 @@ const dummyUsers = [
     name: "Muhamad Afghan Alzena",
     email: "muhamadafghanalzena@gmail.com",
     initials: "MA",
-    avatar: "https://randomuser.me/api/portraits/men/1.jpg",
+    photo: "https://randomuser.me/api/portraits/men/1.jpg",
     status: "online",
     messages: [
       {
@@ -103,7 +103,7 @@ const dummyUsers = [
     name: "Siti Nurhaliza",
     email: "siti.nurhaliza@email.com",
     initials: "SN",
-    avatar: "https://randomuser.me/api/portraits/women/1.jpg",
+    photo: "https://randomuser.me/api/portraits/women/1.jpg",
     status: "last seen today at 9:12 AM",
     messages: [
       {
@@ -326,7 +326,7 @@ export const Messages = () => {
               </button>
               <div className="flex items-center">
                 <img
-                  src={activeUser.avatar}
+                  src={activeUser.photo}
                   alt={activeUser.name}
                   className="w-8 h-8 rounded-full mr-2"
                 />
@@ -406,7 +406,7 @@ export const Messages = () => {
               >
                 <div className="relative">
                   <img
-                    src={user.avatar}
+                    src={user.photo}
                     alt={user.name}
                     className="w-12 h-12 rounded-full mr-3"
                   />
@@ -456,7 +456,7 @@ export const Messages = () => {
                 <div className="flex items-center">
                   <div className="relative">
                     <img
-                      src={activeUser.avatar}
+                      src={activeUser.photo}
                       alt={activeUser.name}
                       className="w-10 h-10 rounded-full mr-3"
                     />

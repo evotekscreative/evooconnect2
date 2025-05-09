@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 import Case from "../../components/Case";
 import { Link } from "react-router-dom";
 import blogImage from "../../assets/img/blog1.jpg";
@@ -11,11 +12,24 @@ const Blog = () => {
   const itemsPerPage = 6;
 
   useEffect(() => {
-    const storedBlogs = JSON.parse(localStorage.getItem("blogs")) || [];
-    setBlogs(storedBlogs.reverse());
-    localStorage.setItem("cachedBlogs", JSON.stringify(storedBlogs));
+    const fetchBlogs = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get("http://localhost:3000/api/blogs", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = response.data;
+        console.log("Fetched blogs:", data);
+        setBlogs(data.reverse());
+      } catch (error) {
+        console.error("Error fetching blogs:", error);
+      }
+    };
+
+    fetchBlogs();
   }, []);
-  
 
   const totalPages = Math.ceil(blogs.length / itemsPerPage);
   const totalGroups = Math.ceil(totalPages / 3);
@@ -61,10 +75,10 @@ const Blog = () => {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {currentArticles.map((article) => (
-                <Link to={`/detail-blog/${article.id}`} className="block" key={article.id}>
+                <Link to={`/blog-detail/${article.slug}`} className="block" key={article.id}>
                   <div className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition">
                     <img
-                      src={article.images?.[0]?.base64 || blogImage}
+                      src={article.photo || blogImage}
                       alt="blog banner"
                       className="w-full h-48 object-cover"
                     />
@@ -80,7 +94,7 @@ const Blog = () => {
                       </p>
                     </div>
                     <div className="flex justify-between p-4 border-t text-sm text-gray-500">
-                      <span>By Admin</span>
+                      <span>{article.author || "Admin"}</span>
                       <span>{article.date}</span>
                     </div>
                   </div>

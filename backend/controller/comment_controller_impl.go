@@ -24,6 +24,9 @@ func NewCommentController(commentService service.CommentService) CommentControll
 }
 
 func (controller *CommentControllerImpl) Create(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+
 	// Baca body request
 	createRequest := web.CreateCommentRequest{}
 	helper.ReadFromRequestBody(request, &createRequest)
@@ -32,18 +35,6 @@ func (controller *CommentControllerImpl) Create(writer http.ResponseWriter, requ
 	postId, err := uuid.Parse(params.ByName("postId"))
 	if err != nil {
 		panic(exception.NewBadRequestError("Invalid post ID format"))
-	}
-
-	// Ambil user_id dari context (set by JWT middleware)
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse user_id
-	userId, err := uuid.Parse(userIdString)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
 	}
 
 	// Panggil service untuk membuat komentar
@@ -124,6 +115,9 @@ func (controller *CommentControllerImpl) GetById(writer http.ResponseWriter, req
 }
 
 func (controller *CommentControllerImpl) Update(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+
 	// Baca body request
 	updateRequest := web.CreateCommentRequest{}
 	helper.ReadFromRequestBody(request, &updateRequest)
@@ -132,18 +126,6 @@ func (controller *CommentControllerImpl) Update(writer http.ResponseWriter, requ
 	commentId, err := uuid.Parse(params.ByName("commentId"))
 	if err != nil {
 		panic(exception.NewBadRequestError("Invalid comment ID format"))
-	}
-
-	// Ambil user_id dari context (set by JWT middleware)
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse user_id
-	userId, err := uuid.Parse(userIdString)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
 	}
 
 	// Panggil service untuk memperbarui komentar
@@ -161,22 +143,13 @@ func (controller *CommentControllerImpl) Update(writer http.ResponseWriter, requ
 }
 
 func (controller *CommentControllerImpl) Delete(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+
 	// Ambil comment_id dari URL params
 	commentId, err := uuid.Parse(params.ByName("commentId"))
 	if err != nil {
 		panic(exception.NewBadRequestError("Invalid comment ID format"))
-	}
-
-	// Ambil user_id dari context (set by JWT middleware)
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse user_id
-	userId, err := uuid.Parse(userIdString)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
 	}
 
 	// Panggil service untuk menghapus komentar
@@ -205,16 +178,8 @@ func (controller *CommentControllerImpl) Reply(writer http.ResponseWriter, reque
 	}
 
 	// Ambil user_id dari context (set by JWT middleware)
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse user_id
-	userId, err := uuid.Parse(userIdString)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
 
 	// Panggil service untuk membalas komentar
 	fmt.Printf("Replying to comment %s by user %s\n", commentId, userId)
