@@ -366,3 +366,65 @@ func (service *ConnectionServiceImpl) Disconnect(ctx context.Context, userId, ta
 		DisconnectedAt: time.Now(),
 	}
 }
+
+func (service *ConnectionServiceImpl) CancelConnectionRequest(ctx context.Context, userId, requestId uuid.UUID) web.ConnectionRequestResponse {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Get connection request
+	request, err := service.ConnectionRepository.FindConnectionRequestById(ctx, tx, requestId)
+	if err != nil {
+		panic(exception.NewNotFoundError("Connection request not found"))
+	}
+
+	// Verify the current user is the sender of the request
+	if request.SenderId != userId {
+		panic(exception.NewForbiddenError("You can only cancel requests you've sent"))
+	}
+
+	// Verify the request is pending
+	if request.Status != domain.ConnectionStatusPending {
+		panic(exception.NewBadRequestError("Connection request is not pending"))
+	}
+
+	// Update request status to canceled
+	request.Status = domain.ConnectionStatusCancelled
+	err = service.ConnectionRepository.DeleteConnectionRequest(ctx, tx, requestId)
+	if err != nil {
+		panic(exception.NewInternalServerError("Failed to cancel connection request: " + err.Error()))
+	}
+
+	// Get user info for response
+	sender, err := service.UserRepository.FindById(ctx, tx, request.SenderId)
+	if err != nil {
+		panic(exception.NewNotFoundError("Sender user not found"))
+	}
+
+	receiver, err := service.UserRepository.FindById(ctx, tx, request.ReceiverId)
+	if err != nil {
+		panic(exception.NewNotFoundError("Receiver user not found"))
+	}
+
+	return web.ConnectionRequestResponse{
+		Id:        request.Id,
+		Status:    string(domain.ConnectionStatusCancelled),
+		Message:   request.Message,
+		CreatedAt: request.CreatedAt,
+		UpdatedAt: time.Now(),
+		Sender: &web.UserShort{
+			Id:       sender.Id,
+			Name:     sender.Name,
+			Username: sender.Username,
+			Headline: optionalStringPtr(sender.Headline),
+			Photo:    optionalStringPtr(sender.Photo),
+		},
+		Receiver: &web.UserShort{
+			Id:       receiver.Id,
+			Name:     receiver.Name,
+			Username: receiver.Username,
+			Headline: optionalStringPtr(receiver.Headline),
+			Photo:    optionalStringPtr(receiver.Photo),
+		},
+	}
+}

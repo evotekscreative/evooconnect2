@@ -1831,6 +1831,42 @@
           ]
         },
         {
+          "name": "Cancel Connection Request",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/api/connections/requests/{{requestId}}",
+            "description": "Membatalkan permintaan koneksi yang telah dikirimkan sebelumnya"
+          },
+          "response": [
+            {
+              "name": "Cancel Connection Request Success",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{base_url}}/api/connections/requests/h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": \"Connection request cancelled successfully\"\n}"
+            }
+          ]
+        },
+        {
           "name": "Get Connections",
           "request": {
             "auth": {
@@ -2617,6 +2653,35 @@
               "name": "Reject Invitation Success",
               "originalRequest": {
                 "url": "{{base_url}}/api/invitations/j9k0l1m2-n3o4-c2d3-e4f5-g6h7i8j9k0l1/reject"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Cancel Invitation",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/api/invitations/{{invitationId}}",
+            "description": "Cancel a group invitation (only the inviter can cancel)"
+          },
+          "response": [
+            {
+              "name": "Cancel Invitation Success",
+              "originalRequest": {
+                "url": "{{base_url}}/api/invitations/h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0"
               },
               "status": "OK",
               "code": 200,

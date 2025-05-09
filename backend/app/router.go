@@ -100,6 +100,7 @@ func NewRouter(
 	router.GET("/api/connections/requests", connectionController.GetConnectionRequests)
 	router.PUT("/api/connections/requests/:requestId/accept", connectionController.AcceptConnectionRequest)
 	router.PUT("/api/connections/requests/:requestId/reject", connectionController.RejectConnectionRequest)
+	router.DELETE("/api/connections/requests/:requestId", connectionController.CancelConnectionRequest)
 	router.GET("/api/users/:userId/connections", connectionController.GetConnections)
 	router.POST("/api/users/:userId/connect", connectionController.SendConnectionRequest)
 	router.DELETE("/api/users/:userId/connect", connectionController.Disconnect)
@@ -122,6 +123,7 @@ func NewRouter(
 	router.PUT("/api/invitations/:invitationId/accept", groupController.AcceptInvitation)
 	router.PUT("/api/invitations/:invitationId/reject", groupController.RejectInvitation)
 	router.GET("/api/my-invitations", groupController.FindMyInvitations)
+	router.DELETE("/api/invitations/:invitationId", groupController.CancelInvitation)
 
 	uploadFS := http.FileServer(http.Dir("uploads"))
 

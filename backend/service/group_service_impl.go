@@ -98,9 +98,7 @@ func (service *GroupServiceImpl) Update(ctx context.Context, groupId, userId uui
 	helper.PanicIfError(err)
 
 	tx, err := service.DB.Begin()
-	if err != nil {
-		panic(err)
-	}
+	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
 	// Get existing group
@@ -148,9 +146,7 @@ func (service *GroupServiceImpl) Update(ctx context.Context, groupId, userId uui
 
 func (service *GroupServiceImpl) Delete(ctx context.Context, groupId, userId uuid.UUID) {
 	tx, err := service.DB.Begin()
-	if err != nil {
-		panic(err)
-	}
+	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
 	group, err := service.GroupRepository.FindById(ctx, tx, groupId)
@@ -168,9 +164,7 @@ func (service *GroupServiceImpl) Delete(ctx context.Context, groupId, userId uui
 
 func (service *GroupServiceImpl) FindById(ctx context.Context, groupId uuid.UUID) web.GroupResponse {
 	tx, err := service.DB.Begin()
-	if err != nil {
-		panic(err)
-	}
+	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
 	// Get the group
@@ -216,9 +210,7 @@ func (service *GroupServiceImpl) FindById(ctx context.Context, groupId uuid.UUID
 
 func (service *GroupServiceImpl) FindAll(ctx context.Context, limit, offset int) []web.GroupResponse {
 	tx, err := service.DB.Begin()
-	if err != nil {
-		panic(err)
-	}
+	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
 	groups := service.GroupRepository.FindAll(ctx, tx, limit, offset)
@@ -244,9 +236,7 @@ func (service *GroupServiceImpl) FindAll(ctx context.Context, limit, offset int)
 
 func (service *GroupServiceImpl) FindMyGroups(ctx context.Context, userId uuid.UUID) []web.GroupResponse {
 	tx, err := service.DB.Begin()
-	if err != nil {
-		panic(err)
-	}
+	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
 	memberships := service.MemberRepository.FindByUserId(ctx, tx, userId)
@@ -272,9 +262,7 @@ func (service *GroupServiceImpl) FindMyGroups(ctx context.Context, userId uuid.U
 
 func (service *GroupServiceImpl) AddMember(ctx context.Context, groupId, userId, newMemberId uuid.UUID) web.GroupMemberResponse {
 	tx, err := service.DB.Begin()
-	if err != nil {
-		panic(err)
-	}
+	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
 	// First, check if the user to be added exists
@@ -338,9 +326,7 @@ func (service *GroupServiceImpl) AddMember(ctx context.Context, groupId, userId,
 
 func (service *GroupServiceImpl) RemoveMember(ctx context.Context, groupId, userId, memberId uuid.UUID) {
 	tx, err := service.DB.Begin()
-	if err != nil {
-		panic(err)
-	}
+	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
 	group, err := service.GroupRepository.FindById(ctx, tx, groupId)
@@ -378,9 +364,7 @@ func (service *GroupServiceImpl) RemoveMember(ctx context.Context, groupId, user
 
 func (service *GroupServiceImpl) UpdateMemberRole(ctx context.Context, groupId, userId, memberId uuid.UUID, role string) web.GroupMemberResponse {
 	tx, err := service.DB.Begin()
-	if err != nil {
-		panic(err)
-	}
+	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
 	if role != "admin" && role != "member" {
@@ -422,9 +406,7 @@ func (service *GroupServiceImpl) UpdateMemberRole(ctx context.Context, groupId, 
 
 func (service *GroupServiceImpl) GetMembers(ctx context.Context, groupId uuid.UUID) []web.GroupMemberResponse {
 	tx, err := service.DB.Begin()
-	if err != nil {
-		panic(err)
-	}
+	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
 	_, err = service.GroupRepository.FindById(ctx, tx, groupId)
@@ -449,9 +431,7 @@ func (service *GroupServiceImpl) GetMembers(ctx context.Context, groupId uuid.UU
 
 func (service *GroupServiceImpl) CreateInvitation(ctx context.Context, groupId, userId, inviteeId uuid.UUID) web.GroupInvitationResponse {
 	tx, err := service.DB.Begin()
-	if err != nil {
-		panic(err)
-	}
+	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
 	// Check if user is admin of the group
@@ -528,9 +508,7 @@ func (service *GroupServiceImpl) CreateInvitation(ctx context.Context, groupId, 
 
 func (service *GroupServiceImpl) AcceptInvitation(ctx context.Context, invitationId, userId uuid.UUID) web.GroupMemberResponse {
 	tx, err := service.DB.Begin()
-	if err != nil {
-		panic(err)
-	}
+	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
 	invitation := service.InvitationRepository.FindById(ctx, tx, invitationId)
@@ -566,9 +544,7 @@ func (service *GroupServiceImpl) AcceptInvitation(ctx context.Context, invitatio
 
 func (service *GroupServiceImpl) RejectInvitation(ctx context.Context, invitationId, userId uuid.UUID) {
 	tx, err := service.DB.Begin()
-	if err != nil {
-		panic(err)
-	}
+	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
 	invitation := service.InvitationRepository.FindById(ctx, tx, invitationId)
@@ -592,9 +568,7 @@ func (service *GroupServiceImpl) RejectInvitation(ctx context.Context, invitatio
 
 func (service *GroupServiceImpl) GetMyInvitations(ctx context.Context, userId uuid.UUID) []web.GroupInvitationResponse {
 	tx, err := service.DB.Begin()
-	if err != nil {
-		panic(err)
-	}
+	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
 	invitations := service.InvitationRepository.FindByInviteeId(ctx, tx, userId)
@@ -645,9 +619,7 @@ func (service *GroupServiceImpl) isGroupAdmin(ctx context.Context, tx *sql.Tx, g
 
 func (service *GroupServiceImpl) LeaveGroup(ctx context.Context, groupId, userId uuid.UUID) web.LeaveGroupResponse {
 	tx, err := service.DB.Begin()
-	if err != nil {
-		panic(err)
-	}
+	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
 	group, err := service.GroupRepository.FindById(ctx, tx, groupId)
@@ -684,9 +656,7 @@ func (service *GroupServiceImpl) LeaveGroup(ctx context.Context, groupId, userId
 
 func (service *GroupServiceImpl) JoinPublicGroup(ctx context.Context, groupId, userId uuid.UUID) web.GroupMemberResponse {
 	tx, err := service.DB.Begin()
-	if err != nil {
-		panic(err)
-	}
+	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
 	// Check if the group exists
@@ -733,5 +703,30 @@ func (service *GroupServiceImpl) JoinPublicGroup(ctx context.Context, groupId, u
 	response := helper.ToGroupMemberResponse(member)
 	response.User = helper.ToUserBriefResponse(user)
 
+	return response
+}
+
+func (service *GroupServiceImpl) CancelInvitation(ctx context.Context, invitationId, userId uuid.UUID) web.GroupInvitationResponse {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	invitation := service.InvitationRepository.FindById(ctx, tx, invitationId)
+	if invitation.Id == uuid.Nil {
+		panic(exception.NewNotFoundError("invitation not found"))
+	}
+
+	if invitation.InviterId != userId {
+		panic(exception.NewForbiddenError("only the inviter can cancel the invitation"))
+	}
+
+	if invitation.Status != "pending" {
+		panic(exception.NewBadRequestError("invitation is not pending"))
+	}
+
+	err = service.InvitationRepository.CancelRequest(ctx, tx, invitationId)
+	helper.PanicIfError(err)
+
+	response := helper.ToGroupInvitationResponse(invitation)
 	return response
 }
