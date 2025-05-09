@@ -98,6 +98,23 @@ func (controller *UserControllerImpl) UploadPhotoProfile(writer http.ResponseWri
 	helper.WriteToResponseBody(writer, webResponse)
 }
 
+func (controller *UserControllerImpl) DeletePhotoProfile(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Get user_id from context that was set by auth middleware
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+
+	// Call service to delete photo profile
+	userResponse := controller.UserService.DeletePhotoProfile(request.Context(), userId)
+
+	webResponse := web.WebResponse{
+		Code:   200,
+		Status: "OK",
+		Data:   userResponse,
+	}
+
+	helper.WriteToResponseBody(writer, webResponse)
+}
+
 func (controller *UserControllerImpl) GetPeoples(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Get current user ID from context
 	currentUserIdStr := request.Context().Value("user_id").(string)

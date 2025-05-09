@@ -186,6 +186,27 @@ func (service *UserServiceImpl) UploadPhotoProfile(ctx context.Context, userId u
 	return helper.ToUserProfileResponse(updatedUser)
 }
 
+func (service *UserServiceImpl) DeletePhotoProfile(ctx context.Context, userId uuid.UUID) web.UserProfileResponse {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Find user first
+	user, err := service.UserRepository.FindById(ctx, tx, userId)
+	if err != nil {
+		panic(exception.NewNotFoundError(err.Error()))
+	}
+
+	if user.Photo != "" {
+		err = helper.DeleteFile(user.Photo)
+		helper.PanicIfError(err)
+		user.Photo = ""
+	}
+
+	updatedUser := service.UserRepository.Update(ctx, tx, user)
+	return helper.ToUserProfileResponse(updatedUser)
+}
+
 func (service *UserServiceImpl) GetPeoples(ctx context.Context, limit int, offset int, currentUserIdStr string) []web.UserShort {
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
