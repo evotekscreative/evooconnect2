@@ -1,10 +1,10 @@
 package controller
 
 import (
-	"evoconnect/backend/exception"
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/service"
+	"mime/multipart"
 	"net/http"
 	"strconv"
 
@@ -71,23 +71,28 @@ func (controller *UserControllerImpl) GetByUsername(writer http.ResponseWriter, 
 }
 
 func (controller *UserControllerImpl) UploadPhotoProfile(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Parse multipart form with 10 MB max memory
+	err := helper.ParseMultipartForm(request, 10) // 10 MB limit
+	helper.PanicIfError(err)
+
 	// Get user_id from context that was set by auth middleware
 	userId, err := helper.GetUserIdFromToken(request)
 	helper.PanicIfError(err)
 
-	// Parse the multipart form file from request
-	file, handler, err := request.FormFile("photo")
-	if err != nil {
-		panic(exception.NewBadRequestError("Error retrieving the file: " + err.Error()))
+	// Handle image uploads
+	var file *multipart.FileHeader = nil
+	form := request.MultipartForm
+	files := form.File["photo"]
+	if len(files) > 0 {
+		file = files[0]
 	}
-	defer file.Close()
 
-	filePath := controller.UserService.UploadPhotoProfile(request.Context(), userId, handler.Filename)
+	userResponse := controller.UserService.UploadPhotoProfile(request.Context(), userId, file)
 
 	webResponse := web.WebResponse{
 		Code:   200,
 		Status: "OK",
-		Data:   filePath,
+		Data:   userResponse,
 	}
 
 	helper.WriteToResponseBody(writer, webResponse)
