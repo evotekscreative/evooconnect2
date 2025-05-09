@@ -39,6 +39,7 @@ func NewRouter(
 
 	// Blog routes
 	router.POST("/api/blogs", blogController.Create)
+	router.POST("/api/blogs-with-image", blogController.CreateWithImage)
 	router.GET("/api/blogs", blogController.FindAll)
 	router.GET("/api/blogs/random", blogController.GetRandomBlogs)
 	router.GET("/api/blogs/slug/:slug", blogController.GetBySlug)

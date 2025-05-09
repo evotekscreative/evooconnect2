@@ -48,7 +48,7 @@ func createBlogForTest(db *sql.DB) domain.Blog {
         Slug:      "test-blog",
         Category:  "Technology",
         Content:   "This is a test blog.",
-        Image:     "https://example.com/image.jpg",
+        ImagePath: req.Image,
         UserID:    "123",
         CreatedAt: time.Now().Format(time.RFC3339),
         UpdatedAt: time.Now().Format(time.RFC3339),

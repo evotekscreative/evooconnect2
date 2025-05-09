@@ -2688,6 +2688,20 @@
       ]
     },
     {
+      "name": "Report",
+      "description": "Endpoint untuk mengelola laporan pengguna",
+      "item": [
+        {
+          "name": "Create Report",
+          "request": {
+            
+          }
+          
+        }
+      ]
+
+    },
+    {
       "name": "Education",
       "description": "Endpoints untuk mengelola data pendidikan pengguna",
       "item": [

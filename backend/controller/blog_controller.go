@@ -7,11 +7,8 @@ import (
     "evoconnect/backend/service"
     "fmt"
     "net/http"
+    "encoding/json"
     "github.com/julienschmidt/httprouter"
-
-    
-    // "strings"
-    // "time"
 )
 
 type BlogController interface {
@@ -22,6 +19,8 @@ type BlogController interface {
     Update(writer http.ResponseWriter, request *http.Request, params httprouter.Params) // Perbaiki signature
     UploadPhoto(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
     GetRandomBlogs(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+    CreateWithImage(w http.ResponseWriter, r *http.Request, params httprouter.Params) // Perbaiki signature
+
 }
 
 type BlogControllerImpl struct {
@@ -33,80 +32,107 @@ func NewBlogController(blogService service.BlogService) BlogController {
 }
 
 func (c *BlogControllerImpl) Create(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-    blogCreateRequest := web.BlogCreateRequest{}
-    defer func() {
-        if r := recover(); r != nil {
-            webResponse := web.WebResponse{
-                Code:   http.StatusBadRequest,
-                Status: "BAD REQUEST",
-                Data:   fmt.Sprintf("%v", r),
-            }
-            helper.WriteToResponseBody(writer, webResponse)
-        }
-    }()
+	defer func() {
+		if r := recover(); r != nil {
+			webResponse := web.WebResponse{
+				Code:   http.StatusBadRequest,
+				Status: "BAD REQUEST",
+				Data:   fmt.Sprintf("%v", r),
+			}
+			helper.WriteToResponseBody(writer, webResponse)
+		}
+	}()
 
-    // Read the request body
-    helper.ReadFromRequestBody(request, &blogCreateRequest)
+	// Parse multipart/form-data
+	err := request.ParseMultipartForm(10 << 20) // 10MB max
+	if err != nil {
+		http.Error(writer, "Cannot parse multipart form", http.StatusBadRequest)
+		return
+	}
 
-    // Extract userID from context (JWT claims)
-    userIDVal := request.Context().Value("user_id")
-    if userIDVal == nil {
-        webResponse := web.WebResponse{
-            Code:   http.StatusUnauthorized,
-            Status: "UNAUTHORIZED",
-            Data:   "User ID not found in context",
-        }
-        helper.WriteToResponseBody(writer, webResponse)
-        return
-    }
+	// Ambil form values
+	blogCreateRequest := web.BlogCreateRequest{
+		Title:    request.FormValue("title"),
+		Category: request.FormValue("category"),
+		Content:  request.FormValue("content"),
+	}
 
-    var userID string
-    switch v := userIDVal.(type) {
-    case float64:
-        userID = fmt.Sprintf("%.0f", v)
-    case int:
-        userID = fmt.Sprintf("%d", v)
-    case string:
-        userID = v
-    default:
-        webResponse := web.WebResponse{
-            Code:   http.StatusUnauthorized,
-            Status: "UNAUTHORIZED",
-            Data:   "Invalid user ID type in context",
-        }
-        helper.WriteToResponseBody(writer, webResponse)
-        return
-    }
+	// Ambil user ID dari context
+	userIDVal := request.Context().Value("user_id")
+	if userIDVal == nil {
+		webResponse := web.WebResponse{
+			Code:   http.StatusUnauthorized,
+			Status: "UNAUTHORIZED",
+			Data:   "User ID not found in context",
+		}
+		helper.WriteToResponseBody(writer, webResponse)
+		return
+	}
 
-    // Validasi input
-    if err := helper.ValidateBlogInput(blogCreateRequest.Title, blogCreateRequest.Content, blogCreateRequest.Category); err != nil {
-        webResponse := web.WebResponse{
-            Code:   http.StatusBadRequest,
-            Status: "BAD REQUEST",
-            Data:   err.Error(),
-        }
-        helper.WriteToResponseBody(writer, webResponse)
-        return
-    }
+	var userID string
+	switch v := userIDVal.(type) {
+	case float64:
+		userID = fmt.Sprintf("%.0f", v)
+	case int:
+		userID = fmt.Sprintf("%d", v)
+	case string:
+		userID = v
+	default:
+		webResponse := web.WebResponse{
+			Code:   http.StatusUnauthorized,
+			Status: "UNAUTHORIZED",
+			Data:   "Invalid user ID type in context",
+		}
+		helper.WriteToResponseBody(writer, webResponse)
+		return
+	}
 
-    // Call the service to create the blog
-    blogResponse, err := c.BlogService.Create(request.Context(), blogCreateRequest, userID)
-    if err != nil {
-        webResponse := web.WebResponse{
-            Code:   http.StatusInternalServerError,
-            Status: "INTERNAL SERVER ERROR",
-            Data:   err.Error(),
-        }
-        helper.WriteToResponseBody(writer, webResponse)
-        return
-    }
+	// Validasi input
+	if err := helper.ValidateBlogInput(blogCreateRequest.Title, blogCreateRequest.Content, blogCreateRequest.Category); err != nil {
+		webResponse := web.WebResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD REQUEST",
+			Data:   err.Error(),
+		}
+		helper.WriteToResponseBody(writer, webResponse)
+		return
+	}
 
-    webResponse := web.WebResponse{
-        Code:   http.StatusCreated,
-        Status: "CREATED",
-        Data:   blogResponse,
-    }
-    helper.WriteToResponseBody(writer, webResponse)
+	// Tangani file upload
+	file, fileHeader, err := request.FormFile("image")
+var savedPath string
+if err == nil {
+    defer file.Close()
+    savedPath, err = helper.SaveBlogImage(file, fileHeader, userID) // Tambahkan userID
+		if err != nil {
+			webResponse := web.WebResponse{
+				Code:   http.StatusInternalServerError,
+				Status: "INTERNAL SERVER ERROR",
+				Data:   err.Error(),
+			}
+			helper.WriteToResponseBody(writer, webResponse)
+			return
+		}
+	}
+
+	// Panggil service
+	blogResponse, err := c.BlogService.CreateWithImagePath(request.Context(), blogCreateRequest, userID, savedPath)
+	if err != nil {
+		webResponse := web.WebResponse{
+			Code:   http.StatusInternalServerError,
+			Status: "INTERNAL SERVER ERROR",
+			Data:   err.Error(),
+		}
+		helper.WriteToResponseBody(writer, webResponse)
+		return
+	}
+
+	webResponse := web.WebResponse{
+		Code:   http.StatusCreated,
+		Status: "CREATED",
+		Data:   blogResponse,
+	}
+	helper.WriteToResponseBody(writer, webResponse)
 }
 
 
@@ -175,14 +201,119 @@ func (c *BlogControllerImpl) GetBySlug(writer http.ResponseWriter, request *http
 
 
 func (c *BlogControllerImpl) Update(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+    defer func() {
+        if r := recover(); r != nil {
+            webResponse := web.WebResponse{
+                Code:   http.StatusBadRequest,
+                Status: "BAD REQUEST",
+                Data:   fmt.Sprintf("%v", r),
+            }
+            helper.WriteToResponseBody(writer, webResponse)
+        }
+    }()
+
+    // Ambil ID blog dari parameter URL
     blogID := params.ByName("blogId")
 
-    // Parse request body
-    var blogUpdateRequest web.BlogCreateRequest
-    helper.ReadFromRequestBody(request, &blogUpdateRequest)
+    // Parse multipart/form-data
+    err := request.ParseMultipartForm(10 << 20) // 10MB max
+    if err != nil {
+        http.Error(writer, "Cannot parse multipart form", http.StatusBadRequest)
+        return
+    }
+
+    // Ambil form values
+    blogUpdateRequest := web.BlogCreateRequest{
+        Title:    request.FormValue("title"),
+        Category: request.FormValue("category"),
+        Content:  request.FormValue("content"),
+    }
+
+    // Ambil user ID dari context
+    userIDVal := request.Context().Value("user_id")
+    if userIDVal == nil {
+        webResponse := web.WebResponse{
+            Code:   http.StatusUnauthorized,
+            Status: "UNAUTHORIZED",
+            Data:   "User ID not found in context",
+        }
+        helper.WriteToResponseBody(writer, webResponse)
+        return
+    }
+
+    var userID string
+    switch v := userIDVal.(type) {
+    case float64:
+        userID = fmt.Sprintf("%.0f", v)
+    case int:
+        userID = fmt.Sprintf("%d", v)
+    case string:
+        userID = v
+    default:
+        webResponse := web.WebResponse{
+            Code:   http.StatusUnauthorized,
+            Status: "UNAUTHORIZED",
+            Data:   "Invalid user ID type in context",
+        }
+        helper.WriteToResponseBody(writer, webResponse)
+        return
+    }
+
+    // Validasi input
+    if err := helper.ValidateBlogInput(blogUpdateRequest.Title, blogUpdateRequest.Content, blogUpdateRequest.Category); err != nil {
+        webResponse := web.WebResponse{
+            Code:   http.StatusBadRequest,
+            Status: "BAD REQUEST",
+            Data:   err.Error(),
+        }
+        helper.WriteToResponseBody(writer, webResponse)
+        return
+    }
+
+    // Dapatkan blog yang ada untuk mendapatkan path gambar lama
+    existingBlog, err := c.BlogService.FindById(request.Context(), blogID)
+    if err != nil {
+        webResponse := web.WebResponse{
+            Code:   http.StatusNotFound,
+            Status: "NOT FOUND",
+            Data:   "Blog tidak ditemukan",
+        }
+        helper.WriteToResponseBody(writer, webResponse)
+        return
+    }
+
+    // Tangani file upload jika ada
+    var savedPath string
+    file, fileHeader, err := request.FormFile("image")
+if err == nil {
+    defer file.Close()
+    
+    // Hapus gambar lama jika ada
+    if existingBlog.Photo != "" {
+        err = helper.DeleteBlogImage(existingBlog.Photo)
+        if err != nil {
+            fmt.Printf("Error deleting old image: %v\n", err)
+        }
+    }
+    
+    // Simpan gambar baru dengan userID
+    savedPath, err = helper.SaveBlogImage(file, fileHeader, userID) // Tambahkan userID
+        if err != nil {
+            webResponse := web.WebResponse{
+                Code:   http.StatusInternalServerError,
+                Status: "INTERNAL SERVER ERROR",
+                Data:   err.Error(),
+            }
+            helper.WriteToResponseBody(writer, webResponse)
+            return
+        }
+    } else {
+        // Jika tidak ada file baru, gunakan path gambar yang lama
+        savedPath = existingBlog.Photo
+    }
 
     // Panggil service untuk update blog
-    blogResponse, err := c.BlogService.Update(request.Context(), blogID, blogUpdateRequest)
+    blogResponse, err := c.BlogService.UpdateWithImagePath(request.Context(), blogID, blogUpdateRequest, userID, savedPath)
     if err != nil {
         webResponse := web.WebResponse{
             Code:   http.StatusBadRequest,
@@ -201,6 +332,7 @@ func (c *BlogControllerImpl) Update(writer http.ResponseWriter, request *http.Re
     }
     helper.WriteToResponseBody(writer, webResponse)
 }
+
 
 func (c *BlogControllerImpl) UploadPhoto(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
     blogId := params.ByName("blogId")
@@ -262,3 +394,57 @@ func (c *BlogControllerImpl) GetRandomBlogs(writer http.ResponseWriter, request 
     }
     helper.WriteToResponseBody(writer, webResponse)
 }
+
+func (c *BlogControllerImpl) CreateWithImage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	err := r.ParseMultipartForm(10 << 20) // Max 10MB
+	if err != nil {
+		http.Error(w, "Gagal parse form", http.StatusBadRequest)
+		return
+	}
+
+	// Ambil data form
+	title := r.FormValue("title")
+	content := r.FormValue("content")
+	category := r.FormValue("category")
+
+	blogReq := web.BlogCreateRequest{
+		Title:    title,
+		Content:  content,
+		Category: category,
+	}
+
+	// Ambil file gambar
+	file, fileHeader, err := r.FormFile("image")
+	if err != nil {
+		http.Error(w, "Gagal ambil file gambar", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	// Simulasi user ID (misal dari header)
+	userID := r.Header.Get("X-User-ID")
+	if userID == "" {
+		http.Error(w, "User ID kosong", http.StatusBadRequest)
+		return
+	}
+
+	// Upload gambar
+	imagePath, err := c.BlogService.UploadPhoto(r.Context(), "", userID, file, fileHeader)
+	if err != nil {
+		http.Error(w, "Upload gambar gagal", http.StatusInternalServerError)
+		return
+	}
+
+	// Simpan blog
+	response, err := c.BlogService.CreateWithImagePath(r.Context(), blogReq, userID, imagePath)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Kirim response JSON
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+
