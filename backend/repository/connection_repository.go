@@ -14,6 +14,7 @@ type ConnectionRepository interface {
 	FindConnectionRequestById(ctx context.Context, tx *sql.Tx, id uuid.UUID) (domain.ConnectionRequest, error)
 	FindConnectionRequestsByReceiverId(ctx context.Context, tx *sql.Tx, receiverId uuid.UUID, limit, offset int) ([]domain.ConnectionRequest, int)
 	FindConnectionRequestBySenderIdAndReceiverId(ctx context.Context, tx *sql.Tx, senderId, receiverId uuid.UUID) (domain.ConnectionRequest, error)
+	DeleteConnectionRequest(ctx context.Context, tx *sql.Tx, requestId uuid.UUID) error
 
 	SaveConnection(ctx context.Context, tx *sql.Tx, connection domain.Connection) domain.Connection
 	CheckConnectionExists(ctx context.Context, tx *sql.Tx, userId1, userId2 uuid.UUID) bool

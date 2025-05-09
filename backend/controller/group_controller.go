@@ -28,4 +28,5 @@ type GroupController interface {
 	AcceptInvitation(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	RejectInvitation(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	FindMyInvitations(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+	CancelInvitation(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 }

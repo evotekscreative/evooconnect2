@@ -432,3 +432,12 @@ func (repository *ConnectionRepositoryImpl) Disconnect(ctx context.Context, tx *
 
 	return err
 }
+
+func (repository *ConnectionRepositoryImpl) DeleteConnectionRequest(ctx context.Context, tx *sql.Tx, requestId uuid.UUID) error {
+	SQL := `DELETE FROM connection_requests WHERE id = $1`
+	_, err := tx.ExecContext(ctx, SQL, requestId)
+	if err != nil {
+		return err
+	}
+	return nil
+}

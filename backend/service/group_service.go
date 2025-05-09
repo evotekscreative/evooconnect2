@@ -31,4 +31,5 @@ type GroupService interface {
 	AcceptInvitation(ctx context.Context, invitationId, userId uuid.UUID) web.GroupMemberResponse
 	RejectInvitation(ctx context.Context, invitationId, userId uuid.UUID)
 	GetMyInvitations(ctx context.Context, userId uuid.UUID) []web.GroupInvitationResponse
+	CancelInvitation(ctx context.Context, invitationId, userId uuid.UUID) web.GroupInvitationResponse
 }

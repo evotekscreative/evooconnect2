@@ -255,8 +255,6 @@ func (controller *GroupControllerImpl) FindMembers(writer http.ResponseWriter, r
 	helper.WriteToResponseBody(writer, webResponse)
 }
 
-// File: controller/group_controller_impl.go
-
 func (controller *GroupControllerImpl) LeaveGroup(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Get user ID from token
 	userId, err := helper.GetUserIdFromToken(request)
@@ -394,6 +392,28 @@ func (controller *GroupControllerImpl) FindMyInvitations(writer http.ResponseWri
 		Code:   http.StatusOK,
 		Status: "OK",
 		Data:   invitationResponses,
+	}
+	helper.WriteToResponseBody(writer, webResponse)
+}
+
+func (controller *GroupControllerImpl) CancelInvitation(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Get user ID from token
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+
+	// Parse invitation ID from URL
+	invitationId, err := uuid.Parse(params.ByName("invitationId"))
+	if err != nil {
+		panic(exception.NewBadRequestError("invalid invitation ID format"))
+	}
+
+	// Cancel invitation
+	controller.GroupService.CancelInvitation(request.Context(), invitationId, userId)
+
+	// Send response
+	webResponse := web.WebResponse{
+		Code:   http.StatusOK,
+		Status: "OK",
 	}
 	helper.WriteToResponseBody(writer, webResponse)
 }
