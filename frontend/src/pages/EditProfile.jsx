@@ -165,14 +165,54 @@ export default function ProfileEdit() {
     toast.info("Skill removed");
   };
   
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
-    if (file) {
+    if (!file) return;
+  
+    // Check if the file is an image
+    if (!file.type.match('image.*')) {
+      toast.error('Please select an image file');
+      return;
+    }
+  
+    // Check file size (e.g., limit to 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size should be less than 5MB');
+      return;
+    }
+  
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("You need to login first");
+      return;
+    }
+  
+    try {
+      const formData = new FormData();
+      formData.append('photo', file);
+  
+      const response = await axios.post(
+        `${base_url}/api/user/photo`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+  
+      // Update the profile image in state
+      setProfileImage(response.data.photoUrl || URL.createObjectURL(file));
+      toast.success("Profile image uploaded successfully");
+    } catch (error) {
+      console.error("Error uploading photo:", error);
+      toast.error(error.response?.data?.message || "Failed to upload profile photo");
+      
+      // Fallback to client-side preview if API fails
       const reader = new FileReader();
       reader.onload = (event) => {
-        const imageUrl = event.target.result;
-        setProfileImage(imageUrl);
-        toast.success("Profile image uploaded successfully");
+        setProfileImage(event.target.result);
       };
       reader.readAsDataURL(file);
     }

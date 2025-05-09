@@ -47,13 +47,14 @@ const socialPlatforms = [
 ];
 
 export default function ProfilePage() {
-  const [showExperienceModal, setShowExperienceModal] = useState(false);
-  const [showEducationModal, setShowEducationModal] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [educations, setEducation] = useState([]);
-  const [experiences, setExperiences] = useState([]);
-  const [editingExperience, setEditingExperience] = useState(null);
+  const [showEditEducationModal, setEditShowEducationModal] = useState(false);
   const [editingEducation, setEditingEducation] = useState(null);
+  const [showExperienceModal, setShowExperienceModal] = useState(false)
+  const [showEducationModal, setShowEducationModal] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [educations, setEducation] = useState([])
+  const [experiences, setExperiences] = useState([])
+  const [editingExperience, setEditingExperience] = useState(null)
 
   // Education Form State
   const [educationForm, setEducationForm] = useState({
@@ -67,19 +68,8 @@ export default function ProfilePage() {
     caption: "",
     schoolLogo: null,
   });
-
-  // Experience Form State
-  const [experienceForm, setExperienceForm] = useState({
-    job_title: "",
-    company_name: "",
-    location: "",
-    start_month: "Month",
-    start_year: "Year",
-    end_month: "Month",
-    end_year: "Year",
-    caption: "",
-    photo: null,
-  });
+ 
+ 
 
   // User Data State
   const [user, setUser] = useState({
@@ -132,6 +122,19 @@ export default function ProfilePage() {
     },
   ]);
 
+  // Experience Form State
+  const [experienceForm, setExperienceForm] = useState({
+    jobTitle: "",
+    companyName: "",
+    location: "",
+    start_month: "Month",
+    start_year: "Year",
+    end_month: "Month",
+    end_year: "Year",
+    caption: "",
+    photo: null,
+  });
+
   // Date options
   const months = [
     "Month",
@@ -148,6 +151,7 @@ export default function ProfilePage() {
     "November",
     "December",
   ];
+ 
 
   const years = [
     "Year",
@@ -665,6 +669,7 @@ export default function ProfilePage() {
                   </span>
                   <span className="font-bold text-lg">85</span>
                 </div>
+                {/* </Link> */}
                 <Link
                   to="/job-saved"
                   className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md"
@@ -794,6 +799,8 @@ export default function ProfilePage() {
                           </div>
                         )}
                         <div className="flex-1">
+                          <h4 className="font-semibold">{exp.jobTitle}</h4>
+                          <p className="text-gray-600">{exp.companyName}</p>
                           <div className="flex justify-between items-start">
                             <h4 className="font-semibold">{exp.job_title}</h4>
                             <button
@@ -1087,9 +1094,7 @@ export default function ProfilePage() {
                         onChange={handleExperienceChange}
                       >
                         {months.map((month, index) => (
-                          <option key={index} value={month}>
-                            {month}
-                          </option>
+                          <option key={index} value={month}>{month}</option>
                         ))}
                       </select>
                       <select
@@ -1208,7 +1213,7 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* Education Modal */}
+      {/* Add Education Modal */}
       {showEducationModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl">
@@ -1396,6 +1401,178 @@ export default function ProfilePage() {
                       : editingEducation
                       ? "Update"
                       : "Save"}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Education Modal */}
+      {showEditEducationModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl">
+            <div className="flex items-center gap-2 mb-4">
+              <GraduationCap size={20} className="text-[#00AEEF]" />
+              <h2 className="text-xl font-bold">Edit Education</h2>
+            </div>
+            <form onSubmit={handleEditEducationSubmit}>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-4">
+                  <input
+                    type="text"
+                    name="major"
+                    placeholder="Degree *"
+                    className="w-full border px-3 py-2 rounded focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
+                    value={educationForm.major}
+                    onChange={handleEducationChange}
+                    required
+                  />
+                  <input
+                    type="text"
+                    name="institute_name"
+                    placeholder="School Name *"
+                    className="w-full border px-3 py-2 rounded focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
+                    value={educationForm.institute_name}
+                    onChange={handleEducationChange}
+                    required
+                  />
+                  <input
+                    type="text"
+                    name="location"
+                    placeholder="Location (City, Country)"
+                    className="w-full border px-3 py-2 rounded focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
+                    value={educationForm.location}
+                    onChange={handleEducationChange}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Start Date *
+                    </label>
+                    <div className="flex gap-2">
+                      <select
+                        name="start_month"
+                        className="border px-2 py-1 rounded w-1/2 focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
+                        value={educationForm.start_month}
+                        onChange={handleEducationChange}
+                        required
+                      >
+                        {months.map((month, index) => (
+                          <option key={index} value={month}>{month}</option>
+                        ))}
+                      </select>
+                      <select
+                        name="start_year"
+                        className="border px-2 py-1 rounded w-1/2 focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
+                        value={educationForm.start_year}
+                        onChange={handleEducationChange}
+                        required
+                      >
+                        {years.map((year, index) => (
+                          <option key={index} value={year}>{year}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      End Date
+                    </label>
+                    <div className="flex gap-2">
+                      <select
+                        name="end_month"
+                        className="border px-2 py-1 rounded w-1/2 focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
+                        value={educationForm.end_month}
+                        onChange={handleEducationChange}
+                      >
+                        {months.map((month, index) => (
+                          <option key={index} value={month}>{month}</option>
+                        ))}
+                      </select>
+                      <select
+                        name="end_year"
+                        className="border px-2 py-1 rounded w-1/2 focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
+                        value={educationForm.end_year}
+                        onChange={handleEducationChange}
+                      >
+                        {years.map((year, index) => (
+                          <option key={index} value={year}>{year}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <textarea
+                    name="caption"
+                    placeholder="Description"
+                    className="w-full border px-3 py-2 rounded focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
+                    rows={4}
+                    value={educationForm.caption}
+                    onChange={handleEducationChange}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    School Logo
+                  </label>
+                  <input
+                    type="file"
+                    className="w-full border px-3 py-2 rounded focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
+                    onChange={handleEducationFileChange}
+                  />
+                  {editingEducation?.photo && !educationForm.schoolLogo && (
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500">Current logo:</p>
+                      <img
+                        src={"http://localhost:3000/" + editingEducation.photo}
+                        alt="Current school logo"
+                        className="h-12 mt-1"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-between mt-6">
+                <button
+                  type="button"
+                  className="px-4 py-2 rounded border hover:bg-gray-50 transition text-red-500 hover:text-red-700"
+                  onClick={() => {
+                    if (editingEducation?.id) {
+                      if (window.confirm("Are you sure you want to delete this education?")) {
+                        handleDeleteEducation(editingEducation.id);
+                      }
+                    }
+                  }}
+                  disabled={isLoading}
+                >
+                  Delete Education
+                </button>
+
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    className="px-4 py-2 rounded border hover:bg-gray-50 transition"
+                    onClick={() => {
+                      setEditShowEducationModal(false);
+                      setEditingEducation(null);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded bg-[#00AEEF] text-white hover:bg-[#0099d6] transition"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Updating..." : "Update Education"}
                   </button>
                 </div>
               </div>
