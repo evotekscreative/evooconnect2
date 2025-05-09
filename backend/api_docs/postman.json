@@ -1841,7 +1841,7 @@
             },
             "method": "DELETE",
             "header": [],
-            "url": "{{base_url}}/api/connections/requests/{{requestId}}",
+            "url": "{{base_url}}/api/connections/requests/{{toUserId}}",
             "description": "Membatalkan permintaan koneksi yang telah dikirimkan sebelumnya"
           },
           "response": [
@@ -3724,6 +3724,10 @@
       "key": "invitationId",
       "value": "h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0",
       "type": "string"
+    },
+    {
+      "key": "toUserId",
+      "value": "550e8400-e29b-41d4-a716-446655440000"
     }
   ]
 }

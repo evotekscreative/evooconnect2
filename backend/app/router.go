@@ -100,7 +100,7 @@ func NewRouter(
 	router.GET("/api/connections/requests", connectionController.GetConnectionRequests)
 	router.PUT("/api/connections/requests/:requestId/accept", connectionController.AcceptConnectionRequest)
 	router.PUT("/api/connections/requests/:requestId/reject", connectionController.RejectConnectionRequest)
-	router.DELETE("/api/connections/requests/:requestId", connectionController.CancelConnectionRequest)
+	router.DELETE("/api/connections/requests/:toUserId", connectionController.CancelConnectionRequest)
 	router.GET("/api/users/:userId/connections", connectionController.GetConnections)
 	router.POST("/api/users/:userId/connect", connectionController.SendConnectionRequest)
 	router.DELETE("/api/users/:userId/connect", connectionController.Disconnect)
