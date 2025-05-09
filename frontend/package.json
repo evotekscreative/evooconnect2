@@ -27,6 +27,7 @@
     "react-dom": "^19.0.0",
     "react-form-stepper": "^2.0.3",
     "react-router-dom": "^7.4.1",
+    "react-toastify": "^11.0.5",
     "react-trix-rte": "^1.0.16",
     "recharts": "^2.15.3",
     "sonner": "^2.0.3",

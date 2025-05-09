@@ -2465,7 +2465,7 @@
           "response": []
         },
         {
-          "name": "Get blog by slug",
+          "name": "Get Blog by Slug",
           "request": {
             "method": "GET",
             "header": [],
@@ -2478,6 +2478,212 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Get Random Blogs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/blogs/random?limit=3",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "blogs", "random"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "3",
+                  "description": "Jumlah blog random yang ingin diambil"
+                }
+              ]
+            },
+            "description": "Mengambil sejumlah blog secara acak berdasarkan parameter limit."
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Blog Photo",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{JWT_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "photo",
+                  "type": "file",
+                  "src": "/path/to/photo.jpg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/blogs/{{blog_id}}/photo",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "blogs", "{{blog_id}}", "photo"]
+            },
+            "description": "Mengupload foto untuk blog tertentu berdasarkan ID blog."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Blog by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{JWT_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Blog Title\",\n  \"category\": \"Technology\",\n  \"content\": \"Updated content for the blog.\",\n  \"image\": \"uploads/blogs/updated-image.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/blogs/{{blog_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "blogs", "{{blog_id}}"]
+            },
+            "description": "Memperbarui blog berdasarkan ID blog."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Blog Comment",
+      "description": "Endpoint untuk mengelola komentar blog dan reply-nya",
+      "item": [
+        {
+          "name": "Create Blog Comment",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{JWT_TOKEN}}", "type": "string" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"this is comment blog\",\n  \"parent_id\": null\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/blog-comments/{{blogId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "blog-comments", "{{blogId}}"]
+            }
+          }
+        },
+        {
+          "name": "Reply to Comment",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{JWT_TOKEN}}", "type": "string" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"This is reply\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/blog/comments/{{commentId}}/replies",
+              "host": ["{{base_url}}"],
+              "path": ["api", "blog", "comments", "{{commentId}}", "replies"]
+            }
+          }
+        },
+        {
+          "name": "Get Replies for Comment",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/blog/comments/{{commentId}}/replies",
+              "host": ["{{base_url}}"],
+              "path": ["api", "blog", "comments", "{{commentId}}", "replies"]
+            }
+          }
+        },
+        {
+          "name": "Update Comment",
+          "request": {
+            "method": "PUT",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{JWT_TOKEN}}", "type": "string" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Komentar ini sudah diperbarui.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/blog/comments/{{commentblogId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "blog", "comments", "{{commentblogId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get All Comments in Blog",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/blog-comments/{{blogId}}?limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "blog-comments", "{{blogId}}"],
+              "query": [
+                { "key": "limit", "value": "10" },
+                { "key": "offset", "value": "0" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Comment",
+          "request": {
+            "method": "DELETE",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{JWT_TOKEN}}", "type": "string" }] },
+            "url": {
+              "raw": "{{base_url}}/api/blog/comments/{{commentblogId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "blog", "comments", "{{commentblogId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Comment by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/blog/comments/{{commentblogId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "blog", "comments", "{{commentblogId}}"]
+            }
+          }
         }
       ]
     },
