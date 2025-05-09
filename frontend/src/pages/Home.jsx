@@ -276,7 +276,15 @@ export default function SocialNetworkFeed() {
   };
 
   const openImageModal = (post, index) => {
-    setSelectedPost(post);
+    // Pastikan post.images adalah array URL lengkap
+    const images = post.images.map(img => 
+      img.startsWith('http') ? img : `http://localhost:3000/${img}`
+    );
+    
+    setSelectedPost({
+      ...post,
+      images: images
+    });
     setSelectedImageIndex(index);
     setShowImageModal(true);
   };
@@ -350,29 +358,28 @@ export default function SocialNetworkFeed() {
       const content = activeTab === "update" ? postContent : articleContent;
       const userToken = localStorage.getItem("token");
 
-      // Buat FormData untuk mengirim konten dan gambar sekaligus
       const formData = new FormData();
       formData.append("content", content);
       formData.append("visibility", postVisibility);
 
       // Tambahkan semua gambar ke FormData
-      articleImages.forEach((file, index) => {
-        if (file instanceof File) {
-          formData.append("images", file);
-        } else if (typeof file === "string") {
-          // Jika file sudah berupa string (URL), mungkin tidak perlu diupload ulang
-          formData.append("existingImages", file);
+      articleImages.forEach((img) => {
+        if (img.file) {
+          // Jika ini file baru yang diupload
+          formData.append("images", img.file);
+        } else if (typeof img === "string") {
+          // Jika ini URL gambar yang sudah ada
+          formData.append("existingImages", img);
         }
       });
 
-      // Kirim semua data sekaligus dalam satu request
       const response = await axios.post(
         "http://localhost:3000/api/posts",
         formData,
         {
           headers: {
             Authorization: `Bearer ${userToken}`,
-            "Content-Type": "multipart/form-data", // Penting untuk FormData
+            "Content-Type": "multipart/form-data",
           },
         }
       );
@@ -381,10 +388,16 @@ export default function SocialNetworkFeed() {
         throw new Error("Invalid response from server");
       }
 
+      // Pastikan response.data.data.images adalah array URL gambar
+      const images = response.data.data.images || [];
+
       const newPost = {
         id: response.data.data.id,
         content: response.data.data.content || content,
-        images: response.data.data.images || [],
+        images: images.map((img) => {
+          // Pastikan URL gambar lengkap jika backend hanya mengembalikan nama file
+          return img.startsWith("http") ? img : `http://localhost:3000/${img}`;
+        }),
         visibility: response.data.data.visibility || postVisibility,
         likes_count: response.data.data.likes_count || 0,
         comments_count: response.data.data.comments_count || 0,
@@ -397,7 +410,6 @@ export default function SocialNetworkFeed() {
       };
 
       setPosts((prevPosts) => [newPost, ...prevPosts]);
-
       setPostContent("");
       setArticleContent("");
       setArticleImages([]);
@@ -1004,14 +1016,29 @@ export default function SocialNetworkFeed() {
   };
 
   const renderPhotoGrid = (images) => {
-    if (images.length === 1) {
+    if (!images || images.length === 0) return null;
+
+    // Pastikan images adalah array URL yang valid
+    const validImages = images.map((img) => {
+      // Jika img sudah berupa URL lengkap, gunakan langsung
+      if (
+        typeof img === "string" &&
+        (img.startsWith("http") || img.startsWith("/"))
+      ) {
+        return img;
+      }
+      // Jika backend mengembalikan path relatif, tambahkan base URL
+      return `http://localhost:3000/${img}`;
+    });
+
+    if (validImages.length === 1) {
       return (
         <div className="mb-3 rounded-lg overflow-hidden border">
           <img
-            src={"http://localhost:3000/" + images[0]}
+            src={validImages[0]}
             className="w-full h-48 md:h-64 lg:h-96 object-cover cursor-pointer"
             alt="Post"
-            onClick={() => openImageModal({ images }, 0)}
+            onClick={() => openImageModal({ images: validImages }, 0)}
           />
         </div>
       );
@@ -2410,7 +2437,6 @@ export default function SocialNetworkFeed() {
             <div className="relative">
               <img
                 src={
-                  "http://localhost:3000/" +
                   selectedPost.images[selectedImageIndex]
                 }
                 className="w-full max-h-[80vh] object-contain"

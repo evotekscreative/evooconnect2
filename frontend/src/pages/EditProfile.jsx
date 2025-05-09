@@ -218,10 +218,32 @@ export default function ProfileEdit() {
     }
   };
   
-  const handleRemoveImage = () => {
-    setProfileImage(null);
-    if (fileInputRef.current) fileInputRef.current.value = null;
-    toast.info("Profile image removed");
+  const handleRemoveImage = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("You need to login first");
+      return;
+    }
+  
+    try {
+      await axios.delete(`${base_url}/api/user/photo`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      setProfileImage(null);
+      if (fileInputRef.current) fileInputRef.current.value = null;
+      toast.success("Profile image removed successfully");
+    } catch (error) {
+      console.error("Error removing profile photo:", error);
+      toast.error(error.response?.data?.message || "Failed to remove profile photo");
+      
+      // Fallback to client-side removal if API fails
+      setProfileImage(null);
+      if (fileInputRef.current) fileInputRef.current.value = null;
+      toast.info("Profile image removed locally");
+    }
   };
   
   const handleSaveProfile = async () => {
@@ -297,7 +319,7 @@ export default function ProfileEdit() {
                 <div className="flex flex-col items-center">
                   <div className="relative w-36 h-36 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center border-4 border-white shadow-md hover:shadow-lg transition-shadow">
                     {profileImage ? (
-                      <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                      <img src={'http://localhost:3000/' + profileImage} alt="Profile" className="w-full h-full object-cover" />
                     ) : (
                       <div className="bg-gray-200 w-full h-full flex items-center justify-center">
                         <span className="text-4xl font-bold text-gray-500">

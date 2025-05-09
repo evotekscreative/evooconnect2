@@ -49,12 +49,42 @@ const socialPlatforms = [
 export default function ProfilePage() {
   const [showEditEducationModal, setEditShowEducationModal] = useState(false);
   const [editingEducation, setEditingEducation] = useState(null);
-  const [showExperienceModal, setShowExperienceModal] = useState(false)
-  const [showEducationModal, setShowEducationModal] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [educations, setEducation] = useState([])
-  const [experiences, setExperiences] = useState([])
-  const [editingExperience, setEditingExperience] = useState(null)
+  const [showExperienceModal, setShowExperienceModal] = useState(false);
+  const [showEducationModal, setShowEducationModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [educations, setEducation] = useState([]);
+  const [experiences, setExperiences] = useState([]);
+  const [editingExperience, setEditingExperience] = useState(null);
+  const [userPosts, setUserPosts] = useState([]);
+
+  const fetchUserPosts = async () => {
+    const token = localStorage.getItem("token");
+    setIsLoading(true);
+
+    const user = JSON.parse(localStorage.getItem("user"));
+    const userId = user.id;
+    try {
+      const response = await axios.get(
+        `http://localhost:3000/api/users/${userId}/posts?limit=10&offset=0`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setUserPosts(response.data.data);
+      console.log(userPosts);
+      console.log(response.data.data); 
+      
+      
+    } catch (error) {
+      console.error("Failed to fetch user posts:", error);
+      toast.error("Failed to load posts");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Education Form State
   const [educationForm, setEducationForm] = useState({
@@ -68,8 +98,6 @@ export default function ProfilePage() {
     caption: "",
     schoolLogo: null,
   });
- 
- 
 
   // User Data State
   const [user, setUser] = useState({
@@ -81,46 +109,6 @@ export default function ProfilePage() {
     socials: {},
     photo: null,
   });
-
-  // Sample post data
-  const [post] = useState([
-    {
-      id: 1,
-      title: "Belajar Membuat Aplikasi Back-End untuk Pemula",
-      provider: "Dicoding",
-      date: "March 2023",
-      image: "/api/placeholder/300/200",
-      likes: 14,
-      comments: 1,
-    },
-    {
-      id: 2,
-      title: "Sertifikat Kelas Belajar jQuery Dasar",
-      provider: "CODEPOLITAN",
-      date: "January 2023",
-      image: "/api/placeholder/300/200",
-      likes: 11,
-      comments: 1,
-    },
-    {
-      id: 3,
-      title: "React.js Developer postificate",
-      provider: "Meta",
-      date: "December 2022",
-      image: "/api/placeholder/300/200",
-      likes: 19,
-      comments: 2,
-    },
-    {
-      id: 4,
-      title: "Responsive Web Design",
-      provider: "freeCodeCamp",
-      date: "November 2022",
-      image: "/api/placeholder/300/200",
-      likes: 8,
-      comments: 0,
-    },
-  ]);
 
   // Experience Form State
   const [experienceForm, setExperienceForm] = useState({
@@ -151,7 +139,6 @@ export default function ProfilePage() {
     "November",
     "December",
   ];
- 
 
   const years = [
     "Year",
@@ -269,6 +256,7 @@ export default function ProfilePage() {
     if (user.id) {
       fetchEducations();
       fetchExperiences();
+      fetchUserPosts();
     }
   }, [user.id]);
 
@@ -950,42 +938,51 @@ export default function ProfilePage() {
               <div
                 id="post-container"
                 className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide"
-                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
               >
-                {post.map((post) => (
-                  <div
-                    key={post.id}
-                    className="flex-shrink-0 w-64 border rounded-lg overflow-hidden bg-white shadow-sm"
-                  >
-                    <div className="h-40 bg-gray-100 relative">
-                      <img
-                        src={post.image || "/placeholder.svg"}
-                        alt={`${post.title} post`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="p-4">
-                      <h4 className="font-medium text-base text-[#00AEEF] line-clamp-2">
-                        {post.title}
-                      </h4>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {post.provider}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">{post.date}</p>
+                {userPosts.length > 0 ? (
+                  userPosts.map((post) => (
+                    <div
+                      key={post.id}
+                      className="flex-shrink-0 w-64 border rounded-lg overflow-hidden bg-white shadow-sm"
+                    >
+                      <div className="h-40 bg-gray-100 relative">
+                        {post.images && (
+                          <img
+                            src={"http://localhost:3000/" + post.images[0]}
+                            alt={`Post ${post.id}`}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                      </div>
+                      <div className="p-4"> 
+                        <p className="text-sm text-gray-600 mt-1">
+                          {post.content || "No provider"}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(post.created_at).toLocaleDateString(
+                            "en-US",
+                            { month: "long", year: "numeric" }
+                          )}
+                        </p>
 
-                      <div className="flex justify-between items-center mt-3">
-                        <div className="flex items-center text-xs text-gray-500">
-                          <span>{post.likes} likes</span>
-                          <span className="mx-2">•</span>
-                          <span>{post.comments} comments</span>
+                        <div className="flex justify-between items-center mt-3">
+                          <div className="flex items-center text-xs text-gray-500">
+                            <span>{post.likes_count || 0} likes</span>
+                            <span className="mx-2">•</span>
+                            <span>{post.comments_count || 0} comments</span>
+                          </div>
+                          <button className="text-xs text-[#00AEEF]">
+                            Share
+                          </button>
                         </div>
-                        <button className="text-xs text-[#00AEEF]">
-                          Share
-                        </button>
                       </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 w-full">
+                    <p className="text-gray-500">No posts yet</p>
                   </div>
-                ))}
+                )}
               </div>
 
               <style>{`
@@ -1094,7 +1091,9 @@ export default function ProfilePage() {
                         onChange={handleExperienceChange}
                       >
                         {months.map((month, index) => (
-                          <option key={index} value={month}>{month}</option>
+                          <option key={index} value={month}>
+                            {month}
+                          </option>
                         ))}
                       </select>
                       <select
@@ -1462,7 +1461,9 @@ export default function ProfilePage() {
                         required
                       >
                         {months.map((month, index) => (
-                          <option key={index} value={month}>{month}</option>
+                          <option key={index} value={month}>
+                            {month}
+                          </option>
                         ))}
                       </select>
                       <select
@@ -1473,7 +1474,9 @@ export default function ProfilePage() {
                         required
                       >
                         {years.map((year, index) => (
-                          <option key={index} value={year}>{year}</option>
+                          <option key={index} value={year}>
+                            {year}
+                          </option>
                         ))}
                       </select>
                     </div>
@@ -1490,7 +1493,9 @@ export default function ProfilePage() {
                         onChange={handleEducationChange}
                       >
                         {months.map((month, index) => (
-                          <option key={index} value={month}>{month}</option>
+                          <option key={index} value={month}>
+                            {month}
+                          </option>
                         ))}
                       </select>
                       <select
@@ -1500,7 +1505,9 @@ export default function ProfilePage() {
                         onChange={handleEducationChange}
                       >
                         {years.map((year, index) => (
-                          <option key={index} value={year}>{year}</option>
+                          <option key={index} value={year}>
+                            {year}
+                          </option>
                         ))}
                       </select>
                     </div>
@@ -1546,7 +1553,11 @@ export default function ProfilePage() {
                   className="px-4 py-2 rounded border hover:bg-gray-50 transition text-red-500 hover:text-red-700"
                   onClick={() => {
                     if (editingEducation?.id) {
-                      if (window.confirm("Are you sure you want to delete this education?")) {
+                      if (
+                        window.confirm(
+                          "Are you sure you want to delete this education?"
+                        )
+                      ) {
                         handleDeleteEducation(editingEducation.id);
                       }
                     }
