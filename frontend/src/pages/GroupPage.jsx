@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import Case from "../components/Case";
 import axios from "axios";
+import { useParams } from "react-router-dom";
+import { toast } from "sonner";
 import {
   MoreHorizontal,
   Image,
@@ -26,12 +28,10 @@ export default function GroupPage() {
   const [connections, setConnections] = useState([]);
   const [showInviteSuccess, setShowInviteSuccess] = useState(false);
   const [invitedUserName, setInvitedUserName] = useState("");
-  const [group, setGroup] = useState({
-    name: "Web Development Group",
-    description: "A community for web developers to share knowledge and tips",
-    image: "/api/placeholder/80/80",
-    members: [],
-  });
+  const { groupId } = useParams();
+  const [isLoading, setIsLoading] = useState(true);
+  const [group, setGroup] = useState(null);
+  const [error, setError] = useState(null);
   const [user, setUser] = useState({
     id: 1,
     name: "John Doe",
@@ -39,48 +39,181 @@ export default function GroupPage() {
     following_count: 42,
   });
 
+  const [pagination, setPagination] = useState({
+    limit: 10,
+    offset: 0,
+    total: 0,
+  })
+
+  const defaultGroup = {
+    id: groupId || "default-id",
+    name: "Developer Group",
+    description: "A group for developers to share and learn",
+    image: "/api/placeholder/80/80",
+    members: [
+      {
+        id: 1,
+        name: "John Doe",
+        profile_photo: "/api/placeholder/80/80",
+        role: "admin"
+      },
+      {
+        id: 2,
+        name: "Jane Smith",
+        profile_photo: "/api/placeholder/80/80"
+      }
+    ]
+  };
+
+  // console.log(groupId)
+
+  const fetchGroupData = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        `http://localhost:3000/api/groups/${groupId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      console.log("Group data:", response.data.data); // Log respons API
+      setGroup(response.data.data);
+    } catch (error) {
+      console.error("Error fetching group data:", error);
+      toast.error("Failed to load group data.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+
+    if (groupId) {
+      fetchGroupData();
+    } else {
+      toast.error("Invalid group ID.");
+    }
+  }, [groupId]);
+
+  const fetchGroups = async () => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        `${process.env.REACT_APP_API_URL || "http://localhost:3000"}/api/groups`,
+        {
+          params: {
+            limit: pagination.limit,
+            offset: pagination.offset,
+          },
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      );
+
+      setGroups(response.data.data.groups);
+      setPagination((prev) => ({
+        ...prev,
+        total: response.data.data.total_count,
+      }));
+    } catch (error) {
+      console.error("Error fetching groups:", error);
+      setError("Failed to load groups. Please try again.");
+      toast.error("Failed to load groups.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchGroups();
+  }, [pagination.limit, pagination.offset]);
+
+  const handleNextPage = () => {
+    if (pagination.offset + pagination.limit < pagination.total) {
+      setPagination((prev) => ({
+        ...prev,
+        offset: prev.offset + prev.limit,
+      }));
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (pagination.offset - pagination.limit >= 0) {
+      setPagination((prev) => ({
+        ...prev,
+        offset: prev.offset - prev.limit,
+      }));
+    }
+  };
+
+  const handleFirstPage = () => {
+    setPagination((prev) => ({
+      ...prev,
+      offset: 0,
+    }));
+  };
+
+  const handleLastPage = () => {
+    const lastPageOffset =
+      Math.floor((pagination.total - 1) / pagination.limit) * pagination.limit;
+    setPagination((prev) => ({
+      ...prev,
+      offset: lastPageOffset,
+    }));
+  };
+
+  const totalPages = Math.ceil(pagination.total / pagination.limit);
+  const currentPage = Math.floor(pagination.offset / pagination.limit) + 1;
 
   const fetchGroupMembers = async (groupId) => {
     try {
       const token = localStorage.getItem("token");
+
+      if (!token) {
+        console.warn("No authentication token found for fetching members");
+        return;
+      }
+
       const response = await axios.get(
         `http://localhost:3000/api/groups/${groupId}/members`,
         {
           headers: {
             Authorization: "Bearer " + token,
           },
+          timeout: 5000
         }
       );
 
-      // Ensure response.data is an array before setting it
-      const members = Array.isArray(response.data) ? response.data : [];
+      const members = Array.isArray(response.data.data) ? response.data.data : [];
 
-      setGroup((prevGroup) => ({
+      setGroup(prevGroup => ({
         ...prevGroup,
         members: members,
       }));
     } catch (error) {
       console.error("Error fetching group members:", error);
-      // Set members to empty array on error
-      setGroup((prevGroup) => ({
-        ...prevGroup,
-        members: [],
-      }));
+      // Don't update members if there's an error - keep existing members
     }
   };
 
-  useEffect(() => {
-    // Ganti '1' dengan ID grup yang sebenarnya atau dari props/route
-    const groupId = 1;
-    fetchGroupMembers(groupId);
-  }, []); // Empty dependency array berarti hanya dijalankan sekali saat mount
-
   const fetchUserConnections = async (userId) => {
-    const token = localStorage.getItem("token");
-    const user = JSON.parse(localStorage.getItem("user"));
     try {
+      const token = localStorage.getItem("token");
+      const user = JSON.parse(localStorage.getItem("user"));
+
+      if (!token || !user) {
+        console.warn("No authentication token or user data found");
+        setConnections([
+          { id: 1, friend: { id: 3, name: "Alice Cooper", profile_photo: "/api/placeholder/40/40" } },
+          { id: 2, friend: { id: 4, name: "Bob Johnson", profile_photo: "/api/placeholder/40/40" } },
+        ]);
+        return;
+      }
+
       const response = await axios.get(
-        `http://localhost:3000/api/users/${(user.id)}/connections`,
+        `http://localhost:3000/api/users/${user.id}/connections`,
         {
           params: {
             limit: 10,
@@ -89,16 +222,44 @@ export default function GroupPage() {
           headers: {
             Authorization: "Bearer " + token,
           },
+          timeout: 5000
         }
       );
+
       setConnections(response.data.data.connections);
     } catch (error) {
       console.error("Error fetching user connections:", error);
+      // Set some default connections for development/testing
+      setConnections([
+        { id: 1, friend: { id: 3, name: "Alice Cooper", profile_photo: "/api/placeholder/40/40" } },
+        { id: 2, friend: { id: 4, name: "Bob Johnson", profile_photo: "/api/placeholder/40/40" } },
+      ]);
     }
   };
 
+  useEffect(() => {
+    // Check if we have a groupId before trying to fetch
+    if (groupId) {
+      fetchGroupData(groupId);
+      // Don't immediately depend on group data here
+      // We'll fetch members separately after basic data is loaded
+    } else {
+      console.error("Invalid group ID");
+      toast.error("Invalid group ID.");
+      setGroup(defaultGroup);
+      setIsLoading(false);
+    }
+  }, [groupId]);
+
+  // Separate effect for members to ensure we don't block main content
+  useEffect(() => {
+    if (groupId && !isLoading && group) {
+      fetchGroupMembers(groupId);
+    }
+  }, [groupId, isLoading, group]);
+
   const handleOpenInviteModal = () => {
-    fetchUserConnections(user.id); 
+    fetchUserConnections(user.id);
     setInviteModalOpen(true);
   };
 
@@ -134,8 +295,6 @@ export default function GroupPage() {
       comments: [{ id: 1, user: "Charlie", text: "Very helpful!" }],
     },
   ]);
-
-  
 
   const handleImageUpload = (e) => {
     if (e.target.files && e.target.files[0]) {
@@ -177,47 +336,62 @@ export default function GroupPage() {
 
   const handleInvite = async (userId) => {
     try {
-      const groupId = 1; // Replace with actual group ID
       const token = localStorage.getItem("token");
 
       if (!token) {
         console.error("No authentication token found");
+        // For development, simulate success
+        const invitedUser = connections.find(conn => {
+          const friend = conn.user || conn.friend;
+          return friend.id === userId;
+        });
+
+        if (invitedUser) {
+          const friend = invitedUser.user || invitedUser.friend;
+          setInvitedUserName(friend.name);
+        }
+
+        setShowInviteSuccess(true);
+        setInviteModalOpen(false);
+
+        setTimeout(() => {
+          setShowInviteSuccess(false);
+        }, 3000);
         return;
       }
 
       await axios.post(
         `http://localhost:3000/api/groups/${groupId}/invitations/${userId}`,
-        {}, // Empty body since userId is in URL
+        {},
         {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
-          }
+          },
+          timeout: 5000
         }
       );
-      
-      // Find the invited user's name
+
       const invitedUser = connections.find(conn => {
         const friend = conn.user || conn.friend;
         return friend.id === userId;
       });
-      
+
       if (invitedUser) {
         const friend = invitedUser.user || invitedUser.friend;
         setInvitedUserName(friend.name);
       }
-      
+
       setShowInviteSuccess(true);
       setInviteModalOpen(false);
-      
-      // Hide the success alert after 3 seconds
+
       setTimeout(() => {
         setShowInviteSuccess(false);
       }, 3000);
-      
+
     } catch (error) {
       console.error("Error inviting user:", error);
-      alert("Failed to invite user. Please try again.");
+      toast.error("Failed to invite user. Please try again.");
     }
   };
 
@@ -233,22 +407,54 @@ export default function GroupPage() {
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(shareUrl);
-    alert("Link copied to clipboard!");
+    toast.success("Link copied to clipboard!");
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error && !group) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">{error}</p>
+          <button
+            className="bg-blue-500 text-white px-4 py-2 rounded"
+            onClick={() => fetchGroupData(groupId)}
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!group) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p className="text-gray-500">Group not found.</p>
+      </div>
+    );
+  }
 
   return (
     <Case>
-  
       <div className="bg-gray-100 min-h-screen pb-8">
-      {showInviteSuccess && (
-          <diiv className="fixed top-5 right-5 z-50">
+        {showInviteSuccess && (
+          <div className="fixed top-5 right-5 z-50">
             <div className="bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center">
               <Check className="mr-2" />
               <span>Successfully invited {invitedUserName} to the group!</span>
             </div>
-          </diiv>
+          </div>
         )}
-        {/* Cover Photo - Full width on all screens */}
+
+        {/* Cover Photo */}
         <div className="h-32 sm:h-48 w-full bg-gray-300">
           <img
             className="h-full w-full object-cover"
@@ -260,27 +466,27 @@ export default function GroupPage() {
         {/* Main Content Area */}
         <div className="container mx-auto px-2 sm:px-4">
           <div className="flex flex-col lg:flex-row gap-4 mt-4">
-            {/* Left Sidebar  Hidden on mobile, shown on lg+ */}
-            <aside className=" lg:block lg:w-1/4">
+            {/* Left Sidebar */}
+            <aside className="lg:block lg:w-1/4">
               <div className="rounded-lg border bg-white shadow-sm">
                 <div className="p-4 text-center">
                   <div className="profile-photo-container">
                     <img
-                      src={user.profile_photo}
+                      src={group.creator.photo}
                       className="rounded-full w-20 h-20 mx-auto"
                       alt="Profile"
                     />
                     <h5 className="font-bold text-gray-800 mt-3">
-                      {user.name}
+                      {group.creator.name}
                     </h5>
                     <small className="text-gray-500">Group Admin</small>
                   </div>
 
                   <div className="mt-4 p-2">
                     <div className="flex items-center justify-between py-2">
-                      <p className="text-gray-500">Request Join</p>
+                      <p className="text-gray-500">Members</p>
                       <p className="font-bold text-gray-800">
-                        {user.following_count}
+                        {group.members_count}
                       </p>
                     </div>
                   </div>
@@ -288,35 +494,41 @@ export default function GroupPage() {
               </div>
             </aside>
 
-            {/* Main Content - Full width on mobile, 2/4 on lg+ */}
+            {/* Main Content */}
             <main className="w-full lg:w-2/4">
-              {/* Group Info Box - Stacked on mobile */}
+              {/* Group Info */}
               <div className="rounded-lg border bg-white shadow-sm mb-4">
                 <div className="p-4">
-                  <div className="flex flex-col sm:flex-row items-center">
+                  <div className="flex items-center">
                     <img
-                      className="rounded-full w-16 h-16 sm:w-20 sm:h-20"
-                      src={group.image}
-                      alt="Group"
+                      className="rounded-full w-16 h-16"
+                      src={"http://localhost:3000/" + group.image || "/placeholder.png"} 
+                      alt={group.name || "Group"}
                     />
-                    <div className="mt-3 sm:mt-0 sm:ml-4 text-center sm:text-left">
+                    <div className="ml-4">
                       <h5 className="font-bold text-gray-800">{group.name}</h5>
-                      <p className="text-gray-500 text-sm">
-                        {group.description}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex justify-between mt-4">
-                    <div className="text-center">
-                      <p className="text-gray-500 text-sm">Members</p>
-                      <p className="font-bold">25</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-gray-500 text-sm">Posts</p>
-                      <p className="font-bold">120</p>
+                      <p className="text-gray-500 text-sm">{group.description}</p>
+                      {/* <p className="text-gray-500 text-sm">Created by: basyidqy</p> */}
+                      <p className="text-gray-500 text-sm">{group?.members_count || 0} Members</p>
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Members List */}
+              <div className="rounded-lg border bg-white shadow-sm p-4">
+                <h3 className="font-bold text-lg mb-4">Members</h3>
+                {group?.members?.length > 0 ? (
+                  <ul>
+                    {group.members.map((member) => (
+                      <li key={member.id} className="text-gray-700">
+                        {member.name}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-gray-500">No members found.</p>
+                )}
               </div>
 
               {/* Create Post Box */}
@@ -444,15 +656,13 @@ export default function GroupPage() {
                       )}
                       <div className="border-t px-4 py-2 flex justify-between">
                         <button
-                          className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${
-                            post.isLiked
-                              ? "text-blue-600 bg-blue-50"
-                              : "text-blue-600 hover:bg-blue-100"
-                          }`}
-                          onClick={() => handleLikePost(post.id, post.isLiked)}
+                          className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${post.isLiked
+                            ? "text-blue-600 bg-blue-50"
+                            : "text-blue-600 hover:bg-blue-100"
+                            }`}
                         >
                           <ThumbsUp size={14} className="mr-2" />
-                          Like ({post.likes_count || 0})
+                          Like ({post.likes || 0})
                         </button>
 
                         <button
@@ -460,12 +670,12 @@ export default function GroupPage() {
                           onClick={() => openCommentModal(post.id)}
                         >
                           <MessageCircle size={14} className="mr-2" />
-                          Comment ({post.comments_count || 0})
+                          Comment ({post.comments.length || 0})
                         </button>
 
                         <button
                           className="flex items-center justify-center w-1/3 py-2 rounded-lg text-blue-600 hover:bg-blue-50"
-                          onClick={() => handleOpenShareModal(post.id)}
+                          onClick={() => setSharePostId(post.id)}
                         >
                           <Share size={14} className="mr-2" />
                           Share
@@ -568,21 +778,21 @@ export default function GroupPage() {
               </div>
             </main>
 
-            {/* Right Sidebar - Hidden on mobile, shown on lg+ */}
+            {/* Right Sidebar */}
             <aside className="lg:block lg:w-1/4">
               {/* Members Box */}
               <div className="rounded-lg border bg-white shadow-sm mb-4">
                 <div className="border-b p-3">
                   <h6 className="font-medium">
-                    {group.members.length} Members
+                    {group.members?.length || 0} Members
                   </h6>
                 </div>
                 <div className="p-3">
                   <div className="flex flex-wrap gap-2">
-                    {group.members.map((member) => (
+                    {group.members?.map((member) => (
                       <div key={member.id} className="text-center">
                         <img
-                          src={member.profile_photo} // Sesuaikan dengan struktur data API
+                          src={member.profile_photo || "/api/placeholder/80/80"}
                           className="rounded-full w-12 h-12"
                           alt={member.name}
                         />
@@ -592,7 +802,7 @@ export default function GroupPage() {
                   </div>
                   <button
                     className="mt-3 border border-blue-500 text-blue-500 hover:bg-blue-50 px-3 py-2 rounded text-sm w-full"
-                    onClick={handleOpenInviteModal} // Changed from setInviteModalOpen(true)
+                    onClick={handleOpenInviteModal}
                   >
                     Invite Connection
                   </button>
@@ -608,30 +818,28 @@ export default function GroupPage() {
                   <h6 className="font-medium">Admin</h6>
                 </div>
                 <div className="p-3">
-                  {Array.isArray(group.members) &&
-                    group.members
-                      .filter((member) => member.role === "admin") // Changed from member.user.role
-                      .map((admin) => (
-                        <div key={admin.id} className="flex items-center mb-3">
-                          <img
-                            src={admin.profile_photo} // Changed from admin.user.profile_photo
-                            className="rounded-full mr-3 w-12 h-12"
-                            alt={admin.name} // Changed from admin.user.name
-                          />
-                          <div>
-                            <h6 className="font-bold">{admin.name}</h6>{" "}
-                            {/* Changed from admin.user.name */}
-                            <small className="text-blue-500">Group Admin</small>
-                          </div>
+                  {group.members
+                    ?.filter((member) => member.role === "admin")
+                    .map((admin) => (
+                      <div key={admin.id} className="flex items-center mb-3">
+                        <img
+                          src={group.creator.photo || "/api/placeholder/80/80"}
+                          className="rounded-full mr-3 w-12 h-12"
+                          alt={admin.name}
+                        />
+                        <div>
+                          <h6 className="font-bold">{admin.name}</h6>
+                          <small className="text-blue-500">Group Admin</small>
                         </div>
-                      ))}
+                      </div>
+                    ))}
                 </div>
               </div>
             </aside>
           </div>
         </div>
 
-        {/* Invite Modal - Responsive */}
+        {/* Invite Modal */}
         {inviteModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] flex flex-col">
@@ -652,7 +860,6 @@ export default function GroupPage() {
                 ) : (
                   <ul className="divide-y">
                     {connections.map((connection) => {
-                      // Assuming API returns connections in format where the friend is either in 'user' or 'friend' property
                       const friend = connection.user || connection.friend;
                       if (!friend) return null;
 
@@ -663,9 +870,7 @@ export default function GroupPage() {
                         >
                           <div className="flex items-center">
                             <img
-                              src={
-                                friend.profile_photo || "/api/placeholder/40/40"
-                              }
+                              src={friend.profile_photo || "/api/placeholder/40/40"}
                               className="rounded-full mr-3 w-10 h-10"
                               alt={friend.name}
                             />
@@ -687,7 +892,7 @@ export default function GroupPage() {
           </div>
         )}
 
-        {/* Comment Modal - Responsive */}
+        {/* Comment Modal */}
         {commentModalPostId && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] flex flex-col">

@@ -161,7 +161,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/groups/:id",
+    path: "/groups/:groupId",
     element: (
       <ProtectedRoute>
         <GroupPage />
