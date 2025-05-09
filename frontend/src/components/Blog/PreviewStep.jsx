@@ -56,7 +56,7 @@ function PreviewStep({ formData, onSubmit, onPrev, isSubmitting }) {
                 {category}
               </span>
               <h2 className="text-2xl font-semibold mt-3">{title}</h2>
-              <p className="text-xs text-gray-400 mb-4">Published on: {date}</p>
+              <p className="text-xs text-gray-400 mb-4 mt-1">Published on: {date}</p>
               <div
                 className="prose max-w-none text-gray-700"
                 dangerouslySetInnerHTML={{ __html: content }}

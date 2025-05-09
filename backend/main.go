@@ -60,17 +60,37 @@ func main() {
 	experienceService := service.NewExperienceService(experienceRepository, userRepository, db, validate)
 	experienceController := controller.NewExperienceController(experienceService)
 
+	groupRepository := repository.NewGroupRepository()
+	groupMemberRepository := repository.NewGroupMemberRepository()
+	groupInvitationRepository := repository.NewGroupInvitationRepository()
+	groupService := service.NewGroupService(
+		db,
+		groupRepository,
+		groupMemberRepository,
+		groupInvitationRepository,
+		userRepository,
+		validate,
+	)
+	groupController := controller.NewGroupController(groupService)
 	// Initialize blog comment components
 	commentBlogRepository := repository.NewCommentBlogRepository()
 	commentBlogService := service.NewCommentBlogService(commentBlogRepository, blogRepository, userRepository, db, validate)
 	commentBlogController := controller.NewCommentBlogController(commentBlogService)
 
-	// Initialize connection components
-	connectionRepository := repository.NewConnectionRepository()
-	connectionService := service.NewConnectionService(connectionRepository, userRepository, db, validate)
-	connectionController := controller.NewConnectionController(connectionService)
+	// ✅ Initialize report components
+	reportRepository := repository.NewReportRepository(db)
+	reportService := service.NewReportService(
+		reportRepository,
+		userRepository,
+		postRepository,
+		commentRepository,
+		blogRepository,
+		commentBlogRepository,
+		db,
+	)
+	reportController := controller.NewReportController(reportService)
 
-	// Initialize router with all controllers
+	// ✅ Inject all controllers into router including reportController
 	router := app.NewRouter(
 		authController,
 		userController,
@@ -81,6 +101,8 @@ func main() {
 		experienceController,
 		commentBlogController,
 		connectionController,
+		groupController,
+		reportController, // <- Tambahan
 	)
 
 	// Create middleware chain

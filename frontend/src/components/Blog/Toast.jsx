@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   CheckCircle,
   XCircle,
@@ -40,6 +40,37 @@ const Toast = ({ message, type = "success", onClose }) => {
           <X className="w-4 h-4" />
         </button>
       </div>
+    </div>
+  );
+};
+
+const YourComponent = () => {
+  const [toastMessage, setToastMessage] = useState(""); // State for toast message
+  const [toastType, setToastType] = useState("success"); // State for toast type (success, error, etc.)
+  const [showToast, setShowToast] = useState(false); // State for managing toast visibility
+
+  const showToastMessage = (message, type = "success") => {
+    setToastMessage(message);
+    setToastType(type);
+    setShowToast(true);
+  };
+
+  const closeToast = () => {
+    setShowToast(false);
+  };
+
+  return (
+    <div>
+      <button onClick={() => showToastMessage("Berhasil membuat blog!", "success")}>
+        Show Success Toast
+      </button>
+      <button onClick={() => showToastMessage("Terjadi kesalahan!", "error")}>
+        Show Error Toast
+      </button>
+
+      {showToast && (
+        <Toast message={toastMessage} type={toastType} onClose={closeToast} />
+      )}
     </div>
   );
 };

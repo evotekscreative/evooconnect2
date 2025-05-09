@@ -78,6 +78,29 @@ function ContentStep({ content, images, onContentChange, onImagesChange, onNext,
         </div>
         {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
       </div>
+
+      {images.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
+            {images.map((image, index) => (
+              <div key={index} className="relative">
+                <img
+                  src={image.preview}
+                  alt={`Preview ${index + 1}`}
+                  className="w-full h-32 object-cover rounded-md"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveImage(index)}
+                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       
       <div className="mt-8 mb-6">
         <label className="block mb-2 font-medium text-gray-700">
@@ -101,36 +124,12 @@ function ContentStep({ content, images, onContentChange, onImagesChange, onNext,
             ref={fileInputRef}
             className="hidden"
             accept="image/*"
-            multiple
             onChange={handleImageChange}
           />
           <span className="ml-3 text-sm text-gray-500">
-            Upload images to include in your blog post
+          You can only upload one image for this post
           </span>
         </div>
-        
-        {images.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
-            {images.map((image, index) => (
-              <div key={index} className="relative">
-                <img
-                  src={image.preview}
-                  alt={`Preview ${index + 1}`}
-                  className="w-full h-32 object-cover rounded-md"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleRemoveImage(index)}
-                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
       
       <div className="border-t border-gray-200 mt-8 pt-6 flex justify-between">
