@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import Case from "../components/Case";
 import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, LogOut, ArrowLeft, ChevronDown, ChevronUp, User, Check, X } from "lucide-react";
+import axios from 'axios';
 
 export default function Groups() {
   const [showModal, setShowModal] = useState(false);
@@ -142,15 +143,59 @@ export default function Groups() {
   };
 
   const pendingInvitations = invitations.filter(inv => inv.status === "pending");
+  if (loading) {
+    return (
+      <Case>
+        <div className="p-4 sm:p-6 bg-gray-100 min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading your groups...</p>
+          </div>
+        </div>
+      </Case>
+    );
+  }
+
+  if (error) {
+    return (
+      <Case>
+        <div className="p-4 sm:p-6 bg-gray-100 min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-red-500 mb-4">
+              <X size={48} className="mx-auto" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900">Error loading groups</h3>
+            <p className="mt-2 text-sm text-gray-600">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </Case>
+    );
+  }
 
   return (
     <Case>
       <div className="p-4 sm:p-6 bg-gray-100 min-h-screen">
+        {/* Success Message */}
+        {successMessage && (
+          <div className="fixed top-4 right-4 z-50">
+            <div className="bg-green-500 text-white px-4 py-2 rounded shadow-lg flex items-center">
+              <Check className="mr-2" size={20} />
+              <span>{successMessage}</span>
+            </div>
+          </div>
+        )}
+
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
-          
+
           {/* Main Section */}
           <div className="lg:col-span-3 space-y-4 bg-white rounded-xl shadow p-4 sm:p-6">
-            
+
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-4">
               <div className="flex items-center">
@@ -219,18 +264,29 @@ export default function Groups() {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                       {showcaseAdminGroups.map((group) => (
-                        <div key={group.id} className="bg-white rounded-xl shadow p-3 sm:p-4 flex flex-col justify-between h-36 sm:h-40 border border-gray-200 hover:border-blue-300 transition-colors">
+                        <div
+                          key={`admin-${group.id || Math.random().toString(36).substr(2, 9)}`}
+                          className="bg-white rounded-xl shadow p-3 sm:p-4 flex flex-col justify-between h-36 sm:h-40 border border-gray-200 hover:border-blue-300 transition-colors"
+                        >
                           <div className="flex items-center space-x-2 sm:space-x-3 border-b pb-3">
-                            <div className="bg-blue-100 w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden flex items-center justify-center">
-                              <span className="text-blue-600 text-lg sm:text-xl font-bold">
-                                {group.name.charAt(0)}
-                              </span>
-                            </div>
+                            {group.image ? (
+                              <img
+                                src={`http://localhost:3000/${group.image}`}
+                                alt={group.name}
+                                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="bg-blue-100 w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden flex items-center justify-center">
+                                <span className="text-blue-600 text-lg sm:text-xl font-bold">
+                                  {group?.name?.charAt(0) || 'G'}
+                                </span>
+                              </div>
+                            )}
                             <div className="flex-1 min-w-0">
                               <div className="font-medium capitalize text-blue-500 truncate">{group.name}</div>
-                              <div className="text-gray-500 text-xs sm:text-sm">{group.members} Members</div>
+                              <div className="text-gray-500 text-xs sm:text-sm">{group.member_count} Members</div>
                               <span className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded whitespace-nowrap">
-                                Created on {group.createdDate}
+                                Created on {new Date(group.created_at).toLocaleDateString()}
                               </span>
                             </div>
                           </div>
@@ -279,18 +335,29 @@ export default function Groups() {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                       {showcaseJoinedGroups.map((group) => (
-                        <div key={group.id} className="bg-white rounded-xl shadow p-3 sm:p-4 flex flex-col justify-between h-36 sm:h-40 border border-gray-200 hover:border-blue-300 transition-colors">
+                        <div
+                          key={`joined-${group.id || Math.random().toString(36).substr(2, 9)}`}
+                          className="bg-white rounded-xl shadow p-3 sm:p-4 flex flex-col justify-between h-36 sm:h-40 border border-gray-200 hover:border-blue-300 transition-colors"
+                        >
                           <div className="flex items-center space-x-2 sm:space-x-3 border-b pb-3">
-                            <div className="bg-gray-200 w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden flex items-center justify-center">
-                              <span className="text-gray-600 text-lg sm:text-xl font-bold">
-                                {group.name.charAt(0)}
-                              </span>
-                            </div>
+                            {group.image ? (
+                              <img
+                                src={`http://localhost:3000/${group.image}`}
+                                alt={group.name}
+                                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="bg-gray-200 w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden flex items-center justify-center">
+                                <span className="text-gray-600 text-lg sm:text-xl font-bold">
+                                  {group?.name?.charAt(0) || 'G'}
+                                </span>
+                              </div>
+                            )}
                             <div className="flex-1 min-w-0">
                               <div className="font-medium capitalize text-blue-500 truncate">{group.name}</div>
-                              <div className="text-gray-500 text-xs sm:text-sm">{group.members} Members</div>
+                              <div className="text-gray-500 text-xs sm:text-sm">{group.member_count} Members</div>
                               <span className="text-xs bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded whitespace-nowrap">
-                                Joined on {group.joinedDate}
+                                Joined on {new Date(group.joined_at).toLocaleDateString()}
                               </span>
                             </div>
                           </div>
@@ -335,7 +402,7 @@ export default function Groups() {
                 {pendingInvitations.length > 0 ? (
                   <div className="space-y-3">
                     {pendingInvitations.map((invitation) => (
-                      <div key={invitation.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div key={`invite-${invitation.id || Math.random().toString(36).substr(2, 9)}`} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                         <div className="flex items-start space-x-3">
                           <div className="bg-gray-200 w-10 h-10 rounded-full flex items-center justify-center">
                             <User size={20} className="text-gray-600" />
@@ -346,7 +413,7 @@ export default function Groups() {
                               Invited you to join <span className="font-medium">{invitation.group.name}</span>
                             </p>
                             <div className="mt-1 text-xs text-gray-500">
-                              {invitation.group.members} members
+                              {invitation.group?.member_count || 0} members
                             </div>
                           </div>
                         </div>
@@ -380,7 +447,7 @@ export default function Groups() {
                       invitations
                         .filter(inv => inv.status !== "pending")
                         .map((invitation) => (
-                          <div key={invitation.id} className="flex items-center justify-between p-2 border-b">
+                          <div key={`history-${invitation.id || Math.random().toString(36).substr(2, 9)}`} className="flex items-center justify-between p-2 border-b">
                             <div className="flex items-center space-x-2">
                               <div className="bg-gray-200 w-8 h-8 rounded-full flex items-center justify-center">
                                 <User size={14} className="text-gray-600" />
@@ -390,16 +457,15 @@ export default function Groups() {
                                   {invitation.inviter.name}'s invitation to {invitation.group.name}
                                 </p>
                                 <p className="text-xs text-gray-500">
-                                  {new Date().toLocaleDateString()}
+                                  {new Date(invitation.updated_at || new Date()).toLocaleDateString()}
                                 </p>
                               </div>
                             </div>
-                            <span 
-                              className={`text-xs px-2 py-1 rounded ${
-                                invitation.status === "accepted" 
-                                  ? "bg-green-100 text-green-800" 
+                            <span
+                              className={`text-xs px-2 py-1 rounded ${invitation.status === "accepted"
+                                  ? "bg-green-100 text-green-800"
                                   : "bg-red-100 text-red-800"
-                              }`}
+                                }`}
                             >
                               {invitation.status === "accepted" ? "Accepted" : "Declined"}
                             </span>
@@ -444,13 +510,13 @@ export default function Groups() {
                     Here are some suggestions for you:
                   </p>
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
+                    <div key="suggestion-1" className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
                       <span className="text-sm truncate">JavaScript Developers</span>
                       <button className="text-blue-600 text-xs hover:underline whitespace-nowrap ml-2">
                         Join
                       </button>
                     </div>
-                    <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
+                    <div key="suggestion-2" className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
                       <span className="text-sm truncate">UI/UX Designers</span>
                       <button className="text-blue-600 text-xs hover:underline whitespace-nowrap ml-2">
                         Join
@@ -476,10 +542,12 @@ export default function Groups() {
               <form onSubmit={handleCreateGroup}>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium">Group Name</label>
+                    <label className="block text-sm font-medium">Group Name *</label>
                     <input
                       type="text"
-                      name="groupName"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
                       className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm sm:text-base"
                       placeholder="Enter group name"
                       required
@@ -489,20 +557,59 @@ export default function Groups() {
                     <label className="block text-sm font-medium">Description</label>
                     <textarea
                       name="description"
+                      value={formData.description}
+                      onChange={handleInputChange}
                       className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm sm:text-base"
                       placeholder="Enter group description"
                     />
                   </div>
                   <div>
+                    <label className="block text-sm font-medium">Group Rules</label>
+                    <textarea
+                      name="rule"
+                      value={formData.rule}
+                      onChange={handleInputChange}
+                      className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm sm:text-base"
+                      placeholder="Enter group rules"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium">Privacy Level *</label>
+                    <select
+                      name="privacy_level"
+                      value={formData.privacy_level}
+                      onChange={handleInputChange}
+                      className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm sm:text-base"
+                      required
+                    >
+                      <option value="public">Public</option>
+                      <option value="private">Private</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium">Invite Policy *</label>
+                    <select
+                      name="invite_policy"
+                      value={formData.invite_policy}
+                      onChange={handleInputChange}
+                      className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm sm:text-base"
+                      required
+                    >
+                      <option value="admin">Admin Only</option>
+                      <option value="member">All Members</option>
+                    </select>
+                  </div>
+                  <div>
                     <label className="block text-sm font-medium">Group Photo</label>
                     <input
                       type="file"
+                      name="image"
+                      onChange={handleFileChange}
                       className="mt-1 text-sm"
                       accept="image/*"
                     />
                   </div>
                 </div>
-
                 <div className="mt-6 flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
                   <button
                     type="button"
