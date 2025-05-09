@@ -213,7 +213,7 @@ func (controller *ConnectionControllerImpl) Disconnect(writer http.ResponseWrite
 
 func (controller *ConnectionControllerImpl) CancelConnectionRequest(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Get request ID from URL params
-	requestId, err := uuid.Parse(params.ByName("requestId"))
+	toUserId, err := uuid.Parse(params.ByName("toUserId"))
 	if err != nil {
 		panic(exception.NewBadRequestError("Invalid request ID format"))
 	}
@@ -223,7 +223,7 @@ func (controller *ConnectionControllerImpl) CancelConnectionRequest(writer http.
 	helper.PanicIfError(err)
 
 	// Call service to cancel connection request
-	connectionResponse := controller.ConnectionService.CancelConnectionRequest(request.Context(), userId, requestId)
+	connectionResponse := controller.ConnectionService.CancelConnectionRequest(request.Context(), userId, toUserId)
 
 	// Create web response
 	webResponse := web.WebResponse{

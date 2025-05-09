@@ -367,13 +367,13 @@ func (service *ConnectionServiceImpl) Disconnect(ctx context.Context, userId, ta
 	}
 }
 
-func (service *ConnectionServiceImpl) CancelConnectionRequest(ctx context.Context, userId, requestId uuid.UUID) web.WebResponse {
+func (service *ConnectionServiceImpl) CancelConnectionRequest(ctx context.Context, userId, toUserId uuid.UUID) string {
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
 	// Get connection request
-	request, err := service.ConnectionRepository.FindConnectionRequestById(ctx, tx, requestId)
+	request, err := service.ConnectionRepository.FindRequest(ctx, tx, userId, toUserId)
 	if err != nil {
 		panic(exception.NewNotFoundError("Connection request not found"))
 	}
@@ -389,15 +389,10 @@ func (service *ConnectionServiceImpl) CancelConnectionRequest(ctx context.Contex
 	}
 
 	// Update request status to canceled
-	request.Status = domain.ConnectionStatusCancelled
-	err = service.ConnectionRepository.DeleteConnectionRequest(ctx, tx, requestId)
+	err = service.ConnectionRepository.DeleteConnectionRequest(ctx, tx, request.Id)
 	if err != nil {
 		panic(exception.NewInternalServerError("Failed to cancel connection request: " + err.Error()))
 	}
 
-	return web.WebResponse{
-		Code:   200,
-		Status: "OK",
-		Data:   "Connection request cancelled successfully",
-	}
+	return "Connection request canceled successfully"
 }
