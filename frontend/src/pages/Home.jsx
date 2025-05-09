@@ -6,7 +6,8 @@ import { Tooltip as ChartTooltip } from "chart.js";
 import { Button } from "../components/Button";
 import Tooltip from "@mui/material/Tooltip";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import Alert from "../components/Auth/Alert";
 import { Line } from "react-chartjs-2";
 import {
   SquarePen,
@@ -93,13 +94,32 @@ export default function SocialNetworkFeed() {
   const [showcaseReplies, setShowcaseReplies] = useState([]);
   const [showShowcase, setShowShowcase] = useState(false);
   const [allReplies, setAllReplies] = useState({});
+  const location = useLocation();
+
+  const [alertInfo, setAlertInfo] = useState({
+    show: false,
+    type: "",
+    message: "",
+  });
+
+  useEffect(() => {
+    if (location.state?.showAlert) {
+      setAlertInfo({
+        show: true,
+        type: location.state.alertType,
+        message: location.state.alertMessage,
+      });
+
+      // Bersihkan location state setelah ditampilkan
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     const userData = localStorage.getItem("userData");
     if (userData) {
       const parsedUser = JSON.parse(userData);
       setCurrentUserId(parsedUser.id);
-      
     }
   }, []);
 
@@ -299,12 +319,20 @@ export default function SocialNetworkFeed() {
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
-    const imageUrls = files.map((file) => URL.createObjectURL(file));
-    setArticleImages([...articleImages, ...files]);
+
+    // Buat URL untuk preview gambar
+    const imagePreviews = files.map((file) => ({
+      file, // Simpan file asli
+      preview: URL.createObjectURL(file), // Buat URL untuk preview
+    }));
+
+    setArticleImages([...articleImages, ...imagePreviews]);
   };
 
   const removeImage = (index) => {
     const newImages = [...articleImages];
+    // Hapus URL preview dari memori
+    URL.revokeObjectURL(newImages[index].preview);
     newImages.splice(index, 1);
     setArticleImages(newImages);
   };
@@ -322,48 +350,29 @@ export default function SocialNetworkFeed() {
       const content = activeTab === "update" ? postContent : articleContent;
       const userToken = localStorage.getItem("token");
 
-      let uploadedImageUrls = [];
-      if (articleImages.length > 0) {
-        const formData = new FormData();
-        articleImages.forEach((file) => {
-          if (file instanceof File) {
-            formData.append("images", file);
-          }
-        });
+      // Buat FormData untuk mengirim konten dan gambar sekaligus
+      const formData = new FormData();
+      formData.append("content", content);
+      formData.append("visibility", postVisibility);
 
-        try {
-          const uploadResponse = await axios.post(
-            "http://localhost:3000/api/posts/images",
-            formData,
-            {
-              headers: {
-                Authorization: `Bearer ${userToken}`,
-                "Content-Type": "multipart/form-data",
-              },
-            }
-          );
-          uploadedImageUrls = uploadResponse.data.data.filenames || [];
-        } catch (uploadError) {
-          console.error("Failed to upload images:", uploadError);
-          setError("Failed to upload images. Please try again.");
-          setIsLoading(false);
-          return;
+      // Tambahkan semua gambar ke FormData
+      articleImages.forEach((file, index) => {
+        if (file instanceof File) {
+          formData.append("images", file);
+        } else if (typeof file === "string") {
+          // Jika file sudah berupa string (URL), mungkin tidak perlu diupload ulang
+          formData.append("existingImages", file);
         }
-      }
+      });
 
-      const postData = {
-        content: content,
-        images: uploadedImageUrls,
-        visibility: postVisibility,
-      };
-
+      // Kirim semua data sekaligus dalam satu request
       const response = await axios.post(
         "http://localhost:3000/api/posts",
-        postData,
+        formData,
         {
           headers: {
             Authorization: `Bearer ${userToken}`,
-            "Content-Type": "application/json",
+            "Content-Type": "multipart/form-data", // Penting untuk FormData
           },
         }
       );
@@ -396,8 +405,8 @@ export default function SocialNetworkFeed() {
       console.error("Post failed:", error);
       setError(
         error.response?.data?.message ||
-        error.message ||
-        "Failed to create post. Please try again."
+          error.message ||
+          "Failed to create post. Please try again."
       );
     } finally {
       setIsLoading(false);
@@ -441,8 +450,8 @@ export default function SocialNetworkFeed() {
           const replies = cachedReplies
             ? JSON.parse(cachedReplies)
             : Array.isArray(comment.replies)
-              ? comment.replies
-              : [];
+            ? comment.replies
+            : [];
 
           return {
             ...comment,
@@ -636,7 +645,7 @@ export default function SocialNetworkFeed() {
       console.error("Gagal menambahkan komentar:", error);
       setCommentError(
         error.response?.data?.message ||
-        "Terjadi kesalahan saat menambahkan komentar. Silakan coba lagi."
+          "Terjadi kesalahan saat menambahkan komentar. Silakan coba lagi."
       );
     }
   };
@@ -713,7 +722,7 @@ export default function SocialNetworkFeed() {
       console.error("Failed to add reply:", error);
       setCommentError(
         error.response?.data?.message ||
-        "Failed to add reply. Please try again."
+          "Failed to add reply. Please try again."
       );
     }
   };
@@ -905,10 +914,11 @@ export default function SocialNetworkFeed() {
 
   const renderLikeButton = (post) => (
     <button
-      className={`px-2 md:px-3 py-1 rounded text-xs md:text-sm flex items-center ${post.isLiked
+      className={`px-2 md:px-3 py-1 rounded text-xs md:text-sm flex items-center ${
+        post.isLiked
           ? "bg-blue-100 text-blue-600"
           : "bg-sky-100 hover:bg-sky-200 text-blue-500"
-        }`}
+      }`}
       onClick={() => handleLikePost(post.id, post.isLiked)}
     >
       <ThumbsUp size={12} className="mr-1" />
@@ -1425,8 +1435,9 @@ export default function SocialNetworkFeed() {
 
       {/* Left Sidebar - Profile Section */}
       <div
-        className={`${showMobileMenu ? "block" : "hidden"
-          } md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pr-2 lg:pr-4`}
+        className={`${
+          showMobileMenu ? "block" : "hidden"
+        } md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pr-2 lg:pr-4`}
       >
         <div className="bg-white rounded-lg shadow mb-4 p-4 text-center">
           <div className="flex justify-center mb-3">
@@ -1480,8 +1491,9 @@ export default function SocialNetworkFeed() {
 
       {/* Main Content - Feed */}
       <div
-        className={`w-full ${showMobileMenu ? "hidden" : "block"
-          } md:block md:w-full lg:w-1/2 px-0 md:px-1`}
+        className={`w-full ${
+          showMobileMenu ? "hidden" : "block"
+        } md:block md:w-full lg:w-1/2 px-0 md:px-1`}
       >
         <div
           id="post-form"
@@ -1490,10 +1502,11 @@ export default function SocialNetworkFeed() {
           {/* Tabs */}
           <div className="flex border-b pb-2 space-x-1">
             <button
-              className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${activeTab === "update"
+              className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${
+                activeTab === "update"
                   ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
                   : "text-gray-500 hover:text-blue-500"
-                }`}
+              }`}
               onClick={() => setActiveTab("update")}
             >
               <SquarePen size={16} className="mr-2" />
@@ -1501,10 +1514,11 @@ export default function SocialNetworkFeed() {
               <span className="sm:hidden">Update</span>
             </button>
             <button
-              className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${activeTab === "article"
+              className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${
+                activeTab === "article"
                   ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
                   : "text-gray-500 hover:text-blue-500"
-                }`}
+              }`}
               onClick={() => setActiveTab("article")}
             >
               <NotebookPen size={16} className="mr-2" />
@@ -1529,7 +1543,7 @@ export default function SocialNetworkFeed() {
                   onChange={(e) => setPostContent(e.target.value)}
                 />
               </div>
-              {error &&  (
+              {error && (
                 <div className="text-red-500 text-center py-4">{error}</div>
               )}
 
@@ -1547,10 +1561,11 @@ export default function SocialNetworkFeed() {
                     >
                       <span
                         onClick={() => handleVisibilityChange(type)}
-                        className={`p-1 rounded-full cursor-pointer transition ${postVisibility === type
+                        className={`p-1 rounded-full cursor-pointer transition ${
+                          postVisibility === type
                             ? "bg-blue-600"
                             : "bg-gray-400"
-                          } text-white`}
+                        } text-white`}
                       >
                         {icon}
                       </span>
@@ -1563,10 +1578,11 @@ export default function SocialNetworkFeed() {
                   </button>
                 </Tooltip>
                 <Button
-                  className={`px-4 py-2 text-sm transition-colors duration-300 ease-in-out ${isLoading
+                  className={`px-4 py-2 text-sm transition-colors duration-300 ease-in-out ${
+                    isLoading
                       ? "bg-gray-400 text-white cursor-not-allowed"
                       : "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700"
-                    }`}
+                  }`}
                   onClick={handlePostSubmit}
                   disabled={isLoading}
                 >
@@ -1582,7 +1598,6 @@ export default function SocialNetworkFeed() {
                   )}
                 </Button>
               </div>
-              
             </>
           ) : (
             <>
@@ -1608,7 +1623,7 @@ export default function SocialNetworkFeed() {
                   }}
                 />
               </div>
-              {error &&  (
+              {error && (
                 <div className="text-red-500 text-center py-4">{error}</div>
               )}
 
@@ -1618,7 +1633,7 @@ export default function SocialNetworkFeed() {
                   {articleImages.map((img, index) => (
                     <div key={index} className="relative">
                       <img
-                        src={img}
+                        src={img.preview} // Gunakan URL preview
                         className="w-full h-24 object-cover rounded-md border"
                         alt={`img-${index}`}
                       />
@@ -1654,10 +1669,11 @@ export default function SocialNetworkFeed() {
                     >
                       <span
                         onClick={() => handleVisibilityChange(type)}
-                        className={`p-1 rounded-full cursor-pointer transition ${postVisibility === type
+                        className={`p-1 rounded-full cursor-pointer transition ${
+                          postVisibility === type
                             ? "bg-blue-600"
                             : "bg-gray-400"
-                          } text-white`}
+                        } text-white`}
                       >
                         {icon}
                       </span>
@@ -1757,10 +1773,11 @@ export default function SocialNetworkFeed() {
                 {/* Post Actions */}
                 <div className="border-t px-4 py-2 flex justify-between">
                   <button
-                    className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${post.isLiked
+                    className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${
+                      post.isLiked
                         ? "text-blue-600 bg-blue-50"
                         : "text-blue-600 hover:bg-blue-100"
-                      }`}
+                    }`}
                     onClick={() => handleLikePost(post.id, post.isLiked)}
                   >
                     <ThumbsUp size={14} className="mr-2" />
@@ -1938,21 +1955,35 @@ export default function SocialNetworkFeed() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg w-full max-w-md mx-4 p-5">
             <h3 className="text-lg font-semibold mb-4">Laporkan posting ini</h3>
-            <p className="mb-3 text-sm text-gray-600">Pilih kebijakan kami yang berlaku</p>
+            <p className="mb-3 text-sm text-gray-600">
+              Pilih kebijakan kami yang berlaku
+            </p>
 
             <div className="grid grid-cols-2 gap-2 mb-4">
               {[
-                "Pelecehan", "Penipuan", "Spam", "Misinformasi", "Ujaran kebencian",
-                "Ancaman atau kekerasan", "Menyakiti diri sendiri", "Konten sadis",
-                "Organisasi berbahaya atau ekstremis", "Konten seksual", "Akun palsu",
-                "Eksploitasi anak", "Produk dan layanan ilegal", "Pelanggaran", "Lainnya"
+                "Pelecehan",
+                "Penipuan",
+                "Spam",
+                "Misinformasi",
+                "Ujaran kebencian",
+                "Ancaman atau kekerasan",
+                "Menyakiti diri sendiri",
+                "Konten sadis",
+                "Organisasi berbahaya atau ekstremis",
+                "Konten seksual",
+                "Akun palsu",
+                "Eksploitasi anak",
+                "Produk dan layanan ilegal",
+                "Pelanggaran",
+                "Lainnya",
               ].map((reason) => (
                 <button
                   key={reason}
-                  className={`py-2 px-3 text-sm border rounded-full ${selectedReason === reason
+                  className={`py-2 px-3 text-sm border rounded-full ${
+                    selectedReason === reason
                       ? "bg-blue-100 border-blue-500 text-blue-700"
                       : "bg-white hover:bg-gray-100"
-                    }`}
+                  }`}
                   onClick={() => setSelectedReason(reason)}
                 >
                   {reason}
@@ -1982,12 +2013,18 @@ export default function SocialNetworkFeed() {
                 Batal
               </button>
               <button
-                className={`px-4 py-2 rounded text-white ${selectedReason ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-300 cursor-not-allowed"
-                  }`}
+                className={`px-4 py-2 rounded text-white ${
+                  selectedReason
+                    ? "bg-blue-600 hover:bg-blue-700"
+                    : "bg-gray-300 cursor-not-allowed"
+                }`}
                 disabled={!selectedReason}
                 onClick={() => {
                   // Lakukan POST report ke backend atau tampilkan alert dulu
-                  console.log("Report submitted:", selectedReason === "Lainnya" ? customReason : selectedReason);
+                  console.log(
+                    "Report submitted:",
+                    selectedReason === "Lainnya" ? customReason : selectedReason
+                  );
                   setShowReportModal(false);
                   setSelectedReason("");
                   setCustomReason("");
@@ -2090,10 +2127,11 @@ export default function SocialNetworkFeed() {
                   <button
                     key={type}
                     onClick={() => setPostVisibility(type)}
-                    className={`flex items-center px-3 py-2 rounded-md text-sm ${postVisibility === type
+                    className={`flex items-center px-3 py-2 rounded-md text-sm ${
+                      postVisibility === type
                         ? "bg-blue-100 text-blue-700"
                         : "bg-gray-100 text-gray-700"
-                      }`}
+                    }`}
                   >
                     {icon}
                     <span className="ml-2">{label}</span>
@@ -2131,8 +2169,9 @@ export default function SocialNetworkFeed() {
 
       {/* Right Sidebar */}
       <div
-        className={`${showMobileMenu ? "block" : "hidden"
-          } md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pl-2 lg:pr-4`}
+        className={`${
+          showMobileMenu ? "block" : "hidden"
+        } md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pl-2 lg:pr-4`}
       >
         {/* People You Might Know */}
         <div className="bg-white rounded-lg shadow mb-4 p-3">
@@ -2426,8 +2465,9 @@ export default function SocialNetworkFeed() {
                 {selectedPost.images.map((_, index) => (
                   <button
                     key={index}
-                    className={`w-2 h-2 md:w-3 md:h-3 rounded-full ${selectedImageIndex === index ? "bg-white" : "bg-gray-500"
-                      }`}
+                    className={`w-2 h-2 md:w-3 md:h-3 rounded-full ${
+                      selectedImageIndex === index ? "bg-white" : "bg-gray-500"
+                    }`}
                     onClick={() => setSelectedImageIndex(index)}
                   />
                 ))}
@@ -2538,18 +2578,19 @@ export default function SocialNetworkFeed() {
 
                             {(comment.repliesCount > 0 ||
                               allReplies[comment.id]?.length > 0) && (
-                                <button
-                                  className="text-gray-500 text-xs hover:underline"
-                                  onClick={() => toggleReplies(comment.id)}
-                                >
-                                  {expandedReplies[comment.id]
-                                    ? "Hide replies"
-                                    : `View replies (${comment.repliesCount ||
-                                    allReplies[comment.id]?.length ||
-                                    0
+                              <button
+                                className="text-gray-500 text-xs hover:underline"
+                                onClick={() => toggleReplies(comment.id)}
+                              >
+                                {expandedReplies[comment.id]
+                                  ? "Hide replies"
+                                  : `View replies (${
+                                      comment.repliesCount ||
+                                      allReplies[comment.id]?.length ||
+                                      0
                                     })`}
-                                </button>
-                              )}
+                              </button>
+                            )}
                           </div>
 
                           {/* Dropdown menu */}
@@ -2710,6 +2751,15 @@ export default function SocialNetworkFeed() {
           </div>
         </div>
       )}
+      <div className="fixed top-5 right-5 z-50">
+        {alertInfo.show && (
+          <Alert
+            type={alertInfo.type}
+            message={alertInfo.message}
+            onClose={() => setAlertInfo({ ...alertInfo, show: false })}
+          />
+        )}
+      </div>
     </div>
   );
 }

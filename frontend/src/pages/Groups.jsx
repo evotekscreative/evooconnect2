@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Case from "../components/Case";
 import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, LogOut, ArrowLeft, ChevronDown, ChevronUp, User, Check, X } from "lucide-react";
@@ -11,246 +11,263 @@ export default function Groups() {
   const [showModal, setShowModal] = useState(false);
   const [showAllAdminGroups, setShowAllAdminGroups] = useState(false);
   const [showAllJoinedGroups, setShowAllJoinedGroups] = useState(false);
-  const [activeTab, setActiveTab] = useState('myGroups');
   const navigate = useNavigate();
-  const [error, setError] = useState(null);
 
-  const [groupForm, setGroupForm] = useState({
-    name: "",
-    description: "",
-    rule: "",
-    privacy_level: "public",
-    invite_policy: "admin",
-    image: null,
+  // State for form data
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    rule: '',
+    privacy_level: 'public',
+    invite_policy: 'admin',
+    image: null
   });
 
+  // State for groups data - initialize as empty array
   const [groups, setGroups] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [invitations, setInvitations] = useState([
-    {
-      id: 1,
-      group: {
-        id: 101,
-        name: "Web Development Group",
-        members: 25,
-      },
-      inviter: {
-        id: 2,
-        name: "Mike Johnson",
-      },
-      status: "pending"
-    },
-    {
-      id: 2,
-      group: {
-        id: 102,
-        name: "React Enthusiasts",
-        members: 8,
-      },
-      inviter: {
-        id: 3,
-        name: "Sarah Williams",
-      },
-      status: "pending"
-    },
-    {
-      id: 3,
-      group: {
-        id: 103,
-        name: "UI/UX Designers",
-        members: 15,
-      },
-      inviter: {
-        id: 4,
-        name: "Alex Chen",
-      },
-      status: "pending"
-    }
-  ]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  // State for invitations
+  const [invitations, setInvitations] = useState([]);
+  const [activeTab, setActiveTab] = useState('myGroups');
+  const [successMessage, setSuccessMessage] = useState('');
+
+  // Fetch user's groups on component mount
   useEffect(() => {
-    fetchMyGroups();
-    fetchJoinedGroups();
+    const fetchGroups = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get('http://localhost:3000/api/my-groups', {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        // Validate and normalize the groups data
+        const groupsData = Array.isArray(response.data)
+          ? response.data.map(group => ({
+            id: group.id || `temp-${Math.random().toString(36).substr(2, 9)}`,
+            name: group.name || 'Unnamed Group',
+            description: group.description || '',
+            rule: group.rule || '',
+            privacy_level: group.privacy_level || 'public',
+            invite_policy: group.invite_policy || 'admin',
+            image: group.image || null,
+            member_count: group.member_count || 0,
+            is_admin: group.is_admin || false,
+            created_at: group.created_at || new Date().toISOString(),
+            joined_at: group.joined_at || new Date().toISOString()
+          }))
+          : [];
+
+        setGroups(groupsData);
+        setLoading(false);
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to fetch groups');
+        setLoading(false);
+        setGroups([]);
+      }
+    };
+
+    // Fetch invitations
+    const fetchInvitations = async () => {
+      try {
+        const response = await axios.get('http://localhost:3000/api/my-invitations', {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        setInvitations(Array.isArray(response.data) ? response.data : []);
+      } catch (err) {
+        console.error("Failed to fetch invitations:", err);
+        setInvitations([]);
+      }
+    };
+
+    fetchGroups();
+    fetchInvitations();
   }, []);
 
-  const fetchMyGroups = async () => {
+  // Handle form input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle file upload
+  const handleFileChange = (e) => {
+    setFormData(prev => ({
+      ...prev,
+      image: e.target.files[0]
+    }));
+  };
+
+  // Handle group creation
+  const handleCreateGroup = async (e) => {
+    e.preventDefault();
     try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(`${base_url}/api/my-groups`, {
+      const formDataToSend = new FormData();
+      formDataToSend.append('name', formData.name);
+      formDataToSend.append('description', formData.description);
+      formDataToSend.append('rule', formData.rule);
+      formDataToSend.append('privacy_level', formData.privacy_level);
+      formDataToSend.append('invite_policy', formData.invite_policy);
+      if (formData.image) {
+        formDataToSend.append('image', formData.image);
+      }
+
+      const response = await axios.post('http://localhost:3000/api/groups', formDataToSend, {
         headers: {
-          Authorization: `Bearer ${token}`,
-        },
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
       });
-      const adminGroups = response.data.data.map(group => ({
-        ...group,
-        isAdmin: true,
-        createdDate: new Date(group.created_at).toLocaleDateString()
-      }));
-      setGroups(prev => [...adminGroups, ...prev.filter(g => !g.isAdmin)]);
-    } catch (error) {
-      console.error("Failed to fetch my groups:", error);
-      toast.error("Failed to load your groups");
+
+      // Add the new group to the state
+      const newGroup = {
+        id: response.data.id,
+        name: response.data.name,
+        description: response.data.description,
+        rule: response.data.rule,
+        privacy_level: response.data.privacy_level,
+        invite_policy: response.data.invite_policy,
+        image: response.data.image,
+        member_count: 1,
+        is_admin: true,
+        created_at: new Date().toISOString(),
+        joined_at: new Date().toISOString()
+      };
+
+      setGroups(prev => [newGroup, ...prev]);
+      setShowModal(false);
+      setSuccessMessage('Group created successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+
+      // Reset form
+      setFormData({
+        name: '',
+        description: '',
+        rule: '',
+        privacy_level: 'public',
+        invite_policy: 'admin',
+        image: null
+      });
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to create group');
     }
   };
 
-  const fetchJoinedGroups = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(`${base_url}/api/groups`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      
-      // Filter out groups that user is admin of
-      const joinedGroups = response.data.data
-        .filter(group => !group.is_admin) // Ensure we don't include admin groups
-        .map(group => ({
-          ...group,
-          isAdmin: false,
-          joinedDate: new Date().toISOString().split('T')[0] // Mock joined date
-        }));
-      
-      setGroups(prev => [...prev.filter(g => g.isAdmin), ...joinedGroups]);
-    } catch (error) {
-      console.error("Failed to fetch joined groups:", error);
-      toast.error("Failed to load joined groups");
+  // Handle group deletion
+  const handleDeleteGroup = async (groupId) => {
+    if (window.confirm("Are you sure you want to delete this group? This action cannot be undone.")) {
+      try {
+        await axios.delete(`http://localhost:3000/api/groups/${groupId}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        setGroups(groups.filter(group => group.id !== groupId));
+        setSuccessMessage('Group deleted successfully!');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } catch (err) {
+        alert(err.response?.data?.message || 'Failed to delete group');
+      }
     }
   };
 
-  // Memisahkan grup admin dan grup yang diikuti
-  const adminGroups = groups.filter(group => group.isAdmin);
-  const joinedGroups = groups.filter(group => !group.isAdmin);
+  // Handle leaving a group
+  const handleLeaveGroup = async (groupId) => {
+    if (window.confirm("Are you sure you want to leave this group? You'll need to be invited to join again.")) {
+      try {
+        await axios.post(`http://localhost:3000/api/groups/${groupId}/leave`, {}, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        setGroups(groups.filter(group => group.id !== groupId));
+        setSuccessMessage('You have left the group');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } catch (err) {
+        alert(err.response?.data?.message || 'Failed to leave group');
+      }
+    }
+  };
+
+  // Handle accepting an invitation
+  const handleAcceptInvitation = async (invitationId) => {
+    try {
+      const response = await axios.post(`http://localhost:3000/api/invitations/${invitationId}/accept`, {}, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      // Update invitations list
+      const updatedInvitations = invitations.map(inv =>
+        inv.id === invitationId ? { ...inv, status: "accepted" } : inv
+      );
+      setInvitations(updatedInvitations);
+
+      // Add the group to the user's groups
+      if (response.data && response.data.group) {
+        const groupData = response.data.group;
+        setGroups(prev => [...prev, {
+          id: groupData.id || `temp-${Math.random().toString(36).substr(2, 9)}`,
+          name: groupData.name || 'Unnamed Group',
+          description: groupData.description || '',
+          rule: groupData.rule || '',
+          privacy_level: groupData.privacy_level || 'public',
+          invite_policy: groupData.invite_policy || 'admin',
+          image: groupData.image || null,
+          member_count: groupData.member_count || 0,
+          is_admin: false,
+          joined_at: new Date().toISOString()
+        }]);
+      }
+
+      setSuccessMessage('Invitation accepted!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to accept invitation');
+    }
+  };
+
+  // Handle rejecting an invitation
+  const handleRejectInvitation = async (invitationId) => {
+    try {
+      await axios.post(`http://localhost:3000/api/invitations/${invitationId}/reject`, {}, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      const updatedInvitations = invitations.map(inv =>
+        inv.id === invitationId ? { ...inv, status: "rejected" } : inv
+      );
+      setInvitations(updatedInvitations);
+
+      setSuccessMessage('Invitation declined');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to reject invitation');
+    }
+  };
+
+  // Separate admin groups and joined groups
+  const adminGroups = Array.isArray(groups) ? groups.filter(group => group.is_admin) : [];
+  const joinedGroups = Array.isArray(groups) ? groups.filter(group => !group.is_admin) : [];
+  const pendingInvitations = Array.isArray(invitations) ? invitations.filter(inv => inv.status === "pending") : [];
 
   // Get first 3 groups for showcase
   const showcaseAdminGroups = showAllAdminGroups ? adminGroups : adminGroups.slice(0, 3);
   const showcaseJoinedGroups = showAllJoinedGroups ? joinedGroups : joinedGroups.slice(0, 3);
 
-  const handleLeaveGroup = async (groupId) => {
-    if (window.confirm("Are you sure you want to leave this group? You'll need to be invited to join again.")) {
-      try {
-        const token = localStorage.getItem("token");
-        await axios.delete(`${base_url}/api/groups/${groupId}/leave`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setGroups(groups.filter(group => group.id !== groupId));
-        toast.success("You have left the group");
-      } catch (error) {
-        console.error("Failed to leave group:", error);
-        toast.error(error.response?.data?.message || "Failed to leave group");
-      }
-    }
-  };
-
-  const handleDeleteGroup = async (groupId) => {
-    if (window.confirm("Are you sure you want to delete this group? This action cannot be undone.")) {
-      try {
-        const token = localStorage.getItem("token");
-        await axios.delete(`${base_url}/api/groups/${groupId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setGroups(groups.filter(group => group.id !== groupId));
-        toast.success("Group deleted successfully");
-      } catch (error) {
-        console.error("Failed to delete group:", error);
-        toast.error(error.response?.data?.message || "Failed to delete group");
-      }
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setGroupForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    setGroupForm((prev) => ({ ...prev, photo: file }));
-  };
-
-  const handleCreateGroup = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const token = localStorage.getItem("token");
-
-      const formData = new FormData();
-      formData.append("name", groupForm.name);
-      formData.append("description", groupForm.description);
-      formData.append("rule", groupForm.rule);
-      formData.append("privacy_level", groupForm.privacy_level);
-      formData.append("invite_policy", groupForm.invite_policy);
-      if (groupForm.image) {
-        formData.append("photo", groupForm.image);
-      }
-
-      const response = await axios.post(`${base_url}/api/groups`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const newGroup = {
-        ...response.data.data,
-        isAdmin: true,
-        createdDate: new Date().toISOString().split('T')[0]
-      };
-
-      // Add to the beginning of the groups array and ensure it's marked as admin group
-      setGroups(prev => [newGroup, ...prev.filter(g => g.id !== newGroup.id)]);
-      toast.success("Group created successfully!");
-
-      setGroupForm({
-        name: "",
-        description: "",
-        rule: "",
-        privacy_level: "public",
-        invite_policy: "admin",
-        image: null,
-      });
-      setShowModal(false);
-    } catch (error) {
-      console.error("Failed to create group:", error.response?.data || error.message);
-      setError(error.response?.data?.message || "Failed to create group");
-      toast.error(error.response?.data?.message || "Failed to create group");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleAcceptInvitation = (invitationId) => {
-    const updatedInvitations = invitations.map(inv =>
-      inv.id === invitationId ? { ...inv, status: "accepted" } : inv
-    );
-    setInvitations(updatedInvitations);
-
-    const acceptedInvitation = invitations.find(inv => inv.id === invitationId);
-    const newGroup = {
-      id: acceptedInvitation.group.id,
-      name: acceptedInvitation.group.name,
-      members: acceptedInvitation.group.members,
-      isAdmin: false,
-      joinedDate: new Date().toISOString().split('T')[0]
-    };
-    setGroups([...groups.filter(g => g.id !== newGroup.id), newGroup]);
-  };
-
-  const handleRejectInvitation = (invitationId) => {
-    const updatedInvitations = invitations.map(inv =>
-      inv.id === invitationId ? { ...inv, status: "rejected" } : inv
-    );
-    setInvitations(updatedInvitations);
-  };
-
-  const pendingInvitations = invitations.filter(inv => inv.status === "pending");
-
+  if (loading) {
     return (
       <div className={`${group.isAdmin ? 'bg-blue-100' : 'bg-gray-200'} w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden flex items-center justify-center`}>
         <span className={`${group.isAdmin ? 'text-blue-600' : 'text-gray-600'} text-lg sm:text-xl font-bold`}>
@@ -271,8 +288,8 @@ export default function Groups() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-4">
               <div className="flex items-center">
-                <button
-                  onClick={() => navigate(-1)}
+                <button 
+                  onClick={() => navigate(-1)} 
                   className="mr-2 p-1 rounded-full hover:bg-gray-100"
                 >
                   <ArrowLeft size={20} className="text-gray-600" />
@@ -290,13 +307,13 @@ export default function Groups() {
             {/* Tabs */}
             <div className="border-b border-gray-300 mb-4">
               <div className="flex overflow-x-auto">
-                <button
+                <button 
                   onClick={() => setActiveTab('myGroups')}
                   className={`px-4 py-2 border-b-2 ${activeTab === 'myGroups' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'} font-medium whitespace-nowrap`}
                 >
                   My Groups
                 </button>
-                <button
+                <button 
                   onClick={() => setActiveTab('invitations')}
                   className={`px-4 py-2 border-b-2 ${activeTab === 'invitations' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'} font-medium whitespace-nowrap`}
                 >
@@ -350,13 +367,13 @@ export default function Groups() {
                             </div>
                           </div>
                           <div className="flex justify-between items-center mt-3">
-                            <Link
-                              to={`/groups/${group.id}`}
+                            <Link 
+                              to={`/group-page`}
                               className="text-xs sm:text-sm text-blue-600 hover:underline"
                             >
                               View Group
                             </Link>
-                            <button
+                            <button 
                               onClick={() => handleDeleteGroup(group.id)}
                               className="flex items-center text-red-600 hover:text-red-800 text-xs sm:text-sm"
                               title="Delete Group"
@@ -408,13 +425,13 @@ export default function Groups() {
                             </div>
                           </div>
                           <div className="flex justify-between items-center mt-3">
-                            <Link
+                            <Link 
                               to={`/groups/${group.id}`}
                               className="text-xs sm:text-sm text-blue-600 hover:underline"
                             >
                               View Group
                             </Link>
-                            <button
+                            <button 
                               onClick={() => handleLeaveGroup(group.id)}
                               className="flex items-center text-gray-600 hover:text-gray-800 text-xs sm:text-sm"
                               title="Leave Group"
@@ -444,7 +461,7 @@ export default function Groups() {
             ) : (
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Pending Invitations</h3>
-
+                
                 {pendingInvitations.length > 0 ? (
                   <div className="space-y-3">
                     {pendingInvitations.map((invitation) => (
@@ -525,7 +542,7 @@ export default function Groups() {
               </div>
             )}
           </div>
-
+          
           {/* Right Sidebar */}
           <div className="space-y-4">
             {/* Group Statistics */}
@@ -582,87 +599,78 @@ export default function Groups() {
         {/* Modal Create Group */}
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 sm:p-8 space-y-6">
-              <h3 className="text-xl font-bold text-gray-800">Create New Group</h3>
-
-              {error && (
-                <div className="p-3 bg-red-100 text-red-700 text-sm rounded-md border border-red-300">
-                  {error}
-                </div>
-              )}
-
-              <form onSubmit={handleCreateGroup} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Group Name *</label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={groupForm.name}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                  <textarea
-                    name="description"
-                    value={groupForm.description}
-                    onChange={handleInputChange}
-                    rows="3"
-                    className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Rules</label>
-                  <textarea
-                    name="rule"
-                    value={groupForm.rule}
-                    onChange={handleInputChange}
-                    rows="3"
-                    className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Privacy Level *</label>
-                  <select
-                    name="privacy_level"
-                    value={groupForm.privacy_level}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="public">Public</option>
-                    <option value="private">Private</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Invite Policy *</label>
-                  <select
-                    name="invite_policy"
-                    value={groupForm.invite_policy}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="admin">Admin Only</option>
-                    <option value="member">All Members</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Group Photo</label>
-                  <input
-                    type="file"
-                    name="image"
-                    onChange={handleFileChange}
-                    accept="image/*"
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                  />
+            <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">Create New Group</h3>
+              <form onSubmit={handleCreateGroup}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium">Group Name *</label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm sm:text-base"
+                      placeholder="Enter group name"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium">Description</label>
+                    <textarea
+                      name="description"
+                      value={formData.description}
+                      onChange={handleInputChange}
+                      className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm sm:text-base"
+                      placeholder="Enter group description"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium">Group Rules</label>
+                    <textarea
+                      name="rule"
+                      value={formData.rule}
+                      onChange={handleInputChange}
+                      className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm sm:text-base"
+                      placeholder="Enter group rules"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium">Privacy Level *</label>
+                    <select
+                      name="privacy_level"
+                      value={formData.privacy_level}
+                      onChange={handleInputChange}
+                      className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm sm:text-base"
+                      required
+                    >
+                      <option value="public">Public</option>
+                      <option value="private">Private</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium">Invite Policy *</label>
+                    <select
+                      name="invite_policy"
+                      value={formData.invite_policy}
+                      onChange={handleInputChange}
+                      className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm sm:text-base"
+                      required
+                    >
+                      <option value="admin">Admin Only</option>
+                      <option value="member">All Members</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium">Group Photo</label>
+                    <input
+                      type="file"
+                      name="image"
+                      onChange={handleFileChange}
+                      className="mt-1 text-sm"
+                      accept="image/*"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex justify-end space-x-3">

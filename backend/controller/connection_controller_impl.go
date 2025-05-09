@@ -210,3 +210,27 @@ func (controller *ConnectionControllerImpl) Disconnect(writer http.ResponseWrite
 	// Write response
 	helper.WriteToResponseBody(writer, webResponse)
 }
+
+func (controller *ConnectionControllerImpl) CancelConnectionRequest(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Get request ID from URL params
+	toUserId, err := uuid.Parse(params.ByName("toUserId"))
+	if err != nil {
+		panic(exception.NewBadRequestError("Invalid request ID format"))
+	}
+
+	// Get user ID from context (set by JWT middleware)
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+
+	// Call service to cancel connection request
+	connectionResponse := controller.ConnectionService.CancelConnectionRequest(request.Context(), userId, toUserId)
+
+	// Create web response
+	webResponse := web.WebResponse{
+		Code:   200,
+		Status: "OK",
+		Data:   connectionResponse,
+	}
+
+	helper.WriteToResponseBody(writer, webResponse)
+}

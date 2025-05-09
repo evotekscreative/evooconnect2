@@ -118,3 +118,12 @@ func (repository *GroupInvitationRepositoryImpl) FindByGroupIdAndInviteeId(ctx c
 
 	return invitation
 }
+
+func (repository *GroupInvitationRepositoryImpl) CancelRequest(ctx context.Context, tx *sql.Tx, invitationId uuid.UUID) error {
+	SQL := `DELETE FROM group_invitations WHERE id = $1`
+	_, err := tx.ExecContext(ctx, SQL, invitationId)
+	if err != nil {
+		return err
+	}
+	return nil
+}

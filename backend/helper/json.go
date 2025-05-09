@@ -89,7 +89,28 @@ func ReadFromMultipartForm(request *http.Request, result interface{}) {
 			if boolVal, err := strconv.ParseBool(formValue); err == nil {
 				field.SetBool(boolVal)
 			}
-			// Add more types as needed
+		case reflect.Ptr:
+			// Handle pointer fields
+			if field.IsNil() {
+				// Create a new instance of the pointed type
+				field.Set(reflect.New(field.Type().Elem()))
+			}
+
+			// Set the value based on the pointer's underlying type
+			ptrElem := field.Elem()
+			switch ptrElem.Kind() {
+			case reflect.String:
+				ptrElem.SetString(formValue)
+			case reflect.Int, reflect.Int64:
+				if intVal, err := strconv.ParseInt(formValue, 10, 64); err == nil {
+					ptrElem.SetInt(intVal)
+				}
+			case reflect.Bool:
+				if boolVal, err := strconv.ParseBool(formValue); err == nil {
+					ptrElem.SetBool(boolVal)
+				}
+			}
+			// Add more pointer types as needed
 		}
 	}
 }

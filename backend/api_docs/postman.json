@@ -1831,6 +1831,42 @@
           ]
         },
         {
+          "name": "Cancel Connection Request",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/api/connections/requests/{{toUserId}}",
+            "description": "Membatalkan permintaan koneksi yang telah dikirimkan sebelumnya"
+          },
+          "response": [
+            {
+              "name": "Cancel Connection Request Success",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{base_url}}/api/connections/requests/h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": \"Connection request cancelled successfully\"\n}"
+            }
+          ]
+        },
+        {
           "name": "Get Connections",
           "request": {
             "auth": {
@@ -2628,6 +2664,35 @@
           ]
         },
         {
+          "name": "Cancel Invitation",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/api/invitations/{{invitationId}}",
+            "description": "Cancel a group invitation (only the inviter can cancel)"
+          },
+          "response": [
+            {
+              "name": "Cancel Invitation Success",
+              "originalRequest": {
+                "url": "{{base_url}}/api/invitations/h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\"\n}"
+            }
+          ]
+        },
+        {
           "name": "Get My Invitations",
           "request": {
             "auth": {
@@ -2741,23 +2806,54 @@
               }
             },
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [],
             "body": {
-              "mode": "raw",
-              "raw": "{\n  \"institute_name\": \"Harvard University\",\n  \"major\": \"Computer Science\",\n  \"start_month\": \"September\",\n  \"start_year\": \"2018\",\n  \"end_month\": \"June\",\n  \"end_year\": \"2022\",\n  \"caption\": \"Bachelor of Science in Computer Science\",\n  \"photo\": \"uploads/education/harvard.jpg\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "institute_name",
+                  "value": "Harvard University",
+                  "type": "text"
+                },
+                {
+                  "key": "major",
+                  "value": "Computer Science",
+                  "type": "text"
+                },
+                {
+                  "key": "start_month",
+                  "value": "September",
+                  "type": "text"
+                },
+                {
+                  "key": "start_year",
+                  "value": "2018",
+                  "type": "text"
+                },
+                {
+                  "key": "end_month",
+                  "value": "June",
+                  "type": "text"
+                },
+                {
+                  "key": "end_year",
+                  "value": "2022",
+                  "type": "text"
+                },
+                {
+                  "key": "caption",
+                  "value": "Bachelor of Science in Computer Science",
+                  "type": "text"
+                },
+                {
+                  "key": "photo",
+                  "type": "file",
+                  "src": "/path/to/education-certificate.jpg"
                 }
-              }
+              ]
             },
             "url": "{{base_url}}/api/education",
-            "description": "Menambahkan data pendidikan baru untuk pengguna saat ini"
+            "description": "Add a new education entry with direct photo upload capability"
           },
           "response": [
             {
@@ -2766,19 +2862,55 @@
                 "method": "POST",
                 "header": [],
                 "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"institute_name\": \"Harvard University\",\n  \"major\": \"Computer Science\",\n  \"start_month\": \"September\",\n  \"start_year\": \"2018\",\n  \"end_month\": \"June\",\n  \"end_year\": \"2022\",\n  \"caption\": \"Bachelor of Science in Computer Science\",\n  \"photo\": \"uploads/education/harvard.jpg\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "institute_name",
+                      "value": "Harvard University",
+                      "type": "text"
+                    },
+                    {
+                      "key": "major",
+                      "value": "Computer Science",
+                      "type": "text"
+                    },
+                    {
+                      "key": "start_month",
+                      "value": "September",
+                      "type": "text"
+                    },
+                    {
+                      "key": "start_year",
+                      "value": "2018",
+                      "type": "text"
+                    },
+                    {
+                      "key": "end_month",
+                      "value": "June",
+                      "type": "text"
+                    },
+                    {
+                      "key": "end_year",
+                      "value": "2022",
+                      "type": "text"
+                    },
+                    {
+                      "key": "caption",
+                      "value": "Bachelor of Science in Computer Science",
+                      "type": "text"
+                    },
+                    {
+                      "key": "photo",
+                      "type": "file",
+                      "src": "/path/to/education-certificate.jpg"
                     }
-                  }
+                  ]
                 },
                 "url": "{{base_url}}/api/education"
               },
               "status": "Created",
               "code": 201,
-              "_postman_previewlanguage": "Text",
+              "_postman_previewlanguage": "json",
               "header": [
                 {
                   "key": "Content-Type",
@@ -2786,7 +2918,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n    \"code\": 201,\n    \"status\": \"CREATED\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"institute_name\": \"Harvard University\",\n        \"major\": \"Computer Science\",\n        \"start_month\": \"September\",\n        \"start_year\": \"2018\",\n        \"end_month\": \"June\",\n        \"end_year\": \"2022\",\n        \"caption\": \"Bachelor of Science in Computer Science\",\n        \"photo\": \"uploads/education/harvard.jpg\",\n        \"created_at\": \"2023-11-28T15:30:00Z\",\n        \"updated_at\": \"2023-11-28T15:30:00Z\"\n    }\n}"
+              "body": "{\n    \"code\": 201,\n    \"status\": \"CREATED\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"institute_name\": \"Harvard University\",\n        \"major\": \"Computer Science\",\n        \"start_month\": \"September\",\n        \"start_year\": \"2018\",\n        \"end_month\": \"June\",\n        \"end_year\": \"2022\",\n        \"caption\": \"Bachelor of Science in Computer Science\",\n        \"photo\": \"uploads/education/661f9511-f3a2-41d5-b882-557535440123/images-1706278392-a1b2c3d4.jpg\",\n        \"created_at\": \"2023-11-28T15:30:00Z\",\n        \"updated_at\": \"2023-11-28T15:30:00Z\"\n    }\n}"
             }
           ]
         },
@@ -2800,23 +2932,54 @@
               }
             },
             "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [],
             "body": {
-              "mode": "raw",
-              "raw": "{\n  \"institute_name\": \"MIT\",\n  \"major\": \"Computer Science and Engineering\",\n  \"start_month\": \"August\",\n  \"start_year\": \"2018\",\n  \"end_month\": \"May\",\n  \"end_year\": \"2022\",\n  \"caption\": \"Bachelor of Science in Computer Science and Engineering\",\n  \"photo\": \"uploads/education/mit.jpg\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "institute_name",
+                  "value": "MIT",
+                  "type": "text"
+                },
+                {
+                  "key": "major",
+                  "value": "Computer Science and Engineering",
+                  "type": "text"
+                },
+                {
+                  "key": "start_month",
+                  "value": "August",
+                  "type": "text"
+                },
+                {
+                  "key": "start_year",
+                  "value": "2018",
+                  "type": "text"
+                },
+                {
+                  "key": "end_month",
+                  "value": "May",
+                  "type": "text"
+                },
+                {
+                  "key": "end_year",
+                  "value": "2022",
+                  "type": "text"
+                },
+                {
+                  "key": "caption",
+                  "value": "Bachelor of Science in Computer Science and Engineering",
+                  "type": "text"
+                },
+                {
+                  "key": "photo",
+                  "type": "file",
+                  "src": "/path/to/education-certificate.jpg"
                 }
-              }
+              ]
             },
             "url": "{{base_url}}/api/education/{{educationId}}",
-            "description": "Memperbarui data pendidikan pengguna"
+            "description": "Update education entry with multipart form support for photo upload"
           },
           "response": [
             {
@@ -2825,15 +2988,51 @@
                 "method": "PUT",
                 "header": [],
                 "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"institute_name\": \"MIT\",\n  \"major\": \"Computer Science and Engineering\",\n  \"start_month\": \"August\",\n  \"start_year\": \"2018\",\n  \"end_month\": \"May\",\n  \"end_year\": \"2022\",\n  \"caption\": \"Bachelor of Science in Computer Science and Engineering\",\n  \"photo\": \"uploads/education/mit.jpg\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "institute_name",
+                      "value": "MIT",
+                      "type": "text"
+                    },
+                    {
+                      "key": "major",
+                      "value": "Computer Science and Engineering",
+                      "type": "text"
+                    },
+                    {
+                      "key": "start_month",
+                      "value": "August",
+                      "type": "text"
+                    },
+                    {
+                      "key": "start_year",
+                      "value": "2018",
+                      "type": "text"
+                    },
+                    {
+                      "key": "end_month",
+                      "value": "May",
+                      "type": "text"
+                    },
+                    {
+                      "key": "end_year",
+                      "value": "2022",
+                      "type": "text"
+                    },
+                    {
+                      "key": "caption",
+                      "value": "Bachelor of Science in Computer Science and Engineering",
+                      "type": "text"
+                    },
+                    {
+                      "key": "photo",
+                      "type": "file",
+                      "src": "/path/to/education-certificate.jpg"
                     }
-                  }
+                  ]
                 },
-                "url": "{{base_url}}/api/education/550e8400-e29b-41d4-a716-446655440000"
+                "url": "{{base_url}}/api/education/{{educationId}}"
               },
               "status": "OK",
               "code": 200,
@@ -2845,7 +3044,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"institute_name\": \"MIT\",\n        \"major\": \"Computer Science and Engineering\",\n        \"start_month\": \"August\",\n        \"start_year\": \"2018\",\n        \"end_month\": \"May\",\n        \"end_year\": \"2022\",\n        \"caption\": \"Bachelor of Science in Computer Science and Engineering\",\n        \"photo\": \"uploads/education/mit.jpg\",\n        \"created_at\": \"2023-11-28T15:30:00Z\",\n        \"updated_at\": \"2023-11-28T16:45:00Z\"\n    }\n}"
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"institute_name\": \"MIT\",\n        \"major\": \"Computer Science and Engineering\",\n        \"start_month\": \"August\",\n        \"start_year\": \"2018\",\n        \"end_month\": \"May\",\n        \"end_year\": \"2022\",\n        \"caption\": \"Bachelor of Science in Computer Science and Engineering\",\n        \"photo\": \"uploads/education/661f9511-f3a2-41d5-b882-557535440123/images-1706278392-a1b2c3d4.jpg\",\n        \"created_at\": \"2023-11-28T15:30:00Z\",\n        \"updated_at\": \"2025-05-08T14:25:30Z\"\n    }\n}"
             }
           ]
         },
@@ -3052,23 +3251,54 @@
               }
             },
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [],
             "body": {
-              "mode": "raw",
-              "raw": "{\n  \"job_title\": \"Software Engineer\",\n  \"company_name\": \"Google\",\n  \"start_month\": \"June\",\n  \"start_year\": \"2018\",\n  \"end_month\": \"December\",\n  \"end_year\": \"2021\",\n  \"caption\": \"Worked on various projects including search and cloud platforms.\",\n  \"photo\": \"uploads/experience/google.jpg\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "job_title",
+                  "value": "Software Engineer",
+                  "type": "text"
+                },
+                {
+                  "key": "company_name",
+                  "value": "Google",
+                  "type": "text"
+                },
+                {
+                  "key": "start_month",
+                  "value": "June",
+                  "type": "text"
+                },
+                {
+                  "key": "start_year",
+                  "value": "2018",
+                  "type": "text"
+                },
+                {
+                  "key": "end_month",
+                  "value": "December",
+                  "type": "text"
+                },
+                {
+                  "key": "end_year",
+                  "value": "2021",
+                  "type": "text"
+                },
+                {
+                  "key": "caption",
+                  "value": "Worked on various projects including search and cloud platforms.",
+                  "type": "text"
+                },
+                {
+                  "key": "photo",
+                  "type": "file",
+                  "src": "/path/to/company-logo.jpg"
                 }
-              }
+              ]
             },
             "url": "{{base_url}}/api/experience",
-            "description": "Menambahkan data pengalaman kerja baru untuk pengguna saat ini"
+            "description": "Create a new work experience entry with multipart form support for photo upload"
           },
           "response": [
             {
@@ -3077,18 +3307,54 @@
                 "method": "POST",
                 "header": [],
                 "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"job_title\": \"Software Engineer\",\n  \"company_name\": \"Google\",\n  \"start_month\": \"June\",\n  \"start_year\": \"2018\",\n  \"end_month\": \"December\",\n  \"end_year\": \"2021\",\n  \"caption\": \"Worked on various projects including search and cloud platforms.\",\n  \"photo\": \"uploads/experience/google.jpg\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "job_title",
+                      "value": "Software Engineer",
+                      "type": "text"
+                    },
+                    {
+                      "key": "company_name",
+                      "value": "Google",
+                      "type": "text"
+                    },
+                    {
+                      "key": "start_month",
+                      "value": "June",
+                      "type": "text"
+                    },
+                    {
+                      "key": "start_year",
+                      "value": "2018",
+                      "type": "text"
+                    },
+                    {
+                      "key": "end_month",
+                      "value": "December",
+                      "type": "text"
+                    },
+                    {
+                      "key": "end_year",
+                      "value": "2021",
+                      "type": "text"
+                    },
+                    {
+                      "key": "caption",
+                      "value": "Worked on various projects including search and cloud platforms.",
+                      "type": "text"
+                    },
+                    {
+                      "key": "photo",
+                      "type": "file",
+                      "src": "/path/to/company-logo.jpg"
                     }
-                  }
+                  ]
                 },
                 "url": "{{base_url}}/api/experience"
               },
-              "status": "Created",
-              "code": 201,
+              "status": "OK",
+              "code": 200,
               "_postman_previewlanguage": "Text",
               "header": [
                 {
@@ -3097,7 +3363,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n    \"code\": 201,\n    \"status\": \"CREATED\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"job_title\": \"Software Engineer\",\n        \"company_name\": \"Google\",\n        \"start_month\": \"June\",\n        \"start_year\": \"2018\",\n        \"end_month\": \"December\",\n        \"end_year\": \"2021\",\n        \"caption\": \"Worked on various projects including search and cloud platforms.\",\n        \"photo\": \"uploads/experience/google.jpg\",\n        \"created_at\": \"2023-11-28T15:30:00Z\",\n        \"updated_at\": \"2023-11-28T15:30:00Z\"\n    }\n}"
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"user_id\": \"7b1b214c-5a0b-4470-a9a8-b533ee7fdce1\",\n        \"job_title\": \"Software Engineer\",\n        \"company_name\": \"Google\",\n        \"start_month\": \"June\",\n        \"start_year\": \"2018\",\n        \"end_month\": \"December\",\n        \"end_year\": \"2021\",\n        \"caption\": \"Worked on various projects including search and cloud platforms.\",\n        \"photo\": \"/storage/experience/7b1b214c-5a0b-4470-a9a8-b533ee7fdce1/images/company-logo.jpg\",\n        \"created_at\": \"2025-05-08T14:30:45Z\",\n        \"updated_at\": \"2025-05-08T14:30:45Z\"\n    }\n}"
             }
           ]
         },
@@ -3111,23 +3377,54 @@
               }
             },
             "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [],
             "body": {
-              "mode": "raw",
-              "raw": "{\n  \"job_title\": \"Senior Software Engineer\",\n  \"company_name\": \"Google\",\n  \"start_month\": \"June\",\n  \"start_year\": \"2018\",\n  \"end_month\": \"December\",\n  \"end_year\": \"2021\",\n  \"caption\": \"Led development of search algorithms and cloud infrastructure.\",\n  \"photo\": \"uploads/experience/google_updated.jpg\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "job_title",
+                  "value": "Senior Software Engineer",
+                  "type": "text"
+                },
+                {
+                  "key": "company_name",
+                  "value": "Google",
+                  "type": "text"
+                },
+                {
+                  "key": "start_month",
+                  "value": "June",
+                  "type": "text"
+                },
+                {
+                  "key": "start_year",
+                  "value": "2018",
+                  "type": "text"
+                },
+                {
+                  "key": "end_month",
+                  "value": "December",
+                  "type": "text"
+                },
+                {
+                  "key": "end_year",
+                  "value": "2021",
+                  "type": "text"
+                },
+                {
+                  "key": "caption",
+                  "value": "Led development of search algorithms and cloud infrastructure.",
+                  "type": "text"
+                },
+                {
+                  "key": "photo",
+                  "type": "file",
+                  "src": "/path/to/updated-company-logo.jpg"
                 }
-              }
+              ]
             },
             "url": "{{base_url}}/api/experience/{{experienceId}}",
-            "description": "Memperbarui data pengalaman kerja pengguna"
+            "description": "Update work experience entry with multipart form support for photo upload"
           },
           "response": [
             {
@@ -3136,15 +3433,51 @@
                 "method": "PUT",
                 "header": [],
                 "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"job_title\": \"Senior Software Engineer\",\n  \"company_name\": \"Google\",\n  \"start_month\": \"June\",\n  \"start_year\": \"2018\",\n  \"end_month\": \"December\",\n  \"end_year\": \"2021\",\n  \"caption\": \"Led development of search algorithms and cloud infrastructure.\",\n  \"photo\": \"uploads/experience/google_updated.jpg\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "job_title",
+                      "value": "Senior Software Engineer",
+                      "type": "text"
+                    },
+                    {
+                      "key": "company_name",
+                      "value": "Google",
+                      "type": "text"
+                    },
+                    {
+                      "key": "start_month",
+                      "value": "June",
+                      "type": "text"
+                    },
+                    {
+                      "key": "start_year",
+                      "value": "2018",
+                      "type": "text"
+                    },
+                    {
+                      "key": "end_month",
+                      "value": "December",
+                      "type": "text"
+                    },
+                    {
+                      "key": "end_year",
+                      "value": "2021",
+                      "type": "text"
+                    },
+                    {
+                      "key": "caption",
+                      "value": "Led development of search algorithms and cloud infrastructure.",
+                      "type": "text"
+                    },
+                    {
+                      "key": "photo",
+                      "type": "file",
+                      "src": "/path/to/updated-company-logo.jpg"
                     }
-                  }
+                  ]
                 },
-                "url": "{{base_url}}/api/experience/550e8400-e29b-41d4-a716-446655440000"
+                "url": "{{base_url}}/api/experience/{{experienceId}}"
               },
               "status": "OK",
               "code": 200,
@@ -3156,7 +3489,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"job_title\": \"Senior Software Engineer\",\n        \"company_name\": \"Google\",\n        \"start_month\": \"June\",\n        \"start_year\": \"2018\",\n        \"end_month\": \"December\",\n        \"end_year\": \"2021\",\n        \"caption\": \"Led development of search algorithms and cloud infrastructure.\",\n        \"photo\": \"uploads/experience/google_updated.jpg\",\n        \"created_at\": \"2023-11-28T15:30:00Z\",\n        \"updated_at\": \"2023-11-28T16:45:00Z\"\n    }\n}"
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"user_id\": \"7b1b214c-5a0b-4470-a9a8-b533ee7fdce1\",\n        \"job_title\": \"Senior Software Engineer\",\n        \"company_name\": \"Google\",\n        \"start_month\": \"June\",\n        \"start_year\": \"2018\",\n        \"end_month\": \"December\",\n        \"end_year\": \"2021\",\n        \"caption\": \"Led development of search algorithms and cloud infrastructure.\",\n        \"photo\": \"/storage/experience/7b1b214c-5a0b-4470-a9a8-b533ee7fdce1/images/updated-company-logo.jpg\",\n        \"created_at\": \"2025-05-01T10:15:30Z\",\n        \"updated_at\": \"2025-05-08T15:45:22Z\"\n    }\n}"
             }
           ]
         },
@@ -3391,6 +3724,10 @@
       "key": "invitationId",
       "value": "h8i9j0k1-l2m3-b1c2-d3e4-f5g6h7i8j9k0",
       "type": "string"
+    },
+    {
+      "key": "toUserId",
+      "value": "550e8400-e29b-41d4-a716-446655440000"
     }
   ]
 }

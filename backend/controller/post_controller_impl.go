@@ -24,30 +24,22 @@ func NewPostController(postService service.PostService) PostController {
 
 func (controller *PostControllerImpl) Create(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Parse multipart form with 10 MB max memory
-	err := request.ParseMultipartForm(10 << 20) // 10 MB
-	if err != nil {
-		panic(exception.NewBadRequestError("Failed to parse form: " + err.Error()))
-	}
+	err := helper.ParseMultipartForm(request, 10) // 10 MB limit
+	helper.PanicIfError(err)
 
 	userId, err := helper.GetUserIdFromToken(request)
 	helper.PanicIfError(err)
 
-	// Extract post data from form
-	content := request.FormValue("content")
-	visibility := request.FormValue("visibility")
-
 	// Create post request
-	postRequest := web.CreatePostRequest{
-		Content:    content,
-		Visibility: visibility,
-	}
+	createRequest := web.CreatePostRequest{}
+	helper.ReadFromMultipartForm(request, &createRequest)
 
 	// Handle image uploads
 	form := request.MultipartForm
 	files := form.File["images"]
 
 	// Call service to create post with images
-	response := controller.PostService.Create(request.Context(), userId, postRequest, files)
+	response := controller.PostService.Create(request.Context(), userId, createRequest, files)
 
 	// Create web response
 	webResponse := web.WebResponse{
@@ -62,10 +54,8 @@ func (controller *PostControllerImpl) Create(writer http.ResponseWriter, request
 
 func (controller *PostControllerImpl) Update(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Parse multipart form with 10 MB max memory
-	err := request.ParseMultipartForm(10 << 20) // 10 MB
-	if err != nil {
-		panic(exception.NewBadRequestError("Failed to parse form: " + err.Error()))
-	}
+	err := helper.ParseMultipartForm(request, 10) // 10 MB limit
+	helper.PanicIfError(err)
 
 	// Get post ID from path params
 	postId, err := uuid.Parse(params.ByName("postId"))
@@ -76,15 +66,9 @@ func (controller *PostControllerImpl) Update(writer http.ResponseWriter, request
 	userId, err := helper.GetUserIdFromToken(request)
 	helper.PanicIfError(err)
 
-	// Extract post data from form
-	content := request.FormValue("content")
-	visibility := request.FormValue("visibility")
-
 	// Create update request
-	updateRequest := web.UpdatePostRequest{
-		Content:    content,
-		Visibility: visibility,
-	}
+	updateRequest := web.UpdatePostRequest{}
+	helper.ReadFromMultipartForm(request, &updateRequest)
 
 	form := request.MultipartForm
 	files := form.File["images"]
