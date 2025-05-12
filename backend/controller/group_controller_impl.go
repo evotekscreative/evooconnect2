@@ -7,7 +7,6 @@ import (
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/service"
 	"net/http"
-	"path/filepath"
 	"strconv"
 
 	"github.com/google/uuid"
@@ -25,16 +24,23 @@ func NewGroupController(groupService service.GroupService) GroupController {
 }
 
 func (controller *GroupControllerImpl) Create(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	// Parse request body
-	createRequest := web.CreateGroupRequest{}
-	helper.ReadFromRequestBody(request, &createRequest)
+	err := helper.ParseMultipartForm(request, 10) // 10 MB limit
+	helper.PanicIfError(err)
 
 	// Get user ID from token
 	userId, err := helper.GetUserIdFromToken(request)
 	helper.PanicIfError(err)
 
+	// Parse request body
+	createRequest := web.CreateGroupRequest{}
+	helper.ReadFromMultipartForm(request, &createRequest)
+
+	// Handle image uploads
+	form := request.MultipartForm
+	file := form.File["photo"][0]
+
 	// Create group
-	groupResponse := controller.GroupService.Create(request.Context(), userId, createRequest)
+	groupResponse := controller.GroupService.Create(request.Context(), userId, createRequest, file)
 
 	// Send response
 	webResponse := web.WebResponse{
@@ -42,60 +48,6 @@ func (controller *GroupControllerImpl) Create(writer http.ResponseWriter, reques
 		Status: "CREATED",
 		Data:   groupResponse,
 	}
-	helper.WriteToResponseBody(writer, webResponse)
-}
-
-func (controller *GroupControllerImpl) UploadPhoto(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	// Parse multipart form with 10 MB max memory
-	err := request.ParseMultipartForm(10 << 20) // 10 MB
-	if err != nil {
-		panic(exception.NewBadRequestError("Failed to parse form: " + err.Error()))
-	}
-
-	// Get file from form
-	file, handler, err := request.FormFile("photo")
-	if err != nil {
-		panic(exception.NewBadRequestError("No file uploaded or invalid file field"))
-	}
-	defer file.Close()
-
-	// Check file type
-	ext := filepath.Ext(handler.Filename)
-	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" {
-		panic(exception.NewBadRequestError("Only JPG, JPEG and PNG files are allowed"))
-	}
-
-	// Get user_id from context (set by JWT middleware)
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse user_id
-	userId, err := uuid.Parse(userIdString)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
-	}
-
-	// Parse group_id from URL params
-	groupId, err := uuid.Parse(params.ByName("groupId"))
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid group ID format"))
-	}
-
-	// Call service to upload file
-	filePath := controller.GroupService.UploadPhoto(request.Context(), groupId, userId, file, handler)
-
-	// Create response
-	webResponse := web.WebResponse{
-		Code:   http.StatusOK,
-		Status: "OK",
-		Data: map[string]string{
-			"photo": filePath,
-		},
-	}
-
-	// Write response
 	helper.WriteToResponseBody(writer, webResponse)
 }
 
@@ -303,8 +255,6 @@ func (controller *GroupControllerImpl) FindMembers(writer http.ResponseWriter, r
 	helper.WriteToResponseBody(writer, webResponse)
 }
 
-// File: controller/group_controller_impl.go
-
 func (controller *GroupControllerImpl) LeaveGroup(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Get user ID from token
 	userId, err := helper.GetUserIdFromToken(request)
@@ -318,6 +268,39 @@ func (controller *GroupControllerImpl) LeaveGroup(writer http.ResponseWriter, re
 
 	// Call service to leave the group
 	response := controller.GroupService.LeaveGroup(request.Context(), groupId, userId)
+
+	// Create web response
+	webResponse := web.WebResponse{
+		Code:   200,
+		Status: "OK",
+		Data:   response,
+	}
+
+	// Write response
+	helper.WriteToResponseBody(writer, webResponse)
+}
+
+func (controller *GroupControllerImpl) JoinGroup(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Get user ID from context (set by JWT middleware)
+	userIdString, ok := request.Context().Value("user_id").(string)
+	if !ok {
+		panic(exception.NewUnauthorizedError("unauthorized access"))
+	}
+
+	// Parse user ID
+	userId, err := uuid.Parse(userIdString)
+	if err != nil {
+		panic(exception.NewBadRequestError("invalid user ID format"))
+	}
+
+	// Parse group ID from URL params
+	groupId, err := uuid.Parse(params.ByName("groupId"))
+	if err != nil {
+		panic(exception.NewBadRequestError("invalid group ID format"))
+	}
+
+	// Call service to join the group
+	response := controller.GroupService.JoinPublicGroup(request.Context(), groupId, userId)
 
 	// Create web response
 	webResponse := web.WebResponse{
@@ -409,6 +392,28 @@ func (controller *GroupControllerImpl) FindMyInvitations(writer http.ResponseWri
 		Code:   http.StatusOK,
 		Status: "OK",
 		Data:   invitationResponses,
+	}
+	helper.WriteToResponseBody(writer, webResponse)
+}
+
+func (controller *GroupControllerImpl) CancelInvitation(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Get user ID from token
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+
+	// Parse invitation ID from URL
+	invitationId, err := uuid.Parse(params.ByName("invitationId"))
+	if err != nil {
+		panic(exception.NewBadRequestError("invalid invitation ID format"))
+	}
+
+	// Cancel invitation
+	controller.GroupService.CancelInvitation(request.Context(), invitationId, userId)
+
+	// Send response
+	webResponse := web.WebResponse{
+		Code:   http.StatusOK,
+		Status: "OK",
 	}
 	helper.WriteToResponseBody(writer, webResponse)
 }

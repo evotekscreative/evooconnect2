@@ -12,6 +12,7 @@ import {
   Clock,
   ArrowLeft,
   UserCheck,
+  AlertCircle
 } from "lucide-react";
 
 const LoadingSpinner = ({ size = 16 }) => (
@@ -31,6 +32,41 @@ const LoadingSpinner = ({ size = 16 }) => (
   </div>
 );
 
+// Modal Component
+const CancelRequestModal = ({ isOpen, onClose, onConfirm, userName }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 transform transition-all">
+        <div className="flex items-center mb-4 text-blue-600">
+          <AlertCircle className="mr-2" size={24} />
+          <h3 className="text-lg font-medium">Cancel Connection Request</h3>
+        </div>
+        
+        <p className="mb-6 text-gray-600">
+          Are you sure you want to cancel your connection request to <span className="font-medium">{userName}</span>? This action cannot be undone.
+        </p>
+        
+        <div className="flex justify-end space-x-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            No, keep request
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+          >
+            Yes, cancel request
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function Connection() {
   const [activeTab, setActiveTab] = useState("people");
   const navigate = useNavigate();
@@ -38,6 +74,9 @@ export default function Connection() {
   const [loading, setLoading] = useState(true);
   const [invitations, setInvitations] = useState([]);
   const [invitationsLoading, setInvitationsLoading] = useState(false);
+  const [connectedUsers, setConnectedUsers] = useState([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
 
   const fetchInvitations = async () => {
     const token = localStorage.getItem("token");
@@ -53,23 +92,27 @@ export default function Connection() {
         }
       );
 
-      const mappedInvitations = response.data.data.requests.map(
-        (invitation) => ({
+      // Tambahkan pengecekan data
+      if (!response.data?.data?.requests) {
+        setInvitations([]);
+        return;
+      }
+
+      const mappedInvitations = response.data.data.requests
+        .filter((request) => request && request.sender) // Filter null/undefined
+        .map((invitation) => ({
           id: invitation.id,
-          name: invitation.sender.name,
+          name: invitation.sender?.name || "Unknown",
           headline: invitation.headline || "No headline",
           status: "pending",
           profile: invitation.photo || Profile,
-          username: invitation.sender.username || "",
-        })
-      );
-
-      console.log(response.data.data.requests);
+          username: invitation.sender?.username || "",
+        }));
 
       setInvitations(mappedInvitations);
-      // Cache the invitations
     } catch (error) {
       console.error("Gagal mengambil data undangan:", error);
+      setInvitations([]); // Set ke array kosong jika error
     } finally {
       setInvitationsLoading(false);
     }
@@ -78,8 +121,7 @@ export default function Connection() {
   useEffect(() => {
     const fetchConnections = async () => {
       const token = localStorage.getItem("token");
-      const user = JSON.parse(localStorage.getItem("user"));
-      const currentUserId = user.id;
+      const currentUserId = parseInt(localStorage.getItem("userId"));
       try {
         const response = await axios.get(
           "http://localhost:3000/api/user-peoples",
@@ -89,10 +131,9 @@ export default function Connection() {
             },
           }
         );
-
-        const pendingIds =
-          JSON.parse(localStorage.getItem("pendingConnections")) || [];
-
+  
+        const pendingIds = JSON.parse(localStorage.getItem("pendingConnections")) || [];
+  
         const mappedConnections = response.data.data
           .filter((person) => person.id !== currentUserId)
           .map((person) => ({
@@ -107,52 +148,59 @@ export default function Connection() {
             profile: person.photo || Profile,
             username: person.username || "",
           }));
-
+  
         setConnections(mappedConnections);
+        
+        // Set connected users
+        const connected = mappedConnections.filter(conn => conn.status === "connected");
+        setConnectedUsers(connected);
       } catch (error) {
         console.error("Gagal mengambil data user-peoples:", error);
       } finally {
         setLoading(false);
       }
     };
-
+  
     fetchConnections();
     fetchInvitations();
   }, []);
 
   const handleConnect = async (id) => {
     const token = localStorage.getItem("token");
-    const pendingIds =
-      JSON.parse(localStorage.getItem("pendingConnections")) || [];
+    const pendingIds = JSON.parse(localStorage.getItem("pendingConnections")) || [];
+    
+    // If status is pending, show the modal instead of directly handling
+    const person = connections.find(conn => conn.id === id);
+    if (person && person.status === "pending") {
+      setSelectedUser(person);
+      setModalOpen(true);
+      return;
+    }
 
     try {
-      if (pendingIds.includes(id)) {
-        await axios.delete(
-          `http://localhost:3000/api/connections/requests/${id}`,
-          {
-            headers: { Authorization: "Bearer " + token },
-          }
-        );
-
-        const updatedPending = pendingIds.filter((pid) => pid !== id);
-        localStorage.setItem(
-          "pendingConnections",
-          JSON.stringify(updatedPending)
-        );
-
-        setConnections(
-          connections.map((conn) =>
-            conn.id === id ? { ...conn, status: "connect" } : conn
-          )
-        );
-        return;
-      }
-
-      await axios.post(
+      setConnections(
+        connections.map((conn) =>
+          conn.id === id ? { ...conn, status: "processing" } : conn
+        )
+      );
+  
+      // This is for new connection requests
+      const response = await axios.post(
         `http://localhost:3000/api/users/${id}/connect`,
         {},
         { headers: { Authorization: "Bearer " + token } }
       );
+
+      // Jika langsung terhubung (tanpa perlu approval)
+      if (response.data?.connected) {
+        const connectedUser = connections.find((conn) => conn.id === id);
+        if (connectedUser) {
+          setConnectedUsers((prev) => [
+            ...prev,
+            { ...connectedUser, status: "connected" },
+          ]);
+        }
+      }
 
       const updatedPending = [...pendingIds, id];
       localStorage.setItem(
@@ -162,42 +210,150 @@ export default function Connection() {
 
       setConnections(
         connections.map((conn) =>
-          conn.id === id ? { ...conn, status: "pending" } : conn
+          conn.id === id
+            ? {
+                ...conn,
+                status: response.data?.connected ? "connected" : "pending",
+              }
+            : conn
         )
       );
 
-      fetchInvitations();
+      // Jika butuh approval, tambahkan ke invitations
+      if (!response.data?.connected) {
+        const newConnection = connections.find((conn) => conn.id === id);
+        if (newConnection) {
+          setInvitations((prev) => [
+            {
+              id: id,
+              name: newConnection.name,
+              headline: newConnection.headline,
+              status: "pending",
+              profile: newConnection.profile,
+              username: newConnection.username,
+            },
+            ...prev,
+          ]);
+        }
+      }
     } catch (error) {
       console.error("Connection action failed:", error);
+      // Kembalikan ke status sebelumnya jika gagal
+      setConnections(
+        connections.map((conn) =>
+          conn.id === id
+            ? {
+                ...conn,
+                status: "connect",
+              }
+            : conn
+        )
+      );
     }
   };
-
+  
+  const handleCancelRequest = async (id) => {
+    const token = localStorage.getItem("token");
+    const pendingIds = JSON.parse(localStorage.getItem("pendingConnections")) || [];
+  
+    try {
+      setConnections(
+        connections.map((conn) =>
+          conn.id === id ? { ...conn, status: "processing" } : conn
+        )
+      );
+  
+      // Batalkan permintaan di backend - use the id parameter instead of toUserId
+      await axios.delete(
+        `http://localhost:3000/api/connections/requests/${id}`,
+        { headers: { Authorization: "Bearer " + token } }
+      );
+  
+      // Update frontend state
+      const updatedPending = pendingIds.filter((pid) => pid !== id);
+      localStorage.setItem(
+        "pendingConnections",
+        JSON.stringify(updatedPending)
+      );
+  
+      setConnections(
+        connections.map((conn) =>
+          conn.id === id ? { ...conn, status: "connect" } : conn
+        )
+      );
+  
+      setInvitations((prev) => prev.filter((inv) => inv.id !== id));
+      
+      // Close modal
+      setModalOpen(false);
+      setSelectedUser(null);
+    } catch (error) {
+      console.error("Cancel request failed:", error);
+      // Kembalikan ke status sebelumnya jika gagal
+      setConnections(
+        connections.map((conn) =>
+          conn.id === id
+            ? {
+                ...conn,
+                status: "pending",
+              }
+            : conn
+        )
+      );
+      setModalOpen(false);
+      setSelectedUser(null);
+    }
+  };
+  
   const handleAccept = async (id) => {
     const token = localStorage.getItem("token");
 
     try {
+      setInvitations(
+        invitations.map((inv) =>
+          inv.id === id ? { ...inv, status: "processing" } : inv
+        )
+      );
+
       await axios.put(
         `http://localhost:3000/api/connections/requests/${id}/accept`,
         {},
         { headers: { Authorization: "Bearer " + token } }
       );
 
-      setInvitations(invitations.filter((inv) => inv.id !== id));
-
-      const acceptedInvitation = invitations.find((inv) => inv.id === id);
-      if (acceptedInvitation) {
-        setConnections((prev) => [
+      // Cari user yang baru diterima
+      const acceptedUser = invitations.find((inv) => inv.id === id);
+      if (acceptedUser) {
+        // Tambahkan ke daftar connectedUsers
+        setConnectedUsers((prev) => [
           ...prev,
-          { ...acceptedInvitation, status: "connected" },
+          { ...acceptedUser, status: "connected" },
         ]);
+
+        // Update juga di daftar connections jika ada
+        setConnections((prev) =>
+          prev.map((conn) =>
+            conn.id === id ? { ...conn, status: "connected" } : conn
+          )
+        );
       }
 
+      // Hapus dari daftar invitations
+      setInvitations((prev) => prev.filter((inv) => inv.id !== id));
+
+      // Refresh daftar invitations
       await fetchInvitations();
     } catch (error) {
       console.error("Gagal menerima undangan:", error);
+      // Kembalikan status jika gagal
+      setInvitations(
+        invitations.map((inv) =>
+          inv.id === id ? { ...inv, status: "pending" } : inv
+        )
+      );
     }
   };
-
+  
   const handleReject = async (id) => {
     const token = localStorage.getItem("token");
 
@@ -213,6 +369,7 @@ export default function Connection() {
       console.error("Gagal menolak undangan:", error);
     }
   };
+  
   if (loading) {
     return (
       <Case>
@@ -310,13 +467,12 @@ export default function Connection() {
                           person.status === "connected"
                             ? "bg-blue-500 text-white"
                             : person.status === "pending"
-                            ? "bg-yellow-100 border border-yellow-200 text-gray-700"
+                            ? "bg-yellow-100 border border-yellow-200 text-gray-700 hover:bg-yellow-200 cursor-pointer"
+                            : person.status === "processing"
+                            ? "bg-gray-100 border border-gray-200 text-gray-500"
                             : "border border-blue-500 text-blue-500"
                         }`}
-                        disabled={
-                          person.status === "pending" ||
-                          person.status === "connected"
-                        }
+                        disabled={person.status === "connected" || person.status === "processing"} 
                       >
                         {person.status === "connected" ? (
                           <>
@@ -327,6 +483,11 @@ export default function Connection() {
                           <>
                             <Clock size={16} className="mr-1" />
                             Pending
+                          </>
+                        ) : person.status === "processing" ? (
+                          <>
+                            <LoadingSpinner size={16} />
+                            <span className="ml-1">Processing</span>
                           </>
                         ) : (
                           <>
@@ -461,7 +622,45 @@ export default function Connection() {
                 </li>
               </ul>
             </div>
-
+           
+            <div className="bg-white rounded-xl shadow p-4">
+              <h3 className="font-medium mb-3 border-b pb-3">
+                Recently Connected
+              </h3>
+              <div className="space-y-3">
+                {connectedUsers.slice(0, 3).map((user) => (
+                  <div key={user.id} className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200">
+                      <img
+                        src={user.profile}
+                        alt={user.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.src = Profile;
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium">{user.name}</h4>
+                      <p className="text-xs text-gray-500">{user.headline}</p>
+                    </div>
+                  </div>
+                ))}
+                {connectedUsers.length > 3 && (
+                  <Link
+                    to="/list-connection"
+                    className="text-blue-500 text-sm block text-center mt-2"
+                  >
+                    View all ({connectedUsers.length})
+                  </Link>
+                )}
+                {connectedUsers.length === 0 && (
+                  <p className="text-gray-500 text-sm text-center py-2">
+                    No recent connections
+                  </p>
+                )}
+              </div>
+            </div>
             <div className="bg-white rounded-xl shadow p-4 text-center">
               <img
                 src={Profile}
@@ -482,6 +681,14 @@ export default function Connection() {
           </div>
         </div>
       </div>
+      
+      {/* Confirmation Modal */}
+      <CancelRequestModal 
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onConfirm={() => selectedUser && handleCancelRequest(selectedUser.id)}
+        userName={selectedUser?.name || ""}
+      />
     </Case>
   );
 }

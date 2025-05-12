@@ -366,3 +366,33 @@ func (service *ConnectionServiceImpl) Disconnect(ctx context.Context, userId, ta
 		DisconnectedAt: time.Now(),
 	}
 }
+
+func (service *ConnectionServiceImpl) CancelConnectionRequest(ctx context.Context, userId, toUserId uuid.UUID) string {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Get connection request
+	request, err := service.ConnectionRepository.FindRequest(ctx, tx, userId, toUserId)
+	if err != nil {
+		panic(exception.NewNotFoundError("Connection request not found"))
+	}
+
+	// Verify the current user is the sender of the request
+	if request.SenderId != userId {
+		panic(exception.NewForbiddenError("You can only cancel requests you've sent"))
+	}
+
+	// Verify the request is pending
+	if request.Status != domain.ConnectionStatusPending {
+		panic(exception.NewBadRequestError("Connection request is not pending"))
+	}
+
+	// Update request status to canceled
+	err = service.ConnectionRepository.DeleteConnectionRequest(ctx, tx, request.Id)
+	if err != nil {
+		panic(exception.NewInternalServerError("Failed to cancel connection request: " + err.Error()))
+	}
+
+	return "Connection request canceled successfully"
+}

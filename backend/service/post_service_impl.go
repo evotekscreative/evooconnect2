@@ -9,10 +9,8 @@ import (
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
 	"fmt"
-	"io"
 	"mime/multipart"
 	"net/http"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -36,7 +34,7 @@ func NewPostService(postRepository repository.PostRepository, connectionReposito
 	}
 }
 
-func (service *PostServiceImpl) Create(ctx context.Context, userId uuid.UUID, request web.CreatePostRequest) web.PostResponse {
+func (service *PostServiceImpl) Create(ctx context.Context, userId uuid.UUID, request web.CreatePostRequest, files []*multipart.FileHeader) web.PostResponse {
 	// Validate request
 	err := service.Validate.Struct(request)
 	helper.PanicIfError(err)
@@ -45,11 +43,30 @@ func (service *PostServiceImpl) Create(ctx context.Context, userId uuid.UUID, re
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
-	// Create post with current timestamp
+	// Process image uploads
+	var imagePaths []string
+	for _, fileHeader := range files {
+		file, err := fileHeader.Open()
+		if err != nil {
+			panic(exception.NewInternalServerError("Failed to open uploaded file: " + err.Error()))
+		}
+
+		result, err := helper.UploadImage(file, fileHeader, helper.DirPosts, userId.String(), "images")
+		file.Close()
+
+		if err != nil {
+			panic(exception.NewInternalServerError("Failed to upload image: " + err.Error()))
+		}
+
+		imagePaths = append(imagePaths, result.RelativePath)
+	}
+
+	// Create post
 	post := domain.Post{
+		Id:         uuid.New(),
 		UserId:     userId,
 		Content:    request.Content,
-		Images:     request.Images,
+		Images:     imagePaths,
 		Visibility: request.Visibility,
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
@@ -57,18 +74,16 @@ func (service *PostServiceImpl) Create(ctx context.Context, userId uuid.UUID, re
 
 	post = service.PostRepository.Save(ctx, tx, post)
 
-	// Retrieve the full post with user information
 	fullPost, err := service.PostRepository.FindById(ctx, tx, post.Id)
 	helper.PanicIfError(err)
 
-	// Check if the current user has liked this post
 	fullPost.IsLiked = service.PostRepository.IsLiked(ctx, tx, post.Id, userId)
 
 	return helper.ToPostResponse(fullPost)
 }
 
 // Bagian Update method
-func (service *PostServiceImpl) Update(ctx context.Context, postId uuid.UUID, userId uuid.UUID, request web.UpdatePostRequest) web.PostResponse {
+func (service *PostServiceImpl) Update(ctx context.Context, postId uuid.UUID, userId uuid.UUID, request web.UpdatePostRequest, files []*multipart.FileHeader) web.PostResponse {
 	// Validate request
 	err := service.Validate.Struct(request)
 	helper.PanicIfError(err)
@@ -88,9 +103,41 @@ func (service *PostServiceImpl) Update(ctx context.Context, postId uuid.UUID, us
 		panic(exception.NewForbiddenError("You do not have permission to update this post"))
 	}
 
+	// Store original image paths to compare later
+	originalImages := existingPost.Images
+
+	// Initialize imagePaths with existing images from the request
+	// If request.Images is empty and no new files are uploaded,
+	// we'll keep using the original images
+	var imagePaths []string
+	if request.Images != nil && len(request.Images) > 0 {
+		// Use the explicitly provided existing images
+		imagePaths = append(imagePaths, request.Images...)
+	} else if files == nil || len(files) == 0 {
+		// No new uploads and no explicit existing images - keep original
+		imagePaths = originalImages
+	}
+
+	// Process new uploaded files (if any)
+	for _, fileHeader := range files {
+		file, err := fileHeader.Open()
+		if err != nil {
+			panic(exception.NewInternalServerError("Failed to open uploaded file: " + err.Error()))
+		}
+
+		result, err := helper.UploadImage(file, fileHeader, helper.DirPosts, userId.String(), "images")
+		file.Close()
+
+		if err != nil {
+			panic(exception.NewInternalServerError("Failed to upload image: " + err.Error()))
+		}
+
+		imagePaths = append(imagePaths, result.RelativePath)
+	}
+
 	// Update post
 	existingPost.Content = request.Content
-	existingPost.Images = request.Images
+	existingPost.Images = imagePaths
 	existingPost.Visibility = request.Visibility
 	existingPost.UpdatedAt = time.Now()
 
@@ -99,7 +146,33 @@ func (service *PostServiceImpl) Update(ctx context.Context, postId uuid.UUID, us
 	// Check if the current user has liked this post
 	updatedPost.IsLiked = service.PostRepository.IsLiked(ctx, tx, postId, userId)
 
+	// After successful update, clean up unused images in background
+	go service.cleanupUnusedImages(originalImages, imagePaths)
+
 	return helper.ToPostResponse(updatedPost)
+}
+
+// Helper method to clean up unused images
+func (service *PostServiceImpl) cleanupUnusedImages(oldImages, newImages []string) {
+	// Create a map for quick lookup of new images
+	newImageMap := make(map[string]bool)
+	for _, img := range newImages {
+		newImageMap[img] = true
+	}
+
+	// Delete any old images that aren't in the new images list
+	for _, oldImg := range oldImages {
+		if !newImageMap[oldImg] {
+			// This image is no longer being used, delete it
+			err := helper.DeleteFile(oldImg)
+			if err != nil {
+				// Just log the error, don't fail the process
+				fmt.Printf("Error deleting unused image %s: %v\n", oldImg, err)
+			} else {
+				fmt.Printf("Successfully deleted unused image: %s\n", oldImg)
+			}
+		}
+	}
 }
 
 func (service *PostServiceImpl) Delete(ctx context.Context, postId uuid.UUID, userId uuid.UUID) {
@@ -113,12 +186,21 @@ func (service *PostServiceImpl) Delete(ctx context.Context, postId uuid.UUID, us
 		panic(exception.NewNotFoundError(err.Error()))
 	}
 
+	postImages := existingPost.Images
+
 	// Verify ownership
 	if existingPost.UserId != userId {
 		panic(exception.NewForbiddenError("You do not have permission to delete this post"))
 	}
 
 	service.PostRepository.Delete(ctx, tx, postId)
+
+	for _, image := range postImages {
+		err := helper.DeleteFile(image)
+		if err != nil {
+			panic(exception.NewInternalServerError(err.Error()))
+		}
+	}
 }
 
 func (service *PostServiceImpl) FindById(ctx context.Context, postId uuid.UUID, currentUserId uuid.UUID) web.PostResponse {
@@ -252,49 +334,6 @@ func (service *PostServiceImpl) UnlikePost(ctx context.Context, postId uuid.UUID
 	post.IsLiked = false
 
 	return helper.ToPostResponse(post)
-}
-
-// New method to upload post images
-func (service *PostServiceImpl) UploadImages(ctx context.Context, userId uuid.UUID, fileHeaders []*multipart.FileHeader) web.UploadPostImagesResponse {
-	// Create upload directory if it doesn't exist
-	uploadDir := "uploads/posts/" + userId.String()
-	err := os.MkdirAll(uploadDir, 0755)
-	helper.PanicIfError(err)
-
-	var uploadedFiles []string
-
-	// Process each file
-	for _, fileHeader := range fileHeaders {
-		// Validate file type
-		if !isValidImageType(fileHeader) {
-			panic(exception.NewBadRequestError("Invalid file type. Only image files are allowed"))
-		}
-
-		// Generate unique filename
-		filename := generateUniqueFilename(fileHeader.Filename)
-		filepath := uploadDir + "/" + filename
-
-		// Open the uploaded file
-		file, err := fileHeader.Open()
-		helper.PanicIfError(err)
-		defer file.Close()
-
-		// Create destination file
-		dst, err := os.Create(filepath)
-		helper.PanicIfError(err)
-		defer dst.Close()
-
-		// Copy file contents
-		_, err = io.Copy(dst, file)
-		helper.PanicIfError(err)
-
-		// Store relative path
-		uploadedFiles = append(uploadedFiles, filepath)
-	}
-
-	return web.UploadPostImagesResponse{
-		Filenames: uploadedFiles,
-	}
 }
 
 // Helper function to validate image types

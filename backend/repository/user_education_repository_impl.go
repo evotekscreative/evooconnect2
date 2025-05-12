@@ -18,16 +18,6 @@ func NewEducationRepository() UserEducationRepository {
 }
 
 func (repository *UserEducationRepositoryImpl) Save(ctx context.Context, tx *sql.Tx, education domain.UserEducation) domain.UserEducation {
-	// Generate UUID if not provided
-	if education.Id == uuid.Nil {
-		education.Id = uuid.New()
-	}
-
-	// Set timestamps
-	now := time.Now()
-	education.CreatedAt = now
-	education.UpdatedAt = now
-
 	// SQL query to insert education data
 	SQL := `INSERT INTO user_education (
         id, user_id, institute_name, major, start_month, start_year, 

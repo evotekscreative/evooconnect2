@@ -7,8 +7,7 @@ const BlogMenu = ({ onEdit, onDelete, onReport }) => {
     return (
       <div
         className="relative z-50"
-        onMouseEnter={() => setShowMenu(true)}
-        onMouseLeave={() => setShowMenu(false)}
+        onClick={() => setShowMenu(!showMenu)}
       >
         <button className="text-gray-600 hover:text-black">
           <MoreVertical className="w-5 h-5" />

@@ -9,12 +9,28 @@ import Toast from "../../components/Blog/Toast";
 import { useLocation } from "react-router-dom";
 import BlogMenu from "../../components/Blog/BlogMenu";
 import ReportModal from "../../components/Blog/ReportModal";
+import CommentSection from "../../components/Blog/CommentSection";
+import { toast } from "sonner";
+import { categories } from "../../components/Blog/CategoryStep";
+import DeleteComment from "../../components/Blog/DeleteComment";
+import CommentDropdown from "../../components/Blog/CommentDropdown";
+
 
 const BlogDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const [article, setArticle] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [randomPosts, setRandomPosts] = useState([]);
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState("");
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [replyContent, setReplyContent] = useState("");
+  const [expandedComments, setExpandedComments] = useState({});
+  const openDeleteModal = () => setShowDeleteModal(true);
+  const closeDeleteModal = () => setShowDeleteModal(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -24,16 +40,269 @@ const BlogDetail = () => {
   const [reportTarget, setReportTarget] = useState(null);
   const [toast, setToast] = useState(null);
 
-  const location = useLocation();
-  useEffect(() => {
-    if (location.state?.showPublishedToast) {
-      showToast("Blog has been published successfully.", "success");
+  const saveCommentsToLocalStorage = (slug, comments) => {
+    try {
+      const allComments = JSON.parse(localStorage.getItem('blogComments')) || {};
+      allComments[slug] = comments;
+      localStorage.setItem('blogComments', JSON.stringify(allComments));
+    } catch (error) {
+      console.error("Error saving comments to localStorage:", error);
     }
-  }, [location.state]);
+  };
 
-  const showToast = (message, type = "success") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
+  const getCommentsFromLocalStorage = (slug) => {
+    try {
+      const allComments = JSON.parse(localStorage.getItem('blogComments')) || {};
+      return allComments[slug] || [];
+    } catch (error) {
+      console.error("Error reading comments from localStorage:", error);
+      return [];
+    }
+  };
+
+  const syncCommentsWithLocalStorage = async () => {
+    try {
+      setLoadingComments(true);
+
+      const cachedComments = getCommentsFromLocalStorage(slug);
+      if (cachedComments.length > 0) {
+        setComments(cachedComments);
+      }
+
+      const token = localStorage.getItem("token");
+      if (token) {
+        const response = await axios.get(
+          `http://localhost:3000/api/blog-comments/${slug}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        const apiComments = Array.isArray(response.data) ? response.data : [];
+
+        const mergedComments = mergeComments(cachedComments, apiComments);
+        const commentsWithReplies = await Promise.all(
+          mergedComments.map(async (comment) => {
+            let replies = comment.replies || [];
+
+            if (comment.id && typeof comment.id === 'number') {
+              try {
+                const apiReplies = await axios.get(
+                  `http://localhost:3000/api/blog/comments/${comment.id}/replies`, {
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                  }
+                });
+                replies = apiReplies.data || replies;
+              } catch (error) {
+                console.error("Error fetching replies:", error);
+              }
+            }
+
+            return {
+              ...comment,
+              replies: replies || []
+            };
+          })
+        );
+
+        setComments(commentsWithReplies);
+        saveCommentsToLocalStorage(slug, commentsWithReplies);
+      }
+    } catch (error) {
+      console.error("Error syncing comments:", error);
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const mergeComments = (localComments, apiComments) => {
+    const merged = [...apiComments];
+
+    localComments.forEach(localComment => {
+      if (!localComment.id || typeof localComment.id !== 'number') {
+        merged.push(localComment);
+      } else {
+        const existsInApi = apiComments.some(apiComment => apiComment.id === localComment.id);
+        if (!existsInApi) {
+          merged.push(localComment);
+        }
+      }
+    });
+
+    return merged;
+  };
+
+  const toggleCommentExpansion = (commentId) => {
+    setExpandedComments((prev) => ({
+      ...prev,
+      [commentId]: !prev[commentId],
+    }));
+  };
+
+  const ReplyForm = ({ commentId, onCancel, onSubmit }) => {
+    const [content, setContent] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      if (!content.trim()) {
+        toast.warning("Reply cannot be empty!");
+        return;
+      }
+      setIsSubmitting(true);
+      try {
+        await onSubmit(commentId, content);
+        setContent("");
+        onCancel();
+      } catch (error) {
+        console.error("Error submitting reply:", error);
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
+    return (
+      <form onSubmit={handleSubmit} className="mt-3 ml-12 pl-4 border-l-2 border-gray-200">
+        <textarea
+          rows="3"
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200 text-sm"
+          placeholder="Write your reply..."
+          disabled={isSubmitting}
+        />
+        <div className="flex gap-2 mt-2">
+          <button
+            type="submit"
+            className="bg-blue-500 hover:bg-blue-600 text-white text-sm px-4 py-1 rounded"
+            disabled={isSubmitting || !content.trim()}
+          >
+            {isSubmitting ? "Posting..." : "Post Reply"}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm px-4 py-1 rounded"
+            disabled={isSubmitting}
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    );
+  };
+
+  const handleSubmitReply = async (commentId, content) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.warning("You need to be logged in to post comments.");
+        navigate("/login");
+        return;
+      }
+
+      let newReply;
+
+      try {
+        // Try to submit to API first
+        const response = await axios.post(
+          `http://localhost:3000/api/blog/comments/${commentId}/replies`,
+          { content },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        newReply = response.data?.data || response.data;
+      } catch (apiError) {
+        console.error("API reply submission failed, saving locally:", apiError);
+        newReply = {
+          id: Date.now(),
+          content,
+          user: {
+            name: "You",
+            avatar: "/img/profile.jpg"
+          },
+          createdAt: new Date().toISOString(),
+          isLocal: true
+        };
+      }
+
+      if (!newReply) {
+        throw new Error("Invalid reply data received.");
+      }
+
+      const formattedReply = {
+        id: newReply.id || Date.now(),
+        content: newReply.content || content,
+        user: newReply.user || {
+          name: "You",
+          avatar: "/img/profile.jpg"
+        },
+        createdAt: newReply.createdAt || new Date().toISOString(),
+        isLocal: newReply.isLocal || false
+      };
+
+      const updatedComments = comments.map(comment => {
+        if (comment.id === commentId) {
+          return {
+            ...comment,
+            replies: [...(comment.replies || []), formattedReply]
+          };
+        }
+        return comment;
+      });
+
+      setComments(updatedComments);
+      saveCommentsToLocalStorage(slug, updatedComments);
+      toast.success("Reply posted successfully!");
+    } catch (error) {
+      console.error("Reply submission error:", error);
+      toast.error("Failed to post reply.");
+    }
+  };
+
+  const CommentDropdown = () => {
+    const [comments, setComments] = useState([]);
+    const [replyingTo, setReplyingTo] = useState(null);
+
+    const handleDeleteComment = (commentId) => {
+      const updatedComments = comments.filter((comment) => comment.id !== commentId);
+      setComments(updatedComments);
+    };
+
+    const handleReply = (commentId) => {
+      setReplyingTo(commentId);
+    };
+
+
+    return (
+      <div>
+        {comments.map((comment) => (
+          <div key={comment.id} className="comment">
+            <div>{comment.text}</div>
+            <CommentDropdown
+              commentId={comment.id}
+              onDelete={handleDeleteComment}
+              onReply={handleReply}
+            />
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const cleanHTML = (html) => {
+    return html
+      .replace(/<p[^>]*>/g, "")
+      .replace(/<\/p>/g, "\n")
+      .replace(/<[^>]+>/g, "")
+      .trim();
   };
 
   useEffect(() => {
@@ -63,26 +332,10 @@ const BlogDetail = () => {
     fetchBlogDetail();
   }, [slug, navigate]);
 
-  const handlePrevImage = () => {
-    if (article?.images?.length) {
-      setCurrentImageIndex((prev) =>
-        prev === 0 ? article.images.length - 1 : prev - 1
-      );
-    }
-  };
-
-  const handleNextImage = () => {
-    if (article?.images?.length) {
-      setCurrentImageIndex((prev) =>
-        prev === article.images.length - 1 ? 0 : prev + 1
-      );
-    }
-  };
-
   const handleDelete = async () => {
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:3000/api/blogs/${article.id}`, {
+      await axios.delete(`http://localhost:3000/api/blogs/${article.slug}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       showToast("Blog has been deleted.");
@@ -94,12 +347,21 @@ const BlogDetail = () => {
     setShowDeleteModal(false);
   };
 
-  const openDeleteModal = () => setShowDeleteModal(true);
-  const closeDeleteModal = () => setShowDeleteModal(false);
-
   const handleReportClick = (userId, targetType, targetId) => {
     setReportTarget({ userId, targetType, targetId });
     setShowReportModal(true);
+  };
+
+  const location = useLocation();
+  useEffect(() => {
+    if (location.state?.showPublishedToast) {
+      showToast("Blog has been published successfully.", "success");
+    }
+  }, [location.state]);
+
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
   };
 
   const handleReportSubmit = async () => {
@@ -122,11 +384,12 @@ const BlogDetail = () => {
           },
         }
       );
-      showToast("Report successfully submitted");
+      toast.success("Report successfully submitted");
     } catch (err) {
       console.error("Failed to submit report:", err.response.data.error);
       showToast(err.response.data.error, "error");
     }
+
 
     setShowReportModal(false);
     setSelectedReason("");
@@ -135,19 +398,7 @@ const BlogDetail = () => {
   };
 
   if (!article) {
-    return (
-      <Case>
-        <div className="flex flex-col items-center justify-center py-20 text-xl text-gray-700">
-          <p className="mb-6">Blog not found</p>
-          <a
-            href="/"
-            className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-          >
-            Back to Home
-          </a>
-        </div>
-      </Case>
-    );
+    return <div className="text-center py-10">Loading blog detail...</div>;
   }
 
   return (
@@ -158,37 +409,19 @@ const BlogDetail = () => {
             <div className="md:col-span-2 space-y-6 relative">
               <div className="bg-white shadow-md rounded-lg relative">
                 <div className="relative h-[400px]">
-                  {article.images?.[currentImageIndex] && (
+                  {article.images?.[0] && (
                     <img
-                      src={article.images[currentImageIndex]}
+                      src={article.images[0]}
                       alt="Blog"
                       className="w-full h-full object-cover"
                     />
                   )}
-                  {article.images?.length > 1 && (
-                    <>
-                      <button
-                        onClick={handlePrevImage}
-                        className="absolute top-1/2 left-2 transform -translate-y-1/2 bg-white/70 text-black p-2 rounded-full shadow hover:bg-white"
-                      >
-                        &lt;
-                      </button>
-                      <button
-                        onClick={handleNextImage}
-                        className="absolute top-1/2 right-2 transform -translate-y-1/2 bg-white/70 text-black p-2 rounded-full shadow hover:bg-white"
-                      >
-                        &gt;
-                      </button>
-                    </>
-                  )}
                 </div>
-
                 <div className="p-6">
                   <div className="flex items-start justify-between">
                     <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
                       {article.category}
                     </span>
-
                     <BlogMenu
                       onEdit={() => setShowEdit(true)}
                       onDelete={openDeleteModal}
@@ -205,30 +438,8 @@ const BlogDetail = () => {
                 </div>
               </div>
 
-              <div className="bg-white shadow-md rounded-lg p-6">
-                <h3 className="text-xl font-semibold">0 Reviews</h3>
-              </div>
-
-              <div className="bg-white shadow-md rounded-lg p-6">
-                <h3 className="text-xl font-semibold mb-4">Leave a Comment</h3>
-                <form>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium mb-1">
-                      Review <span className="text-red-500">*</span>
-                    </label>
-                    <textarea
-                      rows="5"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-                    ></textarea>
-                  </div>
-                  <button
-                    type="submit"
-                    className="bg-sky-500 hover:bg-sky-400 text-white font-semibold px-6 py-2 rounded"
-                  >
-                    Submit
-                  </button>
-                </form>
-              </div>
+              {/* Comment Form */}
+              <CommentSection slug={slug} />
             </div>
 
             <div className="space-y-6">
@@ -236,63 +447,134 @@ const BlogDetail = () => {
             </div>
           </div>
         </div>
-      </div>
 
-      {showEdit && (
-        <EditBlog
-          article={article}
-          setArticle={setArticle}
-          onClose={() => setShowEdit(false)}
-          onSuccess={() => {
-            setShowEdit(false);
-          }}
-          showToast={showToast}
-        />
-      )}
+        {/* bagian aku */}
+        {showEdit && (
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+            <div className="bg-white max-w-3xl w-full p-6 rounded-xl shadow-lg relative max-h-[90vh] overflow-y-auto">
+              <h2 className="text-xl font-semibold mb-4">Edit Blog</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Title</label>
+                  <input
+                    type="text"
+                    value={article.title}
+                    onChange={(e) =>
+                      setArticle({ ...article, title: e.target.value })
+                    }
+                    className="w-full border px-3 py-2 rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Category</label>
+                  <select
+                    value={article.category}
+                    onChange={(e) =>
+                      setArticle({ ...article, category: e.target.value })
+                    }
+                    className="w-full px-3 py-2 rounded border bg-white"
+                  >
+                    <option value="" disabled>
+                      Pilih kategori
+                    </option>
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Image</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
 
-      {showDeleteModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-lg w-96 text-center">
-            <h3 className="text-lg font-semibold mb-4">Confirm Delete Blog</h3>
-            <p className="mb-4">Are you sure you want to delete this blog?</p>
-            <div className="mt-4">
-              <button
-                onClick={handleDelete}
-                className="bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded"
-              >
-                Delete
-              </button>
-              <button
-                onClick={closeDeleteModal}
-                className="bg-gray-500 hover:bg-gray-400 text-white px-6 py-2 ml-4 rounded"
-              >
-                Cancel
-              </button>
+                      const token = localStorage.getItem("token");
+                      const formData = new FormData();
+                      formData.append("photo", file);
+
+                      try {
+                        const res = await fetch(
+                          `http://localhost:3000/api/blogs/${article.id}/upload-photo`,
+                          {
+                            method: "POST",
+                            headers: {
+                              Authorization: `Bearer ${token}`,
+                            },
+                            body: formData,
+                          }
+                        );
+
+                        const result = await res.json();
+                        setArticle({ ...article, images: [result.imageUrl] });
+                        setToast({ message: "Gambar berhasil diunggah!", type: "success" });
+                      } catch {
+                        setToast({ message: "Gagal upload gambar.", type: "error" });
+                      }
+                    }}
+                    className="w-full px-3 py-2 rounded border"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Content</label>
+                  <textarea
+                    rows={6}
+                    value={cleanHTML(article.content)}
+                    onChange={(e) =>
+                      setArticle({
+                        ...article,
+                        content: cleanHTML(e.target.value),
+                      })
+                    }
+                    className="w-full border px-3 py-2 rounded"
+                  />
+                </div>
+              </div>
+              <div className="text-right mt-6">
+                <button
+                  onClick={async () => {
+                    const token = localStorage.getItem("token");
+                    try {
+                      await axios.put(
+                        `http://localhost:3000/api/blogs/${article.id}`,
+                        article,
+                        {
+                          headers: { Authorization: `Bearer ${token}` },
+                        }
+                      );
+                      setShowEdit(false);
+                      setToast({ message: "Blog berhasil diperbarui!", type: "success" });
+                    } catch {
+                      setToast({ message: "Gagal update blog.", type: "error" });
+                    }
+                  }}
+                  className="bg-sky-500 hover:bg-sky-400 text-white px-6 py-2 rounded"
+                >
+                  Save Changes
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-
-      <ReportModal
-        show={showReportModal}
-        onClose={() => setShowReportModal(false)}
-        onSubmit={handleReportSubmit}
-        reasons={["Harassment", "Fraud", "Spam", "Missinformation", "Hate Speech", "Threats or violence", "self-harm", "Graphic or violent content", "Dangerous or extremist organizations", "Sexual Content", "Fake Account", "Child Exploitation", "Illegal products and services", "Infringement", "Other"]}
-        selectedReason={selectedReason}
-        setSelectedReason={setSelectedReason}
-        customReason={customReason}
-        setCustomReason={setCustomReason}
-      />
-
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
+        )}
+        <ReportModal
+          show={showReportModal}
+          onClose={() => {
+            setShowReportModal(false);
+            setSelectedReason("");
+            setCustomReason("");
+          }}
+          onSubmit={handleReportSubmit}
+          selectedReason={selectedReason}
+          setSelectedReason={setSelectedReason}
+          customReason={customReason}
+          setCustomReason={setCustomReason}
         />
-      )}
+      </div>
     </Case>
   );
-};
-
+}
 export default BlogDetail;

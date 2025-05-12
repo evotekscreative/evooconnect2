@@ -8,6 +8,8 @@ import (
 	"evoconnect/backend/model/domain"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
+	"mime/multipart"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
@@ -33,7 +35,7 @@ func NewEducationService(
 	}
 }
 
-func (service *EducationServiceImpl) Create(ctx context.Context, userId uuid.UUID, request web.CreateEducationRequest) web.EducationResponse {
+func (service *EducationServiceImpl) Create(ctx context.Context, userId uuid.UUID, request web.CreateEducationRequest, file *multipart.FileHeader) web.EducationResponse {
 	// Validate request
 	err := service.Validate.Struct(request)
 	helper.PanicIfError(err)
@@ -42,14 +44,19 @@ func (service *EducationServiceImpl) Create(ctx context.Context, userId uuid.UUI
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
-	// Check if user exists
-	_, err = service.UserRepository.FindById(ctx, tx, userId)
-	if err != nil {
-		panic(exception.NewNotFoundError("User not found"))
+	var uploadResult *helper.UploadResult
+	if file != nil {
+		image, err := file.Open()
+		helper.PanicIfError(err)
+		defer image.Close()
+
+		uploadResult, err = helper.UploadImage(image, file, helper.DirEducation, userId.String(), "images")
+		helper.PanicIfError(err)
 	}
 
 	// Create education entity
 	education := domain.UserEducation{
+		Id:            uuid.New(),
 		UserId:        userId,
 		InstituteName: request.InstituteName,
 		Major:         request.Major,
@@ -58,7 +65,15 @@ func (service *EducationServiceImpl) Create(ctx context.Context, userId uuid.UUI
 		EndMonth:      request.EndMonth,
 		EndYear:       request.EndYear,
 		Caption:       request.Caption,
-		Photo:         request.Photo,
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
+	}
+
+	// Handle image
+	if uploadResult != nil {
+		education.Photo = &uploadResult.RelativePath
+	} else if request.Photo != nil && *request.Photo != "" {
+		education.Photo = request.Photo
 	}
 
 	// Save to database
@@ -67,7 +82,7 @@ func (service *EducationServiceImpl) Create(ctx context.Context, userId uuid.UUI
 	return helper.ToEducationResponse(education)
 }
 
-func (service *EducationServiceImpl) Update(ctx context.Context, educationId uuid.UUID, userId uuid.UUID, request web.UpdateEducationRequest) web.EducationResponse {
+func (service *EducationServiceImpl) Update(ctx context.Context, educationId uuid.UUID, userId uuid.UUID, request web.UpdateEducationRequest, file *multipart.FileHeader) web.EducationResponse {
 	// Validate request
 	err := service.Validate.Struct(request)
 	helper.PanicIfError(err)
@@ -87,6 +102,16 @@ func (service *EducationServiceImpl) Update(ctx context.Context, educationId uui
 		panic(exception.NewForbiddenError("You don't have permission to update this education entry"))
 	}
 
+	var uploadResult *helper.UploadResult
+	if file != nil {
+		image, err := file.Open()
+		helper.PanicIfError(err)
+		defer image.Close()
+
+		uploadResult, err = helper.UploadImage(image, file, helper.DirEducation, userId.String(), "images")
+		helper.PanicIfError(err)
+	}
+
 	// Update fields
 	education.InstituteName = request.InstituteName
 	education.Major = request.Major
@@ -95,7 +120,14 @@ func (service *EducationServiceImpl) Update(ctx context.Context, educationId uui
 	education.EndMonth = request.EndMonth
 	education.EndYear = request.EndYear
 	education.Caption = request.Caption
-	education.Photo = request.Photo
+	if uploadResult != nil {
+		// Delete old photo if it exists
+		if education.Photo != nil {
+			err = helper.DeleteFile(*education.Photo)
+			helper.PanicIfError(err)
+		}
+		education.Photo = &uploadResult.RelativePath
+	}
 
 	// Save changes
 	education = service.EducationRepository.Update(ctx, tx, education)
@@ -119,10 +151,20 @@ func (service *EducationServiceImpl) Delete(ctx context.Context, educationId uui
 		panic(exception.NewForbiddenError("You don't have permission to delete this education entry"))
 	}
 
+	educationPhoto := education.Photo
+
 	// Delete from database
 	err = service.EducationRepository.Delete(ctx, tx, educationId)
 	if err != nil {
 		panic(exception.NewInternalServerError(err.Error()))
+	}
+
+	if educationPhoto != nil {
+		// Delete photo from storage
+		err = helper.DeleteFile(*educationPhoto)
+		if err != nil {
+			panic(exception.NewInternalServerError(err.Error()))
+		}
 	}
 }
 
