@@ -10,7 +10,7 @@ CREATE TABLE reports (
     reason TEXT NOT NULL,
     other_reason TEXT,
     status TEXT NOT NULL DEFAULT 'pending' CHECK (
-        status IN ('pending', 'diterima', 'ditolak')
+        status IN ('pending', 'accepted', 'rejected')
     ),
     created_at TIMESTAMP DEFAULT NOW()
 );
