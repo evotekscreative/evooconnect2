@@ -88,7 +88,7 @@ export default function GroupPage() {
       }));
 
       console.log(group);
-      
+
     } catch (error) {
       console.error("Error fetching group members:", error);
     }
@@ -582,35 +582,36 @@ export default function GroupPage() {
                   </div>
                 ) : (
                   <ul className="divide-y">
-                    {connections.map((connection) => {
-                      const friend = connection.user;
+                   {connections.map((connection) => {
+                    const friend = connection.user;
+                    const isMember = group.members?.some((member) => member.user.id === friend.id);
 
-                      return (
-                        <li
-                          key={connection.id}
-                          className="py-3 px-4 flex justify-between items-center"
+                    return (
+                    <li
+                      key={connection.id}
+                      className="py-3 px-4 flex justify-between items-center"
+                    >
+                      <div className="flex items-center">
+                        <img
+                          src={friend.profile_photo || "/default-user.png"}
+                          className="rounded-full mr-3 w-10 h-10"
+                          alt={friend.name}
+                        />
+                        <span>{friend.name}</span>
+                      </div>
+                      {isMember ? (
+                        <span className="text-gray-500 text-sm">Already a member</span>
+                      ) : (
+                        <button
+                          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+                          onClick={() => handleInvite(friend.id)}
                         >
-                          <div className="flex items-center">
-                            <img
-                              src={friend.profile_photo || "/default-user.png"}
-                              className="rounded-full mr-3 w-10 h-10"
-                              alt={friend.name}
-                            />
-                            <span>{friend.name}</span>
-                          </div>
-                          {isMember ? (
-                            <span className="text-gray-500 text-sm">Already a member</span>
-                          ) : (
-                            <button
-                              className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
-                              onClick={() => handleInvite(friend.id)}
-                            >
-                              Invite
-                            </button>
-                          )}
-                        </li>
-                      );
-                    })}
+                          Invite
+                        </button>
+                      )}
+                    </li>
+                    );
+})};
                   </ul>
                 )}
               </div>
