@@ -165,23 +165,85 @@ export default function ProfileEdit() {
     toast.info("Skill removed");
   };
   
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
-    if (file) {
+    if (!file) return;
+  
+    // Check if the file is an image
+    if (!file.type.match('image.*')) {
+      toast.error('Please select an image file');
+      return;
+    }
+  
+    // Check file size (e.g., limit to 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size should be less than 5MB');
+      return;
+    }
+  
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("You need to login first");
+      return;
+    }
+  
+    try {
+      const formData = new FormData();
+      formData.append('photo', file);
+  
+      const response = await axios.post(
+        `${base_url}/api/user/photo`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+  
+      // Update the profile image in state
+      setProfileImage(response.data.photoUrl || URL.createObjectURL(file));
+      toast.success("Profile image uploaded successfully");
+    } catch (error) {
+      console.error("Error uploading photo:", error);
+      toast.error(error.response?.data?.message || "Failed to upload profile photo");
+      
+      // Fallback to client-side preview if API fails
       const reader = new FileReader();
       reader.onload = (event) => {
-        const imageUrl = event.target.result;
-        setProfileImage(imageUrl);
-        toast.success("Profile image uploaded successfully");
+        setProfileImage(event.target.result);
       };
       reader.readAsDataURL(file);
     }
   };
   
-  const handleRemoveImage = () => {
-    setProfileImage(null);
-    if (fileInputRef.current) fileInputRef.current.value = null;
-    toast.info("Profile image removed");
+  const handleRemoveImage = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("You need to login first");
+      return;
+    }
+  
+    try {
+      await axios.delete(`${base_url}/api/user/photo`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      setProfileImage(null);
+      if (fileInputRef.current) fileInputRef.current.value = null;
+      toast.success("Profile image removed successfully");
+    } catch (error) {
+      console.error("Error removing profile photo:", error);
+      toast.error(error.response?.data?.message || "Failed to remove profile photo");
+      
+      // Fallback to client-side removal if API fails
+      setProfileImage(null);
+      if (fileInputRef.current) fileInputRef.current.value = null;
+      toast.info("Profile image removed locally");
+    }
   };
   
   const handleSaveProfile = async () => {
@@ -257,7 +319,7 @@ export default function ProfileEdit() {
                 <div className="flex flex-col items-center">
                   <div className="relative w-36 h-36 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center border-4 border-white shadow-md hover:shadow-lg transition-shadow">
                     {profileImage ? (
-                      <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                      <img src={'http://localhost:3000/' + profileImage} alt="Profile" className="w-full h-full object-cover" />
                     ) : (
                       <div className="bg-gray-200 w-full h-full flex items-center justify-center">
                         <span className="text-4xl font-bold text-gray-500">

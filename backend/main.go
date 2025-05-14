@@ -15,7 +15,6 @@ import (
 )
 
 func main() {
-	// Load environment variables
 	helper.LoadEnv()
 	db := app.NewDB()
 	validate := validator.New()
@@ -39,44 +38,25 @@ func main() {
 	blogService := service.NewBlogService(blogRepository)
 	blogController := controller.NewBlogController(blogService)
 
-	// Initialize post components
+	// Initialize post dependencies
 	postRepository := repository.NewPostRepository()
 	postService := service.NewPostService(postRepository, connectionRepository, db, validate)
 	postController := controller.NewPostController(postService)
 
-	// Initialize comment components
+	// Create comment repository, service, and controller instances
 	commentRepository := repository.NewCommentRepository()
 	commentService := service.NewCommentService(commentRepository, postRepository, userRepository, db, validate)
 	commentController := controller.NewCommentController(commentService)
 
-	// Initialize education components
 	educationRepository := repository.NewEducationRepository()
 	educationService := service.NewEducationService(educationRepository, userRepository, db, validate)
 	educationController := controller.NewEducationController(educationService)
 
-	// Initialize experience components
+	// Experience
 	experienceRepository := repository.NewExperienceRepository()
 	experienceService := service.NewExperienceService(experienceRepository, userRepository, db, validate)
 	experienceController := controller.NewExperienceController(experienceService)
 
-	// Initialize blog comment components
-	commentBlogRepository := repository.NewCommentBlogRepository()
-	commentBlogService := service.NewCommentBlogService(commentBlogRepository, blogRepository, userRepository, db, validate)
-	commentBlogController := controller.NewCommentBlogController(commentBlogService)
-
-	
-// ✅ Initialize report components
-reportRepository := repository.NewReportRepository(db)
-reportService := service.NewReportService(
-	reportRepository,
-	userRepository,
-	postRepository,
-	commentRepository,
-	blogRepository,
-	commentBlogRepository,
-    db,
-)
-reportController := controller.NewReportController(reportService)
 	groupRepository := repository.NewGroupRepository()
 	groupMemberRepository := repository.NewGroupMemberRepository()
 	groupInvitationRepository := repository.NewGroupInvitationRepository()
@@ -90,8 +70,7 @@ reportController := controller.NewReportController(reportService)
 	)
 	groupController := controller.NewGroupController(groupService)
 
-
-	// ✅ Inject all controllers into router including reportController
+	// Initialize router with all controllers
 	router := app.NewRouter(
 		authController,
 		userController,
@@ -100,12 +79,9 @@ reportController := controller.NewReportController(reportService)
 		commentController,
 		educationController,
 		experienceController,
-		commentBlogController,
 		connectionController,
-		reportController, // <- Tambahan
 		groupController,
 	)
-
 	// Create middleware chain
 	var handler http.Handler = router
 	handler = middleware.NewAuthMiddleware(handler, jwtSecret)
