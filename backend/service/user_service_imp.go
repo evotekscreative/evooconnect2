@@ -8,6 +8,7 @@ import (
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
+	"mime/multipart"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -148,7 +149,7 @@ func (service *UserServiceImpl) GetByUsername(ctx context.Context, username stri
 	return userResponse
 }
 
-func (service *UserServiceImpl) UploadPhotoProfile(ctx context.Context, userId uuid.UUID, fileName string) web.UserProfileResponse {
+func (service *UserServiceImpl) UploadPhotoProfile(ctx context.Context, userId uuid.UUID, file *multipart.FileHeader) web.UserProfileResponse {
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
@@ -159,8 +160,48 @@ func (service *UserServiceImpl) UploadPhotoProfile(ctx context.Context, userId u
 		panic(exception.NewNotFoundError(err.Error()))
 	}
 
+	var uploadResult *helper.UploadResult
+	if file != nil {
+		image, err := file.Open()
+		helper.PanicIfError(err)
+		defer image.Close()
+
+		uploadResult, err = helper.UploadImage(image, file, helper.DirUsers, userId.String(), "photo-profile")
+		helper.PanicIfError(err)
+	}
+
 	// Update photo field
-	user.Photo = fileName
+	// Handle image
+	if uploadResult != nil {
+		if user.Photo != "" {
+			// Delete old photo if it exists
+			err = helper.DeleteFile(user.Photo)
+			helper.PanicIfError(err)
+		}
+
+		user.Photo = uploadResult.RelativePath
+	}
+
+	updatedUser := service.UserRepository.Update(ctx, tx, user)
+	return helper.ToUserProfileResponse(updatedUser)
+}
+
+func (service *UserServiceImpl) DeletePhotoProfile(ctx context.Context, userId uuid.UUID) web.UserProfileResponse {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Find user first
+	user, err := service.UserRepository.FindById(ctx, tx, userId)
+	if err != nil {
+		panic(exception.NewNotFoundError(err.Error()))
+	}
+
+	if user.Photo != "" {
+		err = helper.DeleteFile(user.Photo)
+		helper.PanicIfError(err)
+		user.Photo = ""
+	}
 
 	updatedUser := service.UserRepository.Update(ctx, tx, user)
 	return helper.ToUserProfileResponse(updatedUser)
