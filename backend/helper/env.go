@@ -15,8 +15,6 @@ func LoadEnv() {
 	err := godotenv.Load()
 	if err != nil {
 		log.Println("Warning: .env file not found or couldn't be loaded. Using default environment variables.")
-	} else {
-		log.Println("Environment variables loaded from .env file")
 	}
 
 	// jwtSecret := os.Getenv("JWT_SECRET_KEY")

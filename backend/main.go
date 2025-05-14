@@ -7,7 +7,9 @@ import (
 	"evoconnect/backend/middleware"
 	"evoconnect/backend/repository"
 	"evoconnect/backend/service"
+	"evoconnect/backend/utils"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -15,10 +17,11 @@ import (
 )
 
 func main() {
-	// Load environment variables
+	log.Println("Starting server...")
 	helper.LoadEnv()
 	db := app.NewDB()
 	validate := validator.New()
+	utils.InitPusherClient()
 
 	jwtSecret := helper.GetEnv("JWT_SECRET_KEY", "your-secret-key")
 
@@ -39,9 +42,12 @@ func main() {
 	blogService := service.NewBlogService(blogRepository)
 	blogController := controller.NewBlogController(blogService)
 
-	// Initialize post components
+	groupRepository := repository.NewGroupRepository()
+	groupMemberRepository := repository.NewGroupMemberRepository()
+
+	// Initialize post dependencies
 	postRepository := repository.NewPostRepository()
-	postService := service.NewPostService(postRepository, connectionRepository, db, validate)
+	postService := service.NewPostService(userRepository, postRepository, connectionRepository, groupRepository, groupMemberRepository, db, validate)
 	postController := controller.NewPostController(postService)
 
 	// Initialize comment components
@@ -76,9 +82,7 @@ reportService := service.NewReportService(
 	commentBlogRepository,
     db,
 )
-reportController := controller.NewReportController(reportService)
-	groupRepository := repository.NewGroupRepository()
-	groupMemberRepository := repository.NewGroupMemberRepository()
+reportController := controller.NewReportController(reportService) 
 	groupInvitationRepository := repository.NewGroupInvitationRepository()
 	groupService := service.NewGroupService(
 		db,
@@ -88,7 +92,12 @@ reportController := controller.NewReportController(reportService)
 		userRepository,
 		validate,
 	)
-	groupController := controller.NewGroupController(groupService)
+	groupController := controller.NewGroupController(groupService, postService)
+
+	// Initialize chat components
+	chatRepository := repository.NewChatRepository()
+	chatService := service.NewChatService(chatRepository, userRepository, db, validate)
+	chatController := controller.NewChatController(chatService)
 
 
 	// ✅ Inject all controllers into router including reportController
@@ -104,6 +113,7 @@ reportController := controller.NewReportController(reportService)
 		connectionController,
 		reportController, // <- Tambahan
 		groupController,
+		chatController,
 	)
 
 	// Create middleware chain
@@ -117,7 +127,7 @@ reportController := controller.NewReportController(reportService)
 		Handler: handler,
 	}
 
-	fmt.Println("Server starting on localhost:3000")
+	fmt.Println("\nServer starting on http://localhost:3000")
 	err := server.ListenAndServe()
 	helper.PanicIfError(err)
 }

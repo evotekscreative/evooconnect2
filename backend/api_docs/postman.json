@@ -2337,6 +2337,572 @@
       "description": "Endpoints for creating, updating, deleting, and retrieving groups"
     },
     {
+      "name": "Group Posts",
+      "item": [
+        {
+          "name": "Create Group Post",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "content",
+                  "type": "text",
+                  "value": "This is a post in our Golang group!"
+                },
+                {
+                  "key": "images",
+                  "type": "file",
+                  "src": "/path/to/image1.jpg"
+                },
+                {
+                  "key": "images",
+                  "type": "file",
+                  "src": "/path/to/image2.jpg"
+                }
+              ]
+            },
+            "url": "{{base_url}}/api/groups/{{groupId}}/posts",
+            "description": "Create a new post in a specific group. The post will inherit the privacy level of the group. Only group members can create posts."
+          },
+          "response": [
+            {
+              "name": "Create Group Post Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "content",
+                      "value": "This is a post in our Golang group!",
+                      "type": "text"
+                    },
+                    {
+                      "key": "images",
+                      "type": "file",
+                      "src": "/path/to/image1.jpg"
+                    },
+                    {
+                      "key": "images",
+                      "type": "file",
+                      "src": "/path/to/image2.jpg"
+                    }
+                  ]
+                },
+                "url": "{{base_url}}/api/groups/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/posts"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 201,\n  \"status\": \"CREATED\",\n  \"data\": {\n    \"id\": \"d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m\",\n    \"user_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"group_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n    \"user\": {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"name\": \"John Doe\",\n      \"username\": \"johndoe\",\n      \"photo\": \"uploads/photos/johndoe.jpg\",\n      \"is_verified\": true\n    },\n    \"group\": {\n      \"id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n      \"name\": \"Golang Developers Indonesia\",\n      \"image\": \"uploads/groups/golang-dev.jpg\",\n      \"privacy_level\": \"public\"\n    },\n    \"content\": \"This is a post in our Golang group!\",\n    \"images\": [\n      \"uploads/posts/550e8400-e29b-41d4-a716-446655440000/post-1672531496-a1b2c3d4.jpg\",\n      \"uploads/posts/550e8400-e29b-41d4-a716-446655440000/post-1672531496-e5f6g7h8.jpg\"\n    ],\n    \"visibility\": \"public\",\n    \"created_at\": \"2023-01-01T00:00:00Z\",\n    \"updated_at\": \"2023-01-01T00:00:00Z\",\n    \"likes_count\": 0,\n    \"comments_count\": 0,\n    \"is_liked\": false\n  }\n}"
+            },
+            {
+              "name": "Create Group Post Error - Not a Member",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "content",
+                      "value": "This is a post in our Golang group!",
+                      "type": "text"
+                    },
+                    {
+                      "key": "images",
+                      "type": "file",
+                      "src": "/path/to/image1.jpg"
+                    }
+                  ]
+                },
+                "url": "{{base_url}}/api/groups/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/posts"
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 403,\n  \"status\": \"FORBIDDEN\",\n  \"data\": \"You are not a member of this group\"\n}"
+            },
+            {
+              "name": "Create Group Post Error - Group Not Found",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "content",
+                      "value": "This is a post in our Golang group!",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": "{{base_url}}/api/groups/invalid-group-id/posts"
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 404,\n  \"status\": \"NOT FOUND\",\n  \"data\": \"Group not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Group Posts",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/groups/{{groupId}}/posts?limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "groups", "{{groupId}}", "posts"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of posts per page"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Offset for pagination"
+                }
+              ]
+            },
+            "description": "Get all posts from a specific group with pagination. For private groups, only members can view posts."
+          },
+          "response": [
+            {
+              "name": "Get Group Posts Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/groups/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/posts?limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "groups",
+                    "a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d",
+                    "posts"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"posts\": [\n      {\n        \"id\": \"d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m\",\n        \"user_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"group_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n        \"content\": \"This is a post in our Golang group!\",\n        \"images\": [\n          \"uploads/posts/550e8400-e29b-41d4-a716-446655440000/post-1672531496-a1b2c3d4.jpg\",\n          \"uploads/posts/550e8400-e29b-41d4-a716-446655440000/post-1672531496-e5f6g7h8.jpg\"\n        ],\n        \"visibility\": \"public\",\n        \"likes_count\": 5,\n        \"comments_count\": 2,\n        \"is_liked\": true,\n        \"user\": {\n          \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n          \"name\": \"John Doe\",\n          \"username\": \"johndoe\",\n          \"photo\": \"uploads/photos/johndoe.jpg\",\n          \"headline\": \"Fullstack Developer\"\n        },\n        \"created_at\": \"2023-11-27T10:20:00Z\",\n        \"updated_at\": \"2023-11-27T10:20:00Z\"\n      },\n      {\n        \"id\": \"e5f6g7h8-i9j0-8e7f-2g3h-4i5j6k7l8m9n\",\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"group_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n        \"content\": \"Just shared a new Go module for authentication, check it out!\",\n        \"images\": [\n          \"uploads/posts/661f9511-f3a2-41d5-b882-557535440123/post-1672532500-b2c3d4e5.jpg\"\n        ],\n        \"visibility\": \"public\",\n        \"likes_count\": 8,\n        \"comments_count\": 3,\n        \"is_liked\": false,\n        \"user\": {\n          \"id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n          \"name\": \"Jane Smith\",\n          \"username\": \"janesmith\",\n          \"photo\": \"uploads/photos/janesmith.jpg\",\n          \"headline\": \"Backend Developer\"\n        },\n        \"created_at\": \"2023-11-26T15:30:00Z\",\n        \"updated_at\": \"2023-11-26T15:30:00Z\"\n      }\n    ],\n    \"total\": 12,\n    \"limit\": 10,\n    \"offset\": 0,\n    \"group\": {\n      \"id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n      \"name\": \"Golang Developers Indonesia\",\n      \"description\": \"A community for Go developers in Indonesia to network and share knowledge\",\n      \"image\": \"uploads/groups/golang-dev.jpg\",\n      \"privacy_level\": \"public\",\n      \"members_count\": 42\n    }\n  }\n}"
+            },
+            {
+              "name": "Get Group Posts Error - Private Group & Not a Member",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/groups/c3d4e5f6-g7h8-6c5d-0e1f-2g3h4i5j6k7l/posts?limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "groups",
+                    "c3d4e5f6-g7h8-6c5d-0e1f-2g3h4i5j6k7l",
+                    "posts"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 403,\n  \"status\": \"FORBIDDEN\",\n  \"data\": \"You don't have permission to view posts in this group\"\n}"
+            },
+            {
+              "name": "Get Group Posts Error - Group Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/groups/invalid-group-id/posts?limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "groups", "invalid-group-id", "posts"],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 404,\n  \"status\": \"NOT FOUND\",\n  \"data\": \"Group not found\"\n}"
+            },
+            {
+              "name": "Get Group Posts Empty",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/groups/b2c3d4e5-f6g7-5b4c-9d8e-0f1g2h3i4j5k/posts?limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "groups",
+                    "b2c3d4e5-f6g7-5b4c-9d8e-0f1g2h3i4j5k",
+                    "posts"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"posts\": [],\n    \"total\": 0,\n    \"limit\": 10,\n    \"offset\": 0,\n    \"group\": {\n      \"id\": \"b2c3d4e5-f6g7-5b4c-9d8e-0f1g2h3i4j5k\",\n      \"name\": \"Backend Engineers\",\n      \"description\": \"Discussion group for backend development technologies and best practices\",\n      \"image\": \"uploads/groups/backend-eng.jpg\",\n      \"privacy_level\": \"public\",\n      \"members_count\": 8\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Post By ID with Group Context",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/posts/{{postId}}",
+            "description": "Get a specific post with its group context (for group posts). For private groups, only members can view the post."
+          },
+          "response": [
+            {
+              "name": "Get Group Post By ID Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/api/posts/d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"id\": \"d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m\",\n    \"user_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"group_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n    \"content\": \"This is a post in our Golang group!\",\n    \"images\": [\n      \"uploads/posts/550e8400-e29b-41d4-a716-446655440000/post-1672531496-a1b2c3d4.jpg\",\n      \"uploads/posts/550e8400-e29b-41d4-a716-446655440000/post-1672531496-e5f6g7h8.jpg\"\n    ],\n    \"visibility\": \"public\",\n    \"likes_count\": 5,\n    \"comments_count\": 2,\n    \"is_liked\": true,\n    \"user\": {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"name\": \"John Doe\",\n      \"username\": \"johndoe\",\n      \"photo\": \"uploads/photos/johndoe.jpg\",\n      \"headline\": \"Fullstack Developer\"\n    },\n    \"group\": {\n      \"id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n      \"name\": \"Golang Developers Indonesia\",\n      \"image\": \"uploads/groups/golang-dev.jpg\",\n      \"privacy_level\": \"public\"\n    },\n    \"created_at\": \"2023-11-27T10:20:00Z\",\n    \"updated_at\": \"2023-11-27T10:20:00Z\"\n  }\n}"
+            },
+            {
+              "name": "Get Group Post Error - Private Group & Not a Member",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/api/posts/f6g7h8i9-j0k1-9f8g-3h4i-5j6k7l8m9n0o"
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 403,\n  \"status\": \"FORBIDDEN\",\n  \"data\": \"You don't have permission to view this post\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Group Post",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "content",
+                  "value": "Updated content for my Golang group post!",
+                  "type": "text"
+                },
+                {
+                  "key": "images",
+                  "type": "file",
+                  "src": "/path/to/updated-image.jpg"
+                }
+              ]
+            },
+            "url": "{{base_url}}/api/posts/{{postId}}",
+            "description": "Update an existing post in a group. Only the creator of the post can update it."
+          },
+          "response": [
+            {
+              "name": "Update Group Post Success",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "content",
+                      "value": "Updated content for my Golang group post!",
+                      "type": "text"
+                    },
+                    {
+                      "key": "images",
+                      "type": "file",
+                      "src": "/path/to/updated-image.jpg"
+                    }
+                  ]
+                },
+                "url": "{{base_url}}/api/posts/d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"id\": \"d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m\",\n    \"user_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"group_id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n    \"user\": {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"name\": \"John Doe\",\n      \"username\": \"johndoe\",\n      \"photo\": \"uploads/photos/johndoe.jpg\",\n      \"is_verified\": true\n    },\n    \"group\": {\n      \"id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n      \"name\": \"Golang Developers Indonesia\",\n      \"image\": \"uploads/groups/golang-dev.jpg\",\n      \"privacy_level\": \"public\"\n    },\n    \"content\": \"Updated content for my Golang group post!\",\n    \"images\": [\n      \"uploads/posts/550e8400-e29b-41d4-a716-446655440000/images-1706278450-e5f6g7h8.jpg\"\n    ],\n    \"visibility\": \"public\",\n    \"created_at\": \"2023-11-27T10:20:00Z\",\n    \"updated_at\": \"2023-11-28T08:30:00Z\",\n    \"likes_count\": 5,\n    \"comments_count\": 2,\n    \"is_liked\": true\n  }\n}"
+            },
+            {
+              "name": "Update Group Post Error - Not Your Post",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "content",
+                      "value": "Trying to update someone else's post",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": "{{base_url}}/api/posts/e5f6g7h8-i9j0-8e7f-2g3h-4i5j6k7l8m9n"
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 403,\n  \"status\": \"FORBIDDEN\",\n  \"data\": \"You can only update your own posts\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Group Post",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/api/posts/{{postId}}",
+            "description": "Delete a post in a group. Only the post creator or group admin can delete it."
+          },
+          "response": [
+            {
+              "name": "Delete Group Post Success",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{base_url}}/api/posts/d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": \"Post deleted successfully\"\n}"
+            },
+            {
+              "name": "Delete Group Post Error - Not Authorized",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{base_url}}/api/posts/e5f6g7h8-i9j0-8e7f-2g3h-4i5j6k7l8m9n"
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 403,\n  \"status\": \"FORBIDDEN\",\n  \"data\": \"You don't have permission to delete this post\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Like Group Post",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "POST",
+            "header": [],
+            "url": "{{base_url}}/api/posts/{{postId}}/like",
+            "description": "Like a post in a group. For private groups, only members can like posts."
+          },
+          "response": [
+            {
+              "name": "Like Group Post Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": "{{base_url}}/api/posts/d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m/like"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 201,\n  \"status\": \"CREATED\",\n  \"data\": {\n    \"post_id\": \"d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m\",\n    \"likes_count\": 6,\n    \"is_liked\": true\n  }\n}"
+            }
+          ]
+        }
+      ],
+      "description": "Endpoints for managing posts within groups, respecting group privacy settings."
+    },
+    {
       "name": "Group Membership",
       "item": [
         {
@@ -4167,6 +4733,795 @@
         }
       ],
       "description": "Endpoints untuk mengelola data pengalaman kerja pengguna"
+    },
+    {
+      "name": "Chat",
+      "item": [
+        {
+          "name": "Create Conversation",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"participants\": [\"661f9511-f3a2-41d5-b882-557535440123\"],\n  \"message\": \"Hello, I'd like to discuss our project!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/conversations",
+            "description": "Create a new conversation with one or more users. The first message is required when creating a conversation."
+          },
+          "response": [
+            {
+              "name": "Create Conversation Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"participants\": [\"661f9511-f3a2-41d5-b882-557535440123\"],\n  \"message\": \"Hello, I'd like to discuss our project!\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{base_url}}/api/conversations"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 201,\n  \"status\": \"CREATED\",\n  \"data\": {\n    \"id\": \"f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3\",\n    \"title\": null,\n    \"participants\": [\n      {\n        \"user_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"John Doe\",\n        \"username\": \"johndoe\",\n        \"photo\": \"uploads/photos/johndoe.jpg\",\n        \"is_online\": true,\n        \"last_seen\": \"2023-11-28T18:30:00Z\"\n      },\n      {\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"name\": \"Jane Smith\",\n        \"username\": \"janesmith\",\n        \"photo\": \"uploads/photos/janesmith.jpg\",\n        \"is_online\": false,\n        \"last_seen\": \"2023-11-28T17:45:00Z\"\n      }\n    ],\n    \"last_message\": {\n      \"id\": \"a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6\",\n      \"conversation_id\": \"f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3\",\n      \"sender_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"content\": \"Hello, I'd like to discuss our project!\",\n      \"message_type\": \"text\",\n      \"created_at\": \"2023-11-28T18:30:00Z\",\n      \"updated_at\": \"2023-11-28T18:30:00Z\",\n      \"read_by\": [\"550e8400-e29b-41d4-a716-446655440000\"]\n    },\n    \"created_at\": \"2023-11-28T18:30:00Z\",\n    \"updated_at\": \"2023-11-28T18:30:00Z\",\n    \"unread_count\": 0\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Conversations",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/conversations?limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "conversations"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of conversations per page"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Offset for pagination"
+                }
+              ]
+            },
+            "description": "Get a list of conversations for the current user with the most recent conversations first."
+          },
+          "response": [
+            {
+              "name": "Get Conversations Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/conversations?limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "conversations"],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"conversations\": [\n      {\n        \"id\": \"f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3\",\n        \"title\": null,\n        \"participants\": [\n          {\n            \"user_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"John Doe\",\n            \"username\": \"johndoe\",\n            \"photo\": \"uploads/photos/johndoe.jpg\",\n            \"is_online\": true,\n            \"last_seen\": \"2023-11-28T18:30:00Z\"\n          },\n          {\n            \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n            \"name\": \"Jane Smith\",\n            \"username\": \"janesmith\",\n            \"photo\": \"uploads/photos/janesmith.jpg\",\n            \"is_online\": false,\n            \"last_seen\": \"2023-11-28T17:45:00Z\"\n          }\n        ],\n        \"last_message\": {\n          \"id\": \"a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6\",\n          \"conversation_id\": \"f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3\",\n          \"sender_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n          \"content\": \"Hello, I'd like to discuss our project!\",\n          \"message_type\": \"text\",\n          \"created_at\": \"2023-11-28T18:30:00Z\",\n          \"updated_at\": \"2023-11-28T18:30:00Z\"\n        },\n        \"created_at\": \"2023-11-28T18:30:00Z\",\n        \"updated_at\": \"2023-11-28T18:30:00Z\",\n        \"unread_count\": 0\n      },\n      {\n        \"id\": \"e7d6c5b4-a3f2-1e0d-c9b8-a7b6c5d4e3f2\",\n        \"title\": \"Project Alpha Team\",\n        \"participants\": [\n          {\n            \"user_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"John Doe\",\n            \"username\": \"johndoe\",\n            \"photo\": \"uploads/photos/johndoe.jpg\",\n            \"is_online\": true,\n            \"last_seen\": \"2023-11-28T18:30:00Z\"\n          },\n          {\n            \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n            \"name\": \"Jane Smith\",\n            \"username\": \"janesmith\",\n            \"photo\": \"uploads/photos/janesmith.jpg\",\n            \"is_online\": false,\n            \"last_seen\": \"2023-11-28T17:45:00Z\"\n          },\n          {\n            \"user_id\": \"772g0622-g4b3-52e6-c993-668646551234\",\n            \"name\": \"Alex Johnson\",\n            \"username\": \"alexj\",\n            \"photo\": \"uploads/photos/alexj.jpg\",\n            \"is_online\": true,\n            \"last_seen\": \"2023-11-28T18:25:00Z\"\n          }\n        ],\n        \"last_message\": {\n          \"id\": \"b2c3d4e5-f6g7-h8i9-j0k1-l2m3n4o5p6q7\",\n          \"conversation_id\": \"e7d6c5b4-a3f2-1e0d-c9b8-a7b6c5d4e3f2\",\n          \"sender_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n          \"content\": \"Let's schedule a meeting for tomorrow at 10 AM\",\n          \"message_type\": \"text\",\n          \"created_at\": \"2023-11-28T16:45:00Z\",\n          \"updated_at\": \"2023-11-28T16:45:00Z\"\n        },\n        \"created_at\": \"2023-11-25T09:30:00Z\",\n        \"updated_at\": \"2023-11-28T16:45:00Z\",\n        \"unread_count\": 3\n      }\n    ],\n    \"total\": 2,\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Conversation",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/conversations/{{conversationId}}",
+            "description": "Get details of a specific conversation including participants and last message."
+          },
+          "response": [
+            {
+              "name": "Get Conversation Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/api/conversations/f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"id\": \"f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3\",\n    \"title\": null,\n    \"participants\": [\n      {\n        \"user_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"John Doe\",\n        \"username\": \"johndoe\",\n        \"photo\": \"uploads/photos/johndoe.jpg\",\n        \"is_online\": true,\n        \"last_seen\": \"2023-11-28T18:30:00Z\"\n      },\n      {\n        \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n        \"name\": \"Jane Smith\",\n        \"username\": \"janesmith\",\n        \"photo\": \"uploads/photos/janesmith.jpg\",\n        \"is_online\": false,\n        \"last_seen\": \"2023-11-28T17:45:00Z\"\n      }\n    ],\n    \"created_at\": \"2023-11-28T18:30:00Z\",\n    \"updated_at\": \"2023-11-28T18:30:00Z\"\n  }\n}"
+            },
+            {
+              "name": "Get Conversation Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/api/conversations/invalid-id"
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 404,\n  \"status\": \"NOT FOUND\",\n  \"data\": \"Conversation not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Mark Conversation As Read",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "PUT",
+            "header": [],
+            "url": "{{base_url}}/api/conversations/{{conversationId}}/read",
+            "description": "Mark all messages in a conversation as read by the current user."
+          },
+          "response": [
+            {
+              "name": "Mark Conversation As Read Success",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [],
+                "url": "{{base_url}}/api/conversations/f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3/read"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"id\": \"f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3\",\n    \"unread_count\": 0,\n    \"updated_at\": \"2023-11-28T18:35:00Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Send Message",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"When can we meet to discuss the project?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/conversations/{{conversationId}}/messages",
+            "description": "Send a text message to a conversation."
+          },
+          "response": [
+            {
+              "name": "Send Message Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"content\": \"When can we meet to discuss the project?\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{base_url}}/api/conversations/f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3/messages"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 201,\n  \"status\": \"CREATED\",\n  \"data\": {\n    \"id\": \"c3d4e5f6-g7h8-i9j0-k1l2-m3n4o5p6q7r8\",\n    \"conversation_id\": \"f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3\",\n    \"sender_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"sender\": {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"name\": \"John Doe\",\n      \"username\": \"johndoe\",\n      \"photo\": \"uploads/photos/johndoe.jpg\"\n    },\n    \"content\": \"When can we meet to discuss the project?\",\n    \"message_type\": \"text\",\n    \"file_url\": null,\n    \"file_name\": null,\n    \"file_size\": null,\n    \"created_at\": \"2023-11-28T18:40:00Z\",\n    \"updated_at\": \"2023-11-28T18:40:00Z\",\n    \"read_by\": [\"550e8400-e29b-41d4-a716-446655440000\"]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Send File Message",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/path/to/document.pdf"
+                },
+                {
+                  "key": "message_type",
+                  "value": "document",
+                  "type": "text",
+                  "description": "Can be 'document' or 'image'"
+                }
+              ]
+            },
+            "url": "{{base_url}}/api/conversations/{{conversationId}}/files",
+            "description": "Send a file message to a conversation. Supports documents (< 10MB) and images (< 4MB)."
+          },
+          "response": [
+            {
+              "name": "Send File Message Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": "/path/to/document.pdf"
+                    },
+                    {
+                      "key": "message_type",
+                      "value": "document",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": "{{base_url}}/api/conversations/f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3/files"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 201,\n  \"status\": \"CREATED\",\n  \"data\": {\n    \"id\": \"d4e5f6g7-h8i9-j0k1-l2m3-n4o5p6q7r8s9\",\n    \"conversation_id\": \"f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3\",\n    \"sender_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"sender\": {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"name\": \"John Doe\",\n      \"username\": \"johndoe\",\n      \"photo\": \"uploads/photos/johndoe.jpg\"\n    },\n    \"content\": null,\n    \"message_type\": \"document\",\n    \"file_url\": \"uploads/chat/550e8400-e29b-41d4-a716-446655440000/documents/document-1638097200.pdf\",\n    \"file_name\": \"document.pdf\",\n    \"file_size\": 2456789,\n    \"created_at\": \"2023-11-28T18:45:00Z\",\n    \"updated_at\": \"2023-11-28T18:45:00Z\",\n    \"read_by\": [\"550e8400-e29b-41d4-a716-446655440000\"]\n  }\n}"
+            },
+            {
+              "name": "Send Image Message Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": "/path/to/image.jpg"
+                    },
+                    {
+                      "key": "message_type",
+                      "value": "image",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": "{{base_url}}/api/conversations/f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3/files"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 201,\n  \"status\": \"CREATED\",\n  \"data\": {\n    \"id\": \"e5f6g7h8-i9j0-k1l2-m3n4-o5p6q7r8s9t0\",\n    \"conversation_id\": \"f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3\",\n    \"sender_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"sender\": {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"name\": \"John Doe\",\n      \"username\": \"johndoe\",\n      \"photo\": \"uploads/photos/johndoe.jpg\"\n    },\n    \"content\": null,\n    \"message_type\": \"image\",\n    \"file_url\": \"uploads/chat/550e8400-e29b-41d4-a716-446655440000/images/image-1638097500.jpg\",\n    \"file_name\": \"image.jpg\",\n    \"file_size\": 1245678,\n    \"created_at\": \"2023-11-28T18:50:00Z\",\n    \"updated_at\": \"2023-11-28T18:50:00Z\",\n    \"read_by\": [\"550e8400-e29b-41d4-a716-446655440000\"]\n  }\n}"
+            },
+            {
+              "name": "Send File Message Error - File Too Large",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": "/path/to/large-document.pdf"
+                    },
+                    {
+                      "key": "message_type",
+                      "value": "document",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": "{{base_url}}/api/conversations/f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3/files"
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 400,\n  \"status\": \"BAD REQUEST\",\n  \"data\": \"Document file size exceeds the maximum limit of 10MB\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Messages",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/conversations/{{conversationId}}/messages?limit=20&offset=0",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "conversations",
+                "{{conversationId}}",
+                "messages"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Number of messages per page"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Offset for pagination"
+                }
+              ]
+            },
+            "description": "Get messages from a conversation with pagination. Messages are sorted by creation date (newest first)."
+          },
+          "response": [
+            {
+              "name": "Get Messages Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/conversations/f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3/messages?limit=20&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "conversations",
+                    "f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3",
+                    "messages"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"messages\": [\n      {\n        \"id\": \"e5f6g7h8-i9j0-k1l2-m3n4-o5p6q7r8s9t0\",\n        \"conversation_id\": \"f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3\",\n        \"sender_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"sender\": {\n          \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n          \"name\": \"John Doe\",\n          \"username\": \"johndoe\",\n          \"photo\": \"uploads/photos/johndoe.jpg\"\n        },\n        \"content\": null,\n        \"message_type\": \"image\",\n        \"file_url\": \"uploads/chat/550e8400-e29b-41d4-a716-446655440000/images/image-1638097500.jpg\",\n        \"file_name\": \"image.jpg\",\n        \"file_size\": 1245678,\n        \"created_at\": \"2023-11-28T18:50:00Z\",\n        \"updated_at\": \"2023-11-28T18:50:00Z\",\n        \"read_by\": [\"550e8400-e29b-41d4-a716-446655440000\"]\n      },\n      {\n        \"id\": \"d4e5f6g7-h8i9-j0k1-l2m3-n4o5p6q7r8s9\",\n        \"conversation_id\": \"f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3\",\n        \"sender_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"sender\": {\n          \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n          \"name\": \"John Doe\",\n          \"username\": \"johndoe\",\n          \"photo\": \"uploads/photos/johndoe.jpg\"\n        },\n        \"content\": null,\n        \"message_type\": \"document\",\n        \"file_url\": \"uploads/chat/550e8400-e29b-41d4-a716-446655440000/documents/document-1638097200.pdf\",\n        \"file_name\": \"document.pdf\",\n        \"file_size\": 2456789,\n        \"created_at\": \"2023-11-28T18:45:00Z\",\n        \"updated_at\": \"2023-11-28T18:45:00Z\",\n        \"read_by\": [\"550e8400-e29b-41d4-a716-446655440000\", \"661f9511-f3a2-41d5-b882-557535440123\"]\n      },\n      {\n        \"id\": \"c3d4e5f6-g7h8-i9j0-k1l2-m3n4o5p6q7r8\",\n        \"conversation_id\": \"f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3\",\n        \"sender_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"sender\": {\n          \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n          \"name\": \"John Doe\",\n          \"username\": \"johndoe\",\n          \"photo\": \"uploads/photos/johndoe.jpg\"\n        },\n        \"content\": \"When can we meet to discuss the project?\",\n        \"message_type\": \"text\",\n        \"file_url\": null,\n        \"file_name\": null,\n        \"file_size\": null,\n        \"created_at\": \"2023-11-28T18:40:00Z\",\n        \"updated_at\": \"2023-11-28T18:40:00Z\",\n        \"read_by\": [\"550e8400-e29b-41d4-a716-446655440000\", \"661f9511-f3a2-41d5-b882-557535440123\"]\n      },\n      {\n        \"id\": \"a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6\",\n        \"conversation_id\": \"f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3\",\n        \"sender_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"sender\": {\n          \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n          \"name\": \"John Doe\",\n          \"username\": \"johndoe\",\n          \"photo\": \"uploads/photos/johndoe.jpg\"\n        },\n        \"content\": \"Hello, I'd like to discuss our project!\",\n        \"message_type\": \"text\",\n        \"file_url\": null,\n        \"file_name\": null,\n        \"file_size\": null,\n        \"created_at\": \"2023-11-28T18:30:00Z\",\n        \"updated_at\": \"2023-11-28T18:30:00Z\",\n        \"read_by\": [\"550e8400-e29b-41d4-a716-446655440000\", \"661f9511-f3a2-41d5-b882-557535440123\"]\n      }\n    ],\n    \"total\": 4,\n    \"limit\": 20,\n    \"offset\": 0\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Message",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"When can we meet to discuss the project tomorrow?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/messages/{{messageId}}",
+            "description": "Update the content of a text message. Only the sender can update their own messages."
+          },
+          "response": [
+            {
+              "name": "Update Message Success",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"content\": \"When can we meet to discuss the project tomorrow?\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{base_url}}/api/messages/c3d4e5f6-g7h8-i9j0-k1l2-m3n4o5p6q7r8"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"id\": \"c3d4e5f6-g7h8-i9j0-k1l2-m3n4o5p6q7r8\",\n    \"conversation_id\": \"f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3\",\n    \"sender_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"content\": \"When can we meet to discuss the project tomorrow?\",\n    \"message_type\": \"text\",\n    \"file_url\": null,\n    \"file_name\": null,\n    \"file_size\": null,\n    \"created_at\": \"2023-11-28T18:40:00Z\",\n    \"updated_at\": \"2023-11-28T18:55:00Z\"\n  }\n}"
+            },
+            {
+              "name": "Update Message Error - Not Your Message",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"content\": \"Trying to update someone else's message\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{base_url}}/api/messages/b2c3d4e5-f6g7-h8i9-j0k1-l2m3n4o5p6q7"
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 403,\n  \"status\": \"FORBIDDEN\",\n  \"data\": \"You can only update your own messages\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Message",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/api/messages/{{messageId}}",
+            "description": "Delete a message. Only the sender can delete their own messages."
+          },
+          "response": [
+            {
+              "name": "Delete Message Success",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{base_url}}/api/messages/c3d4e5f6-g7h8-i9j0-k1l2-m3n4o5p6q7r8"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": \"Message deleted successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Pusher Authentication",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "socket_id",
+                  "value": "1234.5678",
+                  "type": "text"
+                },
+                {
+                  "key": "channel_name",
+                  "value": "private-user-550e8400-e29b-41d4-a716-446655440000",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{base_url}}/api/pusher/auth",
+            "description": "Authenticate a user for Pusher channels. Users need authentication for their personal channel and any conversation channels they're part of."
+          },
+          "response": [
+            {
+              "name": "Pusher Authentication Success - User Channel",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/x-www-form-urlencoded"
+                  }
+                ],
+                "body": {
+                  "mode": "urlencoded",
+                  "urlencoded": [
+                    {
+                      "key": "socket_id",
+                      "value": "1234.5678",
+                      "type": "text"
+                    },
+                    {
+                      "key": "channel_name",
+                      "value": "private-user-550e8400-e29b-41d4-a716-446655440000",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": "{{base_url}}/api/pusher/auth"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"auth\": \"APP_KEY:AUTH_SIGNATURE\"\n}"
+            },
+            {
+              "name": "Pusher Authentication Success - Conversation Channel",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/x-www-form-urlencoded"
+                  }
+                ],
+                "body": {
+                  "mode": "urlencoded",
+                  "urlencoded": [
+                    {
+                      "key": "socket_id",
+                      "value": "1234.5678",
+                      "type": "text"
+                    },
+                    {
+                      "key": "channel_name",
+                      "value": "private-conversation-f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": "{{base_url}}/api/pusher/auth"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"auth\": \"APP_KEY:AUTH_SIGNATURE\"\n}"
+            },
+            {
+              "name": "Pusher Authentication Error - Not Authorized",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/x-www-form-urlencoded"
+                  }
+                ],
+                "body": {
+                  "mode": "urlencoded",
+                  "urlencoded": [
+                    {
+                      "key": "socket_id",
+                      "value": "1234.5678",
+                      "type": "text"
+                    },
+                    {
+                      "key": "channel_name",
+                      "value": "private-conversation-abcdef12-3456-7890-abcd-ef1234567890",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": "{{base_url}}/api/pusher/auth"
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "text",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/plain"
+                }
+              ],
+              "cookie": [],
+              "body": "Forbidden"
+            }
+          ]
+        }
+      ],
+      "description": "Endpoints for real-time chat functionality, including conversations, messages, file sharing, and Pusher integration for notifications."
     }
   ],
   "variable": [
@@ -4213,6 +5568,14 @@
     {
       "key": "toUserId",
       "value": "550e8400-e29b-41d4-a716-446655440000"
+    },
+    {
+      "key": "conversationId",
+      "value": "f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3"
+    },
+    {
+      "key": "messageId",
+      "value": "c3d4e5f6-g7h8-i9j0-k1l2-m3n4o5p6q7r8"
     }
   ]
 }
