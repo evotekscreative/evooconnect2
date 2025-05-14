@@ -499,7 +499,7 @@
             },
             "method": "GET",
             "header": [],
-            "url": "{{base_url}}/api/users/{{username}}",
+            "url": "{{base_url}}/api/user-profile/{{username}}",
             "description": "Mendapatkan profil pengguna berdasarkan ID"
           },
           "response": [
@@ -508,7 +508,7 @@
               "originalRequest": {
                 "method": "GET",
                 "header": [],
-                "url": "{{base_url}}/api/users/johndoe"
+                "url": "{{base_url}}/api/user-profile/johndoe"
               },
               "status": "OK",
               "code": 200,
