@@ -119,7 +119,7 @@ func (service *ChatServiceImpl) CreateConversation(ctx context.Context, userId u
 	tx1, err := service.DB.Begin()
 	helper.PanicIfError(err)
 
-	fmt.Println("Creating conversation with participants:", request.ParticipantIds)
+	// fmt.Println("Creating conversation with participants:", request.ParticipantIds)
 	// Check if all participantIds are valid users
 	for _, participantId := range request.ParticipantIds {
 		_, err := service.UserRepository.FindById(ctx, tx1, participantId)
@@ -129,7 +129,7 @@ func (service *ChatServiceImpl) CreateConversation(ctx context.Context, userId u
 		}
 	}
 	tx1.Commit()
-	fmt.Println("All participant IDs are valid users")
+	// fmt.Println("All participant IDs are valid users")
 
 	// Make sure the current user is in the participants list
 	participantIds := request.ParticipantIds
@@ -167,13 +167,13 @@ func (service *ChatServiceImpl) CreateConversation(ctx context.Context, userId u
 	tx3, err := service.DB.Begin()
 	helper.PanicIfError(err)
 
-	fmt.Println("No existing conversation found, creating a new one")
+	// fmt.Println("No existing conversation found, creating a new one")
 	conversation := domain.Conversation{}
 	conversation = service.ChatRepository.CreateConversation(ctx, tx3, conversation)
 	err = tx3.Commit()
 	helper.PanicIfError(err)
 
-	fmt.Println("New conversation created with ID:", conversation.Id)
+	// fmt.Println("New conversation created with ID:", conversation.Id)
 
 	// Step 4: Add participants (separate transaction)
 	tx4, err := service.DB.Begin()
@@ -195,14 +195,14 @@ func (service *ChatServiceImpl) CreateConversation(ctx context.Context, userId u
 	err = tx4.Commit()
 	helper.PanicIfError(err)
 
-	fmt.Println("Participants added to conversation")
+	// fmt.Println("Participants added to conversation")
 
 	// Step 5: Send initial message if provided (separate transaction)
 	if request.InitialMessage != "" {
 		tx5, err := service.DB.Begin()
 		helper.PanicIfError(err)
 
-		fmt.Println("Sending initial message")
+		// fmt.Println("Sending initial message")
 		initialMessage := domain.Message{
 			ConversationId: conversation.Id,
 			SenderId:       userId,
@@ -213,14 +213,14 @@ func (service *ChatServiceImpl) CreateConversation(ctx context.Context, userId u
 		service.ChatRepository.CreateMessage(ctx, tx5, initialMessage)
 		err = tx5.Commit()
 		helper.PanicIfError(err)
-		fmt.Println("Initial message sent successfully")
+		// fmt.Println("Initial message sent successfully")
 	}
 
 	// Step 6: Fetch complete conversation data (final transaction)
 	tx6, err := service.DB.Begin()
 	helper.PanicIfError(err)
 
-	fmt.Println("Fetching full conversation data")
+	// fmt.Println("Fetching full conversation data")
 	conversation, err = service.ChatRepository.FindConversationById(ctx, tx6, conversation.Id)
 	if err != nil {
 		tx6.Rollback()
@@ -230,7 +230,7 @@ func (service *ChatServiceImpl) CreateConversation(ctx context.Context, userId u
 	err = tx6.Commit()
 	helper.PanicIfError(err)
 
-	fmt.Println("Full conversation fetched successfully")
+	// fmt.Println("Full conversation fetched successfully")
 	conversationResponse := service.toConversationResponse(conversation)
 
 	// Push notifications outside transaction
@@ -240,7 +240,7 @@ func (service *ChatServiceImpl) CreateConversation(ctx context.Context, userId u
 				utils.PusherClient.Trigger(fmt.Sprintf("private-user-%s", participant.UserId), "new-conversation", conversationResponse)
 			}
 		}
-		fmt.Println("Notifications sent to participants")
+		// fmt.Println("Notifications sent to participants")
 	}()
 
 	return conversationResponse

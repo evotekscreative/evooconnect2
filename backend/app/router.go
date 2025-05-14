@@ -21,6 +21,7 @@ func NewRouter(
 	connectionController controller.ConnectionController,
 	groupController controller.GroupController,
 	chatController controller.ChatController,
+	profileViewController controller.ProfileViewController,
 ) *httprouter.Router {
 	router := httprouter.New()
 
@@ -130,8 +131,6 @@ func NewRouter(
 	router.GET("/api/my-invitations", groupController.FindMyInvitations)
 	router.DELETE("/api/invitations/:invitationId", groupController.CancelInvitation)
 
-	// Add these routes to your existing router setup:
-
 	// Chat routes
 	router.POST("/api/conversations", chatController.CreateConversation)
 	router.GET("/api/conversations", chatController.GetConversations)
@@ -146,6 +145,9 @@ func NewRouter(
 
 	// Pusher authentication endpoint
 	router.POST("/api/pusher/auth", chatController.AuthPusher)
+
+	router.GET("/api/user/profile/views/this-week", profileViewController.GetViewsThisWeek)
+	router.GET("/api/user/profile/views/last-week", profileViewController.GetViewsLastWeek)
 
 	uploadFS := http.FileServer(http.Dir("uploads"))
 

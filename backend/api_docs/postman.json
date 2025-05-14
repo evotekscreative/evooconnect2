@@ -620,6 +620,109 @@
       "description": "Endpoints untuk manajemen profil pengguna"
     },
     {
+      "name": "Profile Views",
+      "item": [
+        {
+          "name": "Get This Week's Profile Views",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/user/profile/views/this-week",
+            "description": "Get a list of users who viewed your profile during the current week (Monday to Sunday). Each user is recorded only once per 24-hour period."
+          },
+          "response": [
+            {
+              "name": "Get This Week's Profile Views Success",
+              "originalRequest": {
+                "url": "{{base_url}}/api/user/profile/views/this-week"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"count\": 4,\n        \"viewers\": [\n            {\n                \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                \"name\": \"John Doe\",\n                \"username\": \"johndoe\",\n                \"photo\": \"uploads/users/550e8400-e29b-41d4-a716-446655440000/photo.jpg\",\n                \"viewed_at\": \"2023-12-07T14:30:22Z\"\n            },\n            {\n                \"id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n                \"name\": \"Jane Smith\",\n                \"username\": \"janesmith\",\n                \"photo\": \"uploads/users/661f9511-f3a2-41d5-b882-557535440123/profile.jpg\",\n                \"viewed_at\": \"2023-12-06T09:15:45Z\"\n            },\n            {\n                \"id\": \"772g0622-g4b3-52e6-c993-668646551234\",\n                \"name\": \"Alex Johnson\",\n                \"username\": \"alexj\",\n                \"photo\": \"uploads/users/772g0622-g4b3-52e6-c993-668646551234/avatar.jpg\",\n                \"viewed_at\": \"2023-12-05T16:22:10Z\"\n            },\n            {\n                \"id\": \"883h1733-h5c4-63f7-d0a4-779757662345\",\n                \"name\": \"Sarah Williams\",\n                \"username\": \"sarahw\",\n                \"photo\": \"\",\n                \"viewed_at\": \"2023-12-04T11:40:33Z\"\n            }\n        ],\n        \"period_start\": \"2023-12-04T00:00:00Z\",\n        \"period_end\": \"2023-12-11T00:00:00Z\"\n    }\n}"
+            },
+            {
+              "name": "No Views This Week",
+              "originalRequest": {
+                "url": "{{base_url}}/api/user/profile/views/this-week"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"count\": 0,\n        \"viewers\": [],\n        \"period_start\": \"2023-12-04T00:00:00Z\",\n        \"period_end\": \"2023-12-11T00:00:00Z\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Last Week's Profile Views",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/user/profile/views/last-week",
+            "description": "Get a list of users who viewed your profile during the previous week (previous Monday to Sunday). Each user is recorded only once per 24-hour period."
+          },
+          "response": [
+            {
+              "name": "Get Last Week's Profile Views Success",
+              "originalRequest": {
+                "url": "{{base_url}}/api/user/profile/views/last-week"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"count\": 3,\n        \"viewers\": [\n            {\n                \"id\": \"994i2844-i6d5-74g8-e1b5-880868773456\",\n                \"name\": \"Michael Brown\",\n                \"username\": \"michaelb\",\n                \"photo\": \"uploads/users/994i2844-i6d5-74g8-e1b5-880868773456/photo-profile.jpg\",\n                \"viewed_at\": \"2023-12-01T08:45:12Z\"\n            },\n            {\n                \"id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n                \"name\": \"Jane Smith\",\n                \"username\": \"janesmith\",\n                \"photo\": \"uploads/users/661f9511-f3a2-41d5-b882-557535440123/profile.jpg\",\n                \"viewed_at\": \"2023-11-29T15:20:37Z\"\n            },\n            {\n                \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                \"name\": \"John Doe\",\n                \"username\": \"johndoe\",\n                \"photo\": \"uploads/users/550e8400-e29b-41d4-a716-446655440000/photo.jpg\",\n                \"viewed_at\": \"2023-11-27T11:05:19Z\"\n            }\n        ],\n        \"period_start\": \"2023-11-27T00:00:00Z\",\n        \"period_end\": \"2023-12-04T00:00:00Z\"\n    }\n}"
+            },
+            {
+              "name": "No Views Last Week",
+              "originalRequest": {
+                "url": "{{base_url}}/api/user/profile/views/last-week"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"count\": 0,\n        \"viewers\": [],\n        \"period_start\": \"2023-11-27T00:00:00Z\",\n        \"period_end\": \"2023-12-04T00:00:00Z\"\n    }\n}"
+            },
+            {
+              "name": "Unauthorized",
+              "originalRequest": {
+                "url": "{{base_url}}/api/user/profile/views/last-week",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n    \"code\": 401,\n    \"status\": \"UNAUTHORIZED\",\n    \"data\": \"You are not authorized to access this resource\"\n}"
+            }
+          ]
+        }
+      ],
+      "description": "Endpoints for tracking and retrieving profile view statistics. The system records each unique user who views a profile once per 24-hour period."
+    },
+    {
       "name": "Posts",
       "item": [
         {

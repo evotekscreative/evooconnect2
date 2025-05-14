@@ -37,7 +37,7 @@ func GetClientIP(ctx context.Context) string {
 		}
 	}
 
-	return "127.0.0.1" // Return localhost as default
+	return "localhost" // Return localhost as default
 }
 
 // getIPFromHeaders extracts client IP from common proxy/load balancer headers
