@@ -39,7 +39,10 @@ func main() {
 	blogService := service.NewBlogService(blogRepository)
 	blogController := controller.NewBlogController(blogService)
 
-	// Initialize post components
+	groupRepository := repository.NewGroupRepository()
+	groupMemberRepository := repository.NewGroupMemberRepository()
+
+	// Initialize post dependencies
 	postRepository := repository.NewPostRepository()
 	postService := service.NewPostService(postRepository, connectionRepository, db, validate)
 	postController := controller.NewPostController(postService)
