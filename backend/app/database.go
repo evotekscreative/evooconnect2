@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"evoconnect/backend/helper"
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -31,20 +32,21 @@ func NewDB() *sql.DB {
 	config := GetDatabaseConfig()
 	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
 		config.Host, config.Port, config.User, config.Password, config.DbName, config.SSLMode)
+	log.Println("Connecting to database...")
 	db, err := sql.Open("postgres", dsn)
 	helper.PanicIfError(err)
 
-	db.SetMaxIdleConns(5)
-	db.SetMaxOpenConns(20)
-	db.SetConnMaxLifetime(60 * time.Minute)
-	db.SetConnMaxIdleTime(10 * time.Minute)
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(25)
+	db.SetConnMaxLifetime(5 * time.Minute)
+	db.SetConnMaxIdleTime(5 * time.Minute)
 
 	err = db.Ping()
 	if err != nil {
-		fmt.Println("Error connecting to database:", err)
+		log.Println("Error connecting to database:", err)
 		return nil
 	}
-	fmt.Println("Connected to database")
+	log.Println("Connected to database successfully")
 	helper.PanicIfError(err)
 
 	return db

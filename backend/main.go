@@ -7,7 +7,9 @@ import (
 	"evoconnect/backend/middleware"
 	"evoconnect/backend/repository"
 	"evoconnect/backend/service"
+	"evoconnect/backend/utils"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -15,9 +17,11 @@ import (
 )
 
 func main() {
+	log.Println("Starting server...")
 	helper.LoadEnv()
 	db := app.NewDB()
 	validate := validator.New()
+	utils.InitPusherClient()
 
 	jwtSecret := helper.GetEnv("JWT_SECRET_KEY", "your-secret-key")
 
@@ -43,7 +47,7 @@ func main() {
 
 	// Initialize post dependencies
 	postRepository := repository.NewPostRepository()
-	postService := service.NewPostService(postRepository, connectionRepository, db, validate)
+	postService := service.NewPostService(userRepository, postRepository, connectionRepository, groupRepository, groupMemberRepository, db, validate)
 	postController := controller.NewPostController(postService)
 
 	// Create comment repository, service, and controller instances
@@ -60,8 +64,6 @@ func main() {
 	experienceService := service.NewExperienceService(experienceRepository, userRepository, db, validate)
 	experienceController := controller.NewExperienceController(experienceService)
 
-	groupRepository := repository.NewGroupRepository()
-	groupMemberRepository := repository.NewGroupMemberRepository()
 	groupInvitationRepository := repository.NewGroupInvitationRepository()
 	groupService := service.NewGroupService(
 		db,
@@ -71,7 +73,12 @@ func main() {
 		userRepository,
 		validate,
 	)
-	groupController := controller.NewGroupController(groupService)
+	groupController := controller.NewGroupController(groupService, postService)
+
+	// Initialize chat components
+	chatRepository := repository.NewChatRepository()
+	chatService := service.NewChatService(chatRepository, userRepository, db, validate)
+	chatController := controller.NewChatController(chatService)
 
 	// Initialize router with all controllers
 	router := app.NewRouter(
@@ -84,6 +91,7 @@ func main() {
 		experienceController,
 		connectionController,
 		groupController,
+		chatController,
 	)
 	// Create middleware chain
 	var handler http.Handler = router
@@ -96,7 +104,7 @@ func main() {
 		Handler: handler,
 	}
 
-	fmt.Println("Server starting on localhost:3000")
+	fmt.Println("\nServer starting on http://localhost:3000")
 	err := server.ListenAndServe()
 	helper.PanicIfError(err)
 }
