@@ -5,8 +5,9 @@ import (
 	"database/sql"
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/domain"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type ProfileViewRepositoryImpl struct{}
@@ -42,19 +43,22 @@ func (repository *ProfileViewRepositoryImpl) FindByProfileUserId(ctx context.Con
 	var profileViews []domain.ProfileView
 	for rows.Next() {
 		var profileView domain.ProfileView
+		var User domain.UserShort
 		err := rows.Scan(
 			&profileView.Id,
 			&profileView.ProfileUserId,
 			&profileView.ViewerId,
 			&profileView.ViewedAt,
-			&profileView.Viewer.Name,
-			&profileView.Viewer.Photo,
-			&profileView.Viewer.Username,
-			&profileView.Viewer.IsConnected,
+			&User.Name,
+			&User.Photo,
+			&User.Username,
+			&User.IsConnected,
 		)
+		profileView.Viewer = &User
 		helper.PanicIfError(err)
 		profileViews = append(profileViews, profileView)
 	}
+
 	return profileViews
 }
 
