@@ -1,17 +1,25 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { Pencil, Trash2, MoreVertical, Flag } from "lucide-react";
 import Case from "../../components/Case";
 import { MoreVertical, Pencil, Reply, Trash2, ChevronUp, ChevronDown, } from "lucide-react";
 import { categories } from "../../components/Blog/CategoryStep";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { Pencil, Trash2 } from "lucide-react";
 import axios from "axios";
-import Case from "../../components/Case";
 import RandomPosts from "../../components/Blog/RandomPosts";
+import EditBlog from "../../components/Blog/EditBlog";
 import deleteBlog from "../../components/Blog/DeleteBlog";
-import { categories } from "../../components/Blog/CategoryStep";
 import Toast from "../../components/Blog/Toast";
+import { useLocation } from "react-router-dom";
+import BlogMenu from "../../components/Blog/BlogMenu";
+import ReportModal from "../../components/Blog/ReportModal";
+import CommentSection from "../../components/Blog/CommentSection";
+import { toast } from "sonner";
+import { categories } from "../../components/Blog/CategoryStep";
+import DeleteComment from "../../components/Blog/DeleteComment";
+import CommentDropdown from "../../components/Blog/CommentDropdown";
+
 
 const BlogDetail = () => {
   const { slug } = useParams();
@@ -26,61 +34,62 @@ const BlogDetail = () => {
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyContent, setReplyContent] = useState("");
   const [expandedComments, setExpandedComments] = useState({});
+  const openDeleteModal = () => setShowDeleteModal(true);
+  const closeDeleteModal = () => setShowDeleteModal(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [selectedReason, setSelectedReason] = useState("");
+  const [customReason, setCustomReason] = useState("");
+  const [reportTarget, setReportTarget] = useState(null);
+  const [toast, setToast] = useState(null);
 
-  // Helper functions for localStorage comments
-  const saveCommentsToLocalStorage = (blogId, comments) => {
+  const saveCommentsToLocalStorage = (slug, comments) => {
     try {
       const allComments = JSON.parse(localStorage.getItem('blogComments')) || {};
-      allComments[blogId] = comments;
+      allComments[slug] = comments;
       localStorage.setItem('blogComments', JSON.stringify(allComments));
     } catch (error) {
       console.error("Error saving comments to localStorage:", error);
     }
   };
 
-  const getCommentsFromLocalStorage = (blogId) => {
+  const getCommentsFromLocalStorage = (slug) => {
     try {
       const allComments = JSON.parse(localStorage.getItem('blogComments')) || {};
-      return allComments[blogId] || [];
+      return allComments[slug] || [];
     } catch (error) {
       console.error("Error reading comments from localStorage:", error);
       return [];
     }
   };
 
-  // Enhanced comment sync function
   const syncCommentsWithLocalStorage = async () => {
     try {
       setLoadingComments(true);
 
-      // Always load from localStorage first for instant display
-      const cachedComments = getCommentsFromLocalStorage(id);
+      const cachedComments = getCommentsFromLocalStorage(slug);
       if (cachedComments.length > 0) {
         setComments(cachedComments);
       }
 
-      // Then try to sync with API
       const token = localStorage.getItem("token");
       if (token) {
         const response = await axios.get(
-          `http://localhost:3000/api/blog-comments/${id}`, {
+          `http://localhost:3000/api/blog-comments/${slug}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
-
         const apiComments = Array.isArray(response.data) ? response.data : [];
 
-        // Merge API comments with local comments
         const mergedComments = mergeComments(cachedComments, apiComments);
-
-        // Fetch replies for each comment
         const commentsWithReplies = await Promise.all(
           mergedComments.map(async (comment) => {
             let replies = comment.replies || [];
 
-            // Try to get replies from API if we have a comment ID from API
             if (comment.id && typeof comment.id === 'number') {
               try {
                 const apiReplies = await axios.get(
@@ -103,29 +112,23 @@ const BlogDetail = () => {
           })
         );
 
-        // Update state and localStorage with merged data
         setComments(commentsWithReplies);
-        saveCommentsToLocalStorage(id, commentsWithReplies);
+        saveCommentsToLocalStorage(slug, commentsWithReplies);
       }
     } catch (error) {
       console.error("Error syncing comments:", error);
-      // If API fails, keep using the cached comments
     } finally {
       setLoadingComments(false);
     }
   };
 
-  // Merge function to combine API and local comments
   const mergeComments = (localComments, apiComments) => {
     const merged = [...apiComments];
 
-    // Add local comments that don't exist in API
     localComments.forEach(localComment => {
       if (!localComment.id || typeof localComment.id !== 'number') {
-        // This is a local-only comment (has temporary ID)
         merged.push(localComment);
       } else {
-        // Check if this comment exists in API
         const existsInApi = apiComments.some(apiComment => apiComment.id === localComment.id);
         if (!existsInApi) {
           merged.push(localComment);
@@ -143,109 +146,6 @@ const BlogDetail = () => {
     }));
   };
 
-  // Comment dropdown component
-  const CommentDropdown = ({ commentId, onDelete, onReply }) => {
-    const [isOpen, setIsOpen] = useState(false);
-
-    const handleDelete = () => {
-      toast.info(
-        <div style={{ fontFamily: 'sans-serif', textAlign: 'center', padding: '10px' }}>
-          <p style={{ fontSize: '16px', fontWeight: '500', marginBottom: '10px' }}>
-            Are you sure you want to delete this comment?
-          </p>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
-            <button
-              onClick={() => {
-                onDelete(commentId);
-                toast.dismiss();
-                setIsOpen(false);
-              }}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#e11d48',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: '500',
-                transition: 'background-color 0.2s',
-              }}
-              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#b91c1c'}
-              onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#e11d48'}
-            >
-              Delete
-            </button>
-            <button
-              onClick={() => toast.dismiss()}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#e5e7eb',
-                color: '#111827',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: '500',
-                transition: 'background-color 0.2s',
-              }}
-              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#d1d5db'}
-              onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#e5e7eb'}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>,
-        {
-          autoClose: false,
-          closeButton: false,
-          position: 'top-center',
-        }
-      );
-      setIsOpen(false);
-    };
-
-    const handleReply = () => {
-      onReply(commentId);
-      setIsOpen(false);
-    };
-
-    return (
-      <div className="relative">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="p-1 text-gray-500 hover:text-gray-700"
-        >
-          <MoreVertical className="w-4 h-4" />
-        </button>
-
-        {isOpen && (
-          <div className="absolute right-0 mt-1 w-32 bg-white rounded-md shadow-lg z-10 border border-gray-200">
-            <button              
-              className="flex items-center w-full px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"  
-            >
-              <Pencil className="w-4 h-4 mr-2" />
-              Edit
-            </button>
-            <button
-              onClick={handleReply}
-              className="flex items-center w-full px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
-            >
-              <Reply className="w-4 h-4 mr-2" />
-              Reply
-            </button>
-            <button
-              onClick={handleDelete}
-              className="flex items-center w-full px-4 py-2 text-sm text-red-500 hover:bg-gray-100"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // Reply form component
   const ReplyForm = ({ commentId, onCancel, onSubmit }) => {
     const [content, setContent] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -364,7 +264,7 @@ const BlogDetail = () => {
       });
 
       setComments(updatedComments);
-      saveCommentsToLocalStorage(id, updatedComments);
+      saveCommentsToLocalStorage(slug, updatedComments);
       toast.success("Reply posted successfully!");
     } catch (error) {
       console.error("Reply submission error:", error);
@@ -372,66 +272,34 @@ const BlogDetail = () => {
     }
   };
 
-  useEffect(() => {
-    const loadBlogData = async () => {
-      const cachedBlogs = JSON.parse(localStorage.getItem("blogs")) || [];
-      const foundBlog = cachedBlogs.find((blog) => blog.id === id);
+  const CommentDropdown = () => {
+    const [comments, setComments] = useState([]);
+    const [replyingTo, setReplyingTo] = useState(null);
 
-      if (foundBlog) {
-        setArticle(foundBlog);
-
-        // Load random posts
-        const otherBlogs = cachedBlogs.filter((b) => b.id !== id);
-        const shuffled = otherBlogs.sort(() => 0.5 - Math.random());
-        setRandomPosts(shuffled.slice(0, 3));
-
-        // Load and sync comments
-        await syncCommentsWithLocalStorage();
-      } else {
-        toast.error("Blog not found!");
-        navigate("/blog");
-      }
+    const handleDeleteComment = (commentId) => {
+      const updatedComments = comments.filter((comment) => comment.id !== commentId);
+      setComments(updatedComments);
     };
 
-    loadBlogData();
-  }, [id, navigate]);
-
-  // Handle comment deletion
-  const handleDeleteComment = async (commentId) => {
-    const token = localStorage.getItem("token");
-
-    if (!token){
-      console.log("gada token woi")
-    }
-    try {
-      await axios.delete(
-        `http://localhost:3000/api/blog/comments/${commentId}`,
-        {
-          Authorization: `Bearer ${token}`
-        }
-      );
-    } catch (apiError) {
-      console.error("API delete failed, deleting locally:", apiError);
-    }
-    
-    try {
+    const handleReply = (commentId) => {
+      setReplyingTo(commentId);
+    };
 
 
-      const updatedComments = comments.filter(comment => comment.id !== commentId);
-      setComments(updatedComments);
-      saveCommentsToLocalStorage(id, updatedComments);
-      toast.success("Comment deleted successfully");
-    } catch (error) {
-      console.error("Failed to delete comment:", error);
-      toast.error("Failed to delete comment.");
-    }
-  };
-
-  const handlePrev = () => {
-    if (article?.images) {
-  const [showEdit, setShowEdit] = useState(false);
-  const [toast, setToast] = useState({ message: "", type: "" });
-    }
+    return (
+      <div>
+        {comments.map((comment) => (
+          <div key={comment.id} className="comment">
+            <div>{comment.text}</div>
+            <CommentDropdown
+              commentId={comment.id}
+              onDelete={handleDeleteComment}
+              onReply={handleReply}
+            />
+          </div>
+        ))}
+      </div>
+    );
   };
 
   const cleanHTML = (html) => {
@@ -444,7 +312,7 @@ const BlogDetail = () => {
 
   useEffect(() => {
     if (!slug) {
-      setToast({ message: "Blog tidak ditemukan!", type: "error" });
+      showToast("Undefined Blog", "error");
       navigate("/blog");
       return;
     }
@@ -460,8 +328,8 @@ const BlogDetail = () => {
         );
         setArticle(response.data.data);
       } catch (error) {
-        console.error("Gagal memuat blog:", error);
-        setToast({ message: "Blog tidak ditemukan!", type: "error" });
+        console.error("Failed to load blog:", error);
+        showToast("Undefined Blog", "error");
         navigate("/blog");
       }
     };
@@ -469,274 +337,103 @@ const BlogDetail = () => {
     fetchBlogDetail();
   }, [slug, navigate]);
 
-  const handlePrevImage = () => {
-    if (article?.images?.length) {
-      setCurrentImageIndex((prev) =>
-        prev === 0 ? article.images.length - 1 : prev - 1
-      );
-    }
-  };
-
-  const handleNextImage = () => {
-    if (article?.images?.length) {
-      setCurrentImageIndex((prev) =>
-        prev === article.images.length - 1 ? 0 : prev + 1
-      );
-    }
-  };
-
   const handleDelete = async () => {
-    const confirmDelete = window.confirm("Are you sure you want to delete this blog?");
-    if (!confirmDelete) return;
-
     try {
-      const apiUrl = `${process.env.REACT_APP_API_URL}/blogs/${article.id}`;
-      await axios.delete(apiUrl).catch(() => { });
-
-      const blogs = JSON.parse(localStorage.getItem("blogs")) || [];
-      const filtered = blogs.filter((b) => b.id !== article.id);
-      localStorage.setItem("blogs", JSON.stringify(filtered));
-
-      // Also remove comments for this blog
-      const allComments = JSON.parse(localStorage.getItem('blogComments')) || {};
-      delete allComments[id];
-      localStorage.setItem('blogComments', JSON.stringify(allComments));
-
-      toast.success("Blog has been deleted.");
+      const token = localStorage.getItem("token");
+      await axios.delete(`http://localhost:3000/api/blogs/${article.slug}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      showToast("Blog has been deleted.");
       navigate("/blog");
     } catch (error) {
       console.error("Failed to delete blog:", error);
-      toast.error("Error: Failed to delete blog.");
+      showToast("Failed to delete blog.", "error");
     }
+    setShowDeleteModal(false);
   };
 
-  const handleCommentSubmit = async (e) => {
-    e.preventDefault();
-    if (!newComment.trim()) {
-      toast.warning("Comments cannot be empty!");
-      return;
+  const handleReportClick = (userId, targetType, targetId) => {
+    setReportTarget({ userId, targetType, targetId });
+    setShowReportModal(true);
+  };
+
+  const location = useLocation();
+  useEffect(() => {
+    if (location.state?.showPublishedToast) {
+      showToast("Blog has been published successfully.", "success");
     }
+  }, [location.state]);
+
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleReportSubmit = async () => {
+    if (!reportTarget || !selectedReason) return;
 
     const token = localStorage.getItem("token");
     if (!token) {
-      toast.warning("You need to be logged in to post comments.");
-      navigate("/login");
+      showToast("You must be logged in to report.", "error");
       return;
     }
+    const reason = selectedReason === "Other" ? customReason : selectedReason;
 
     try {
-      setSubmittingComment(true);
-      let newCommentData;
-
-      try {
-        // Try to submit to API first
-        const response = await axios.post(
-          `http://localhost:3000/api/blog-comments/${id}`,
-          { content: newComment },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-        newCommentData = response.data?.data || response.data;
-      } catch (apiError) {
-        console.error("API comment submission failed, saving locally:", apiError);
-        // If API fails, create a local comment
-        newCommentData = {
-          id: Date.now(), // Temporary ID
-          content: newComment,
-          user: {
-            name: "You",
-            avatar: "/img/profile.jpg"
+      const response = await axios.post(
+        `http://localhost:3000/api/reports/${reportTarget.userId}/${reportTarget.targetType}/${reportTarget.targetId}`,
+        { reason },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
           },
-          createdAt: new Date().toISOString(),
-          replies: [],
-          isLocal: true // Mark as local for future sync
-        };
-      }
-
-      const formattedComment = {
-        id: newCommentData.id || Date.now(),
-        content: newCommentData.content || newComment,
-        user: newCommentData.user || {
-          name: "You",
-          avatar: "/img/profile.jpg"
-        },
-        createdAt: newCommentData.createdAt || new Date().toISOString(),
-        replies: [],
-        isLocal: newCommentData.isLocal || false
-      };
-
-      // Update state and localStorage
-      const updatedComments = [...comments, formattedComment];
-      setComments(updatedComments);
-      saveCommentsToLocalStorage(id, updatedComments);
-      setNewComment("");
-
-      toast.success("Comment posted successfully!");
-    } catch (error) {
-      console.error("Comment submission error:", error);
-      toast.error("Failed to post comment.");
-    } finally {
-      setSubmittingComment(false);
+        }
+      );
+      toast.success("Report successfully submitted");
+    } catch (err) {
+      console.error("Failed to submit report:", err.response.data.error);
+      showToast(err.response.data.error, "error");
     }
-  };
 
-  const renderComment = (comment, isReply = false) => {
-    const hasReplies = comment.replies && comment.replies.length > 0;
-    const isExpanded = expandedComments[comment.id] !== false;
 
-    return (
-      <div key={comment.id} className={`border-b pb-4 ${isReply ? 'ml-12 pl-4 border-l-2 border-gray-200' : ''}`}>
-        <div className="flex items-start gap-4">
-          <img
-            className="w-10 h-10 rounded-full object-cover"
-            src={comment.user?.avatar || "/img/profile.jpg"}
-            alt={comment.user?.name || "User"}
-          />
-          <div className="flex-1">
-            <div className="flex justify-between items-start">
-              <h5 className="font-semibold text-sm">
-                {comment.user?.name || "Anonymous"}
-                {comment.isLocal && <span className="text-xs text-gray-500 ml-1">(local)</span>}
-                <span className="text-gray-400 text-xs ml-2">
-                  {new Date(comment.createdAt).toLocaleDateString()}
-                </span>
-              </h5>
-              {!isReply && localStorage.getItem("token") && (
-                <CommentDropdown
-                  commentId={comment.id}
-                  onDelete={() => handleDeleteComment(comment.id)}
-                  onReply={() => {
-                    setReplyingTo(replyingTo === comment.id ? null : comment.id);
-                    setReplyContent("");
-                  }}
-                />
-              )}
-            </div>
-            <p className="text-gray-700 text-sm mt-1">
-              {comment.content}
-            </p>
-
-            {!isReply && (
-              <div className="flex items-center mt-2 space-x-4">
-                <button
-                  onClick={() => {
-                    setReplyingTo(replyingTo === comment.id ? null : comment.id);
-                    setReplyContent("");
-                  }}
-                  className="text-xs text-blue-500 hover:text-blue-700 flex items-center"
-                >
-                  <Reply className="w-3 h-3 mr-1" />
-                  Reply
-                </button>
-
-                {hasReplies && (
-                  <button
-                    onClick={() => toggleCommentExpansion(comment.id)}
-                    className="text-xs text-gray-500 hover:text-gray-700 flex items-center"
-                  >
-                    {isExpanded ? (
-                      <>
-                        <ChevronUp className="w-3 h-3 mr-1" />
-                        Hide replies
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="w-3 h-3 mr-1" />
-                        Show replies ({comment.replies.length})
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Reply form */}
-        {!isReply && replyingTo === comment.id && (
-          <ReplyForm
-            commentId={comment.id}
-            onCancel={() => setReplyingTo(null)}
-            onSubmit={handleSubmitReply}
-          />
-        )}
-
-        {/* Replies */}
-        {hasReplies && isExpanded && !isReply && (
-          <div className="mt-3 space-y-3">
-            {comment.replies.map(reply => renderComment(reply, true))}
-          </div>
-        )}
-      </div>
-    );
+    setShowReportModal(false);
+    setSelectedReason("");
+    setCustomReason("");
+    setReportTarget(null);
   };
 
   if (!article) {
-    return (
-      <Case>
-        <div className="flex flex-col items-center justify-center py-20 text-xl text-gray-700">
-          <p className="mb-6">Blog not found</p>
-          <a
-            href="/"
-            className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-          >
-            Back to Home
-          </a>
-        </div>
-      </Case>
-    );
+    return <div className="text-center py-10">Loading blog detail...</div>;
   }
 
   return (
     <Case>
-      {toast.message && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast({ message: "", type: "" })}
-        />
-      )}
-
       <div className="relative py-10 bg-gray-50">
         <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Article Content */}
-            <div className="md:col-span-2 space-y-6">
-              <div className="bg-white shadow-md rounded-lg overflow-hidden relative">
-                {/* Image carousel */}
+            <div className="md:col-span-2 space-y-6 relative">
+              <div className="bg-white shadow-md rounded-lg relative">
                 <div className="relative h-[400px]">
-                  {article.images?.[currentImageIndex] && (
+                  {article.images?.[0] && (
                     <img
-                      src={article.images[currentImageIndex]}
+                      src={article.images[0]}
                       alt="Blog"
                       className="w-full h-full object-cover"
                     />
                   )}
-                  {article.images?.length > 1 && (
-                    <>
-                      <button
-                        onClick={handlePrevImage}
-                        className="absolute top-1/2 left-2 transform -translate-y-1/2 bg-white/70 text-black p-2 rounded-full shadow hover:bg-white"
-                      >
-                        &lt;
-                      </button>
-                      <button
-                        onClick={handleNextImage}
-                        className="absolute top-1/2 right-2 transform -translate-y-1/2 bg-white/70 text-black p-2 rounded-full shadow hover:bg-white"
-                      >
-                        &gt;
-                      </button>
-                    </>
-                  )}
                 </div>
                 <div className="p-6">
-                  <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
-                    {article.category}
-                  </span>
+                  <div className="flex items-start justify-between">
+                    <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
+                      {article.category}
+                    </span>
+                    <BlogMenu
+                      onEdit={() => setShowEdit(true)}
+                      onDelete={openDeleteModal}
+                      onReport={() => handleReportClick(article.user?.id, "blog", article.id)}
+                    />
+                  </div>
+
                   <h2 className="text-2xl font-semibold mt-3">{article.title}</h2>
                   <p className="text-sm text-gray-500 mb-4">{article.date}</p>
                   <div
@@ -746,50 +443,8 @@ const BlogDetail = () => {
                 </div>
               </div>
 
-              {/* Comments Section */}
-              <div className="bg-white shadow-md rounded-lg p-6 space-y-4">
-                <h3 className="text-xl font-semibold">
-                  {loadingComments ? "Loading..." : `${comments.length} Comments`}
-                </h3>
-                <div className="space-y-4 max-h-72 overflow-y-auto pr-2">
-                  {comments.length > 0 ? (
-                    comments.map(comment => renderComment(comment))
-                  ) : (
-                    <p className="text-gray-500 text-sm">
-                      {loadingComments ? "Loading..." : "No comments yet. Be the first to comment!"}
-                    </p>
-                  )}
-                </div>
-              </div>
-
               {/* Comment Form */}
-              <div className="bg-white shadow-md rounded-lg p-6">
-                <h3 className="text-xl font-semibold">0 Reviews</h3>
-              </div>
-
-              <div className="bg-white shadow-md rounded-lg p-6">
-                <h3 className="text-xl font-semibold mb-4">Leave a Comment</h3>
-                <form onSubmit={handleCommentSubmit}>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium mb-1">
-                      Review <span className="text-red-500">*</span>
-                    </label>
-                    <textarea
-                      rows="5"
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200 text-sm"
-                      disabled={submittingComment}
-                    ></textarea>
-                  </div>
-                  <button
-                    type="submit"
-                    className="bg-sky-500 hover:bg-sky-400 text-white font-semibold px-6 py-2 rounded"
-                  >
-                    {submittingComment ? "Submitting..." : "Submit"}
-                  </button>
-                </form>
-              </div>
+              <CommentSection slug={slug} />
             </div>
 
             <div className="space-y-6">
@@ -798,35 +453,12 @@ const BlogDetail = () => {
           </div>
         </div>
 
-        {/* Delete Button */}
-        <button
-          className="fixed bottom-20 right-6 bg-red-500 hover:bg-red-400 text-white p-3 rounded-full shadow-lg"
-          onClick={() => deleteBlog(article.id, navigate)}
-        >
-          <Trash2 className="w-5 h-5" />
-        </button>
-
-        {/* Edit Button */}
-        <button
-          className="fixed bottom-6 right-6 bg-sky-500 hover:bg-blue-400 text-white p-3 rounded-full shadow-lg"
-          onClick={() => setShowEdit(true)}
-        >
-          <Pencil className="w-5 h-5" />
-        </button>
-
-        {/* Edit Popup */}
+        {/* bagian aku */}
         {showEdit && (
           <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
             <div className="bg-white max-w-3xl w-full p-6 rounded-xl shadow-lg relative max-h-[90vh] overflow-y-auto">
-              <button
-                onClick={() => setShowEdit(false)}
-                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
               <h2 className="text-xl font-semibold mb-4">Edit Blog</h2>
               <div className="space-y-4">
-                {/* Title */}
                 <div>
                   <label className="block text-sm font-medium mb-1">Title</label>
                   <input
@@ -838,8 +470,6 @@ const BlogDetail = () => {
                     className="w-full border px-3 py-2 rounded"
                   />
                 </div>
-
-                {/* Category Dropdown */}
                 <div>
                   <label className="block text-sm font-medium mb-1">Category</label>
                   <select
@@ -874,7 +504,7 @@ const BlogDetail = () => {
 
                       try {
                         const res = await fetch(
-                          `http://localhost:3000/api/blogs/${article.id}/upload-photo`, // Hapus koma di sini
+                          `http://localhost:3000/api/blogs/${article.id}/upload-photo`,
                           {
                             method: "POST",
                             headers: {
@@ -935,22 +565,21 @@ const BlogDetail = () => {
             </div>
           </div>
         )}
-
-        <ToastContainer
-          position="top-right"
-          autoClose={5000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
+        <ReportModal
+          show={showReportModal}
+          onClose={() => {
+            setShowReportModal(false);
+            setSelectedReason("");
+            setCustomReason("");
+          }}
+          onSubmit={handleReportSubmit}
+          selectedReason={selectedReason}
+          setSelectedReason={setSelectedReason}
+          customReason={customReason}
+          setCustomReason={setCustomReason}
         />
       </div>
     </Case>
   );
-};
-
+}
 export default BlogDetail;

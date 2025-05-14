@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Link } from "react-router-dom"
-import Case from "../components/Case"
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import Case from "../components/Case";
 import {
   Briefcase,
   Users,
@@ -18,27 +18,59 @@ import {
   Twitter,
   Linkedin,
   Github,
-} from "lucide-react"
-import { Toaster, toast } from "sonner"
-import axios from "axios"
+  ThumbsUp,
+  MessageCircle,
+  Share2,
+} from "lucide-react";
+import { Toaster, toast } from "sonner";
+import axios from "axios";
 
 const socialPlatforms = [
-  { name: "instagram", icon: <Instagram className="w-5 h-5" />, color: "text-pink-500" },
-  { name: "facebook", icon: <Facebook className="w-5 h-5" />, color: "text-blue-500" },
-  { name: "twitter", icon: <Twitter className="w-5 h-5" />, color: "text-blue-400" },
-  { name: "linkedin", icon: <Linkedin className="w-5 h-5" />, color: "text-blue-700" },
+  {
+    name: "instagram",
+    icon: <Instagram className="w-5 h-5" />,
+    color: "text-pink-500",
+  },
+  {
+    name: "facebook",
+    icon: <Facebook className="w-5 h-5" />,
+    color: "text-blue-500",
+  },
+  {
+    name: "twitter",
+    icon: <Twitter className="w-5 h-5" />,
+    color: "text-blue-400",
+  },
+  {
+    name: "linkedin",
+    icon: <Linkedin className="w-5 h-5" />,
+    color: "text-blue-700",
+  },
   { name: "github", icon: <Github className="w-5 h-5" />, color: "text-black" },
-]
+];
 
 export default function ProfilePage() {
   const [showEditEducationModal, setEditShowEducationModal] = useState(false);
   const [editingEducation, setEditingEducation] = useState(null);
-  const [showExperienceModal, setShowExperienceModal] = useState(false)
-  const [showEducationModal, setShowEducationModal] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [educations, setEducation] = useState([])
-  const [experiences, setExperiences] = useState([])
-  const [editingExperience, setEditingExperience] = useState(null)
+  const [showExperienceModal, setShowExperienceModal] = useState(false);
+  const [showEducationModal, setShowEducationModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [educations, setEducation] = useState([]);
+  const [experiences, setExperiences] = useState([]);
+  const [editingExperience, setEditingExperience] = useState(null);
+  const [userPosts, setUserPosts] = useState([]);
+  const [profileImage, setProfileImage] = useState(null);
+
+  // Initialize user state with empty values
+  const [user, setUser] = useState({
+    id: "",
+    name: "",
+    headline: "",
+    about: "",
+    skills: [],
+    socials: {},
+    photo: null,
+  });
 
   // Education Form State
   const [educationForm, setEducationForm] = useState({
@@ -51,59 +83,7 @@ export default function ProfilePage() {
     end_year: "Year",
     caption: "",
     schoolLogo: null,
-  })
- 
-
-  // User Data State
-  const [user, setUser] = useState({
-    id: "",
-    name: "",
-    headline: "",
-    about: "",
-    skills: [],
-    socials: {},
-    photo: null,
-  })
-
-  // Sample post data
-  const [post] = useState([
-    {
-      id: 1,
-      title: "Belajar Membuat Aplikasi Back-End untuk Pemula",
-      provider: "Dicoding",
-      date: "March 2023",
-      image: "/api/placeholder/300/200",
-      likes: 14,
-      comments: 1,
-    },
-    {
-      id: 2,
-      title: "Sertifikat Kelas Belajar jQuery Dasar",
-      provider: "CODEPOLITAN",
-      date: "January 2023",
-      image: "/api/placeholder/300/200",
-      likes: 11,
-      comments: 1,
-    },
-    {
-      id: 3,
-      title: "React.js Developer postificate",
-      provider: "Meta",
-      date: "December 2022",
-      image: "/api/placeholder/300/200",
-      likes: 19,
-      comments: 2,
-    },
-    {
-      id: 4,
-      title: "Responsive Web Design",
-      provider: "freeCodeCamp",
-      date: "November 2022",
-      image: "/api/placeholder/300/200",
-      likes: 8,
-      comments: 0,
-    },
-  ])
+  });
 
   // Experience Form State
   const [experienceForm, setExperienceForm] = useState({
@@ -134,38 +114,71 @@ export default function ProfilePage() {
     "November",
     "December",
   ];
- 
 
-  const years = ["Year", ...Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i)]
+  const years = [
+    "Year",
+    ...Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i),
+  ];
+
+  const fetchUserPosts = async () => {
+    const token = localStorage.getItem("token");
+    setIsLoading(true);
+
+    const user = JSON.parse(localStorage.getItem("user"));
+    const userId = user.id;
+    try {
+      const response = await axios.get(
+        `http://localhost:3000/api/users/${userId}/posts?limit=10&offset=0`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setUserPosts(response.data.data);
+    } catch (error) {
+      console.error("Failed to fetch user posts:", error);
+      toast.error("Failed to load posts");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Fetch user profile data
   const fetchProfile = async () => {
-    const token = localStorage.getItem("token")
-    setIsLoading(true)
+    const token = localStorage.getItem("token");
+    setIsLoading(true);
 
     try {
-      const response = await axios.get("http://localhost:3000/api/user/profile", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      const response = await axios.get(
+        "http://localhost:3000/api/user/profile",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       // Convert socials array to object
-      const socialsObject = {}
-      if (response.data.data.socials && Array.isArray(response.data.data.socials)) {
+      const socialsObject = {};
+      if (
+        response.data.data.socials &&
+        Array.isArray(response.data.data.socials)
+      ) {
         response.data.data.socials.forEach((social) => {
-          socialsObject[social.platform] = social.username
-        })
+          socialsObject[social.platform] = social.username;
+        });
       }
 
       // Handle skills data
-      let userSkills = []
+      let userSkills = [];
       if (response.data.data.skills && response.data.data.skills.Valid) {
         userSkills = Array.isArray(response.data.data.skills.String)
           ? response.data.data.skills.String
           : response.data.data.skills.String
-            ? [response.data.data.skills.String]
-            : []
+          ? [response.data.data.skills.String]
+          : [];
       }
 
       setUser({
@@ -176,46 +189,81 @@ export default function ProfilePage() {
         skills: userSkills,
         socials: socialsObject,
         photo: response.data.data.photo || null,
-      })
-    } catch (error) {
-      console.error("Failed to fetch profile:", error)
-      toast.error("Failed to load profile data")
-    } finally {
-      setIsLoading(false)
-    }
-  } 
+      });
 
-  const fetchExperiences = async () => {
-    const token = localStorage.getItem("token")
-    setIsLoading(true)
+      // Set profile image separately if needed
+      setProfileImage(response.data.data.photo || null);
+    } catch (error) {
+      console.error("Failed to fetch profile:", error);
+      toast.error("Failed to load profile data");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchEducations = async () => {
+    const token = localStorage.getItem("token");
+    setIsLoading(true);
 
     try {
-      const response = await axios.get(`http://localhost:3000/api/users/${user.id}/experience?limit=10&offset=0`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      const response = await axios.get(
+        `http://localhost:3000/api/users/${user.id}/education`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-      setExperiences(Array.isArray(response.data.data.experiences) ? response.data.data.experiences : [])
+      setEducation(response.data.data.educations);
     } catch (error) {
-      console.error("Failed to fetch experience:", error)
-      toast.error("Failed to load experience data")
+      console.error("Failed to fetch education:", error);
+      toast.error("Failed to load education data");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
+
+  const fetchExperiences = async () => {
+    const token = localStorage.getItem("token");
+    setIsLoading(true);
+
+    try {
+      const response = await axios.get(
+        `http://localhost:3000/api/users/${user.id}/experience?limit=10&offset=0`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setExperiences(
+        Array.isArray(response.data.data.experiences)
+          ? response.data.data.experiences
+          : []
+      );
+    } catch (error) {
+      console.error("Failed to fetch experience:", error);
+      toast.error("Failed to load experience data");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetchProfile()
-  }, [])
+    fetchProfile();
+  }, []);
 
   useEffect(() => {
     if (user.id) {
-      fetchEducations()
-      fetchExperiences()
+      fetchEducations();
+      fetchExperiences();
+      fetchUserPosts();
     }
-  }, [user.id])
+  }, [user.id]);
 
+  // Handle Education Form Submission
   // Handle Experience Form Submission
   const handleExperienceSubmit = async (e) => {
     e.preventDefault();
@@ -224,75 +272,59 @@ export default function ProfilePage() {
     try {
       const token = localStorage.getItem("token");
 
-      // Format data untuk API
-      const formattedData = {
-        ...experienceForm,
-        start_date: `${experienceForm.start_month} ${experienceForm.start_year}`,
-        end_date:
-          experienceForm.end_month === "Month" || experienceForm.end_year === "Year"
-            ? "Present"
-            : `${experienceForm.end_month} ${experienceForm.end_year}`,
-      };
+      // Create FormData to handle file upload
+      const formData = new FormData();
+      formData.append("job_title", experienceForm.job_title);
+      formData.append("company_name", experienceForm.company_name);
+      formData.append("location", experienceForm.location);
+      formData.append("start_month", experienceForm.start_month);
+      formData.append("start_year", experienceForm.start_year);
+      formData.append("end_month", experienceForm.end_month);
+      formData.append("end_year", experienceForm.end_year);
+      formData.append("caption", experienceForm.caption);
 
-      // Jika sedang mengedit pengalaman
+      if (experienceForm.photo instanceof File) {
+        formData.append("photo", experienceForm.photo);
+      }
+
+      // If editing, make PUT request
       if (editingExperience) {
-        // Upload foto jika ada perubahan
-        if (experienceForm.photo instanceof File) {
-          const formData = new FormData();
-          formData.append("photo", experienceForm.photo);
-          const uploadResponse = await axios.post("http://localhost:3000/api/experience/photo", formData, {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          formattedData.photo = uploadResponse.data.data.photo;
-        }
-
-        // Update pengalaman
         const response = await axios.put(
           `http://localhost:3000/api/experience/${editingExperience.id}`,
-          formattedData,
+          formData,
           {
             headers: {
+              "Content-Type": "multipart/form-data",
               Authorization: `Bearer ${token}`,
             },
           }
         );
 
-        // Perbarui state dengan pengalaman yang diperbarui
         setExperiences((prev) =>
-          prev.map((exp) => (exp.id === editingExperience.id ? response.data.data : exp))
+          prev.map((exp) =>
+            exp.id === editingExperience.id ? response.data.data : exp
+          )
         );
-
         toast.success("Experience updated successfully!");
         setEditingExperience(null);
       } else {
-        // Tambahkan pengalaman baru
-        if (experienceForm.photo instanceof File) {
-          const formData = new FormData();
-          formData.append("photo", experienceForm.photo);
-          const uploadResponse = await axios.post("http://localhost:3000/api/experience/photo", formData, {
+        // If adding new, make POST request
+        const response = await axios.post(
+          "http://localhost:3000/api/experience",
+          formData,
+          {
             headers: {
               "Content-Type": "multipart/form-data",
               Authorization: `Bearer ${token}`,
             },
-          });
-          formattedData.photo = uploadResponse.data.data.photo;
-        }
+          }
+        );
 
-        const response = await axios.post("http://localhost:3000/api/experience", formattedData, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        // Tambahkan pengalaman baru ke state
         setExperiences((prev) => [...prev, response.data.data]);
         toast.success("Experience added successfully!");
       }
 
-      // Reset form dan tutup modal
+      // Reset form and close modal
       setShowExperienceModal(false);
       setExperienceForm({
         job_title: "",
@@ -307,57 +339,207 @@ export default function ProfilePage() {
       });
     } catch (error) {
       console.error("Failed to add/update experience:", error);
-      toast.error(`Failed to ${editingExperience ? "update" : "add"} experience. Please try again.`);
+      toast.error(
+        `Failed to ${
+          editingExperience ? "update" : "add"
+        } experience. Please try again.`
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Handle Education Form Submission
+  const handleEducationSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
+      formData.append("major", educationForm.major);
+      formData.append("institute_name", educationForm.institute_name);
+      formData.append("location", educationForm.location);
+      formData.append("start_month", educationForm.start_month);
+      formData.append("start_year", educationForm.start_year);
+      formData.append("end_month", educationForm.end_month);
+      formData.append("end_year", educationForm.end_year);
+      formData.append("caption", educationForm.caption);
+
+      if (educationForm.schoolLogo instanceof File) {
+        formData.append("photo", educationForm.schoolLogo);
+      }
+
+      if (editingEducation) {
+        // Edit existing education
+        const response = await axios.put(
+          `http://localhost:3000/api/education/${editingEducation.id}`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        setEducation((prev) =>
+          prev.map((edu) =>
+            edu.id === editingEducation.id ? response.data.data : edu
+          )
+        );
+        toast.success("Education updated successfully!");
+        setEditingEducation(null);
+      } else {
+        // Add new education
+        const response = await axios.post(
+          "http://localhost:3000/api/education",
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        setEducation((prev) => [...prev, response.data.data]);
+        toast.success("Education added successfully!");
+      }
+
+      setShowEducationModal(false);
+      setEducationForm({
+        major: "",
+        institute_name: "",
+        location: "",
+        start_month: "Month",
+        start_year: "Year",
+        end_month: "Month",
+        end_year: "Year",
+        caption: "",
+        schoolLogo: null,
+      });
+    } catch (error) {
+      console.error("Failed to add/update education:", error);
+      toast.error(
+        `Failed to ${
+          editingEducation ? "update" : "add"
+        } education. Please try again.`
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  const handleEditEducation = (education) => {
+    setEditingEducation(education);
+
+    // Parse start date
+    let startMonth = "Month";
+    let startYear = "Year";
+    if (education.start_date) {
+      const startParts = education.start_date.split(" ");
+      if (startParts.length === 2) {
+        startMonth = startParts[0];
+        startYear = startParts[1];
+      }
+    }
+
+    // Parse end date
+    let endMonth = "Month";
+    let endYear = "Year";
+    if (education.end_date && education.end_date !== "Present") {
+      const endParts = education.end_date.split(" ");
+      if (endParts.length === 2) {
+        endMonth = endParts[0];
+        endYear = endParts[1];
+      }
+    }
+
+    setEducationForm({
+      major: education.major || "",
+      institute_name: education.institute_name || "",
+      location: education.location || "",
+      start_month: startMonth,
+      start_year: startYear,
+      end_month: endMonth,
+      end_year: endYear,
+      caption: education.caption || "",
+      schoolLogo: education.photo || null,
+    });
+
+    setShowEducationModal(true);
+  };
+
+  const deleteEducation = async (educationId) => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`http://localhost:3000/api/education/${educationId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setEducation((prev) =>
+        Array.isArray(prev) ? prev.filter((edu) => edu.id !== educationId) : []
+      );
+      toast.success("Education deleted successfully!");
+    } catch (error) {
+      console.error("Failed to delete education:", error);
+      toast.error("Failed to delete education. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
   // Handle Form Changes
   const handleExperienceChange = (e) => {
-    const { name, value } = e.target
+    const { name, value } = e.target;
     setExperienceForm({
       ...experienceForm,
       [name]: value,
-    })
-  }
+    });
+  };
 
   const handleEducationChange = (e) => {
-    const { name, value } = e.target
+    const { name, value } = e.target;
     setEducationForm({
       ...educationForm,
       [name]: value,
-    })
-  }
+    });
+  };
 
   const handleExperienceFileChange = (e) => {
     setExperienceForm({
       ...experienceForm,
       photo: e.target.files[0],
-    })
-  }
+    });
+  };
 
   const handleEducationFileChange = (e) => {
     setEducationForm({
       ...educationForm,
       schoolLogo: e.target.files[0],
-    })
-  }
+    });
+  };
 
   // Format date for display
   const formatDate = (month, year) => {
-    if (month === "Month" || year === "Year") return ""
-    return `${month} ${year}`
-  }
+    if (month === "Month" || year === "Year") return "";
+    return `${month} ${year}`;
+  };
 
   // Scroll handlers for post
   const scrollLeft = () => {
-    document.getElementById("post-container").scrollBy({ left: -300, behavior: "smooth" })
-  }
+    document
+      .getElementById("post-container")
+      .scrollBy({ left: -300, behavior: "smooth" });
+  };
 
   const scrollRight = () => {
-    document.getElementById("post-container").scrollBy({ left: 300, behavior: "smooth" })
-  }
+    document
+      .getElementById("post-container")
+      .scrollBy({ left: 300, behavior: "smooth" });
+  };
 
   const handleEditExperience = (experience) => {
     setEditingExperience(experience);
@@ -403,13 +585,16 @@ export default function ProfilePage() {
     setIsLoading(true);
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:3000/api/experience/${experienceId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-  
-      setExperiences((prev) => 
+      await axios.delete(
+        `http://localhost:3000/api/experience/${experienceId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setExperiences((prev) =>
         Array.isArray(prev) ? prev.filter((exp) => exp.id !== experienceId) : []
       );
       toast.success("Experience deleted successfully!");
@@ -422,7 +607,11 @@ export default function ProfilePage() {
   };
 
   if (isLoading) {
-    return <div className="flex justify-center items-center h-screen">Loading...</div>
+    return (
+      <div className="flex justify-center items-center h-screen">
+        Loading...
+      </div>
+    );
   }
 
   return (
@@ -436,19 +625,27 @@ export default function ProfilePage() {
           <div className="w-full md:w-1/3 space-y-4">
             <div className="bg-white rounded-lg shadow-md p-6 text-center">
               <div className="relative w-28 h-28 mx-auto bg-gray-200 rounded-full overflow-hidden flex items-center justify-center">
-                {user.photo ? (
-                  <img src={user.photo || "/placeholder.svg"} alt="Profile" className="w-full h-full object-cover" />
+                {profileImage ? (
+                  <img
+                    src={"http://localhost:3000/" + profileImage}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
-                  <span className="text-2xl font-bold">
-                    {user.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
-                  </span>
+                  <div className="w-full h-full flex items-center justify-center bg-gray-300">
+                    <span className="text-lg font-bold text-gray-600">
+                      {user.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")}
+                    </span>
+                  </div>
                 )}
               </div>
               <h2 className="font-bold text-xl mt-4">{user.name}</h2>
-              <p className="text-base text-gray-500">{user.headline || "No headline yet"}</p>
+              <p className="text-base text-gray-500">
+                {user.headline || "No headline yet"}
+              </p>
               <div className="mt-5 space-y-2 text-left">
                 <Link
                   to="/list-connection"
@@ -486,13 +683,18 @@ export default function ProfilePage() {
               {user.skills && user.skills.length > 0 ? (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {user.skills.map((skill, index) => (
-                    <span key={index} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm">
+                    <span
+                      key={index}
+                      className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm"
+                    >
                       {skill}
                     </span>
                   ))}
                 </div>
               ) : (
-                <p className="text-base text-gray-500 mt-1">No skills added yet</p>
+                <p className="text-base text-gray-500 mt-1">
+                  No skills added yet
+                </p>
               )}
             </div>
 
@@ -502,19 +704,30 @@ export default function ProfilePage() {
               {Object.keys(user.socials).length > 0 ? (
                 <div className="space-y-2">
                   {Object.entries(user.socials).map(([platform, username]) => {
-                    const platformInfo = socialPlatforms.find((p) => p.name === platform)
+                    const platformInfo = socialPlatforms.find(
+                      (p) => p.name === platform
+                    );
                     return (
-                      <div key={platform} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-md">
+                      <div
+                        key={platform}
+                        className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-md"
+                      >
                         {platformInfo && (
-                          <div className={`p-2 rounded-full ${platformInfo.color} bg-gray-50`}>{platformInfo.icon}</div>
+                          <div
+                            className={`p-2 rounded-full ${platformInfo.color} bg-gray-50`}
+                          >
+                            {platformInfo.icon}
+                          </div>
                         )}
                         <span className="text-base">@{username}</span>
                       </div>
-                    )
+                    );
                   })}
                 </div>
               ) : (
-                <p className="text-base text-gray-500">No social media added yet.</p>
+                <p className="text-base text-gray-500">
+                  No social media added yet.
+                </p>
               )}
             </div>
           </div>
@@ -524,7 +737,9 @@ export default function ProfilePage() {
             {/* About Section */}
             <div className="bg-white rounded-lg shadow-md p-6">
               <h3 className="font-semibold text-lg">About You</h3>
-              <p className="text-base text-gray-600 mt-3">{user.about || "No information provided yet."}</p>
+              <p className="text-base text-gray-600 mt-3">
+                {user.about || "No information provided yet."}
+              </p>
             </div>
 
             {/* Experience Section */}
@@ -538,7 +753,8 @@ export default function ProfilePage() {
                   className="text-sm bg-[#00AEEF] text-white px-4 py-2 rounded-md hover:bg-[#0099d6] transition flex items-center gap-1"
                   onClick={() => {
                     setEditingExperience(null); // Reset editing experience
-                    setExperienceForm({ // Reset form
+                    setExperienceForm({
+                      // Reset form
                       job_title: "",
                       company_name: "",
                       location: "",
@@ -559,7 +775,10 @@ export default function ProfilePage() {
               {experiences?.length > 0 ? (
                 <div className="mt-6 space-y-8">
                   {experiences.map((exp) => (
-                    <div key={exp.id} className="border-b pb-6 last:border-b-0 last:pb-0">
+                    <div
+                      key={exp.id}
+                      className="border-b pb-6 last:border-b-0 last:pb-0"
+                    >
                       <div className="flex gap-4">
                         {exp.photo ? (
                           <img
@@ -587,12 +806,15 @@ export default function ProfilePage() {
                           <p className="text-gray-600">{exp.company_name}</p>
                           <p className="text-gray-500 text-sm">
                             {formatDate(exp.start_month, exp.start_year)} -{" "}
-                            {exp.end_month === "Month" || exp.end_year === "Year"
+                            {exp.end_month === "Month" ||
+                            exp.end_year === "Year"
                               ? "Present"
                               : formatDate(exp.end_month, exp.end_year)}
                           </p>
                           {exp.location && (
-                            <p className="text-gray-500 text-sm">{exp.location}</p>
+                            <p className="text-gray-500 text-sm">
+                              {exp.location}
+                            </p>
                           )}
                           {exp.caption && (
                             <p className="text-gray-600 mt-2">{exp.caption}</p>
@@ -605,7 +827,9 @@ export default function ProfilePage() {
               ) : (
                 <div className="text-center py-8 bg-gray-50 rounded-md border border-dashed border-gray-300 mt-4">
                   <Briefcase size={40} className="mx-auto text-gray-300 mb-3" />
-                  <p className="text-base text-gray-500">No experience added yet.</p>
+                  <p className="text-base text-gray-500">
+                    No experience added yet.
+                  </p>
                 </div>
               )}
             </div>
@@ -618,7 +842,6 @@ export default function ProfilePage() {
                   <h3 className="font-semibold text-lg">Education</h3>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Pencil size={22} className="cursor-pointer text-gray-600 hover:text-[#00AEEF]" />
                   <button
                     className="text-sm bg-[#00AEEF] text-white px-4 py-2 rounded-md hover:bg-[#0099d6] transition flex items-center gap-1"
                     onClick={() => setShowEducationModal(true)}
@@ -631,7 +854,10 @@ export default function ProfilePage() {
               {educations?.length > 0 ? (
                 <div className="mt-6 space-y-8">
                   {educations.map((edu) => (
-                    <div key={edu.id} className="border-b pb-6 last:border-b-0 last:pb-0">
+                    <div
+                      key={edu.id}
+                      className="border-b pb-6 last:border-b-0 last:pb-0"
+                    >
                       <div className="flex gap-4">
                         {edu.photo ? (
                           <img
@@ -645,16 +871,31 @@ export default function ProfilePage() {
                           </div>
                         )}
                         <div className="flex-1">
-                          <h4 className="font-semibold">{edu.major}</h4>
+                          <div className="flex justify-between items-start">
+                            <h4 className="font-semibold">{edu.major}</h4>
+                            <button
+                              onClick={() => handleEditEducation(edu)}
+                              className="text-gray-500 hover:text-[#00AEEF] transition"
+                            >
+                              <Pencil size={18} />
+                            </button>
+                          </div>
                           <p className="text-gray-600">{edu.institute_name}</p>
                           <p className="text-gray-500 text-sm">
                             {formatDate(edu.start_month, edu.start_year)} -{" "}
-                            {edu.end_month === "Month" || edu.end_year === "Year"
+                            {edu.end_month === "Month" ||
+                            edu.end_year === "Year"
                               ? "Present"
                               : formatDate(edu.end_month, edu.end_year)}
                           </p>
-                          {edu.location && <p className="text-gray-500 text-sm">{edu.location}</p>}
-                          {edu.caption && <p className="text-gray-600 mt-2">{edu.caption}</p>}
+                          {edu.location && (
+                            <p className="text-gray-500 text-sm">
+                              {edu.location}
+                            </p>
+                          )}
+                          {edu.caption && (
+                            <p className="text-gray-600 mt-2">{edu.caption}</p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -662,8 +903,13 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="text-center py-8 bg-gray-50 rounded-md border border-dashed border-gray-300 mt-4">
-                  <GraduationCap size={40} className="mx-auto text-gray-300 mb-3" />
-                  <p className="text-base text-gray-500">No education added yet.</p>
+                  <GraduationCap
+                    size={40}
+                    className="mx-auto text-gray-300 mb-3"
+                  />
+                  <p className="text-base text-gray-500">
+                    No education added yet.
+                  </p>
                 </div>
               )}
             </div>
@@ -697,47 +943,115 @@ export default function ProfilePage() {
               <div
                 id="post-container"
                 className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide"
-                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
               >
-                {post.map((post) => (
-                  <div
-                    key={post.id}
-                    className="flex-shrink-0 w-64 border rounded-lg overflow-hidden bg-white shadow-sm"
-                  >
-                    <div className="h-40 bg-gray-100 relative">
-                      <img
-                        src={post.image || "/placeholder.svg"}
-                        alt={`${post.title} post`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="p-4">
-                      <h4 className="font-medium text-base text-[#00AEEF] line-clamp-2">{post.title}</h4>
-                      <p className="text-sm text-gray-600 mt-1">{post.provider}</p>
-                      <p className="text-xs text-gray-500 mt-1">{post.date}</p>
-
-                      <div className="flex justify-between items-center mt-3">
-                        <div className="flex items-center text-xs text-gray-500">
-                          <span>{post.likes} likes</span>
-                          <span className="mx-2">•</span>
-                          <span>{post.comments} comments</span>
+                {userPosts.length > 0 ? (
+                  userPosts.map((post) => (
+                    <div
+                      key={post.id}
+                      className="flex-shrink-0 w-64 border rounded-lg overflow-hidden bg-white shadow-sm"
+                    >
+                      {/* Post header */}
+                      <div className="p-4 border-b">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                            {profileImage ? (
+                              <img
+                                src={"http://localhost:3000/" + profileImage}
+                                alt="Profile"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-gray-300">
+                                <span className="text-lg font-bold text-gray-600">
+                                  {user.name
+                                    .split(" ")
+                                    .map((n) => n[0])
+                                    .join("")}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-sm">
+                              {user.name}
+                            </h4>
+                            <p className="text-xs text-gray-500">
+                              {user.headline || "No headline"}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-0.5">
+                              {new Date(post.created_at).toLocaleDateString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                }
+                              )}{" "}
+                              • 🌐
+                            </p>
+                          </div>
                         </div>
-                        <button className="text-xs text-[#00AEEF]">Share</button>
+                      </div>
+
+                      {/* Post content */}
+                      <div className="p-4">
+                        <p className="text-sm text-gray-700 mb-3">
+                          {post.content || "No content"}
+                        </p>
+
+                        {/* Only show image if exists */}
+                        {post.images && post.images.length > 0 && (
+                          <div className="mb-3">
+                            <img
+                              src={"http://localhost:3000/" + post.images[0]}
+                              alt={`Post ${post.id}`}
+                              className="w-full rounded-md"
+                            />
+                          </div>
+                        )}
+
+                        {/* Post footer */}
+                        <div className="flex justify-between items-center text-xs text-gray-500">
+                          <div className="flex items-center gap-1">
+                            <ThumbsUp size={14} />
+                            <span>{post.likes_count || 0}</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <span>{post.comments_count || 0} comments</span>
+                            <span>{post.shares_count || 0} shares</span>
+                          </div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex border-t mt-3 pt-2">
+                          <button className="flex-1 flex items-center justify-center gap-1 py-1 hover:bg-gray-50 rounded text-gray-600 text-sm">
+                            <ThumbsUp size={16} /> Like
+                          </button>
+                          <button className="flex-1 flex items-center justify-center gap-1 py-1 hover:bg-gray-50 rounded text-gray-600 text-sm">
+                            <MessageCircle size={16} /> Comment
+                          </button>
+                          <button className="flex-1 flex items-center justify-center gap-1 py-1 hover:bg-gray-50 rounded text-gray-600 text-sm">
+                            <Share2 size={16} /> Share
+                          </button>
+                        </div>
                       </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 w-full">
+                    <p className="text-gray-500">No posts yet</p>
                   </div>
-                ))}
+                )}
               </div>
 
               <style>{`
-                .scrollbar-hide::-webkit-scrollbar {
-                  display: none;
-                }
-                .scrollbar-hide {
-                  -ms-overflow-style: none;
-                  scrollbar-width: none;
-                }
-              `}</style>
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  `}</style>
               <div className="flex justify-center mt-4">
                 <button className="text-[#00AEEF] text-asmibold font-semibold hover:underline">
                   <Link to="/post-page"> See All Post </Link>
@@ -791,7 +1105,9 @@ export default function ProfilePage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Start Date *</label>
+                    <label className="block text-sm font-medium mb-1">
+                      Start Date *
+                    </label>
                     <div className="flex gap-2">
                       <select
                         name="start_month"
@@ -822,7 +1138,9 @@ export default function ProfilePage() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">End Date</label>
+                    <label className="block text-sm font-medium mb-1">
+                      End Date
+                    </label>
                     <div className="flex gap-2">
                       <select
                         name="end_month"
@@ -831,7 +1149,9 @@ export default function ProfilePage() {
                         onChange={handleExperienceChange}
                       >
                         {months.map((month, index) => (
-                          <option key={index} value={month}>{month}</option>
+                          <option key={index} value={month}>
+                            {month}
+                          </option>
                         ))}
                       </select>
                       <select
@@ -862,22 +1182,25 @@ export default function ProfilePage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Company Logo</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Company Logo
+                  </label>
                   <input
                     type="file"
                     className="w-full border px-3 py-2 rounded focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
                     onChange={handleExperienceFileChange}
                   />
-                  {experienceForm.photo && !(experienceForm.photo instanceof File) && (
-                    <div className="mt-2">
-                      <p className="text-sm text-gray-500">Current logo:</p>
-                      <img
-                        src={"http://localhost:3000/" + experienceForm.photo}
-                        alt="Company logo"
-                        className="w-20 h-20 object-contain mt-1"
-                      />
-                    </div>
-                  )}
+                  {experienceForm.photo &&
+                    !(experienceForm.photo instanceof File) && (
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-500">Current logo:</p>
+                        <img
+                          src={"http://localhost:3000/" + experienceForm.photo}
+                          alt="Company logo"
+                          className="w-20 h-20 object-contain mt-1"
+                        />
+                      </div>
+                    )}
                 </div>
               </div>
 
@@ -886,7 +1209,11 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={() => {
-                      if (window.confirm("Are you sure you want to delete this experience?")) {
+                      if (
+                        window.confirm(
+                          "Are you sure you want to delete this experience?"
+                        )
+                      ) {
                         deleteExperience(editingExperience.id);
                         setShowExperienceModal(false);
                       }
@@ -914,7 +1241,7 @@ export default function ProfilePage() {
                 {/* Spacer to push other buttons to right when delete is shown */}
                 <div className={editingExperience ? "flex-grow" : ""}></div>
 
-                < div className="flex gap-3">
+                <div className="flex gap-3">
                   <button
                     type="button"
                     className="px-4 py-2 rounded border hover:bg-gray-50 transition"
@@ -930,7 +1257,11 @@ export default function ProfilePage() {
                     className="px-4 py-2 rounded bg-[#00AEEF] text-white hover:bg-[#0099d6] transition"
                     disabled={isLoading}
                   >
-                    {isLoading ? "Saving..." : editingExperience ? "Update" : "Save"}
+                    {isLoading
+                      ? "Saving..."
+                      : editingExperience
+                      ? "Update"
+                      : "Save"}
                   </button>
                 </div>
               </div>
@@ -945,7 +1276,9 @@ export default function ProfilePage() {
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl">
             <div className="flex items-center gap-2 mb-4">
               <GraduationCap size={20} className="text-[#00AEEF]" />
-              <h2 className="text-xl font-bold">Add Education</h2>
+              <h2 className="text-xl font-bold">
+                {editingEducation ? "Edit Education" : "Add Education"}
+              </h2>
             </div>
             <form onSubmit={handleEducationSubmit}>
               <div className="space-y-4">
@@ -980,7 +1313,9 @@ export default function ProfilePage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Start Date *</label>
+                    <label className="block text-sm font-medium mb-1">
+                      Start Date *
+                    </label>
                     <div className="flex gap-2">
                       <select
                         name="start_month"
@@ -1011,7 +1346,9 @@ export default function ProfilePage() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">End Date</label>
+                    <label className="block text-sm font-medium mb-1">
+                      End Date
+                    </label>
                     <div className="flex gap-2">
                       <select
                         name="end_month"
@@ -1053,7 +1390,9 @@ export default function ProfilePage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">School Logo</label>
+                  <label className="block text-sm font-medium mb-1">
+                    School Logo
+                  </label>
                   <input
                     type="file"
                     className="w-full border px-3 py-2 rounded focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] outline-none"
@@ -1062,21 +1401,65 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-6">
-                <button
-                  type="button"
-                  className="px-4 py-2 rounded border hover:bg-gray-50 transition"
-                  onClick={() => setShowEducationModal(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded bg-[#00AEEF] text-white hover:bg-[#0099d6] transition"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Saving..." : "Save Education"}
-                </button>
+              <div className="flex justify-between mt-6">
+                {editingEducation && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          "Are you sure you want to delete this education?"
+                        )
+                      ) {
+                        deleteEducation(editingEducation.id);
+                        setShowEducationModal(false);
+                      }
+                    }}
+                    className="px-4 py-2 rounded text-red-500 transition flex items-center gap-1"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                    Delete Education
+                  </button>
+                )}
+
+                <div className={editingEducation ? "flex-grow" : ""}></div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    className="px-4 py-2 rounded border hover:bg-gray-50 transition"
+                    onClick={() => {
+                      setShowEducationModal(false);
+                      setEditingEducation(null);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded bg-[#00AEEF] text-white hover:bg-[#0099d6] transition"
+                    disabled={isLoading}
+                  >
+                    {isLoading
+                      ? "Saving..."
+                      : editingEducation
+                      ? "Update"
+                      : "Save"}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -1136,7 +1519,9 @@ export default function ProfilePage() {
                         required
                       >
                         {months.map((month, index) => (
-                          <option key={index} value={month}>{month}</option>
+                          <option key={index} value={month}>
+                            {month}
+                          </option>
                         ))}
                       </select>
                       <select
@@ -1147,7 +1532,9 @@ export default function ProfilePage() {
                         required
                       >
                         {years.map((year, index) => (
-                          <option key={index} value={year}>{year}</option>
+                          <option key={index} value={year}>
+                            {year}
+                          </option>
                         ))}
                       </select>
                     </div>
@@ -1164,7 +1551,9 @@ export default function ProfilePage() {
                         onChange={handleEducationChange}
                       >
                         {months.map((month, index) => (
-                          <option key={index} value={month}>{month}</option>
+                          <option key={index} value={month}>
+                            {month}
+                          </option>
                         ))}
                       </select>
                       <select
@@ -1174,7 +1563,9 @@ export default function ProfilePage() {
                         onChange={handleEducationChange}
                       >
                         {years.map((year, index) => (
-                          <option key={index} value={year}>{year}</option>
+                          <option key={index} value={year}>
+                            {year}
+                          </option>
                         ))}
                       </select>
                     </div>
@@ -1220,7 +1611,11 @@ export default function ProfilePage() {
                   className="px-4 py-2 rounded border hover:bg-gray-50 transition text-red-500 hover:text-red-700"
                   onClick={() => {
                     if (editingEducation?.id) {
-                      if (window.confirm("Are you sure you want to delete this education?")) {
+                      if (
+                        window.confirm(
+                          "Are you sure you want to delete this education?"
+                        )
+                      ) {
                         handleDeleteEducation(editingEducation.id);
                       }
                     }
@@ -1255,5 +1650,5 @@ export default function ProfilePage() {
         </div>
       )}
     </div>
-  )
+  );
 }

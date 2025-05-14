@@ -1,35 +1,39 @@
+import React from "react";
+import { Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const DeleteBlog = async (blogId, navigate) => {
-  const confirmDelete = window.confirm("Apakah Anda yakin ingin menghapus blog ini?");
-  if (!confirmDelete) return;
+const DeleteBlog = ({ articleId, onSuccess }) => {
+  const navigate = useNavigate();
 
-  try {
-    const token = localStorage.getItem("token"); // ambil JWT token
-    const apiUrl = `http://localhost:3000/api/blogs/${blogId}`;
-    
-    // Mengirim request delete ke API
-    await axios.delete(apiUrl, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+  const deleteBlog = async () => {
+    const confirmDelete = window.confirm("Apakah Anda yakin ingin menghapus blog ini?");
+    if (!confirmDelete) return;
 
-    // Hapus dari localStorage
-    const blogs = JSON.parse(localStorage.getItem("blogs")) || [];
-    const filteredBlogs = blogs.filter((b) => b.id !== blogId);
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`http://localhost:3000/api/blogs/${articleId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    // Update localStorage dengan data yang sudah difilter
-    localStorage.setItem("blogs", JSON.stringify(filteredBlogs));
+      if (onSuccess) onSuccess();
+      else navigate("/blog");
+    } catch (error) {
+      console.error("Gagal menghapus blog:", error);
+      alert("Gagal menghapus blog.");
+    }
+  };
 
-    alert("Blog telah dihapus.");
-    
-    // Arahkan kembali ke halaman Blog
-    navigate("/blog");
-  } catch (error) {
-    console.error("Gagal menghapus blog:", error);
-    alert("Error: Gagal menghapus blog.");
-  }
+  return (
+    <button
+      className="fixed bottom-20 right-6 bg-red-500 hover:bg-red-400 text-white p-3 rounded-full shadow-lg"
+      onClick={deleteBlog}
+    >
+      <Trash2 className="w-5 h-5" />
+    </button>
+  );
 };
 
 export default DeleteBlog;
