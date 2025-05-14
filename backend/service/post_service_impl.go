@@ -10,8 +10,6 @@ import (
 	"evoconnect/backend/repository"
 	"fmt"
 	"mime/multipart"
-	"net/http"
-	"path/filepath"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -19,18 +17,30 @@ import (
 )
 
 type PostServiceImpl struct {
-	PostRepository       repository.PostRepository
-	ConnectionRepository repository.ConnectionRepository
-	DB                   *sql.DB
-	Validate             *validator.Validate
+	UserRepository        repository.UserRepository
+	PostRepository        repository.PostRepository
+	ConnectionRepository  repository.ConnectionRepository
+	GroupRepository       repository.GroupRepository
+	GroupMemberRepository repository.GroupMemberRepository
+	DB                    *sql.DB
+	Validate              *validator.Validate
 }
 
-func NewPostService(postRepository repository.PostRepository, connectionRepository repository.ConnectionRepository, db *sql.DB, validate *validator.Validate) PostService {
+func NewPostService(
+	userRepository repository.UserRepository,
+	postRepository repository.PostRepository,
+	connectionRepository repository.ConnectionRepository,
+	groupRepository repository.GroupRepository,
+	groupMemberRepository repository.GroupMemberRepository,
+	db *sql.DB, validate *validator.Validate) PostService {
 	return &PostServiceImpl{
-		PostRepository:       postRepository,
-		ConnectionRepository: connectionRepository,
-		DB:                   db,
-		Validate:             validate,
+		UserRepository:        userRepository,
+		PostRepository:        postRepository,
+		ConnectionRepository:  connectionRepository,
+		GroupRepository:       groupRepository,
+		GroupMemberRepository: groupMemberRepository,
+		DB:                    db,
+		Validate:              validate,
 	}
 }
 
@@ -79,6 +89,7 @@ func (service *PostServiceImpl) Create(ctx context.Context, userId uuid.UUID, re
 
 	fullPost.IsLiked = service.PostRepository.IsLiked(ctx, tx, post.Id, userId)
 
+	// fmt.Println("start create post")
 	return helper.ToPostResponse(fullPost)
 }
 
@@ -213,17 +224,9 @@ func (service *PostServiceImpl) FindById(ctx context.Context, postId uuid.UUID, 
 		panic(exception.NewNotFoundError("Post not found"))
 	}
 
-	// Ambil ID user yang sedang login
-	currentUserIdStr, ok := ctx.Value("user_id").(string)
-	if ok {
-		currentUserId, err := uuid.Parse(currentUserIdStr)
-		if err == nil && post.User != nil && post.UserId != currentUserId {
-			post.User.IsConnected = service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, post.UserId)
-		}
-	}
-
 	// Check if the current user has liked this post
 	post.IsLiked = service.PostRepository.IsLiked(ctx, tx, postId, currentUserId)
+	post.User.IsConnected = service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, post.UserId)
 
 	return helper.ToPostResponse(post)
 }
@@ -234,7 +237,7 @@ func (service *PostServiceImpl) FindAll(ctx context.Context, limit, offset int, 
 	defer helper.CommitOrRollback(tx)
 
 	// Error 1: Fungsi FindAll hanya mengembalikan 1 nilai, bukan 2
-	posts := service.PostRepository.FindAll(ctx, tx, limit, offset)
+	posts := service.PostRepository.FindAll(ctx, tx, currentUserId, limit, offset)
 
 	// Ambil ID user yang sedang login
 	currentUserIdStr, ok := ctx.Value("user_id").(string)
@@ -254,6 +257,13 @@ func (service *PostServiceImpl) FindAll(ctx context.Context, limit, offset int, 
 	for _, post := range posts {
 		post.IsLiked = service.PostRepository.IsLiked(ctx, tx, post.Id, currentUserId)
 		post.User.IsConnected = service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, post.UserId)
+		// fmt.Println("connected: ", post.User.IsConnected, "postId: ", post.Id, "userId: ", post.UserId, "currentUserId: ", currentUserId)
+		if post.GroupId != nil {
+			group, err := service.GroupRepository.FindById(ctx, tx, *post.GroupId)
+			if err == nil {
+				post.Group = &group
+			}
+		}
 		postResponses = append(postResponses, helper.ToPostResponse(post))
 	}
 
@@ -266,12 +276,13 @@ func (service *PostServiceImpl) FindByUserId(ctx context.Context, targetUserId u
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
-	posts := service.PostRepository.FindByUserId(ctx, tx, targetUserId, limit, offset)
+	posts := service.PostRepository.FindByUserId(ctx, tx, targetUserId, currentUserId, limit, offset)
 
 	// Check which posts the current user has liked
 	var postResponses []web.PostResponse
 	for _, post := range posts {
 		post.IsLiked = service.PostRepository.IsLiked(ctx, tx, post.Id, currentUserId)
+		post.User.IsConnected = service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, post.UserId)
 		postResponses = append(postResponses, helper.ToPostResponse(post))
 	}
 
@@ -336,48 +347,86 @@ func (service *PostServiceImpl) UnlikePost(ctx context.Context, postId uuid.UUID
 	return helper.ToPostResponse(post)
 }
 
-// Helper function to validate image types
-func isValidImageType(fileHeader *multipart.FileHeader) bool {
-	// Open the uploaded file
-	file, err := fileHeader.Open()
+func (service *PostServiceImpl) CreateGroupPost(ctx context.Context, groupId uuid.UUID, userId uuid.UUID, request web.CreatePostRequest, files []*multipart.FileHeader) web.PostResponse {
+	err := service.Validate.Struct(request)
+	helper.PanicIfError(err)
+
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Verify user is a member of the group
+	member := service.GroupMemberRepository.FindByGroupIdAndUserId(ctx, tx, groupId, userId)
+	if member.GroupId == uuid.Nil || !member.IsActive {
+		panic(exception.NewForbiddenError("You are not a member of this group"))
+	}
+
+	// Check group exists and get its privacy level
+	group, err := service.GroupRepository.FindById(ctx, tx, groupId)
 	if err != nil {
-		return false
-	}
-	defer file.Close()
-
-	// Read first 512 bytes for MIME type detection
-	buffer := make([]byte, 512)
-	_, err = file.Read(buffer)
-	if err != nil {
-		return false
+		panic(exception.NewNotFoundError("Group not found"))
 	}
 
-	// Seek back to beginning of file
-	_, err = file.Seek(0, 0)
-	if err != nil {
-		return false
+	// Using the group's privacy setting for the post visibility
+	visibility := group.PrivacyLevel
+
+	// Process uploads
+	var imagePaths []string
+	for _, fileHeader := range files {
+		file, err := fileHeader.Open()
+		helper.PanicIfError(err)
+		result, err := helper.UploadImage(file, fileHeader, helper.DirPosts, userId.String(), "images")
+		file.Close()
+		helper.PanicIfError(err)
+		imagePaths = append(imagePaths, result.RelativePath)
 	}
 
-	// Check MIME type
-	mimeType := http.DetectContentType(buffer)
-	validTypes := map[string]bool{
-		"image/jpeg": true,
-		"image/png":  true,
-		"image/gif":  true,
-		"image/webp": true,
+	post := domain.Post{
+		UserId:     userId,
+		Content:    request.Content,
+		Images:     imagePaths,
+		Visibility: visibility,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+		GroupId:    &groupId,
 	}
 
-	return validTypes[mimeType]
+	post = service.PostRepository.CreatePostGroup(ctx, tx, post, groupId)
+
+	// Add user and group data to response
+	user, _ := service.UserRepository.FindById(ctx, tx, userId)
+	post.User = &user
+	post.Group = &group
+
+	return helper.ToPostResponse(post)
 }
 
-// Helper function to generate a unique filename
-func generateUniqueFilename(originalFilename string) string {
-	// Extract file extension
-	extension := filepath.Ext(originalFilename)
+func (service *PostServiceImpl) FindByGroupId(ctx context.Context, groupId uuid.UUID, userId uuid.UUID, limit, offset int) []web.PostResponse {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
 
-	// Generate timestamp-based unique name
-	timestamp := time.Now().UnixNano()
-	randomString := fmt.Sprintf("%d", timestamp)
+	// Check if group exists
+	group, err := service.GroupRepository.FindById(ctx, tx, groupId)
+	if err != nil {
+		panic(exception.NewNotFoundError("Group not found"))
+	}
 
-	return randomString + extension
+	// For private groups, verify the user is a member
+	if group.PrivacyLevel == "private" {
+		member := service.GroupMemberRepository.FindByGroupIdAndUserId(ctx, tx, groupId, userId)
+		if member.GroupId == uuid.Nil || !member.IsActive {
+			panic(exception.NewForbiddenError("You don't have permission to view posts in this group"))
+		}
+	}
+
+	// Get posts for the group
+	posts := service.PostRepository.FindByGroupId(ctx, tx, groupId, userId, limit, offset)
+
+	// Check if current user has liked each post
+	for i := range posts {
+		posts[i].IsLiked = service.PostRepository.IsLiked(ctx, tx, posts[i].Id, userId)
+	}
+
+	return helper.ToPostResponses(posts)
 }

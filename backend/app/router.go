@@ -113,6 +113,9 @@ func NewRouter(
 	router.PUT("/api/groups/:groupId", groupController.Update)
 	router.DELETE("/api/groups/:groupId", groupController.Delete)
 
+	router.POST("/api/groups/:groupId/posts", groupController.CreatePost)
+	router.GET("/api/groups/:groupId/posts", groupController.GetGroupPosts)
+
 	router.POST("/api/groups/:groupId/members/:userId", groupController.AddMember)
 	router.DELETE("/api/groups/:groupId/members/:userId", groupController.RemoveMember)
 	router.PUT("/api/groups/:groupId/members/:userId/role", groupController.UpdateMemberRole)

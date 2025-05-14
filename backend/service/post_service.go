@@ -17,4 +17,7 @@ type PostService interface {
 	FindByUserId(ctx context.Context, targetUserId uuid.UUID, limit, offset int, currentUserId uuid.UUID) []web.PostResponse
 	LikePost(ctx context.Context, postId uuid.UUID, userId uuid.UUID) web.PostResponse
 	UnlikePost(ctx context.Context, postId uuid.UUID, userId uuid.UUID) web.PostResponse
+
+	CreateGroupPost(ctx context.Context, groupId uuid.UUID, userId uuid.UUID, request web.CreatePostRequest, files []*multipart.FileHeader) web.PostResponse
+	FindByGroupId(ctx context.Context, groupId uuid.UUID, userId uuid.UUID, limit, offset int) []web.PostResponse
 }

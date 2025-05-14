@@ -38,6 +38,9 @@ func main() {
 	blogService := service.NewBlogService(blogRepository)
 	blogController := controller.NewBlogController(blogService)
 
+	groupRepository := repository.NewGroupRepository()
+	groupMemberRepository := repository.NewGroupMemberRepository()
+
 	// Initialize post dependencies
 	postRepository := repository.NewPostRepository()
 	postService := service.NewPostService(postRepository, connectionRepository, db, validate)

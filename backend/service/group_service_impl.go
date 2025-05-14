@@ -90,6 +90,10 @@ func (service *GroupServiceImpl) Create(ctx context.Context, userId uuid.UUID, r
 
 	service.MemberRepository.AddMember(ctx, tx, member)
 
+	creator, err := service.UserRepository.FindById(ctx, tx, userId)
+	helper.PanicIfError(err)
+	group.Creator = &creator
+
 	return helper.ToGroupResponse(group)
 }
 
