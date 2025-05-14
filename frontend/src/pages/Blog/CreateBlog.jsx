@@ -103,9 +103,9 @@ function CreateBlog() {
           }
         );
       }
-
-      alert('Blog post created successfully!');
-      navigate(`/blog-detail/${blogSlug}`);
+      navigate(`/blog-detail/${blogSlug}`, {
+        state: { showPublishedToast: true }
+      });
       window.scrollTo(0, 0);
     } catch (error) {
       console.error('Error creating blog post:', error);

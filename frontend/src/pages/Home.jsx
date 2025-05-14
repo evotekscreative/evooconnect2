@@ -94,32 +94,18 @@ export default function SocialNetworkFeed() {
   const [showcaseReplies, setShowcaseReplies] = useState([]);
   const [showShowcase, setShowShowcase] = useState(false);
   const [allReplies, setAllReplies] = useState({});
-  const location = useLocation();
-
   const [alertInfo, setAlertInfo] = useState({
     show: false,
-    type: "",
-    message: "",
+    type: '',
+    message: ''
   });
-
-  useEffect(() => {
-    if (location.state?.showAlert) {
-      setAlertInfo({
-        show: true,
-        type: location.state.alertType,
-        message: location.state.alertMessage,
-      });
-
-      // Bersihkan location state setelah ditampilkan
-      window.history.replaceState({}, document.title);
-    }
-  }, [location.state]);
 
   useEffect(() => {
     const userData = localStorage.getItem("userData");
     if (userData) {
       const parsedUser = JSON.parse(userData);
       setCurrentUserId(parsedUser.id);
+      
     }
   }, []);
 
@@ -926,11 +912,10 @@ export default function SocialNetworkFeed() {
 
   const renderLikeButton = (post) => (
     <button
-      className={`px-2 md:px-3 py-1 rounded text-xs md:text-sm flex items-center ${
-        post.isLiked
+      className={`px-2 md:px-3 py-1 rounded text-xs md:text-sm flex items-center ${post.isLiked
           ? "bg-blue-100 text-blue-600"
           : "bg-sky-100 hover:bg-sky-200 text-blue-500"
-      }`}
+        }`}
       onClick={() => handleLikePost(post.id, post.isLiked)}
     >
       <ThumbsUp size={12} className="mr-1" />
@@ -1202,7 +1187,7 @@ export default function SocialNetworkFeed() {
             <button
               className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
               onClick={() => {
-                console.log("Report comment");
+                handleReportClick(comment.user?.id, "comment", comment.id);
                 setShowCommentOptions(false);
               }}
             >
@@ -1529,11 +1514,10 @@ export default function SocialNetworkFeed() {
           {/* Tabs */}
           <div className="flex border-b pb-2 space-x-1">
             <button
-              className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${
-                activeTab === "update"
+              className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${activeTab === "update"
                   ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
                   : "text-gray-500 hover:text-blue-500"
-              }`}
+                }`}
               onClick={() => setActiveTab("update")}
             >
               <SquarePen size={16} className="mr-2" />
@@ -1541,11 +1525,10 @@ export default function SocialNetworkFeed() {
               <span className="sm:hidden">Update</span>
             </button>
             <button
-              className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${
-                activeTab === "article"
+              className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${activeTab === "article"
                   ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
                   : "text-gray-500 hover:text-blue-500"
-              }`}
+                }`}
               onClick={() => setActiveTab("article")}
             >
               <NotebookPen size={16} className="mr-2" />
@@ -1588,11 +1571,10 @@ export default function SocialNetworkFeed() {
                     >
                       <span
                         onClick={() => handleVisibilityChange(type)}
-                        className={`p-1 rounded-full cursor-pointer transition ${
-                          postVisibility === type
+                        className={`p-1 rounded-full cursor-pointer transition ${postVisibility === type
                             ? "bg-blue-600"
                             : "bg-gray-400"
-                        } text-white`}
+                          } text-white`}
                       >
                         {icon}
                       </span>
@@ -1605,11 +1587,10 @@ export default function SocialNetworkFeed() {
                   </button>
                 </Tooltip>
                 <Button
-                  className={`px-4 py-2 text-sm transition-colors duration-300 ease-in-out ${
-                    isLoading
+                  className={`px-4 py-2 text-sm transition-colors duration-300 ease-in-out ${isLoading
                       ? "bg-gray-400 text-white cursor-not-allowed"
                       : "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700"
-                  }`}
+                    }`}
                   onClick={handlePostSubmit}
                   disabled={isLoading}
                 >
@@ -1625,6 +1606,7 @@ export default function SocialNetworkFeed() {
                   )}
                 </Button>
               </div>
+              
             </>
           ) : (
             <>
@@ -1696,11 +1678,10 @@ export default function SocialNetworkFeed() {
                     >
                       <span
                         onClick={() => handleVisibilityChange(type)}
-                        className={`p-1 rounded-full cursor-pointer transition ${
-                          postVisibility === type
+                        className={`p-1 rounded-full cursor-pointer transition ${postVisibility === type
                             ? "bg-blue-600"
                             : "bg-gray-400"
-                        } text-white`}
+                          } text-white`}
                       >
                         {icon}
                       </span>
@@ -1800,11 +1781,10 @@ export default function SocialNetworkFeed() {
                 {/* Post Actions */}
                 <div className="border-t px-4 py-2 flex justify-between">
                   <button
-                    className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${
-                      post.isLiked
+                    className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${post.isLiked
                         ? "text-blue-600 bg-blue-50"
                         : "text-blue-600 hover:bg-blue-100"
-                    }`}
+                      }`}
                     onClick={() => handleLikePost(post.id, post.isLiked)}
                   >
                     <ThumbsUp size={14} className="mr-2" />
@@ -1937,7 +1917,7 @@ export default function SocialNetworkFeed() {
               {/* Report Option */}
               <button
                 className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
-                onClick={() => handlePostAction("report")}
+                onClick={() => handleReportClick(post.user?.id, "post", post.id)}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -1982,41 +1962,29 @@ export default function SocialNetworkFeed() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg w-full max-w-md mx-4 p-5">
             <h3 className="text-lg font-semibold mb-4">Laporkan posting ini</h3>
-            <p className="mb-3 text-sm text-gray-600">
-              Pilih kebijakan kami yang berlaku
-            </p>
+            <p className="mb-3 text-sm text-gray-600">Pilih kebijakan kami yang berlaku</p>
 
             <div className="grid grid-cols-2 gap-2 mb-4">
               {[
-                "Pelecehan",
-                "Penipuan",
-                "Spam",
-                "Misinformasi",
-                "Ujaran kebencian",
-                "Ancaman atau kekerasan",
-                "Menyakiti diri sendiri",
-                "Konten sadis",
-                "Organisasi berbahaya atau ekstremis",
-                "Konten seksual",
-                "Akun palsu",
-                "Eksploitasi anak",
-                "Produk dan layanan ilegal",
-                "Pelanggaran",
-                "Lainnya",
+                "Pelecehan", "Penipuan", "Spam", "Misinformasi", "Ujaran kebencian",
+                "Ancaman atau kekerasan", "Menyakiti diri sendiri", "Konten sadis",
+                "Organisasi berbahaya atau ekstremis", "Konten seksual", "Akun palsu",
+                "Eksploitasi anak", "Produk dan layanan ilegal", "Pelanggaran", "Lainnya"
               ].map((reason) => (
                 <button
                   key={reason}
-                  className={`py-2 px-3 text-sm border rounded-full ${
-                    selectedReason === reason
+                  className={`py-2 px-3 text-sm border rounded-full ${selectedReason === reason
                       ? "bg-blue-100 border-blue-500 text-blue-700"
                       : "bg-white hover:bg-gray-100"
-                  }`}
+                    }`}
                   onClick={() => setSelectedReason(reason)}
                 >
                   {reason}
                 </button>
               ))}
             </div>
+
+
 
             {selectedReason === "Lainnya" && (
               <textarea
@@ -2037,7 +2005,7 @@ export default function SocialNetworkFeed() {
                   setCustomReason("");
                 }}
               >
-                Batal
+                Cancel
               </button>
               <button
                 className={`px-4 py-2 rounded text-white ${
@@ -2048,16 +2016,13 @@ export default function SocialNetworkFeed() {
                 disabled={!selectedReason}
                 onClick={() => {
                   // Lakukan POST report ke backend atau tampilkan alert dulu
-                  console.log(
-                    "Report submitted:",
-                    selectedReason === "Lainnya" ? customReason : selectedReason
-                  );
+                  console.log("Report submitted:", selectedReason === "Lainnya" ? customReason : selectedReason);
                   setShowReportModal(false);
                   setSelectedReason("");
                   setCustomReason("");
                 }}
               >
-                Laporkan
+                Report
               </button>
             </div>
           </div>
@@ -2154,11 +2119,10 @@ export default function SocialNetworkFeed() {
                   <button
                     key={type}
                     onClick={() => setPostVisibility(type)}
-                    className={`flex items-center px-3 py-2 rounded-md text-sm ${
-                      postVisibility === type
+                    className={`flex items-center px-3 py-2 rounded-md text-sm ${postVisibility === type
                         ? "bg-blue-100 text-blue-700"
                         : "bg-gray-100 text-gray-700"
-                    }`}
+                      }`}
                   >
                     {icon}
                     <span className="ml-2">{label}</span>
