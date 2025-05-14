@@ -21,6 +21,8 @@ func NewRouter(
 	connectionController controller.ConnectionController,
 	reportController controller.ReportController,
 	groupController controller.GroupController,
+	chatController controller.ChatController,
+	profileViewController controller.ProfileViewController,
 ) *httprouter.Router {
 	router := httprouter.New()
 
@@ -158,6 +160,9 @@ func NewRouter(
 	router.PUT("/api/groups/:groupId", groupController.Update)
 	router.DELETE("/api/groups/:groupId", groupController.Delete)
 
+	router.POST("/api/groups/:groupId/posts", groupController.CreatePost)
+	router.GET("/api/groups/:groupId/posts", groupController.GetGroupPosts)
+
 	router.POST("/api/groups/:groupId/members/:userId", groupController.AddMember)
 	router.DELETE("/api/groups/:groupId/members/:userId", groupController.RemoveMember)
 	router.PUT("/api/groups/:groupId/members/:userId/role", groupController.UpdateMemberRole)
@@ -170,6 +175,24 @@ func NewRouter(
 	router.PUT("/api/invitations/:invitationId/reject", groupController.RejectInvitation)
 	router.GET("/api/my-invitations", groupController.FindMyInvitations)
 	router.DELETE("/api/invitations/:invitationId", groupController.CancelInvitation)
+
+	// Chat routes
+	router.POST("/api/conversations", chatController.CreateConversation)
+	router.GET("/api/conversations", chatController.GetConversations)
+	router.GET("/api/conversations/:conversationId", chatController.GetConversation)
+	router.PUT("/api/conversations/:conversationId/read", chatController.MarkConversationAsRead)
+
+	router.POST("/api/conversations/:conversationId/messages", chatController.SendMessage)
+	router.POST("/api/conversations/:conversationId/files", chatController.SendFileMessage)
+	router.GET("/api/conversations/:conversationId/messages", chatController.GetMessages)
+	router.PUT("/api/messages/:messageId", chatController.UpdateMessage)
+	router.DELETE("/api/messages/:messageId", chatController.DeleteMessage)
+
+	// Pusher authentication endpoint
+	router.POST("/api/pusher/auth", chatController.AuthPusher)
+
+	router.GET("/api/user/profile/views/this-week", profileViewController.GetViewsThisWeek)
+	router.GET("/api/user/profile/views/last-week", profileViewController.GetViewsLastWeek)
 
 	uploadFS := http.FileServer(http.Dir("uploads"))
 

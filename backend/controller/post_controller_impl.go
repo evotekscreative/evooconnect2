@@ -24,7 +24,7 @@ func NewPostController(postService service.PostService) PostController {
 
 func (controller *PostControllerImpl) Create(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Parse multipart form with 10 MB max memory
-	err := helper.ParseMultipartForm(request, 10) // 10 MB limit
+	err := helper.ParseMultipartForm(request, 10)
 	helper.PanicIfError(err)
 
 	userId, err := helper.GetUserIdFromToken(request)

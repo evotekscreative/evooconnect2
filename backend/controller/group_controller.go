@@ -15,6 +15,10 @@ type GroupController interface {
 	FindAll(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	FindMyGroups(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 
+	// Group post management
+	CreatePost(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+	GetGroupPosts(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+
 	// Member management
 	AddMember(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	RemoveMember(writer http.ResponseWriter, request *http.Request, params httprouter.Params)

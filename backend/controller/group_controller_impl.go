@@ -6,6 +6,7 @@ import (
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/service"
+	"mime/multipart"
 	"net/http"
 	"strconv"
 
@@ -15,11 +16,13 @@ import (
 
 type GroupControllerImpl struct {
 	GroupService service.GroupService
+	PostService  service.PostService
 }
 
-func NewGroupController(groupService service.GroupService) GroupController {
+func NewGroupController(groupService service.GroupService, postService service.PostService) GroupController {
 	return &GroupControllerImpl{
 		GroupService: groupService,
+		PostService:  postService,
 	}
 }
 
@@ -36,8 +39,13 @@ func (controller *GroupControllerImpl) Create(writer http.ResponseWriter, reques
 	helper.ReadFromMultipartForm(request, &createRequest)
 
 	// Handle image uploads
+	var file *multipart.FileHeader = nil
+
 	form := request.MultipartForm
-	file := form.File["photo"][0]
+	files := form.File["photo"]
+	if len(files) > 0 {
+		file = files[0]
+	}
 
 	// Create group
 	groupResponse := controller.GroupService.Create(request.Context(), userId, createRequest, file)
@@ -153,6 +161,80 @@ func (controller *GroupControllerImpl) FindMyGroups(writer http.ResponseWriter, 
 		Code:   http.StatusOK,
 		Status: "OK",
 		Data:   groupResponses,
+	}
+	helper.WriteToResponseBody(writer, webResponse)
+}
+
+func (controller *GroupControllerImpl) CreatePost(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+
+	// Parse group ID from URL
+	groupId, err := uuid.Parse(params.ByName("groupId"))
+	helper.PanicIfError(err)
+
+	// Parse form for file uploads
+	err = request.ParseMultipartForm(10 << 20) // 10MB max
+	helper.PanicIfError(err)
+
+	// Get post content from form
+	createRequest := web.CreatePostRequest{}
+	helper.ReadFromMultipartForm(request, &createRequest)
+	createRequest.Visibility = "group" // Set default visibility
+
+	// Get files
+	form := request.MultipartForm
+	files := form.File["images"]
+
+	// Create post in group
+	postResponse := controller.PostService.CreateGroupPost(request.Context(), groupId, userId, createRequest, files)
+
+	// Send response
+	webResponse := web.WebResponse{
+		Code:   http.StatusCreated,
+		Status: "CREATED",
+		Data:   postResponse,
+	}
+	writer.WriteHeader(http.StatusCreated)
+	helper.WriteToResponseBody(writer, webResponse)
+}
+
+func (controller *GroupControllerImpl) GetGroupPosts(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+
+	// Parse group ID from URL
+	groupId, err := uuid.Parse(params.ByName("groupId"))
+	helper.PanicIfError(err)
+
+	// Parse query params for pagination
+	limit := 10 // Default
+	offset := 0 // Default
+
+	limitParam := request.URL.Query().Get("limit")
+	if limitParam != "" {
+		parsedLimit, err := strconv.Atoi(limitParam)
+		if err == nil && parsedLimit > 0 {
+			limit = parsedLimit
+		}
+	}
+
+	offsetParam := request.URL.Query().Get("offset")
+	if offsetParam != "" {
+		parsedOffset, err := strconv.Atoi(offsetParam)
+		if err == nil && parsedOffset >= 0 {
+			offset = parsedOffset
+		}
+	}
+
+	// Get posts for group
+	posts := controller.PostService.FindByGroupId(request.Context(), groupId, userId, limit, offset)
+
+	// Send response
+	webResponse := web.WebResponse{
+		Code:   http.StatusOK,
+		Status: "OK",
+		Data:   posts,
 	}
 	helper.WriteToResponseBody(writer, webResponse)
 }

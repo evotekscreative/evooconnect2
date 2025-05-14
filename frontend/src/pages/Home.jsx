@@ -105,7 +105,7 @@ export default function SocialNetworkFeed() {
     if (userData) {
       const parsedUser = JSON.parse(userData);
       setCurrentUserId(parsedUser.id);
-      
+
     }
   }, []);
 
@@ -263,10 +263,10 @@ export default function SocialNetworkFeed() {
 
   const openImageModal = (post, index) => {
     // Pastikan post.images adalah array URL lengkap
-    const images = post.images.map(img => 
+    const images = post.images.map(img =>
       img.startsWith('http') ? img : `http://localhost:3000/${img}`
     );
-    
+
     setSelectedPost({
       ...post,
       images: images
@@ -403,8 +403,8 @@ export default function SocialNetworkFeed() {
       console.error("Post failed:", error);
       setError(
         error.response?.data?.message ||
-          error.message ||
-          "Failed to create post. Please try again."
+        error.message ||
+        "Failed to create post. Please try again."
       );
     } finally {
       setIsLoading(false);
@@ -448,8 +448,8 @@ export default function SocialNetworkFeed() {
           const replies = cachedReplies
             ? JSON.parse(cachedReplies)
             : Array.isArray(comment.replies)
-            ? comment.replies
-            : [];
+              ? comment.replies
+              : [];
 
           return {
             ...comment,
@@ -643,7 +643,7 @@ export default function SocialNetworkFeed() {
       console.error("Gagal menambahkan komentar:", error);
       setCommentError(
         error.response?.data?.message ||
-          "Terjadi kesalahan saat menambahkan komentar. Silakan coba lagi."
+        "Terjadi kesalahan saat menambahkan komentar. Silakan coba lagi."
       );
     }
   };
@@ -720,7 +720,7 @@ export default function SocialNetworkFeed() {
       console.error("Failed to add reply:", error);
       setCommentError(
         error.response?.data?.message ||
-          "Failed to add reply. Please try again."
+        "Failed to add reply. Please try again."
       );
     }
   };
@@ -913,8 +913,8 @@ export default function SocialNetworkFeed() {
   const renderLikeButton = (post) => (
     <button
       className={`px-2 md:px-3 py-1 rounded text-xs md:text-sm flex items-center ${post.isLiked
-          ? "bg-blue-100 text-blue-600"
-          : "bg-sky-100 hover:bg-sky-200 text-blue-500"
+        ? "bg-blue-100 text-blue-600"
+        : "bg-sky-100 hover:bg-sky-200 text-blue-500"
         }`}
       onClick={() => handleLikePost(post.id, post.isLiked)}
     >
@@ -1418,6 +1418,50 @@ export default function SocialNetworkFeed() {
     );
   };
 
+  const fetchUserProfile = async (username) => {
+    if (!username) {
+      setAlertInfo({
+        show: true,
+        type: 'error',
+        message: 'No user ID provided'
+      });
+      return;
+    }
+
+    try {
+      const userToken = localStorage.getItem("token");
+      const response = await axios.get(
+        `http://localhost:3000/api/user-profile/${username}`,
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        }
+      );
+
+      // Handle successful response
+      navigate(`/profile/${username}`);
+
+    } catch (error) {
+      console.error("Failed to fetch user profile:", error);
+      let errorMessage = "Failed to load user profile";
+
+      if (error.response) {
+        if (error.response.status === 404) {
+          errorMessage = "User not found";
+        } else if (error.response.status === 401) {
+          errorMessage = "Please login to view profiles";
+        }
+      }
+
+      setAlertInfo({
+        show: true,
+        type: 'error',
+        message: errorMessage
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col md:flex-row bg-gray-50 px-4 md:px-6 lg:px-12 xl:px-32 py-4 md:py-6">
       {renderCommentOptionsModal()}
@@ -1447,9 +1491,8 @@ export default function SocialNetworkFeed() {
 
       {/* Left Sidebar - Profile Section */}
       <div
-        className={`${
-          showMobileMenu ? "block" : "hidden"
-        } md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pr-2 lg:pr-4`}
+        className={`${showMobileMenu ? "block" : "hidden"
+          } md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pr-2 lg:pr-4`}
       >
         <div className="bg-white rounded-lg shadow mb-4 p-4 text-center">
           <div className="flex justify-center mb-3">
@@ -1503,9 +1546,8 @@ export default function SocialNetworkFeed() {
 
       {/* Main Content - Feed */}
       <div
-        className={`w-full ${
-          showMobileMenu ? "hidden" : "block"
-        } md:block md:w-full lg:w-1/2 px-0 md:px-1`}
+        className={`w-full ${showMobileMenu ? "hidden" : "block"
+          } md:block md:w-full lg:w-1/2 px-0 md:px-1`}
       >
         <div
           id="post-form"
@@ -1515,8 +1557,8 @@ export default function SocialNetworkFeed() {
           <div className="flex border-b pb-2 space-x-1">
             <button
               className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${activeTab === "update"
-                  ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
-                  : "text-gray-500 hover:text-blue-500"
+                ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                : "text-gray-500 hover:text-blue-500"
                 }`}
               onClick={() => setActiveTab("update")}
             >
@@ -1526,8 +1568,8 @@ export default function SocialNetworkFeed() {
             </button>
             <button
               className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${activeTab === "article"
-                  ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
-                  : "text-gray-500 hover:text-blue-500"
+                ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                : "text-gray-500 hover:text-blue-500"
                 }`}
               onClick={() => setActiveTab("article")}
             >
@@ -1572,8 +1614,8 @@ export default function SocialNetworkFeed() {
                       <span
                         onClick={() => handleVisibilityChange(type)}
                         className={`p-1 rounded-full cursor-pointer transition ${postVisibility === type
-                            ? "bg-blue-600"
-                            : "bg-gray-400"
+                          ? "bg-blue-600"
+                          : "bg-gray-400"
                           } text-white`}
                       >
                         {icon}
@@ -1588,8 +1630,8 @@ export default function SocialNetworkFeed() {
                 </Tooltip>
                 <Button
                   className={`px-4 py-2 text-sm transition-colors duration-300 ease-in-out ${isLoading
-                      ? "bg-gray-400 text-white cursor-not-allowed"
-                      : "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700"
+                    ? "bg-gray-400 text-white cursor-not-allowed"
+                    : "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700"
                     }`}
                   onClick={handlePostSubmit}
                   disabled={isLoading}
@@ -1606,7 +1648,7 @@ export default function SocialNetworkFeed() {
                   )}
                 </Button>
               </div>
-              
+
             </>
           ) : (
             <>
@@ -1679,8 +1721,8 @@ export default function SocialNetworkFeed() {
                       <span
                         onClick={() => handleVisibilityChange(type)}
                         className={`p-1 rounded-full cursor-pointer transition ${postVisibility === type
-                            ? "bg-blue-600"
-                            : "bg-gray-400"
+                          ? "bg-blue-600"
+                          : "bg-gray-400"
                           } text-white`}
                       >
                         {icon}
@@ -1741,7 +1783,10 @@ export default function SocialNetworkFeed() {
                     </div>
                   )}
                   <div>
-                    <h6 className="font-bold mb-0 text-sm md:text-base">
+                    <h6
+                      className="font-bold mb-0 text-sm md:text-base cursor-pointer hover:underline"
+                      onClick={() => post.user?.id && fetchUserProfile(post.user.id)}
+                    >
                       {post.user?.name || "Unknown User"}
                     </h6>
                     <small className="text-gray-500 text-xs">
@@ -1782,8 +1827,8 @@ export default function SocialNetworkFeed() {
                 <div className="border-t px-4 py-2 flex justify-between">
                   <button
                     className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${post.isLiked
-                        ? "text-blue-600 bg-blue-50"
-                        : "text-blue-600 hover:bg-blue-100"
+                      ? "text-blue-600 bg-blue-50"
+                      : "text-blue-600 hover:bg-blue-100"
                       }`}
                     onClick={() => handleLikePost(post.id, post.isLiked)}
                   >
@@ -1974,8 +2019,8 @@ export default function SocialNetworkFeed() {
                 <button
                   key={reason}
                   className={`py-2 px-3 text-sm border rounded-full ${selectedReason === reason
-                      ? "bg-blue-100 border-blue-500 text-blue-700"
-                      : "bg-white hover:bg-gray-100"
+                    ? "bg-blue-100 border-blue-500 text-blue-700"
+                    : "bg-white hover:bg-gray-100"
                     }`}
                   onClick={() => setSelectedReason(reason)}
                 >
@@ -2008,11 +2053,10 @@ export default function SocialNetworkFeed() {
                 Cancel
               </button>
               <button
-                className={`px-4 py-2 rounded text-white ${
-                  selectedReason
+                className={`px-4 py-2 rounded text-white ${selectedReason
                     ? "bg-blue-600 hover:bg-blue-700"
                     : "bg-gray-300 cursor-not-allowed"
-                }`}
+                  }`}
                 disabled={!selectedReason}
                 onClick={() => {
                   // Lakukan POST report ke backend atau tampilkan alert dulu
@@ -2120,8 +2164,8 @@ export default function SocialNetworkFeed() {
                     key={type}
                     onClick={() => setPostVisibility(type)}
                     className={`flex items-center px-3 py-2 rounded-md text-sm ${postVisibility === type
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-gray-100 text-gray-700"
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-gray-100 text-gray-700"
                       }`}
                   >
                     {icon}
@@ -2160,9 +2204,8 @@ export default function SocialNetworkFeed() {
 
       {/* Right Sidebar */}
       <div
-        className={`${
-          showMobileMenu ? "block" : "hidden"
-        } md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pl-2 lg:pr-4`}
+        className={`${showMobileMenu ? "block" : "hidden"
+          } md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pl-2 lg:pr-4`}
       >
         {/* People You Might Know */}
         <div className="bg-white rounded-lg shadow mb-4 p-3">
@@ -2455,9 +2498,8 @@ export default function SocialNetworkFeed() {
                 {selectedPost.images.map((_, index) => (
                   <button
                     key={index}
-                    className={`w-2 h-2 md:w-3 md:h-3 rounded-full ${
-                      selectedImageIndex === index ? "bg-white" : "bg-gray-500"
-                    }`}
+                    className={`w-2 h-2 md:w-3 md:h-3 rounded-full ${selectedImageIndex === index ? "bg-white" : "bg-gray-500"
+                      }`}
                     onClick={() => setSelectedImageIndex(index)}
                   />
                 ))}
@@ -2568,19 +2610,18 @@ export default function SocialNetworkFeed() {
 
                             {(comment.repliesCount > 0 ||
                               allReplies[comment.id]?.length > 0) && (
-                              <button
-                                className="text-gray-500 text-xs hover:underline"
-                                onClick={() => toggleReplies(comment.id)}
-                              >
-                                {expandedReplies[comment.id]
-                                  ? "Hide replies"
-                                  : `View replies (${
-                                      comment.repliesCount ||
-                                      allReplies[comment.id]?.length ||
-                                      0
+                                <button
+                                  className="text-gray-500 text-xs hover:underline"
+                                  onClick={() => toggleReplies(comment.id)}
+                                >
+                                  {expandedReplies[comment.id]
+                                    ? "Hide replies"
+                                    : `View replies (${comment.repliesCount ||
+                                    allReplies[comment.id]?.length ||
+                                    0
                                     })`}
-                              </button>
-                            )}
+                                </button>
+                              )}
                           </div>
 
                           {/* Dropdown menu */}

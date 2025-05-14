@@ -87,8 +87,6 @@ export default function GroupPage() {
         members: members,
       }));
 
-      console.log(group);
-
     } catch (error) {
       console.error("Error fetching group members:", error);
     }
@@ -225,20 +223,15 @@ export default function GroupPage() {
   const handleInvite = async (userId) => {
     try {
       const token = localStorage.getItem("token");
+      const currentUser = JSON.parse(localStorage.getItem("user"));
 
-      if (!token) {
-        console.error("No authentication token found");
-        const invitedUser = connections.find(conn => conn.user?.id === userId);
-        if (invitedUser) {
-          setInvitedUserName(invitedUser.user.name);
-        }
-        setShowInviteSuccess(true);
-        setInviteModalOpen(false);
-        setTimeout(() => setShowInviteSuccess(false), 3000);
+      if (!token || !currentUser) {
+        console.error("No authentication token or user data found");
+        toast.error("You need to be logged in to invite users");
         return;
       }
 
-      await axios.post(
+      const response = await axios.post(
         `http://localhost:3000/api/groups/${groupId}/invitations/${userId}`,
         {},
         {
@@ -258,6 +251,7 @@ export default function GroupPage() {
       setShowInviteSuccess(true);
       setInviteModalOpen(false);
       setTimeout(() => setShowInviteSuccess(false), 3000);
+      toast.success(`Invitation sent to ${invitedUser?.user?.name || 'user'}`);
 
     } catch (error) {
       console.error("Error inviting user:", error);
@@ -327,7 +321,7 @@ export default function GroupPage() {
                 <div className="p-4 text-center">
                   <div className="profile-photo-container">
                     <img
-                      src={group.creator?.photo || "/default-user.png"}
+                      src="#"
                       className="rounded-full w-20 h-20 mx-auto"
                       alt="Profile"
                     />
@@ -367,34 +361,6 @@ export default function GroupPage() {
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Members List */}
-              <div className="rounded-lg border bg-white shadow-sm p-4">
-                <h3 className="font-bold text-lg mb-4">Members</h3>
-                {group?.members?.length > 0 ? (
-                  <ul className="space-y-3">
-                    {group.members.map((member) => (
-                      <li key={member.id} className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <img
-                            src={'http://localhost:3000/' + member.user.photo}
-                            className="rounded-full mr-3 w-10 h-10"
-                            alt={member.name}
-                          />
-                          <div>
-                            <h6 className="font-bold text-gray-800">{member.user.name}</h6>
-                            {member.role === "admin" && (
-                              <small className="text-blue-500">Admin</small>
-                            )}
-                          </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-gray-500">No members found.</p>
-                )}
               </div>
 
               {/* Create Post Box */}
@@ -508,7 +474,7 @@ export default function GroupPage() {
 
                         <button
                           className="flex items-center justify-center w-1/3 py-2 rounded-lg text-blue-600 hover:bg-blue-50"
-                          onClick={() => openCommentModal(post.id)}
+                          onClick={() => setCommentModalPostId(post.id)}
                         >
                           <MessageCircle size={14} className="mr-2" />
                           Comment ({post.comments.length || 0})
@@ -539,16 +505,29 @@ export default function GroupPage() {
                 </div>
                 <div className="p-3">
                   <div className="flex flex-wrap gap-2">
-                    {group.members?.map((member) => (
-                      <div key={member.id} className="text-center">
-                        <img
-                          src={'http://localhost:3000/' + member.photo}
-                          className="rounded-full w-12 h-12"
-                          alt={member.name}
-                        />
-                        <p className="text-xs mt-1">{member.name}</p>
-                      </div>
-                    ))}
+                    {group?.members?.length > 0 ? (
+                      <ul className="space-y-3">
+                        {group.members.map((member) => (
+                          <li key={member.id} className="flex items-center justify-between">
+                            <div className="flex items-center">
+                              <img
+                                src={'http://localhost:3000/' + member.user.photo}
+                                className="rounded-full mr-3 w-10 h-10"
+                                alt={member.name}
+                              />
+                              <div>
+                                <h6 className="font-bold text-gray-800">{member.user.name}</h6>
+                                {member.role === "admin" && (
+                                  <small className="text-blue-500">Admin</small>
+                                )}
+                              </div>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-gray-500">No members found.</p>
+                    )}
                   </div>
                   <button
                     className="mt-3 border border-blue-500 text-blue-500 hover:bg-blue-50 px-3 py-2 rounded text-sm w-full"
@@ -582,36 +561,36 @@ export default function GroupPage() {
                   </div>
                 ) : (
                   <ul className="divide-y">
-                   {connections.map((connection) => {
-                    const friend = connection.user;
-                    const isMember = group.members?.some((member) => member.user.id === friend.id);
+                    {connections.map((connection) => {
+                      const friend = connection.user;
+                      const isMember = group.members?.some((member) => member.user.id === friend.id);
 
-                    return (
-                    <li
-                      key={connection.id}
-                      className="py-3 px-4 flex justify-between items-center"
-                    >
-                      <div className="flex items-center">
-                        <img
-                          src={friend.profile_photo || "/default-user.png"}
-                          className="rounded-full mr-3 w-10 h-10"
-                          alt={friend.name}
-                        />
-                        <span>{friend.name}</span>
-                      </div>
-                      {isMember ? (
-                        <span className="text-gray-500 text-sm">Already a member</span>
-                      ) : (
-                        <button
-                          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
-                          onClick={() => handleInvite(friend.id)}
+                      return (
+                        <li
+                          key={connection.id}
+                          className="py-3 px-4 flex justify-between items-center"
                         >
-                          Invite
-                        </button>
-                      )}
-                    </li>
-                    );
-})};
+                          <div className="flex items-center">
+                            <img
+                              src={friend.profile_photo || "/default-user.png"}
+                              className="rounded-full mr-3 w-10 h-10"
+                              alt={friend.name}
+                            />
+                            <span>{friend.name}</span>
+                          </div>
+                          {isMember ? (
+                            <span className="text-gray-500 text-sm">Already a member</span>
+                          ) : (
+                            <button
+                              className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+                              onClick={() => handleInvite(friend.id)}
+                            >
+                              Invite
+                            </button>
+                          )}
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>
