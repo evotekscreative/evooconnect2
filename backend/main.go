@@ -22,9 +22,12 @@ func main() {
 
 	jwtSecret := helper.GetEnv("JWT_SECRET_KEY", "your-secret-key")
 
-	// Initialize user components
+	connectionRepository := repository.NewConnectionRepository()
+
 	userRepository := repository.NewUserRepository()
-	userService := service.NewUserService(userRepository, db, validate)
+	connectionService := service.NewConnectionService(connectionRepository, userRepository, db, validate)
+	connectionController := controller.NewConnectionController(connectionService)
+	userService := service.NewUserService(userRepository, connectionRepository, db, validate)
 	userController := controller.NewUserController(userService)
 
 	// Initialize auth components
@@ -38,7 +41,7 @@ func main() {
 
 	// Initialize post components
 	postRepository := repository.NewPostRepository()
-	postService := service.NewPostService(postRepository, db, validate)
+	postService := service.NewPostService(postRepository, connectionRepository, db, validate)
 	postController := controller.NewPostController(postService)
 
 	// Initialize comment components
@@ -62,9 +65,6 @@ func main() {
 	commentBlogController := controller.NewCommentBlogController(commentBlogService)
 
 	// Initialize connection components
-	connectionRepository := repository.NewConnectionRepository()
-	connectionService := service.NewConnectionService(connectionRepository, userRepository, db, validate)
-	connectionController := controller.NewConnectionController(connectionService)
 // ✅ Initialize report components
 reportRepository := repository.NewReportRepository(db)
 reportService := service.NewReportService(
@@ -77,6 +77,18 @@ reportService := service.NewReportService(
     db,
 )
 reportController := controller.NewReportController(reportService)
+	groupRepository := repository.NewGroupRepository()
+	groupMemberRepository := repository.NewGroupMemberRepository()
+	groupInvitationRepository := repository.NewGroupInvitationRepository()
+	groupService := service.NewGroupService(
+		db,
+		groupRepository,
+		groupMemberRepository,
+		groupInvitationRepository,
+		userRepository,
+		validate,
+	)
+	groupController := controller.NewGroupController(groupService)
 
 
 	// ✅ Inject all controllers into router including reportController
@@ -91,6 +103,7 @@ reportController := controller.NewReportController(reportService)
 		commentBlogController,
 		connectionController,
 		reportController, // <- Tambahan
+		groupController,
 	)
 
 	// Create middleware chain

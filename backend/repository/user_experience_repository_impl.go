@@ -19,13 +19,6 @@ func NewExperienceRepository() ExperienceRepository {
 }
 
 func (repository *ExperienceRepositoryImpl) Save(ctx context.Context, tx *sql.Tx, experience domain.UserExperience) domain.UserExperience {
-	id := uuid.New()
-	now := time.Now()
-
-	experience.Id = id
-	experience.CreatedAt = now
-	experience.UpdatedAt = now
-
 	SQL := `INSERT INTO user_experiences (
         id, user_id, job_title, company_name, 
         start_month, start_year, end_month, end_year, 

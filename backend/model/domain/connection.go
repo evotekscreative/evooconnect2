@@ -10,9 +10,10 @@ import (
 type ConnectionStatus string
 
 const (
-	ConnectionStatusPending  ConnectionStatus = "pending"
-	ConnectionStatusAccepted ConnectionStatus = "accepted"
-	ConnectionStatusRejected ConnectionStatus = "rejected"
+	ConnectionStatusPending   ConnectionStatus = "pending"
+	ConnectionStatusAccepted  ConnectionStatus = "accepted"
+	ConnectionStatusRejected  ConnectionStatus = "rejected"
+	ConnectionStatusCancelled ConnectionStatus = "cancelled"
 )
 
 // ConnectionRequest represents a connection request between users

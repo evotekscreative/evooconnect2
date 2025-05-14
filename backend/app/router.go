@@ -21,6 +21,7 @@ func NewRouter(
 	commentBlogController controller.CommentBlogController,
 	connectionController controller.ConnectionController,
 	reportController controller.ReportController,
+	groupController controller.GroupController,
 ) *httprouter.Router {
 	router := httprouter.New()
 
@@ -36,6 +37,9 @@ func NewRouter(
 	// User routes
 	router.GET("/api/user/profile", userController.GetProfile)
 	router.PUT("/api/user/profile", userController.UpdateProfile)
+	router.GET("/api/user-profile/:username", userController.GetByUsername)
+	router.POST("/api/user/photo", userController.UploadPhotoProfile)
+	router.GET("/api/user-peoples", userController.GetPeoples)
 
 	// Blog routes
 	router.POST("/api/blogs", blogController.Create)
@@ -56,6 +60,9 @@ func NewRouter(
 	router.DELETE("/api/blog/comments/:commentId", commentBlogController.Delete) // <-- path ini diubah
 	router.POST("/api/blog/comments/:commentId/replies", commentBlogController.Reply) // <-- path ini diubah
 	router.GET("/api/blog/comments/:commentId/replies", commentBlogController.GetReplies) // <-- path ini diubah
+	// Post routes - static paths first
+	router.POST("/api/posts", postController.Create)
+	router.GET("/api/posts", postController.FindAll)
 
 	// Post comment routes
 	router.POST("/api/post-comments/:postId", commentController.Create)
@@ -68,6 +75,20 @@ func NewRouter(
 
 	// Education routes
 	router.POST("/api/education", educationController.Create)
+
+	// Experience routes - static paths first
+	router.POST("/api/experience", experienceController.Create)
+
+	// Blog routes with parameters
+	router.GET("/api/blogs/slug/:slug", blogController.GetBySlug)
+	router.DELETE("/api/blogs/:blogId", blogController.Delete)
+	router.PUT("/api/blogs/:blogId", blogController.Update)
+	router.GET("/api/blogs/random", blogController.GetRandomBlogs)
+
+	// blog routes static paths first
+	router.POST("/api/blogs/:blogId/upload-photo", blogController.UploadPhoto)
+
+	// Education routes with parameters
 	router.PUT("/api/education/:educationId", educationController.Update)
 	router.DELETE("/api/education/:educationId", educationController.Delete)
 	router.GET("/api/education/:educationId", educationController.GetById)
@@ -75,14 +96,12 @@ func NewRouter(
 
 	// Experience routes
 	router.POST("/api/experience", experienceController.Create)
-	router.POST("/api/experience/photo", experienceController.UploadPhoto)
 	router.PUT("/api/experience/:experienceId", experienceController.Update)
 	router.DELETE("/api/experience/:experienceId", experienceController.Delete)
 	router.GET("/api/experience/:experienceId", experienceController.GetById)
 	router.GET("/api/users/:userId/experience", experienceController.GetByUserId)
 
 	// Post routes
-	router.POST("/api/posts/images", postController.UploadImages)
 	router.POST("/api/posts", postController.Create)
 	router.GET("/api/posts", postController.FindAll)
 	router.GET("/api/posts/:postId", postController.FindById)
@@ -105,8 +124,30 @@ func NewRouter(
 	router.GET("/api/connections/requests", connectionController.GetConnectionRequests)
 	router.PUT("/api/connections/requests/:requestId/accept", connectionController.AcceptConnectionRequest)
 	router.PUT("/api/connections/requests/:requestId/reject", connectionController.RejectConnectionRequest)
+	router.DELETE("/api/connections/requests/:toUserId", connectionController.CancelConnectionRequest)
 	router.GET("/api/users/:userId/connections", connectionController.GetConnections)
 	router.POST("/api/users/:userId/connect", connectionController.SendConnectionRequest)
+	router.DELETE("/api/users/:userId/connect", connectionController.Disconnect)
+
+	router.POST("/api/groups", groupController.Create)
+	router.GET("/api/groups", groupController.FindAll)
+	router.GET("/api/my-groups", groupController.FindMyGroups)
+	router.GET("/api/groups/:groupId", groupController.FindById)
+	router.PUT("/api/groups/:groupId", groupController.Update)
+	router.DELETE("/api/groups/:groupId", groupController.Delete)
+
+	router.POST("/api/groups/:groupId/members/:userId", groupController.AddMember)
+	router.DELETE("/api/groups/:groupId/members/:userId", groupController.RemoveMember)
+	router.PUT("/api/groups/:groupId/members/:userId/role", groupController.UpdateMemberRole)
+	router.GET("/api/groups/:groupId/members", groupController.FindMembers)
+	router.POST("/api/groups/:groupId/join", groupController.JoinGroup)
+	router.DELETE("/api/groups/:groupId/leave", groupController.LeaveGroup)
+
+	router.POST("/api/groups/:groupId/invitations/:userId", groupController.CreateInvitation)
+	router.PUT("/api/invitations/:invitationId/accept", groupController.AcceptInvitation)
+	router.PUT("/api/invitations/:invitationId/reject", groupController.RejectInvitation)
+	router.GET("/api/my-invitations", groupController.FindMyInvitations)
+	router.DELETE("/api/invitations/:invitationId", groupController.CancelInvitation)
 
 	uploadFS := http.FileServer(http.Dir("uploads"))
 
