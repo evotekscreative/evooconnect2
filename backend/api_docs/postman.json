@@ -489,7 +489,7 @@
           ]
         },
         {
-          "name": "Get User By ID",
+          "name": "Get User By Username",
           "request": {
             "auth": {
               "type": "bearer",
@@ -499,16 +499,16 @@
             },
             "method": "GET",
             "header": [],
-            "url": "{{base_url}}/api/users/{{userId}}",
+            "url": "{{base_url}}/api/users/{{username}}",
             "description": "Mendapatkan profil pengguna berdasarkan ID"
           },
           "response": [
             {
-              "name": "Get User By ID Success",
+              "name": "Get User By Username Success",
               "originalRequest": {
                 "method": "GET",
                 "header": [],
-                "url": "{{base_url}}/api/users/550e8400-e29b-41d4-a716-446655440000"
+                "url": "{{base_url}}/api/users/johndoe"
               },
               "status": "OK",
               "code": 200,
