@@ -2773,25 +2773,81 @@
               }
             },
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
+            "header": [],
             "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"How to Build a Go Backend\",\n  \"category\": \"Tech\",\n  \"content\": \"This is a detailed tutorial on building Go backends.\",\n  \"image\": \"uploads/blogs/go-backend.jpg\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "value": "How to Build a Go Backend",
+                  "type": "text"
+                },
+                {
+                  "key": "category",
+                  "value": "Technology",
+                  "type": "text"
+                },
+                {
+                  "key": "content",
+                  "value": "This is a detailed tutorial on building Go backends.",
+                  "type": "text"
+                },
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "/path/to/blog-image.jpg"
                 }
-              }
+              ]
             },
-            "url": "http://localhost:3000/api/blogs"
+            "url": "{{base_url}}/api/blogs",
+            "description": "Create a new blog post with form-data. Title, content, and category are required fields."
           },
-          "response": []
+          "response": [
+            {
+              "name": "Create Blog Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "title",
+                      "value": "How to Build a Go Backend",
+                      "type": "text"
+                    },
+                    {
+                      "key": "category",
+                      "value": "Technology",
+                      "type": "text"
+                    },
+                    {
+                      "key": "content",
+                      "value": "This is a detailed tutorial on building Go backends.",
+                      "type": "text"
+                    },
+                    {
+                      "key": "image",
+                      "type": "file",
+                      "src": "/path/to/blog-image.jpg"
+                    }
+                  ]
+                },
+                "url": "{{base_url}}/api/blogs"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"code\": 201,\n    \"status\": \"CREATED\",\n    \"data\": {\n        \"id\": \"e8e37ee0-dcf2-434f-a918-0716972ccee7\",\n        \"title\": \"How to Build a Go Backend\",\n        \"slug\": \"how-to-build-a-go-backend-46e0cbc0\",\n        \"category\": \"Technology\",\n        \"content\": \"This is a detailed tutorial on building Go backends.\",\n        \"photo\": \"uploads/blogs/69956cff-aa88-4bb2-92a3-4e916c0d1e11/blog-1747193382175226300.jpg\",\n        \"user_id\": \"69956cff-aa88-4bb2-92a3-4e916c0d1e11\",\n        \"created_at\": \"2025-05-14T10:29:42+07:00\",\n        \"updated_at\": \"2025-05-14T10:29:42+07:00\",\n        \"user\": {\n            \"id\": \"69956cff-aa88-4bb2-92a3-4e916c0d1e11\",\n            \"name\": \"mamal\",\n            \"username\": \"yamanalu\",\n            \"photo\": \"\"\n        }\n    }\n}"
+            }
+          ]
         },
         {
           "name": "Get All Blogs",
@@ -2890,41 +2946,125 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
+              "bearer": {
+                "token": "{{JWT_TOKEN}}"
+              }
+            },
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
                 {
-                  "key": "token",
-                  "value": "{{JWT_TOKEN}}",
-                  "type": "string"
+                  "key": "title",
+                  "value": "Updated Blog Title",
+                  "type": "text"
+                },
+                {
+                  "key": "category",
+                  "value": "Technology",
+                  "type": "text"
+                },
+                {
+                  "key": "content",
+                  "value": "Updated content for the blog.",
+                  "type": "text"
+                },
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "/path/to/updated-image.jpg"
                 }
               ]
             },
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"Updated Blog Title\",\n  \"category\": \"Technology\",\n  \"content\": \"Updated content for the blog.\",\n  \"image\": \"uploads/blogs/updated-image.jpg\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "http://localhost:3000/api/blogs/{{blog_id}}",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
-              "path": ["api", "blogs", "{{blog_id}}"]
-            },
-            "description": "Memperbarui blog berdasarkan ID blog."
+            "url": "{{base_url}}/api/blogs/{{blogId}}",
+            "description": "Update an existing blog post with form-data. All fields are required and will be validated in English."
           },
-          "response": []
+          "response": [
+            {
+              "name": "Update Blog Success",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "title",
+                      "value": "Updated Blog Title",
+                      "type": "text"
+                    },
+                    {
+                      "key": "category",
+                      "value": "Technology",
+                      "type": "text"
+                    },
+                    {
+                      "key": "content",
+                      "value": "Updated content for the blog.",
+                      "type": "text"
+                    },
+                    {
+                      "key": "image",
+                      "type": "file",
+                      "src": "/path/to/updated-image.jpg"
+                    }
+                  ]
+                },
+                "url": "{{base_url}}/api/blogs/{{blogId}}"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"e8e37ee0-dcf2-434f-a918-0716972ccee7\",\n        \"title\": \"Updated Blog Title\",\n        \"slug\": \"updated-blog-title-46e0cbc0\",\n        \"category\": \"Technology\",\n        \"content\": \"Updated content for the blog.\",\n        \"photo\": \"uploads/blogs/69956cff-aa88-4bb2-92a3-4e916c0d1e11/blog-1747193382175226300.jpg\",\n        \"user_id\": \"69956cff-aa88-4bb2-92a3-4e916c0d1e11\",\n        \"created_at\": \"2025-05-14T10:29:42+07:00\",\n        \"updated_at\": \"2025-05-14T11:15:22+07:00\",\n        \"user\": {\n            \"id\": \"69956cff-aa88-4bb2-92a3-4e916c0d1e11\",\n            \"name\": \"mamal\",\n            \"username\": \"yamanalu\",\n            \"photo\": \"\"\n        }\n    }\n}"
+            },
+            {
+              "name": "Update Blog Validation Error",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "title",
+                      "value": "",
+                      "type": "text"
+                    },
+                    {
+                      "key": "content",
+                      "value": "Updated content for the blog.",
+                      "type": "text"
+                    },
+                    {
+                      "key": "category",
+                      "value": "Technology",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": "{{base_url}}/api/blogs/{{blogId}}"
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"code\": 400,\n    \"status\": \"BAD REQUEST\",\n    \"data\": \"title is required\"\n}"
+            }
+          ]
         }
       ],
       "description": "Endpoints untuk mengelola blog dan artikel"
@@ -3036,18 +3176,107 @@
       ]
     },
     {
-      "name": "Report",
-      "description": "Endpoint untuk mengelola laporan pengguna",
+      "name": "Reports",
       "item": [
         {
           "name": "Create Report",
           "request": {
-            
-          }
-          
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{JWT_TOKEN}}"
+              }
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reason\": \"inappropriate_content\",\n    \"description\": \"This content contains inappropriate material that violates community guidelines.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/reports/{{userId}}/{{targetType}}/{{targetId}}",
+            "description": "Report inappropriate content or user behavior. Target type can be 'user', 'post', 'comment', or 'blog'."
+          },
+          "response": [
+            {
+              "name": "Create Report Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"reason\": \"inappropriate_content\",\n    \"description\": \"This content contains inappropriate material that violates community guidelines.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{base_url}}/api/reports/550e8400-e29b-41d4-a716-446655440000/blog/e8e37ee0-dcf2-434f-a918-0716972ccee7"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"code\": 201,\n    \"status\": \"CREATED\",\n    \"data\": {\n        \"id\": \"f7e38ff1-edf3-435e-b919-1827983ddff8\",\n        \"reporter_id\": \"69956cff-aa88-4bb2-92a3-4e916c0d1e11\",\n        \"target_id\": \"e8e37ee0-dcf2-434f-a918-0716972ccee7\",\n        \"target_type\": \"blog\",\n        \"reason\": \"inappropriate_content\",\n        \"description\": \"This content contains inappropriate material that violates community guidelines.\",\n        \"status\": \"pending\",\n        \"created_at\": \"2025-05-14T12:30:42+07:00\",\n        \"updated_at\": \"2025-05-14T12:30:42+07:00\"\n    }\n}"
+            },
+            {
+              "name": "Create Report Error - Already Reported",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"reason\": \"inappropriate_content\",\n    \"description\": \"This content contains inappropriate material that violates community guidelines.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{base_url}}/api/reports/550e8400-e29b-41d4-a716-446655440000/blog/e8e37ee0-dcf2-434f-a918-0716972ccee7"
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"code\": 400,\n    \"status\": \"BAD REQUEST\",\n    \"data\": \"You have already reported this content\"\n}"
+            }
+          ]
         }
-      ]
-
+      ],
+      "description": "Endpoints for reporting inappropriate content or user behavior"
     },
     {
       "name": "Education",

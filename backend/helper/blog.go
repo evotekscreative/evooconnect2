@@ -28,19 +28,20 @@ func ToBlogResponse(blog domain.Blog) web.BlogResponse {
 
 func ValidateBlogInput(title, content, category string) error {
     if title == "" {
-        return errors.New("title harus diisi")
+        return errors.New("title is required")
     }
     if content == "" {
-        return errors.New("content harus diisi")
+        return errors.New("content is required")
     }
     if category == "" {
-        return errors.New("category harus diisi")
+        return errors.New("category is required")
     }
     if !isValidCategory(category) {
-        return errors.New("category tidak valid")
+        return errors.New("invalid category")
     }
     return nil
 }
+
 
 func isValidCategory(category string) bool {
     allowedCategories := []string{

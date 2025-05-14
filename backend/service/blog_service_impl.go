@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 	"errors"
+	"unicode"
 )
 
 type BlogServiceImpl struct {
@@ -259,10 +260,30 @@ func (s *BlogServiceImpl) GetRandomBlogs(ctx context.Context, limit int) ([]web.
 // Utility
 
 func generateSlug(title string) string {
-	baseSlug := strings.ToLower(strings.ReplaceAll(title, " ", "-"))
-	uniqueID := uuid.New().String()[:8]
-	return fmt.Sprintf("%s-%s", baseSlug, uniqueID)
+    // Ubah ke lowercase
+    slug := strings.ToLower(title)
+    
+    // Hapus karakter spesial, hanya biarkan huruf, angka, dan spasi
+    slug = strings.Map(func(r rune) rune {
+        if unicode.IsLetter(r) || unicode.IsNumber(r) || unicode.IsSpace(r) {
+            return r
+        }
+        return -1
+    }, slug)
+    
+    // Ganti spasi dengan tanda hubung
+    slug = strings.ReplaceAll(slug, " ", "-")
+    
+    // Hapus tanda hubung berlebih
+    for strings.Contains(slug, "--") {
+        slug = strings.ReplaceAll(slug, "--", "-")
+    }
+    
+    // Tambahkan ID unik
+    uniqueID := uuid.New().String()[:8]
+    return fmt.Sprintf("%s-%s", strings.Trim(slug, "-"), uniqueID)
 }
+
 
 func nowISO8601() string {
 	return time.Now().Format(time.RFC3339)

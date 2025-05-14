@@ -126,6 +126,12 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 		TargetType: result.TargetType,
 		TargetID:   result.TargetID,
 		Reason:     result.Reason,
+		Description: func() string {
+			if strings.EqualFold(result.Reason, "Other") {
+				return result.OtherReason
+			}
+			return ""
+		}(),
 		Status:     result.Status,
 	}, nil
 }
