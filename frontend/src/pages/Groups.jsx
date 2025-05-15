@@ -101,6 +101,74 @@ export default function Groups() {
     }
   };
 
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setGroupForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    setGroupForm(prev => ({ ...prev, image: file }));
+  };
+
+  const handleCreateGroup = async (e) => {
+    e.preventDefault();
+    setFormSubmitted(true);
+
+    if (!groupForm.image) {
+      setError("Group photo is required");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
+      formData.append("name", groupForm.name);
+      formData.append("description", groupForm.description);
+      formData.append("rule", groupForm.rule);
+      formData.append("privacy_level", groupForm.privacy_level);
+      formData.append("invite_policy", groupForm.invite_policy);
+      formData.append("photo", groupForm.image);
+
+      const response = await axios.post(`${base_url}/api/groups`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const newGroup = {
+        ...response.data.data,
+        isAdmin: true,
+        createdDate: new Date().toISOString().split('T')[0],
+        members_count: 1
+      };
+
+      setAdminGroups(prev => [newGroup, ...prev]);
+      toast.success("Group created successfully!");
+
+      setGroupForm({
+        name: "",
+        description: "",
+        rule: "",
+        privacy_level: "public",
+        invite_policy: "admin",
+        image: null,
+      });
+      setShowModal(false);
+      setFormSubmitted(false);
+    } catch (error) {
+      console.error("Failed to create group:", error);
+      setError(error.response?.data?.message || "Failed to create group");
+      toast.error(error.response?.data?.message || "Failed to create group");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleAcceptInvitation = async (invitationId) => {
     try {
       const token = localStorage.getItem("token");
@@ -156,6 +224,22 @@ export default function Groups() {
     } catch (error) {
       console.error("Error rejecting invitation:", error);
       toast.error(error.response?.data?.message || "Failed to reject invitation.");
+    }
+  };
+
+  const handleDeleteGroup = async (groupId) => {
+    if (window.confirm("Are you sure you want to delete this group? This action cannot be undone.")) {
+      try {
+        const token = localStorage.getItem("token");
+        await axios.delete(`${base_url}/api/groups/${groupId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setAdminGroups(adminGroups.filter(group => group.id !== groupId));
+        toast.success("Group deleted successfully");
+      } catch (error) {
+        console.error("Failed to delete group:", error);
+        toast.error(error.response?.data?.message || "Failed to delete group");
+      }
     }
   };
 
