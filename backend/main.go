@@ -34,6 +34,8 @@ func main() {
 
 	// Content-related repositories
 	blogRepository := repository.NewBlogRepository(db)
+	commentBlogRepository := repository.NewCommentBlogRepository()
+
 	postRepository := repository.NewPostRepository()
 	commentRepository := repository.NewCommentRepository()
 
@@ -48,6 +50,8 @@ func main() {
 
 	// Chat repository
 	chatRepository := repository.NewChatRepository()
+	// report repository
+	reportRepository := repository.NewReportRepository(db)
 
 	// ===== Services =====
 	// User-related services
@@ -58,6 +62,8 @@ func main() {
 
 	// Content-related services
 	blogService := service.NewBlogService(blogRepository)
+	commentBlogService := service.NewCommentBlogService(commentBlogRepository, blogRepository, userRepository, db, validate)
+
 	postService := service.NewPostService(
 		userRepository,
 		postRepository,
@@ -86,6 +92,17 @@ func main() {
 	// Chat service
 	chatService := service.NewChatService(chatRepository, userRepository, db, validate)
 
+	// Report service
+	reportService := service.NewReportService(
+		reportRepository,
+		userRepository,
+		postRepository,
+		commentRepository,
+		blogRepository,
+		commentBlogRepository,
+		db,
+	)
+
 	// ===== Controllers =====
 	// User-related controllers
 	userController := controller.NewUserController(userService)
@@ -108,6 +125,12 @@ func main() {
 	// Chat controller
 	chatController := controller.NewChatController(chatService)
 
+	// Report controller
+	reportController := controller.NewReportController(reportService)
+
+	// Comment blog controller
+	commentBlogController := controller.NewCommentBlogController(commentBlogService)
+
 	// ===== Router and Middleware =====
 	// Initialize router with all controllers
 	router := app.NewRouter(
@@ -118,7 +141,9 @@ func main() {
 		commentController,
 		educationController,
 		experienceController,
+		commentBlogController,
 		connectionController,
+		reportController, // <- Tambahan
 		groupController,
 		chatController,
 		profileViewController,
