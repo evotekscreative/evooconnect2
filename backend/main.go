@@ -22,6 +22,10 @@ func main() {
 	// ===== Server initialization =====
 	helper.LoadEnv()
 	db := app.NewDB()
+	if db == nil {
+		log.Fatal("Failed to connect to the database")
+		return
+	}
 	validate := validator.New()
 	utils.InitPusherClient()
 	jwtSecret := helper.GetEnv("JWT_SECRET_KEY", "your-secret-key")
