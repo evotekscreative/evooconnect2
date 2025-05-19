@@ -18,71 +18,170 @@ import (
 
 func main() {
 	log.Println("Starting server...")
+
+	// ===== Server initialization =====
 	helper.LoadEnv()
 	db := app.NewDB()
 	validate := validator.New()
 	utils.InitPusherClient()
-
 	jwtSecret := helper.GetEnv("JWT_SECRET_KEY", "your-secret-key")
 
-	connectionRepository := repository.NewConnectionRepository()
-
+	// ===== Repositories =====
+	// User-related repositories
 	userRepository := repository.NewUserRepository()
-	connectionService := service.NewConnectionService(connectionRepository, userRepository, db, validate)
-	connectionController := controller.NewConnectionController(connectionService)
-	userService := service.NewUserService(userRepository, connectionRepository, db, validate)
-	userController := controller.NewUserController(userService)
+	connectionRepository := repository.NewConnectionRepository()
+	profileViewRepository := repository.NewProfileViewRepository()
 
-	// Initialize auth components
-	authService := service.NewAuthService(userRepository, db, validate, jwtSecret)
-	authController := controller.NewAuthController(authService)
-
-	// Initialize blog components
+	// Content-related repositories
 	blogRepository := repository.NewBlogRepository(db)
-	blogService := service.NewBlogService(blogRepository)
-	blogController := controller.NewBlogController(blogService)
+	commentBlogRepository := repository.NewCommentBlogRepository()
 
+	// Post repository
+	postRepository := repository.NewPostRepository()
+	
+	// Comment repository
+	commentRepository := repository.NewCommentRepository()
+
+	// Professional info repositories
+	educationRepository := repository.NewEducationRepository()
+	experienceRepository := repository.NewExperienceRepository()
+
+	// Group-related repositories
 	groupRepository := repository.NewGroupRepository()
 	groupMemberRepository := repository.NewGroupMemberRepository()
-
-	// Initialize post dependencies
-	postRepository := repository.NewPostRepository()
-	postService := service.NewPostService(userRepository, postRepository, connectionRepository, groupRepository, groupMemberRepository, db, validate)
-	postController := controller.NewPostController(postService)
-
-	// Initialize comment components
-	commentRepository := repository.NewCommentRepository()
-	commentService := service.NewCommentService(commentRepository, postRepository, userRepository, db, validate)
-	commentController := controller.NewCommentController(commentService)
-
-	// Initialize education components
-	educationRepository := repository.NewEducationRepository()
-	educationService := service.NewEducationService(educationRepository, userRepository, db, validate)
-	educationController := controller.NewEducationController(educationService)
-
-	// Initialize experience components
-	experienceRepository := repository.NewExperienceRepository()
-	experienceService := service.NewExperienceService(experienceRepository, userRepository, db, validate)
-	experienceController := controller.NewExperienceController(experienceService)
-
 	groupInvitationRepository := repository.NewGroupInvitationRepository()
+
+	// Chat repository
+	chatRepository := repository.NewChatRepository()
+	
+	// Report repository
+	reportRepository := repository.NewReportRepository(db)
+	
+	// Notification repository
+	notificationRepository := repository.NewNotificationRepository()
+
+	// Notification service (moved up)
+	notificationService := service.NewNotificationService(
+		notificationRepository,
+		userRepository,
+		db,
+		validate,
+	)
+
+	// ===== Services =====
+	// User-related services
+	profileViewService := service.NewProfileViewService(db, profileViewRepository, userRepository, notificationService)
+	connectionService := service.NewConnectionService(connectionRepository, userRepository, notificationService, db, validate)
+	userService := service.NewUserService(userRepository, connectionRepository, profileViewService, db, validate)
+	authService := service.NewAuthService(userRepository, db, validate, jwtSecret)
+
+	// Content-related services
+	blogService := service.NewBlogService(
+		blogRepository,
+		userRepository,
+		connectionRepository,
+		notificationService,
+	)
+	
+	commentBlogService := service.NewCommentBlogService(
+		commentBlogRepository,
+		blogRepository,
+		userRepository,
+		notificationService,
+		db,
+		validate,
+	)
+
+	// Post service
+	postService := service.NewPostService(
+		userRepository,
+		postRepository,
+		connectionRepository,
+		groupRepository,
+		groupMemberRepository,
+		notificationService,
+		db,
+		validate,
+	)
+	
+	// Comment service
+	commentService := service.NewCommentService(
+		commentRepository,
+		postRepository,
+		userRepository,
+		notificationService,
+		db,
+		validate,
+	)
+
+	// Professional info services
+	educationService := service.NewEducationService(educationRepository, userRepository, db, validate)
+	experienceService := service.NewExperienceService(experienceRepository, userRepository, db, validate)
+
+	// Group service
 	groupService := service.NewGroupService(
 		db,
 		groupRepository,
 		groupMemberRepository,
 		groupInvitationRepository,
 		userRepository,
+		notificationService,
 		validate,
 	)
+
+	// Chat service
+	chatService := service.NewChatService(chatRepository, userRepository, db, validate)
+
+	// Report service
+	reportService := service.NewReportService(
+		reportRepository,
+		userRepository,
+		postRepository,
+		commentRepository,
+		blogRepository,
+		commentBlogRepository,
+		db,
+	)
+
+	// ===== Controllers =====
+	// User-related controllers
+	userController := controller.NewUserController(
+		userService,
+		profileViewService,
+		notificationService,
+	)
+	connectionController := controller.NewConnectionController(connectionService)
+	profileViewController := controller.NewProfileViewController(profileViewService)
+	authController := controller.NewAuthController(authService)
+
+	// Content-related controllers
+	blogController := controller.NewBlogController(blogService)
+	postController := controller.NewPostController(postService)
+	commentController := controller.NewCommentController(commentService)
+
+	// Professional info controllers
+	educationController := controller.NewEducationController(educationService)
+	experienceController := controller.NewExperienceController(experienceService)
+
+	// Group controller
 	groupController := controller.NewGroupController(groupService, postService)
 
-	// Initialize chat components
-	chatRepository := repository.NewChatRepository()
-	chatService := service.NewChatService(chatRepository, userRepository, db, validate)
+	// Chat controller
 	chatController := controller.NewChatController(chatService)
 
 
 	// ✅ Inject all controllers into router including reportController
+	// Report controller
+	reportController := controller.NewReportController(reportService)
+
+	// Comment blog controller
+	commentBlogController := controller.NewCommentBlogController(commentBlogService)
+
+	// Notification controller
+	notificationController := controller.NewNotificationController(notificationService)
+
+	// ===== Router and Middleware =====
+	// Initialize router with all controllers
 	router := app.NewRouter(
 		authController,
 		userController,
@@ -96,6 +195,8 @@ func main() {
 		reportController,
 		groupController,
 		chatController,
+		profileViewController,
+		notificationController,
 	)
 
 	// Create middleware chain
@@ -103,7 +204,7 @@ func main() {
 	handler = middleware.NewAuthMiddleware(handler, jwtSecret)
 	handler = middleware.CORSMiddleware(handler)
 
-	// Start server
+	// ===== Start Server =====
 	server := http.Server{
 		Addr:    "localhost:3000",
 		Handler: handler,

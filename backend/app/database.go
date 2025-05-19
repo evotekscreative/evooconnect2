@@ -36,10 +36,10 @@ func NewDB() *sql.DB {
 	db, err := sql.Open("postgres", dsn)
 	helper.PanicIfError(err)
 
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(25)
-	db.SetConnMaxLifetime(5 * time.Minute)
-	db.SetConnMaxIdleTime(5 * time.Minute)
+	db.SetMaxOpenConns(25)                 // Batasi jumlah koneksi total
+	db.SetMaxIdleConns(10)                 // Jumlah koneksi idle yang dipertahankan
+	db.SetConnMaxLifetime(5 * time.Minute) // Waktu maksimum penggunaan koneksi
+	db.SetConnMaxIdleTime(3 * time.Minute)
 
 	err = db.Ping()
 	if err != nil {

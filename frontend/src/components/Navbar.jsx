@@ -18,6 +18,10 @@ const Navbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [user, setUser] = useState({
+    name: '',
+    photo: null
+  });
 
   const msgRef = useRef(null);
   const bellRef = useRef(null);
@@ -25,6 +29,19 @@ const Navbar = () => {
   const mobileMenuRef = useRef(null);
 
   useEffect(() => {
+    // Fetch user data from localStorage
+    const fetchUserData = () => {
+      const userData = JSON.parse(localStorage.getItem('user'));
+      if (userData) {
+        setUser({
+          name: userData.name || '',
+          photo: userData.photo || null
+        });
+      }
+    };
+
+    fetchUserData();
+
     const handleClickOutside = (event) => {
       if (!msgRef.current?.contains(event.target)) setIsMsgOpen(false);
       if (!bellRef.current?.contains(event.target)) setIsBellOpen(false);
@@ -51,6 +68,7 @@ const Navbar = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     window.location.href = '/login';
   };
 
@@ -154,28 +172,48 @@ const Navbar = () => {
           <div ref={dropdownRef} className="relative">
             <div
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="w-7 h-7 bg-white text-black rounded-full flex items-center justify-center font-semibold border border-white cursor-pointer">
-              <img src="#" alt="" />
+              className="flex items-center gap-2 cursor-pointer"
+            >
+              {user.photo ? (
+                <img 
+                  src={`http://localhost:3000/${user.photo}`} 
+                  alt="Profile" 
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-semibold border border-white">
+                  {user.name.split(' ').map(n => n[0]).join('')}
+                </div>
+              )}
+              
             </div>
             {isDropdownOpen && (
               <div className="absolute right-0 mt-2 w-64 bg-white text-black rounded-lg shadow-lg z-50">
                 <div className="flex items-center gap-3 p-4 border-b">
                   <div className="w-10 h-10 bg-gray-200 rounded-full overflow-hidden">
-                    <img
-                      src="https://via.placeholder.com/40"
-                      alt="avatar"
-                      className="w-full h-full object-cover"
-                    />
+                    {user.photo ? (
+                      <img
+                        src={`http://localhost:3000/${user.photo}`}
+                        alt="avatar"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-300">
+                        <span className="text-sm font-bold text-gray-600">
+                          {user.name.split(' ').map(n => n[0]).join('')}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div>
-                    <p className="font-bold">Nama User</p>
+                    <p className="font-bold">{user.name}</p>
                     <span className="text-green-500 text-sm">● Online</span>
                   </div>
                 </div>
                 <ul className="flex flex-col divide-y">
                   <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
                     <Link to="/profile" className="flex items-center gap-2">
-                    My Account
+                      My Account
                     </Link>
                   </li>
                   <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">

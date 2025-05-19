@@ -29,11 +29,11 @@ func (repository *ChatRepositoryImpl) CreateConversation(ctx context.Context, tx
 	conversation.CreatedAt = now
 	conversation.UpdatedAt = now
 
-	fmt.Println("Creating conversation with ID:", conversation.Id)
+	// fmt.Println("Creating conversation with ID:", conversation.Id)
 	SQL := `INSERT INTO conversations (id, created_at, updated_at) VALUES ($1, $2, $3)`
 	_, err := tx.ExecContext(ctx, SQL, conversation.Id, conversation.CreatedAt, conversation.UpdatedAt)
 	helper.PanicIfError(err)
-	fmt.Println("Conversation created successfully with ID:", conversation.Id)
+	// fmt.Println("Conversation created successfully with ID:", conversation.Id)
 
 	return conversation
 }
@@ -125,35 +125,158 @@ func (repository *ChatRepositoryImpl) FindConversationsByUserId(ctx context.Cont
         ORDER BY c.updated_at DESC
         LIMIT $2 OFFSET $3
     `
-
 	rows, err := tx.QueryContext(ctx, SQL, userId, limit, offset)
 	helper.PanicIfError(err)
 	defer rows.Close()
 
 	var conversations []domain.Conversation
+	var conversationIDs []uuid.UUID
 
 	for rows.Next() {
 		conversation := domain.Conversation{}
 		err := rows.Scan(&conversation.Id, &conversation.CreatedAt, &conversation.UpdatedAt)
 		helper.PanicIfError(err)
-
-		// Get participants
-		participants, _ := repository.getConversationParticipants(ctx, tx, conversation.Id)
-		conversation.Participants = participants
-
-		// Get last message
-		messages, _ := repository.FindMessagesByConversationId(ctx, tx, conversation.Id, 1, 0)
-		if len(messages) > 0 {
-			conversation.LastMessage = &messages[0]
-		}
-
-		// Get unread count for this user
-		conversation.UnreadCount = repository.CountUnreadMessages(ctx, tx, conversation.Id, userId)
-
 		conversations = append(conversations, conversation)
+		conversationIDs = append(conversationIDs, conversation.Id)
 	}
 
-	// Count total conversations
+	if len(conversationIDs) == 0 {
+		return conversations, 0
+	}
+
+	// Ambil semua participants sekaligus
+	participantsMap := make(map[uuid.UUID][]domain.ConversationParticipant)
+	{
+		placeholders := []string{}
+		args := []interface{}{}
+		for i, id := range conversationIDs {
+			placeholders = append(placeholders, fmt.Sprintf("$%d", i+1))
+			args = append(args, id)
+		}
+		SQL := fmt.Sprintf(`
+            SELECT cp.conversation_id, cp.user_id, cp.last_read_at, cp.created_at,
+                u.id, u.name, u.username, COALESCE(u.photo, ''), u.email
+            FROM conversation_participants cp
+            JOIN users u ON cp.user_id = u.id
+            WHERE cp.conversation_id IN (%s)
+        `, strings.Join(placeholders, ","))
+		rows, err := tx.QueryContext(ctx, SQL, args...)
+		helper.PanicIfError(err)
+		defer rows.Close()
+		for rows.Next() {
+			participant := domain.ConversationParticipant{}
+			user := domain.User{}
+			var lastReadAt sql.NullTime
+			err := rows.Scan(
+				&participant.ConversationId,
+				&participant.UserId,
+				&lastReadAt,
+				&participant.CreatedAt,
+				&user.Id,
+				&user.Name,
+				&user.Username,
+				&user.Photo,
+				&user.Email,
+			)
+			helper.PanicIfError(err)
+			if lastReadAt.Valid {
+				val := lastReadAt.Time
+				participant.LastReadAt = &val
+			}
+			participant.User = &user
+			participantsMap[participant.ConversationId] = append(participantsMap[participant.ConversationId], participant)
+		}
+	}
+
+	// Ambil pesan terakhir sekaligus
+	lastMsgMap := make(map[uuid.UUID]*domain.Message)
+	{
+		placeholders := []string{}
+		args := []interface{}{}
+		for i, id := range conversationIDs {
+			placeholders = append(placeholders, fmt.Sprintf("$%d", i+1))
+			args = append(args, id)
+		}
+		sql := fmt.Sprintf(`
+    WITH ranked AS (
+        SELECT m.*, u.id AS user_id, u.name, u.username, COALESCE(u.photo, '') AS photo,
+            ROW_NUMBER() OVER (PARTITION BY m.conversation_id ORDER BY m.created_at DESC) AS rn
+        FROM messages m
+        JOIN users u ON m.sender_id = u.id
+        WHERE m.conversation_id IN (%s)
+    )
+    SELECT id, conversation_id, sender_id, message_type, content, file_path, file_name, file_size, file_type, created_at, updated_at, is_read,
+        user_id, name, username, photo, conversation_id
+    FROM ranked WHERE rn = 1
+`, strings.Join(placeholders, ","))
+		rows, err := tx.QueryContext(ctx, sql, args...)
+		helper.PanicIfError(err)
+		defer rows.Close()
+		for rows.Next() {
+			message := domain.Message{}
+			user := domain.User{}
+			var convId uuid.UUID
+			err := rows.Scan(
+				&message.Id,
+				&message.ConversationId,
+				&message.SenderId,
+				&message.MessageType,
+				&message.Content,
+				&message.FilePath,
+				&message.FileName,
+				&message.FileSize,
+				&message.FileType,
+				&message.CreatedAt,
+				&message.UpdatedAt,
+				&message.IsRead,
+				&user.Id,
+				&user.Name,
+				&user.Username,
+				&user.Photo,
+				&convId,
+			)
+			helper.PanicIfError(err)
+			message.Sender = &user
+			lastMsgMap[convId] = &message
+		}
+	}
+
+	// Hitung unread sekaligus
+	unreadMap := make(map[uuid.UUID]int)
+	{
+		placeholders := []string{}
+		args := []interface{}{userId}
+		for i, id := range conversationIDs {
+			placeholders = append(placeholders, fmt.Sprintf("$%d", i+2))
+			args = append(args, id)
+		}
+		sql := fmt.Sprintf(`
+            SELECT conversation_id, COUNT(*)
+            FROM messages
+            WHERE sender_id != $1 AND conversation_id IN (%s) AND is_read = FALSE
+            GROUP BY conversation_id
+        `, strings.Join(placeholders, ","))
+		rows, err := tx.QueryContext(ctx, sql, args...)
+		helper.PanicIfError(err)
+		defer rows.Close()
+		for rows.Next() {
+			var convId uuid.UUID
+			var count int
+			err := rows.Scan(&convId, &count)
+			helper.PanicIfError(err)
+			unreadMap[convId] = count
+		}
+	}
+
+	// Gabungkan hasil ke conversations
+	for i := range conversations {
+		id := conversations[i].Id
+		conversations[i].Participants = participantsMap[id]
+		conversations[i].LastMessage = lastMsgMap[id]
+		conversations[i].UnreadCount = unreadMap[id]
+	}
+
+	// Hitung total
 	var total int
 	countSQL := `
         SELECT COUNT(DISTINCT c.id) 

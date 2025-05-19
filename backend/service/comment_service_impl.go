@@ -8,6 +8,7 @@ import (
 	"evoconnect/backend/model/domain"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
+	"fmt"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
@@ -17,6 +18,7 @@ type CommentServiceImpl struct {
 	CommentRepository repository.CommentRepository
 	PostRepository    repository.PostRepository
 	UserRepository    repository.UserRepository
+	NotificationService NotificationService
 	DB                *sql.DB
 	Validate          *validator.Validate
 }
@@ -25,12 +27,14 @@ func NewCommentService(
 	commentRepository repository.CommentRepository,
 	postRepository repository.PostRepository,
 	userRepository repository.UserRepository,
+	notificationService NotificationService,
 	db *sql.DB,
 	validate *validator.Validate) CommentService {
 	return &CommentServiceImpl{
 		CommentRepository: commentRepository,
 		PostRepository:    postRepository,
 		UserRepository:    userRepository,
+		NotificationService: notificationService,
 		DB:                db,
 		Validate:          validate,
 	}
@@ -73,6 +77,24 @@ func (service *CommentServiceImpl) Create(ctx context.Context, postId uuid.UUID,
 		panic(exception.NewNotFoundError("User not found"))
 	}
 	newComment.User = &user
+
+	// Kirim notifikasi ke pemilik post jika bukan diri sendiri
+	if post.UserId != userId && service.NotificationService != nil {
+		refType := "post_comment"
+		go func() {
+			service.NotificationService.Create(
+				context.Background(),
+				post.UserId,
+				string(domain.NotificationCategoryPost),
+				string(domain.NotificationTypePostComment),
+				"Post Comment",
+				fmt.Sprintf("%s commented on your post", user.Name),
+				&postId,
+				&refType,
+				&userId,
+			)
+		}()
+	}
 
 	return helper.ToCommentResponse(newComment)
 }
@@ -175,6 +197,7 @@ func (service *CommentServiceImpl) Delete(ctx context.Context, commentId uuid.UU
 }
 
 // Tambahkan implementasi Reply sesuai interface
+// Tambahkan implementasi Reply sesuai interface
 func (service *CommentServiceImpl) Reply(ctx context.Context, commentId uuid.UUID, userId uuid.UUID, request web.CreateCommentRequest) web.CommentResponse {
 	// Validasi request
 	err := service.Validate.Struct(request)
@@ -211,6 +234,33 @@ func (service *CommentServiceImpl) Reply(ctx context.Context, commentId uuid.UUI
 		panic(exception.NewNotFoundError("User not found"))
 	}
 	newReply.User = &user
+
+	// Kirim notifikasi ke pemilik komentar jika bukan diri sendiri
+	if parentComment.UserId != userId && service.NotificationService != nil {
+		// Gunakan tipe notifikasi yang berbeda untuk balasan komentar
+		refType := "comment_reply" // Berbeda dari "post_comment"
+		parentUserId := parentComment.UserId
+		postId := parentComment.PostId
+		userName := user.Name
+		
+		fmt.Printf("DEBUG: Sending comment reply notification. From: %s, To: %s, CommentID: %s, PostID: %s\n", 
+			userId, parentUserId, commentId, postId)
+		
+		// Kirim notifikasi tanpa goroutine untuk debugging
+		notifResponse := service.NotificationService.Create(
+			ctx, // Gunakan context yang sama dengan request
+			parentUserId,
+			string(domain.NotificationCategoryPost),
+			"comment_reply", // Gunakan string literal untuk tipe notifikasi khusus
+			"Comment Reply", // Judul yang berbeda untuk membedakan dari komentar biasa
+			fmt.Sprintf("%s replied to your comment", userName),
+			&postId,
+			&refType,
+			&userId,
+		)
+		
+		fmt.Printf("DEBUG: Comment reply notification response: %+v\n", notifResponse)
+	}
 
 	return helper.ToCommentResponse(newReply)
 }

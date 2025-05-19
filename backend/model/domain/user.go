@@ -98,3 +98,11 @@ type UserBriefResponse struct {
 	Headline    string    `json:"headline"`
 	IsConnected bool      `json:"is_connected"`
 }
+
+type UserShort struct {
+	Id          uuid.UUID `json:"id"`
+	Name        string    `json:"name"`
+	Username    string    `json:"username"`
+	Photo       string    `json:"photo"`
+	IsConnected bool      `json:"is_connected"`
+}

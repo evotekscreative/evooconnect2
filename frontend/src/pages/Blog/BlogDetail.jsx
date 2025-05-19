@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Pencil, Trash2, MoreVertical, Flag } from "lucide-react";
 import Case from "../../components/Case";
-import { MoreVertical, Pencil, Reply, Trash2, ChevronUp, ChevronDown, } from "lucide-react";
+import { MoreVertical, Pencil, Reply, Trash2, ChevronUp, ChevronDown, Flag } from "lucide-react";
 import { categories } from "../../components/Blog/CategoryStep";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -15,8 +14,6 @@ import { useLocation } from "react-router-dom";
 import BlogMenu from "../../components/Blog/BlogMenu";
 import ReportModal from "../../components/Blog/ReportModal";
 import CommentSection from "../../components/Blog/CommentSection";
-import { toast } from "sonner";
-import { categories } from "../../components/Blog/CategoryStep";
 import DeleteComment from "../../components/Blog/DeleteComment";
 import CommentDropdown from "../../components/Blog/CommentDropdown";
 

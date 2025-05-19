@@ -115,22 +115,22 @@ func (service *ChatServiceImpl) CreateConversation(ctx context.Context, userId u
 	err := service.Validate.Struct(request)
 	helper.PanicIfError(err)
 
-	fmt.Println("Creating conversation with participants:", request.ParticipantIds)
-
-	// Start the transaction at the beginning of the method
-	tx, err := service.DB.Begin()
+	// Step 1: Validate participants (short transaction)
+	tx1, err := service.DB.Begin()
 	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
 
-	// Check if all participantIds are valid users - now using tx instead of nil
+	// fmt.Println("Creating conversation with participants:", request.ParticipantIds)
+	// Check if all participantIds are valid users
 	for _, participantId := range request.ParticipantIds {
-		_, err := service.UserRepository.FindById(ctx, tx, participantId)
+		_, err := service.UserRepository.FindById(ctx, tx1, participantId)
 		if err != nil {
+			tx1.Rollback()
 			panic(exception.NewNotFoundError(fmt.Sprintf("User with ID %s not found", participantId)))
 		}
 	}
+	tx1.Commit()
+	// fmt.Println("All participant IDs are valid users")
 
-	fmt.Println("All participant IDs are valid users")
 	// Make sure the current user is in the participants list
 	participantIds := request.ParticipantIds
 	foundCurrentUser := false
@@ -145,35 +145,64 @@ func (service *ChatServiceImpl) CreateConversation(ctx context.Context, userId u
 		participantIds = append(participantIds, userId)
 	}
 
-	fmt.Println("Transaction started")
-	// Check if a conversation with these exact participants already exists
-	existingConversation, err := service.ChatRepository.FindConversationByParticipants(ctx, tx, participantIds)
+	// Step 2: Check for existing conversation (separate transaction)
+	tx2, err := service.DB.Begin()
+	helper.PanicIfError(err)
+
+	existingConversation, err := service.ChatRepository.FindConversationByParticipants(ctx, tx2, participantIds)
 	if err == nil {
 		// Conversation exists, return it
-		existingConversation, err = service.ChatRepository.FindConversationById(ctx, tx, existingConversation.Id)
-		helper.PanicIfError(err)
-		existingConversation.UnreadCount = service.ChatRepository.CountUnreadMessages(ctx, tx, existingConversation.Id, userId)
+		existingConversation, err = service.ChatRepository.FindConversationById(ctx, tx2, existingConversation.Id)
+		if err != nil {
+			tx2.Rollback()
+			helper.PanicIfError(err)
+		}
+		existingConversation.UnreadCount = service.ChatRepository.CountUnreadMessages(ctx, tx2, existingConversation.Id, userId)
+		tx2.Commit()
 		return service.toConversationResponse(existingConversation)
 	}
+	tx2.Commit()
 
-	fmt.Println("No existing conversation found, creating a new one")
-	// Create a new conversation
+	// Step 3: Create conversation (separate transaction)
+	tx3, err := service.DB.Begin()
+	helper.PanicIfError(err)
+
+	// fmt.Println("No existing conversation found, creating a new one")
 	conversation := domain.Conversation{}
-	conversation = service.ChatRepository.CreateConversation(ctx, tx, conversation)
+	conversation = service.ChatRepository.CreateConversation(ctx, tx3, conversation)
+	err = tx3.Commit()
+	helper.PanicIfError(err)
 
-	fmt.Println("New conversation created with ID:", conversation.Id)
-	// Add all participants
-	for _, participantId := range participantIds {
+	// fmt.Println("New conversation created with ID:", conversation.Id)
+
+	// Step 4: Add participants (separate transaction)
+	tx4, err := service.DB.Begin()
+	helper.PanicIfError(err)
+
+	for i, participantId := range participantIds {
 		participant := domain.ConversationParticipant{
 			ConversationId: conversation.Id,
 			UserId:         participantId,
 		}
-		service.ChatRepository.AddParticipant(ctx, tx, participant)
+		fmt.Printf("Adding participant %d of %d: %s\n", i+1, len(participantIds), participantId)
+		_, err := service.ChatRepository.AddParticipant(ctx, tx4, participant)
+		if err != nil {
+			tx4.Rollback()
+			fmt.Printf("Error adding participant: %v\n", err)
+			helper.PanicIfError(err)
+		}
 	}
+	err = tx4.Commit()
+	helper.PanicIfError(err)
 
-	fmt.Println("Participants added to conversation")
-	// Send initial message if provided
+	// fmt.Println("Participants added to conversation")
+
+	// Step 5: Send initial message if provided (separate transaction)
 	if request.InitialMessage != "" {
+		tx5, err := service.DB.Begin()
+		helper.PanicIfError(err)
+
+		// fmt.Println("Sending initial message")
 		initialMessage := domain.Message{
 			ConversationId: conversation.Id,
 			SenderId:       userId,
@@ -181,23 +210,38 @@ func (service *ChatServiceImpl) CreateConversation(ctx context.Context, userId u
 			Content:        request.InitialMessage,
 			IsRead:         false,
 		}
-		service.ChatRepository.CreateMessage(ctx, tx, initialMessage)
+		service.ChatRepository.CreateMessage(ctx, tx5, initialMessage)
+		err = tx5.Commit()
+		helper.PanicIfError(err)
+		// fmt.Println("Initial message sent successfully")
 	}
 
-	fmt.Println("Initial message sent")
-	// Fetch the full conversation with participants
-	conversation, err = service.ChatRepository.FindConversationById(ctx, tx, conversation.Id)
+	// Step 6: Fetch complete conversation data (final transaction)
+	tx6, err := service.DB.Begin()
 	helper.PanicIfError(err)
-	conversation.UnreadCount = service.ChatRepository.CountUnreadMessages(ctx, tx, conversation.Id, userId)
 
-	fmt.Println("Full conversation fetched with participants")
-	// Trigger Pusher event for each participant except the creator
-	conversationResponse := service.toConversationResponse(conversation)
-	for _, participant := range conversation.Participants {
-		if participant.UserId != userId {
-			utils.PusherClient.Trigger(fmt.Sprintf("private-user-%s", participant.UserId), "new-conversation", conversationResponse)
-		}
+	// fmt.Println("Fetching full conversation data")
+	conversation, err = service.ChatRepository.FindConversationById(ctx, tx6, conversation.Id)
+	if err != nil {
+		tx6.Rollback()
+		helper.PanicIfError(err)
 	}
+	conversation.UnreadCount = service.ChatRepository.CountUnreadMessages(ctx, tx6, conversation.Id, userId)
+	err = tx6.Commit()
+	helper.PanicIfError(err)
+
+	// fmt.Println("Full conversation fetched successfully")
+	conversationResponse := service.toConversationResponse(conversation)
+
+	// Push notifications outside transaction
+	go func() {
+		for _, participant := range conversation.Participants {
+			if participant.UserId != userId {
+				utils.PusherClient.Trigger(fmt.Sprintf("private-user-%s", participant.UserId), "new-conversation", conversationResponse)
+			}
+		}
+		// fmt.Println("Notifications sent to participants")
+	}()
 
 	return conversationResponse
 }
