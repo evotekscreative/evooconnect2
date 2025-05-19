@@ -16,14 +16,27 @@ import (
 	"time"
 	"errors"
 	"unicode"
+	"math/rand"
 )
 
 type BlogServiceImpl struct {
-	Repo repository.BlogRepository
+	Repo                repository.BlogRepository
+	UserRepository      repository.UserRepository
+	ConnectionRepository repository.ConnectionRepository
+	NotificationService NotificationService
 }
 
-func NewBlogService(repo repository.BlogRepository) BlogService {
-	return &BlogServiceImpl{Repo: repo}
+func NewBlogService(
+	repo repository.BlogRepository,
+	userRepository repository.UserRepository,
+	connectionRepository repository.ConnectionRepository,
+	notificationService NotificationService) BlogService {
+	return &BlogServiceImpl{
+		Repo:                repo,
+		UserRepository:      userRepository,
+		ConnectionRepository: connectionRepository,
+		NotificationService: notificationService,
+	}
 }
 
 var allowedCategories = []string{
@@ -46,43 +59,107 @@ func isValidCategory(cat string) bool {
 	return false
 }
 
+func validateContent(content string) error {
+	if len(content) > 1500 {
+		return fmt.Errorf("konten blog tidak boleh lebih dari 1500 karakter")
+	}
+	return nil
+}
+
 func (s *BlogServiceImpl) Create(ctx context.Context, req web.BlogCreateRequest, userID string) (web.BlogResponse, error) {
-	if err := helper.ValidateBlogInput(req.Title, req.Content, req.Category); err != nil {
-		return web.BlogResponse{}, err
-	}
-	if !isValidCategory(req.Category) {
-		return web.BlogResponse{}, fmt.Errorf("kategori %s tidak valid", req.Category)
-	}
+    // Validasi input dasar
+    if err := helper.ValidateBlogInput(req.Title, req.Content, req.Category); err != nil {
+        return web.BlogResponse{}, err
+    }
+    
+    // Validasi panjang konten
+    if err := validateContent(req.Content); err != nil {
+        return web.BlogResponse{}, err
+    }
+    
+    // Validasi kategori
+    if !isValidCategory(req.Category) {
+        return web.BlogResponse{}, fmt.Errorf("kategori %s tidak valid", req.Category)
+    }
 
-	slug := generateSlug(req.Title)
+    slug := generateSlug(req.Title)
 
-	blog := domain.Blog{
-		ID:        uuid.New().String(),
-		Title:     req.Title,
-		Slug:      slug,
-		Content:   req.Content,
-		Category:  req.Category,
-		ImagePath: req.Image,
-		UserID:    userID,
-		CreatedAt: nowISO8601(),
-		UpdatedAt: nowISO8601(),
-	}
+    blog := domain.Blog{
+        ID:        uuid.New().String(),
+        Title:     req.Title,
+        Slug:      slug,
+        Content:   req.Content,
+        Category:  req.Category,
+        ImagePath: req.Image,
+        UserID:    userID,
+        CreatedAt: nowISO8601(),
+        UpdatedAt: nowISO8601(),
+    }
 
-	blog, err := s.Repo.Save(ctx, blog)
-	if err != nil {
-		return web.BlogResponse{}, err
-	}
+    blog, err := s.Repo.Save(ctx, blog)
+    if err != nil {
+        return web.BlogResponse{}, err
+    }
 
-	userUUID, err := uuid.Parse(userID)
-	if err != nil {
-		return web.BlogResponse{}, fmt.Errorf("user ID tidak valid: %w", err)
-	}
-	user, err := s.Repo.FindUserByID(ctx, userUUID)
-	if err != nil {
-		return web.BlogResponse{}, fmt.Errorf("gagal mengambil data user: %w", err)
-	}
+    userUUID, err := uuid.Parse(userID)
+    if err != nil {
+        return web.BlogResponse{}, fmt.Errorf("user ID tidak valid: %w", err)
+    }
+    user, err := s.Repo.FindUserByID(ctx, userUUID)
+    if err != nil {
+        return web.BlogResponse{}, fmt.Errorf("gagal mengambil data user: %w", err)
+    }
 
-	return buildBlogResponse(blog, user), nil
+    // Kirim notifikasi ke koneksi pengguna dengan penanganan error yang lebih baik
+    go s.sendBlogNotifications(ctx, blog, user)
+
+    return buildBlogResponse(blog, user), nil
+}
+
+// Fungsi helper untuk mengirim notifikasi blog
+func (s *BlogServiceImpl) sendBlogNotifications(ctx context.Context, blog domain.Blog, user domain.User) {
+    // Cek apakah service tersedia
+    if s.NotificationService == nil {
+        fmt.Println("DEBUG: NotificationService is nil")
+        return
+    }
+
+    userUUID, err := uuid.Parse(blog.UserID)
+    if err != nil {
+        fmt.Printf("DEBUG: Failed to parse user ID: %v\n", err)
+        return
+    }
+
+    blogId, err := uuid.Parse(blog.ID)
+    if err != nil {
+        fmt.Printf("DEBUG: Failed to parse blog ID: %v\n", err)
+        return
+    }
+
+    userName := user.Name
+    blogTitle := blog.Title
+    
+    // Hanya kirim notifikasi dengan probabilitas tertentu (70%)
+    if rand.Intn(100) > 70 {
+        fmt.Println("DEBUG: Skipping notifications for this blog (random)")
+        return
+    }
+    
+    // Kirim notifikasi ke koneksi pengguna
+    refType := "blog_new"
+    
+    // Kirim notifikasi langsung tanpa menggunakan koneksi database
+    s.NotificationService.Create(
+        context.Background(),
+        userUUID, // Kirim ke diri sendiri untuk testing
+        "blog",
+        "blog_new",
+        "New Blog",
+        fmt.Sprintf("%s published a new blog: '%s'", userName, blogTitle),
+        &blogId,
+        &refType,
+        &userUUID,
+    )
 }
 
 func (s *BlogServiceImpl) FindAll(ctx context.Context) ([]web.BlogResponse, error) {
@@ -146,6 +223,11 @@ func (s *BlogServiceImpl) FindBySlug(ctx context.Context, slug string) (web.Blog
 }
 
 func (s *BlogServiceImpl) UpdateWithImagePath(ctx context.Context, blogID string, request web.BlogCreateRequest, userID string, imagePath string) (web.BlogResponse, error) {
+    // Validasi panjang konten
+    if err := validateContent(request.Content); err != nil {
+        return web.BlogResponse{}, err
+    }
+    
     // Dapatkan blog yang ada
     existingBlog, err := s.Repo.FindByID(ctx, blogID)
     if err != nil {
@@ -157,10 +239,14 @@ func (s *BlogServiceImpl) UpdateWithImagePath(ctx context.Context, blogID string
         return web.BlogResponse{}, errors.New("unauthorized: you are not the owner of this blog")
     }
 
+    // Simpan judul lama untuk perbandingan
+    oldTitle := existingBlog.Title
+    
     // Update data blog
     existingBlog.Title = request.Title
     existingBlog.Category = request.Category
     existingBlog.Content = request.Content
+    existingBlog.UpdatedAt = nowISO8601()
     
     // Update image path jika ada gambar baru
     if imagePath != "" && imagePath != existingBlog.ImagePath {
@@ -168,12 +254,12 @@ func (s *BlogServiceImpl) UpdateWithImagePath(ctx context.Context, blogID string
     }
 
     // Generate slug baru jika judul berubah
-    if existingBlog.Title != request.Title {
+    if oldTitle != request.Title {
         existingBlog.Slug = generateSlug(request.Title)
     }
 
     // Simpan perubahan ke database
-    err = s.Repo.Update(ctx, existingBlog) // Hanya menerima error, tidak ada blog yang dikembalikan
+    err = s.Repo.Update(ctx, existingBlog)
     if err != nil {
         return web.BlogResponse{}, err
     }
@@ -193,7 +279,6 @@ func (s *BlogServiceImpl) UpdateWithImagePath(ctx context.Context, blogID string
         }
     }
 
-    // Karena Update tidak mengembalikan blog yang diupdate, kita gunakan existingBlog yang sudah dimodifikasi
     return buildBlogResponse(existingBlog, user), nil
 }
 
@@ -257,6 +342,77 @@ func (s *BlogServiceImpl) GetRandomBlogs(ctx context.Context, limit int) ([]web.
 	return blogResponses, nil
 }
 
+func (service *BlogServiceImpl) CreateWithImagePath(ctx context.Context, req web.BlogCreateRequest, userID string, imagePath string) (web.BlogResponse, error) {
+    // Validasi
+    if err := helper.ValidateBlogInput(req.Title, req.Content, req.Category); err != nil {
+        return web.BlogResponse{}, err
+    }
+    
+    // Validasi panjang konten
+    if err := validateContent(req.Content); err != nil {
+        return web.BlogResponse{}, err
+    }
+
+    // Slug unik
+    slug := generateSlug(req.Title)
+
+    // Buat blog
+    blog := domain.Blog{
+        ID:        uuid.New().String(),
+        Title:     req.Title,
+        Slug:      slug,
+        Content:   req.Content,
+        Category:  req.Category,
+        ImagePath: imagePath, // Gunakan imagePath yang diberikan, bukan req.Image
+        UserID:    userID,
+        CreatedAt: nowISO8601(),
+        UpdatedAt: nowISO8601(),
+    }
+
+    blog, err := service.Repo.Save(ctx, blog)
+    if err != nil {
+        return web.BlogResponse{}, err
+    }
+
+    userUUID, err := uuid.Parse(userID)
+    if err != nil {
+        return web.BlogResponse{}, fmt.Errorf("user ID tidak valid: %w", err)
+    }
+    
+    user, err := service.Repo.FindUserByID(ctx, userUUID)
+    if err != nil {
+        return web.BlogResponse{}, fmt.Errorf("gagal mengambil data user: %w", err)
+    }
+
+    // Kirim notifikasi ke koneksi pengguna dengan penanganan error yang lebih baik
+    go service.sendBlogNotifications(ctx, blog, user)
+
+    return buildBlogResponse(blog, user), nil
+}
+
+func (s *BlogServiceImpl) FindById(ctx context.Context, blogID string) (web.BlogResponse, error) {
+    blog, err := s.Repo.FindByID(ctx, blogID)
+    if err != nil {
+        return web.BlogResponse{}, fmt.Errorf("blog dengan ID %s tidak ditemukan: %w", blogID, err)
+    }
+
+    userUUID, err := uuid.Parse(blog.UserID)
+    if err != nil {
+        return web.BlogResponse{}, fmt.Errorf("user ID tidak valid: %w", err)
+    }
+    user, err := s.Repo.FindUserByID(ctx, userUUID)
+    if err != nil {
+        user = domain.User{
+            Id:       userUUID,
+            Name:     "Anonymous",
+            Username: "Unknown",
+            Photo:    "default-profile.png",
+        }
+    }
+
+    return buildBlogResponse(blog, user), nil
+}
+
 // Utility
 
 func generateSlug(title string) string {
@@ -284,7 +440,6 @@ func generateSlug(title string) string {
     return fmt.Sprintf("%s-%s", strings.Trim(slug, "-"), uniqueID)
 }
 
-
 func nowISO8601() string {
 	return time.Now().Format(time.RFC3339)
 }
@@ -307,63 +462,4 @@ func buildBlogResponse(blog domain.Blog, user domain.User) web.BlogResponse {
 			Photo:    user.Photo,
 		},
 	}
-}
-
-func (service *BlogServiceImpl) CreateWithImagePath(ctx context.Context, req web.BlogCreateRequest, userID string, imagePath string) (web.BlogResponse, error) {
-    // Validasi
-    if err := helper.ValidateBlogInput(req.Title, req.Content, req.Category); err != nil {
-        return web.BlogResponse{}, err
-    }
-
-    // Slug unik
-    slug := generateSlug(req.Title)
-
-    // Buat blog
-    blog := domain.Blog{
-        ID:        uuid.New().String(),
-        Title:     req.Title,
-        Slug:      slug,
-        Content:   req.Content,
-        Category:  req.Category,
-        ImagePath: imagePath, // Gunakan imagePath yang diberikan, bukan req.Image
-        UserID:    userID,
-        CreatedAt: nowISO8601(),
-        UpdatedAt: nowISO8601(),
-    }
-
-    blog, err := service.Repo.Save(ctx, blog)
-    if err != nil {
-        return web.BlogResponse{}, err
-    }
-
-    user, err := service.Repo.FindUserByID(ctx, uuid.MustParse(userID))
-    if err != nil {
-        return web.BlogResponse{}, fmt.Errorf("gagal mengambil data user: %w", err)
-    }
-
-    return buildBlogResponse(blog, user), nil // Gunakan fungsi buildBlogResponse untuk konsistensi
-}
-
-
-func (s *BlogServiceImpl) FindById(ctx context.Context, blogID string) (web.BlogResponse, error) {
-    blog, err := s.Repo.FindByID(ctx, blogID)
-    if err != nil {
-        return web.BlogResponse{}, fmt.Errorf("blog dengan ID %s tidak ditemukan: %w", blogID, err)
-    }
-
-    userUUID, err := uuid.Parse(blog.UserID)
-    if err != nil {
-        return web.BlogResponse{}, fmt.Errorf("user ID tidak valid: %w", err)
-    }
-    user, err := s.Repo.FindUserByID(ctx, userUUID)
-    if err != nil {
-        user = domain.User{
-            Id:       userUUID,
-            Name:     "Anonymous",
-            Username: "Unknown",
-            Photo:    "default-profile.png",
-        }
-    }
-
-    return buildBlogResponse(blog, user), nil
 }

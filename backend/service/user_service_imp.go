@@ -18,14 +18,22 @@ import (
 type UserServiceImpl struct {
 	UserRepository       repository.UserRepository
 	ConnectionRepository repository.ConnectionRepository
+	ProfileViewService   ProfileViewService
 	DB                   *sql.DB
 	Validate             *validator.Validate
 }
 
-func NewUserService(userRepository repository.UserRepository, connectionRepository repository.ConnectionRepository, db *sql.DB, validate *validator.Validate) UserService {
+func NewUserService(
+	userRepository repository.UserRepository,
+	connectionRepository repository.ConnectionRepository,
+	profileViewService ProfileViewService,
+	db *sql.DB,
+	validate *validator.Validate,
+) UserService {
 	return &UserServiceImpl{
 		UserRepository:       userRepository,
 		ConnectionRepository: connectionRepository,
+		ProfileViewService:   profileViewService,
 		DB:                   db,
 		Validate:             validate,
 	}
@@ -138,6 +146,13 @@ func (service *UserServiceImpl) GetByUsername(ctx context.Context, username stri
 		// User sedang login, cek status koneksi
 		currentUserId, err := uuid.Parse(currentUserIdStr)
 		if err == nil && currentUserId != user.Id {
+			// Record this profile view asynchronously
+			go func(ctx context.Context, profileId, viewerId uuid.UUID) {
+				// Use a new context since the original will be canceled
+				newCtx := context.Background()
+				service.ProfileViewService.RecordView(newCtx, profileId, viewerId) // Use the service from the struct
+			}(ctx, user.Id, currentUserId)
+
 			// Hanya cek koneksi jika bukan profil sendiri
 			isConnected = service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, user.Id)
 		}

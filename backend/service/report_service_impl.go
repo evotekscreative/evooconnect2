@@ -19,6 +19,7 @@ var validReasons = []string{
 	"Threats or violence", "self-harm", "Graphic or violent content",
 	"Dangerous or extremist organizations", "Sexual Content", "Fake Account",
 	"Child Exploitation", "Illegal products and services", "Infringement", "Other",
+	"Child Exploitation", "Illegal products and services", "Infringement","Other",
 }
 
 type reportServiceImpl struct {
@@ -58,8 +59,10 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 
 	if strings.ToLower(request.Reason) == "Other" && strings.TrimSpace(request.OtherReason) == "" {
 		return web.ReportResponse{}, errors.New("other reason must be filled")
+	if strings.ToLower(request.Reason) == "other" && strings.TrimSpace(request.OtherReason) == "" {
+		return web.ReportResponse{}, errors.New("other reason must be provided")
 	}
-
+	}
 	ctx := context.Background()
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -72,6 +75,7 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 		targetUUID, err = uuid.Parse(request.TargetID)
 		if err != nil {
 			return web.ReportResponse{}, errors.New("target ID is not valid (must be UUID)")
+			return web.ReportResponse{}, errors.New("invalid target ID (must be UUID)")
 		}
 	}
 
@@ -92,6 +96,11 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 
 	if err != nil {
 		return web.ReportResponse{}, fmt.Errorf("%s that was reported was not found", request.TargetType)
+		return web.ReportResponse{}, errors.New("unrecognized content type")
+	}
+
+	if err != nil {
+		return web.ReportResponse{}, fmt.Errorf("%s The reported content was not found", request.TargetType)
 	}
 
 	reported, err := s.reportRepository.HasReported(ctx, request.ReporterID, request.TargetType, request.TargetID)
@@ -99,7 +108,7 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 		return web.ReportResponse{}, err
 	}
 	if reported {
-		return web.ReportResponse{}, errors.New("you have already reported this content")
+		return web.ReportResponse{}, errors.New("You have already reported this content")
 	}
 
 	report := domain.Report{

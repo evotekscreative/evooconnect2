@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-function PreviewStep({ formData, onSubmit, onPrev }) {
+function PreviewStep({ formData, onSubmit, onPrev, isSubmitting }) {
   const { title, category, content, images, date } = formData;
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -56,7 +56,7 @@ function PreviewStep({ formData, onSubmit, onPrev }) {
                 {category}
               </span>
               <h2 className="text-2xl font-semibold mt-3">{title}</h2>
-              <p className="text-xs text-gray-400 mb-4">Published on: {date}</p>
+              <p className="text-xs text-gray-400 mb-4 mt-1">Published on: {date}</p>
               <div
                 className="prose max-w-none text-gray-700"
                 dangerouslySetInnerHTML={{ __html: content }}
@@ -75,9 +75,10 @@ function PreviewStep({ formData, onSubmit, onPrev }) {
             <button
               type="button"
               onClick={onSubmit}
+              disabled={isSubmitting}
               className="btn-primary text-white px-4 py-2 rounded-md font-medium hover:bg-blue-700 transition"
             >
-              Publish Blog
+              {isSubmitting ? "Publishing..." : "Publish Blog"}
             </button>
           </div>
         </div>

@@ -6,6 +6,7 @@ import (
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/web"
 	"net/http"
+	
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -23,6 +24,8 @@ func NewRouter(
 	reportController controller.ReportController,
 	groupController controller.GroupController,
 	chatController controller.ChatController,
+	profileViewController controller.ProfileViewController,
+	notificationController controller.NotificationController, 
 ) *httprouter.Router {
 	router := httprouter.New()
 
@@ -141,8 +144,6 @@ func NewRouter(
 	router.GET("/api/my-invitations", groupController.FindMyInvitations)
 	router.DELETE("/api/invitations/:invitationId", groupController.CancelInvitation)
 
-	// Add these routes to your existing router setup:
-
 	// Chat routes
 	router.POST("/api/conversations", chatController.CreateConversation)
 	router.GET("/api/conversations", chatController.GetConversations)
@@ -157,6 +158,16 @@ func NewRouter(
 
 	// Pusher authentication endpoint
 	router.POST("/api/pusher/auth", chatController.AuthPusher)
+
+	router.GET("/api/user/profile/views/this-week", profileViewController.GetViewsThisWeek)
+	router.GET("/api/user/profile/views/last-week", profileViewController.GetViewsLastWeek)
+
+	// notifikasi	
+	router.GET("/api/notifications", notificationController.GetNotifications)
+	router.POST("/api/notifications/mark-read", notificationController.MarkAsRead)
+	router.POST("/api/notifications/mark-all-read", notificationController.MarkAllAsRead)
+	router.DELETE("/api/notifications", notificationController.DeleteNotifications)
+router.DELETE("/api/notifications/selected", notificationController.DeleteSelectedNotifications)
 
 	uploadFS := http.FileServer(http.Dir("uploads"))
 

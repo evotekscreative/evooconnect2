@@ -29,11 +29,11 @@ func (repository *ChatRepositoryImpl) CreateConversation(ctx context.Context, tx
 	conversation.CreatedAt = now
 	conversation.UpdatedAt = now
 
-	fmt.Println("Creating conversation with ID:", conversation.Id)
+	// fmt.Println("Creating conversation with ID:", conversation.Id)
 	SQL := `INSERT INTO conversations (id, created_at, updated_at) VALUES ($1, $2, $3)`
 	_, err := tx.ExecContext(ctx, SQL, conversation.Id, conversation.CreatedAt, conversation.UpdatedAt)
 	helper.PanicIfError(err)
-	fmt.Println("Conversation created successfully with ID:", conversation.Id)
+	// fmt.Println("Conversation created successfully with ID:", conversation.Id)
 
 	return conversation
 }
