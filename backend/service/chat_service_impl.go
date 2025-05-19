@@ -100,7 +100,15 @@ func (service *ChatServiceImpl) toChatMessageResponse(message domain.Message) we
 		FileType:       message.FileType,
 		CreatedAt:      message.CreatedAt,
 		UpdatedAt:      message.UpdatedAt,
+		DeletedAt:      message.DeletedAt,
 		IsRead:         message.IsRead,
+		ReplyToId:      message.ReplyToId,
+	}
+
+	// Handle the reply to message if it exists
+	if message.ReplyTo != nil {
+		replyTo := service.toChatMessageResponse(*message.ReplyTo)
+		response.ReplyTo = &replyTo
 	}
 
 	if message.Sender != nil {
@@ -339,7 +347,18 @@ func (service *ChatServiceImpl) SendMessage(ctx context.Context, userId, convers
 		IsRead:         false,
 	}
 
+	if request.ReplyToId != nil {
+		replyToMessage, err := service.ChatRepository.FindMessageById(ctx, tx, *request.ReplyToId)
+		if err != nil {
+			panic(exception.NewNotFoundError("Reply message not found"))
+		}
+		message.ReplyToId = request.ReplyToId
+		message.ReplyTo = &replyToMessage
+	}
+	// fmt.Println("Message created:", request.ReplyToId)
+
 	message = service.ChatRepository.CreateMessage(ctx, tx, message)
+	// fmt.Println("Message created:", message)
 
 	// Get sender details
 	user, err := service.UserRepository.FindById(ctx, tx, userId)

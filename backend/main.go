@@ -135,11 +135,11 @@ func main() {
 
 	// ===== Start Server =====
 	server := http.Server{
-		Addr:    "localhost:3000",
+		Addr:    "192.168.1.67:3000",
 		Handler: handler,
 	}
-
-	fmt.Println("\nServer starting on http://localhost:3000")
+	// http://192.168.1.67:5173/
+	fmt.Println("\nServer starting on http://192.168.1.67:3000")
 	err := server.ListenAndServe()
 	helper.PanicIfError(err)
 }

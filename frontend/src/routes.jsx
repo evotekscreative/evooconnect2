@@ -38,11 +38,19 @@ const router = createBrowserRouter([
   },
   {
     path: "/login",
-    element: <IsGuest><Login /></IsGuest>,
+    element: (
+      <IsGuest>
+        <Login />
+      </IsGuest>
+    ),
   },
   {
     path: "/register",
-    element: <IsGuest><Register /></IsGuest>,
+    element: (
+      <IsGuest>
+        <Register />
+      </IsGuest>
+    ),
   },
   {
     path: "/forgot-password",
@@ -160,6 +168,14 @@ const router = createBrowserRouter([
     ),
   },
   {
+    path: "/messages/:conversationId",
+    element: (
+      <ProtectedRoute>
+        <Messages />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: "/group-page",
     element: (
       <ProtectedRoute>
@@ -205,14 +221,16 @@ const router = createBrowserRouter([
   },
   {
     path: "/verify-email",
-    element: <ProtectedRoute><VerifyEmail /></ProtectedRoute>,
+    element: (
+      <ProtectedRoute>
+        <VerifyEmail />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/reset-password",
-    element: (
-        <ResetPassword />
-    )
-  }
+    element: <ResetPassword />,
+  },
 ]);
 
 export default router;

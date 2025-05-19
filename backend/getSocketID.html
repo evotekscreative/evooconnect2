@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Pusher Socket ID Generator</title>
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+  </head>
+  <body>
+    <h1>Pusher Socket ID</h1>
+    <div id="socketId">Connecting...</div>
+
+    <script>
+      const pusher = new Pusher("a579dc17c814f8b723ea", {
+        cluster: "ap1",
+      });
+
+      pusher.connection.bind("connected", function () {
+        document.getElementById("socketId").innerHTML =
+          "<strong>Socket ID:</strong> " + pusher.connection.socket_id;
+        console.log("Socket ID for Postman:", pusher.connection.socket_id);
+      });
+    </script>
+  </body>
+</html>
