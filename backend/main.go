@@ -10,9 +10,7 @@ import (
 	"evoconnect/backend/utils"
 	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
-	"time"
 
 	"github.com/go-playground/validator/v10"
 	_ "github.com/lib/pq"
@@ -20,9 +18,6 @@ import (
 
 func main() {
 	log.Println("Starting server...")
-	
-	// Inisialisasi seed random
-	rand.Seed(time.Now().UnixNano())
 
 	// ===== Server initialization =====
 	helper.LoadEnv()

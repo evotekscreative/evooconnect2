@@ -167,8 +167,8 @@ func NewRouter(
 	router.POST("/api/notifications/mark-read", notificationController.MarkAsRead)
 	router.POST("/api/notifications/mark-all-read", notificationController.MarkAllAsRead)
 	router.DELETE("/api/notifications", notificationController.DeleteNotifications)
-router.DELETE("/api/notifications/selected", notificationController.DeleteSelectedNotifications)
-
+	router.DELETE("/api/notifications/selected", notificationController.DeleteSelectedNotifications)
+	
 	uploadFS := http.FileServer(http.Dir("uploads"))
 
 	// Add custom file server handler to serve static files
