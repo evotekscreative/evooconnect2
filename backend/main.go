@@ -65,6 +65,7 @@ func main() {
 	postService := service.NewPostService(
 		userRepository,
 		postRepository,
+		commentRepository,
 		connectionRepository,
 		groupRepository,
 		groupMemberRepository,

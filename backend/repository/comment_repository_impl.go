@@ -279,14 +279,9 @@ func (repository *CommentRepositoryImpl) FindByPostId(ctx context.Context, tx *s
 
 func (repository *CommentRepositoryImpl) CountByPostId(ctx context.Context, tx *sql.Tx, postId uuid.UUID) (int, error) {
 	SQL := `SELECT COUNT(*) FROM comments WHERE post_id = $1`
-
 	var count int
 	err := tx.QueryRowContext(ctx, SQL, postId).Scan(&count)
-	if err != nil {
-		return 0, err
-	}
-
-	return count, nil
+	return count, err
 }
 
 func (repository *CommentRepositoryImpl) Update(ctx context.Context, tx *sql.Tx, comment domain.Comment) (domain.Comment, error) {
@@ -387,4 +382,3 @@ func (repository *CommentRepositoryImpl) CountRepliesByParentId(ctx context.Cont
 
 	return count, nil
 }
-
