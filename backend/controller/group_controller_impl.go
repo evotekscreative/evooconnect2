@@ -9,7 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strconv"
-
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 )
@@ -363,36 +363,38 @@ func (controller *GroupControllerImpl) LeaveGroup(writer http.ResponseWriter, re
 }
 
 func (controller *GroupControllerImpl) JoinGroup(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	// Get user ID from context (set by JWT middleware)
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("unauthorized access"))
-	}
+    // Get user ID from context (set by JWT middleware)
+    userIdString, ok := request.Context().Value("user_id").(string)
+    if !ok {
+        panic(exception.NewUnauthorizedError("unauthorized access"))
+    }
 
-	// Parse user ID
-	userId, err := uuid.Parse(userIdString)
-	if err != nil {
-		panic(exception.NewBadRequestError("invalid user ID format"))
-	}
+    // Parse user ID
+    userId, err := uuid.Parse(userIdString)
+    if err != nil {
+        panic(exception.NewBadRequestError("invalid user ID format"))
+    }
 
-	// Parse group ID from URL params
-	groupId, err := uuid.Parse(params.ByName("groupId"))
-	if err != nil {
-		panic(exception.NewBadRequestError("invalid group ID format"))
-	}
+    // Parse group ID from URL params
+    groupId, err := uuid.Parse(params.ByName("groupId"))
+    if err != nil {
+        panic(exception.NewBadRequestError("invalid group ID format"))
+    }
 
-	// Call service to join the group
-	response := controller.GroupService.JoinPublicGroup(request.Context(), groupId, userId)
+    fmt.Printf("DEBUG Controller: Joining group %s with user %s\n", groupId, userId)
+    
+    // Perbaiki urutan parameter: userId dulu, baru groupId
+    response := controller.GroupService.JoinPublicGroup(request.Context(), userId, groupId)
 
-	// Create web response
-	webResponse := web.WebResponse{
-		Code:   200,
-		Status: "OK",
-		Data:   response,
-	}
+    // Create web response
+    webResponse := web.WebResponse{
+        Code:   200,
+        Status: "OK",
+        Data:   response,
+    }
 
-	// Write response
-	helper.WriteToResponseBody(writer, webResponse)
+    // Write response
+    helper.WriteToResponseBody(writer, webResponse)
 }
 
 func (controller *GroupControllerImpl) CreateInvitation(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {

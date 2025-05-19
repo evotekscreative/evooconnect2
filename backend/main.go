@@ -36,7 +36,10 @@ func main() {
 	blogRepository := repository.NewBlogRepository(db)
 	commentBlogRepository := repository.NewCommentBlogRepository()
 
+	// Post repository
 	postRepository := repository.NewPostRepository()
+	
+	// Comment repository
 	commentRepository := repository.NewCommentRepository()
 
 	// Professional info repositories
@@ -50,30 +53,66 @@ func main() {
 
 	// Chat repository
 	chatRepository := repository.NewChatRepository()
-	// report repository
+	
+	// Report repository
 	reportRepository := repository.NewReportRepository(db)
+	
+	// Notification repository
+	notificationRepository := repository.NewNotificationRepository()
+
+	// Notification service (moved up)
+	notificationService := service.NewNotificationService(
+		notificationRepository,
+		userRepository,
+		db,
+		validate,
+	)
 
 	// ===== Services =====
 	// User-related services
-	profileViewService := service.NewProfileViewService(db, profileViewRepository, userRepository)
-	connectionService := service.NewConnectionService(connectionRepository, userRepository, db, validate)
+	profileViewService := service.NewProfileViewService(db, profileViewRepository, userRepository, notificationService)
+	connectionService := service.NewConnectionService(connectionRepository, userRepository, notificationService, db, validate)
 	userService := service.NewUserService(userRepository, connectionRepository, profileViewService, db, validate)
 	authService := service.NewAuthService(userRepository, db, validate, jwtSecret)
 
 	// Content-related services
-	blogService := service.NewBlogService(blogRepository)
-	commentBlogService := service.NewCommentBlogService(commentBlogRepository, blogRepository, userRepository, db, validate)
+	blogService := service.NewBlogService(
+		blogRepository,
+		userRepository,
+		connectionRepository,
+		notificationService,
+	)
+	
+	commentBlogService := service.NewCommentBlogService(
+		commentBlogRepository,
+		blogRepository,
+		userRepository,
+		notificationService,
+		db,
+		validate,
+	)
 
+	// Post service
 	postService := service.NewPostService(
 		userRepository,
 		postRepository,
 		connectionRepository,
 		groupRepository,
 		groupMemberRepository,
+		notificationService,
 		db,
 		validate,
 	)
-	commentService := service.NewCommentService(commentRepository, postRepository, userRepository, db, validate)
+	
+	// Comment service
+	commentService := service.NewCommentService(
+		commentRepository,
+		postRepository,
+		userRepository,
+		notificationService,
+		db,
+		validate,
+	)
 
 	// Professional info services
 	educationService := service.NewEducationService(educationRepository, userRepository, db, validate)
@@ -86,6 +125,7 @@ func main() {
 		groupMemberRepository,
 		groupInvitationRepository,
 		userRepository,
+		notificationService,
 		validate,
 	)
 
@@ -105,7 +145,11 @@ func main() {
 
 	// ===== Controllers =====
 	// User-related controllers
-	userController := controller.NewUserController(userService)
+	userController := controller.NewUserController(
+		userService,
+		profileViewService,
+		notificationService,
+	)
 	connectionController := controller.NewConnectionController(connectionService)
 	profileViewController := controller.NewProfileViewController(profileViewService)
 	authController := controller.NewAuthController(authService)
@@ -131,6 +175,9 @@ func main() {
 	// Comment blog controller
 	commentBlogController := controller.NewCommentBlogController(commentBlogService)
 
+	// Notification controller
+	notificationController := controller.NewNotificationController(notificationService)
+
 	// ===== Router and Middleware =====
 	// Initialize router with all controllers
 	router := app.NewRouter(
@@ -143,10 +190,11 @@ func main() {
 		experienceController,
 		commentBlogController,
 		connectionController,
-		reportController, // <- Tambahan
+		reportController,
 		groupController,
 		chatController,
 		profileViewController,
+		notificationController,
 	)
 
 	// Create middleware chain

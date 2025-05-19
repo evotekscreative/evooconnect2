@@ -6,6 +6,7 @@ import (
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/web"
 	"net/http"
+	
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -24,6 +25,7 @@ func NewRouter(
 	groupController controller.GroupController,
 	chatController controller.ChatController,
 	profileViewController controller.ProfileViewController,
+	notificationController controller.NotificationController, 
 ) *httprouter.Router {
 	router := httprouter.New()
 
@@ -46,6 +48,7 @@ func NewRouter(
 
 	// Blog routes
 	router.POST("/api/blogs", blogController.Create)
+	router.POST("/api/blogs-with-image", blogController.CreateWithImage)
 	router.GET("/api/blogs", blogController.FindAll)
 	router.GET("/api/blogs/random", blogController.GetRandomBlogs)
 	router.GET("/api/blogs/slug/:slug", blogController.GetBySlug)
@@ -160,8 +163,12 @@ func NewRouter(
 	router.GET("/api/user/profile/views/last-week", profileViewController.GetViewsLastWeek)
 
 	// notifikasi	
+	router.GET("/api/notifications", notificationController.GetNotifications)
+	router.POST("/api/notifications/mark-read", notificationController.MarkAsRead)
+	router.POST("/api/notifications/mark-all-read", notificationController.MarkAllAsRead)
+	router.DELETE("/api/notifications", notificationController.DeleteNotifications)
+	router.DELETE("/api/notifications/selected", notificationController.DeleteSelectedNotifications)
 	
-
 	uploadFS := http.FileServer(http.Dir("uploads"))
 
 	// Add custom file server handler to serve static files
