@@ -20,7 +20,9 @@ type Post struct {
 	CreatedAt  time.Time   `json:"created_at"`
 	UpdatedAt  time.Time   `json:"updated_at"`
 	User       *User       `json:"user,omitempty"`
-	IsLiked    bool        `json:"is_liked,omitempty"`
+	GroupId    *uuid.UUID
+	Group      *Group `json:"group,omitempty"`
+	IsLiked    bool   `json:"is_liked,omitempty"`
 }
 
 // ImagesArray is a custom type for handling image arrays in PostgreSQL JSONB

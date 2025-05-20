@@ -29,7 +29,14 @@ export default function GroupPage() {
   const [commentModalPostId, setCommentModalPostId] = useState(null);
   const [connections, setConnections] = useState([]);
   const [showInviteSuccess, setShowInviteSuccess] = useState(false);
+  const [isCurrentUserAdmin, setIsCurrentUserAdmin] = useState(false);
   const [invitedUserName, setInvitedUserName] = useState("");
+  const [editingMemberId, setEditingMemberId] = useState(null);
+  const [selectedRole, setSelectedRole] = useState('member');
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [showRemoveModal, setShowRemoveModal] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const { groupId } = useParams();
   const [isLoading, setIsLoading] = useState(true);
   const [group, setGroup] = useState(null);
@@ -44,6 +51,8 @@ export default function GroupPage() {
   const fetchGroupData = async () => {
     try {
       const token = localStorage.getItem("token");
+      const user = JSON.parse(localStorage.getItem("user"));
+
       const response = await axios.get(
         `http://localhost:3000/api/groups/${groupId}`,
         {
@@ -52,7 +61,19 @@ export default function GroupPage() {
           },
         }
       );
-      setGroup(response.data.data);
+
+      const groupData = response.data.data;
+      setGroup(groupData);
+
+      // Check if current user is admin
+      if (groupData.creator && user && groupData.creator.id === user.id) {
+        setIsCurrentUserAdmin(true);
+      } else if (groupData.members) {
+        const currentUserMember = groupData.members.find(
+          member => member.user.id === user.id && member.role === "admin"
+        );
+        setIsCurrentUserAdmin(!!currentUserMember);
+      }
     } catch (error) {
       console.error("Error fetching group data:", error);
       toast.error("Failed to load group data.");
@@ -87,8 +108,6 @@ export default function GroupPage() {
         members: members,
       }));
 
-      console.log(group);
-      
     } catch (error) {
       console.error("Error fetching group members:", error);
     }
@@ -184,6 +203,89 @@ export default function GroupPage() {
     },
   ]);
 
+  const handleUpdateMemberRole = async (userId) => {
+    // Tambahkan pengecekan untuk memastikan tidak mengubah diri sendiri
+    if (userId === currentUser?.id) {
+      toast.error("You cannot change your own role");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await axios.put(
+        `http://localhost:3000/api/groups/${groupId}/members/${userId}/role`,
+        { role: selectedRole },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      // Update local state
+      setGroup(prevGroup => ({
+        ...prevGroup,
+        members: prevGroup.members.map(member =>
+          member.user.id === userId
+            ? { ...member, role: selectedRole }
+            : member
+        )
+      }));
+
+      toast.success(`Successfully updated user role to ${selectedRole}`);
+      setShowRoleModal(false);
+      setEditingMemberId(null);
+
+    } catch (error) {
+      console.error("Error updating member role:", error);
+      toast.error(error.response?.data?.message || "Failed to update role. Please try again.");
+    }
+  };
+
+  const handleRemoveMember = async () => {
+    if (!memberToRemove) return;
+
+    try {
+      const token = localStorage.getItem("token");
+
+      await axios.delete(
+        `http://localhost:3000/api/groups/${groupId}/members/${memberToRemove.user.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          }
+        }
+      );
+
+      // Update local state
+      setGroup(prevGroup => ({
+        ...prevGroup,
+        members: prevGroup.members.filter(m => m.user.id !== memberToRemove.user.id),
+        members_count: prevGroup.members_count - 1
+      }));
+
+      toast.success(`Successfully removed ${memberToRemove.user.name} from the group`);
+      setShowRemoveModal(false);
+      setMemberToRemove(null);
+
+    } catch (error) {
+      console.error("Error removing member:", error);
+      toast.error(error.response?.data?.message || "Failed to remove member. Please try again.");
+    }
+  };
+
+  const openRemoveConfirmation = (member) => {
+    setMemberToRemove(member);
+    setShowRemoveModal(true);
+  };
+
+  useEffect(() => {
+    const userData = JSON.parse(localStorage.getItem("user"));
+    setCurrentUser(userData);
+  }, []);
+
   const handleImageUpload = (e) => {
     if (e.target.files && e.target.files[0]) {
       const reader = new FileReader();
@@ -225,43 +327,80 @@ export default function GroupPage() {
   const handleInvite = async (userId) => {
     try {
       const token = localStorage.getItem("token");
+      const currentUser = JSON.parse(localStorage.getItem("user"));
 
-      if (!token) {
-        console.error("No authentication token found");
-        const invitedUser = connections.find(conn => conn.user?.id === userId);
-        if (invitedUser) {
-          setInvitedUserName(invitedUser.user.name);
-        }
-        setShowInviteSuccess(true);
-        setInviteModalOpen(false);
-        setTimeout(() => setShowInviteSuccess(false), 3000);
+      // Validation checks
+      if (!token || !currentUser) {
+        toast.error("You need to be logged in to invite users");
         return;
       }
 
-      await axios.post(
+      if (!isCurrentUserAdmin) {
+        toast.error("Only group admins can invite members");
+        return;
+      }
+
+      // Check if user is already a member
+      const isAlreadyMember = group.members?.some(member => member.user.id === userId);
+      if (isAlreadyMember) {
+        toast.error("This user is already a group member");
+        return;
+      }
+
+      // Check for pending invitations
+      const hasPendingInvite = group.invitations?.some(
+        inv => inv.user_id === userId && inv.status === "pending"
+      );
+      if (hasPendingInvite) {
+        toast.error("An invitation has already been sent to this user");
+        return;
+      }
+
+      const response = await axios.post(
         `http://localhost:3000/api/groups/${groupId}/invitations/${userId}`,
-        {},
+        {}, // Empty payload if your API accepts it
         {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
-          },
-          timeout: 5000
+          }
         }
       );
 
-      const invitedUser = connections.find(conn => conn.user?.id === userId);
+      // Success handling
+      const invitedUser = connections.find(conn => conn.user.id === userId)?.user;
       if (invitedUser) {
-        setInvitedUserName(invitedUser.user.name);
-      }
+        setInvitedUserName(invitedUser.name);
+        setShowInviteSuccess(true);
+        setTimeout(() => setShowInviteSuccess(false), 3000);
 
-      setShowInviteSuccess(true);
-      setInviteModalOpen(false);
-      setTimeout(() => setShowInviteSuccess(false), 3000);
+        // Update local state to reflect the new invitation
+        setGroup(prevGroup => ({
+          ...prevGroup,
+          invitations: [
+            ...(prevGroup.invitations || []),
+            {
+              user_id: userId,
+              status: "pending",
+              user: invitedUser
+            }
+          ]
+        }));
+      }
+      toast.success(`Invitation sent to ${invitedUser?.name || 'user'}`);
 
     } catch (error) {
       console.error("Error inviting user:", error);
-      toast.error(error.response?.data?.message || "Failed to invite user. Please try again.");
+      if (error.response) {
+        if (error.response.status === 400 &&
+          error.response.data?.data === 'invitation already sent to this user') {
+          toast.error("An invitation has already been sent to this user");
+        } else {
+          toast.error(error.response.data?.message || `Error: ${error.response.status}`);
+        }
+      } else {
+        toast.error("Network error - please check your connection");
+      }
     }
   };
 
@@ -327,7 +466,7 @@ export default function GroupPage() {
                 <div className="p-4 text-center">
                   <div className="profile-photo-container">
                     <img
-                      src={group.creator?.photo || "/default-user.png"}
+                      src="#"
                       className="rounded-full w-20 h-20 mx-auto"
                       alt="Profile"
                     />
@@ -367,34 +506,6 @@ export default function GroupPage() {
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Members List */}
-              <div className="rounded-lg border bg-white shadow-sm p-4">
-                <h3 className="font-bold text-lg mb-4">Members</h3>
-                {group?.members?.length > 0 ? (
-                  <ul className="space-y-3">
-                    {group.members.map((member) => (
-                      <li key={member.id} className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <img
-                            src={'http://localhost:3000/' + member.user.photo}
-                            className="rounded-full mr-3 w-10 h-10"
-                            alt={member.name}
-                          />
-                          <div>
-                            <h6 className="font-bold text-gray-800">{member.user.name}</h6>
-                            {member.role === "admin" && (
-                              <small className="text-blue-500">Admin</small>
-                            )}
-                          </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-gray-500">No members found.</p>
-                )}
               </div>
 
               {/* Create Post Box */}
@@ -508,7 +619,7 @@ export default function GroupPage() {
 
                         <button
                           className="flex items-center justify-center w-1/3 py-2 rounded-lg text-blue-600 hover:bg-blue-50"
-                          onClick={() => openCommentModal(post.id)}
+                          onClick={() => setCommentModalPostId(post.id)}
                         >
                           <MessageCircle size={14} className="mr-2" />
                           Comment ({post.comments.length || 0})
@@ -526,97 +637,263 @@ export default function GroupPage() {
                   ))}
                 </div>
               </div>
+
+              {/* Role Update Modal */}
+              {showRoleModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white rounded-lg w-full max-w-md p-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h5 className="font-bold">Change Member Role</h5>
+                      <button
+                        onClick={() => {
+                          setShowRoleModal(false);
+                          setEditingMemberId(null);
+                        }}
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        <X size={20} />
+                      </button>
+                    </div>
+
+                    {editingMemberId === currentUser?.id ? (
+                      <div className="text-red-500 mb-4">
+                        You cannot change your own role.
+                      </div>
+                    ) : (
+                      <>
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Select Role
+                          </label>
+                          <select
+                            className="w-full p-2 border rounded"
+                            value={selectedRole}
+                            onChange={(e) => setSelectedRole(e.target.value)}
+                          >
+                            <option value="member">Member</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        </div>
+
+                        <div className="flex justify-end gap-2">
+                          <button
+                            className="px-4 py-2 border rounded text-gray-700"
+                            onClick={() => {
+                              setShowRoleModal(false);
+                              setEditingMemberId(null);
+                            }}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            className="px-4 py-2 bg-blue-500 text-white rounded"
+                            onClick={() => handleUpdateMemberRole(editingMemberId)}
+                          >
+                            Update Role
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Remove Member Confirmation Modal */}
+              {showRemoveModal && memberToRemove && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white rounded-lg w-full max-w-md p-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h5 className="font-bold">Remove Member</h5>
+                      <button
+                        onClick={() => {
+                          setShowRemoveModal(false);
+                          setMemberToRemove(null);
+                        }}
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        <X size={20} />
+                      </button>
+                    </div>
+
+                    <div className="mb-4">
+                      <p>Are you sure you want to remove <span className="font-semibold">{memberToRemove.user.name}</span> from this group?</p>
+                      {memberToRemove.role === 'admin' && (
+                        <p className="text-yellow-600 mt-2">This user is an admin. Removing them will revoke their admin privileges.</p>
+                      )}
+                    </div>
+
+                    <div className="flex justify-end gap-2">
+                      <button
+                        className="px-4 py-2 border rounded text-gray-700"
+                        onClick={() => {
+                          setShowRemoveModal(false);
+                          setMemberToRemove(null);
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        className="px-4 py-2 bg-red-500 text-white rounded"
+                        onClick={handleRemoveMember}
+                      >
+                        Remove Member
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </main>
 
             {/* Right Sidebar */}
             <aside className="lg:block lg:w-1/4">
               {/* Members Box */}
-              <div className="rounded-lg border bg-white shadow-sm mb-4">
-                <div className="border-b p-3">
-                  <h6 className="font-medium">
+              <div className="rounded-xl border bg-white shadow mb-6">
+                <div className="border-b p-4 flex items-center justify-between">
+                  <h6 className="font-semibold text-gray-800">
                     {group.members?.length || 0} Members
                   </h6>
+                  {isCurrentUserAdmin && (
+                    <button
+                      className="text-sm font-medium px-4 py-2 rounded-lg border border-blue-500 text-blue-600 hover:bg-blue-50 transition"
+                      onClick={handleOpenInviteModal}
+                    >
+                      + Invite Connection
+                    </button>
+                  )}
                 </div>
-                <div className="p-3">
-                  <div className="flex flex-wrap gap-2">
-                    {group.members?.map((member) => (
-                      <div key={member.id} className="text-center">
-                        <img
-                          src={'http://localhost:3000/' + member.photo}
-                          className="rounded-full w-12 h-12"
-                          alt={member.name}
-                        />
-                        <p className="text-xs mt-1">{member.name}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <button
-                    className="mt-3 border border-blue-500 text-blue-500 hover:bg-blue-50 px-3 py-2 rounded text-sm w-full"
-                    onClick={handleOpenInviteModal}
-                  >
-                    Invite Connection
-                  </button>
+                <div className="p-4">
+                  {group?.members?.length > 0 ? (
+                    <ul className="space-y-4">
+                      {group.members.map((member) => (
+                        <li key={member.id} className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={member.user.photo
+                                ? member.user.photo.startsWith('http')
+                                  ? member.user.photo
+                                  : `http://localhost:3000/${member.user.photo}`
+                                : "/default-user.png"}
+                              className="rounded-full w-10 h-10 object-cover"
+                              alt={member.user.name}
+                            />
+                            <div>
+                              <p className="font-medium text-gray-900">{member.user.name}</p>
+                              <div className="text-sm text-gray-500 flex gap-1 items-center">
+                                {member.role === "admin" && (
+                                  <span className="text-blue-600 font-medium">Admin</span>
+                                )}
+                                {member.user.id === currentUser?.id && (
+                                  <span className="text-gray-400">(You)</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          {isCurrentUserAdmin && member.user.id !== currentUser?.id && (
+                            <div className="flex gap-2">
+                              <button
+                                className="text-sm font-medium px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 border border-blue-300 hover:bg-blue-200 transition"
+                                onClick={() => {
+                                  setEditingMemberId(member.user.id);
+                                  setSelectedRole(member.role);
+                                  setShowRoleModal(true);
+                                }}
+                              >
+                                Edit Role
+                              </button>
+                              <button
+                                className="text-sm font-medium px-3 py-1.5 rounded-lg bg-red-100 text-red-700 border border-red-300 hover:bg-red-200 transition"
+                                onClick={() => openRemoveConfirmation(member)}
+                              >
+                                <UserMinus size={16} />
+                              </button>
+                            </div>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-gray-500 text-sm">No members found.</p>
+                  )}
                 </div>
               </div>
+
+              {/* Invite Modal */}
+              {inviteModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                  <div className="bg-white rounded-xl shadow-lg w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
+                    <div className="flex justify-between items-center border-b p-4">
+                      <h5 className="font-bold text-gray-800">Invite Connection</h5>
+                      <button
+                        onClick={() => setInviteModalOpen(false)}
+                        className="text-gray-400 hover:text-gray-600 transition"
+                      >
+                        <X size={20} />
+                      </button>
+                    </div>
+                    <div className="overflow-y-auto flex-1">
+                      {connections.length === 0 ? (
+                        <div className="p-4 text-center text-gray-500">No connections found</div>
+                      ) : (
+                        <ul className="divide-y">
+                          {connections.map((connection) => {
+                            const friend = connection.user;
+                            const isActiveMember = group.members?.some(
+                              member => member.user.id === friend.id
+                            );
+                            const isInvited = group.invitations?.some(
+                              inv => inv.user_id === friend.id && inv.status === "pending"
+                            );
+
+                            return (
+                              <li key={friend.id} className="p-4 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <img src={friend.photo || "/default-user.png"} className="w-10 h-10 rounded-full object-cover" alt={friend.name} />
+                                  <span className="text-gray-800 font-medium">{friend.name}</span>
+                                </div>
+                                {isActiveMember ? (
+                                  <span className="text-sm text-gray-400">Already a member</span>
+                                ) : isInvited ? (
+                                  <span className="text-sm text-yellow-500">Invitation sent</span>
+                                ) : (
+                                  <button
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded text-sm transition"
+                                    onClick={() => handleInvite(friend.id)}
+                                  >
+                                    Invite
+                                  </button>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {group.creator && (
+                <div className="rounded-lg border bg-white shadow-sm mb-4">
+                  <div className="border-b p-3">
+                    <h6 className="font-medium">Group Admin</h6>
+                  </div>
+                  <div className="p-4 text-center">
+                    <img
+                      src={'http://localhost:3000/' + group.creator.photo || "/default-user.png"}
+                      className="rounded-full w-20 h-20 mx-auto mb-2"
+                      alt={group.creator.name}
+                    />
+                    <h5 className="font-bold text-gray-800">{group.creator.name}</h5>
+                    <p className="text-gray-500 text-sm mt-1">{group.creator.headline || "No headline available"}</p>
+                    {group.creator.about && (
+                      <p className="text-gray-600 text-sm mt-2 line-clamp-3">{group.creator.about}</p>
+                    )}
+                  </div>
+                </div>
+              )}
             </aside>
           </div>
         </div>
-
-        {/* Invite Modal */}
-        {inviteModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] flex flex-col">
-              <div className="flex justify-between items-center border-b p-4">
-                <h5 className="font-bold">Invite Connection</h5>
-                <button
-                  onClick={() => setInviteModalOpen(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              <div className="overflow-y-auto flex-1">
-                {connections.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500">
-                    No connections found
-                  </div>
-                ) : (
-                  <ul className="divide-y">
-                    {connections.map((connection) => {
-                      const friend = connection.user;
-
-                      return (
-                        <li
-                          key={connection.id}
-                          className="py-3 px-4 flex justify-between items-center"
-                        >
-                          <div className="flex items-center">
-                            <img
-                              src={friend.profile_photo || "/default-user.png"}
-                              className="rounded-full mr-3 w-10 h-10"
-                              alt={friend.name}
-                            />
-                            <span>{friend.name}</span>
-                          </div>
-                          {isMember ? (
-                            <span className="text-gray-500 text-sm">Already a member</span>
-                          ) : (
-                            <button
-                              className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
-                              onClick={() => handleInvite(friend.id)}
-                            >
-                              Invite
-                            </button>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </Case>
   );

@@ -18,6 +18,9 @@ import {
   Twitter,
   Linkedin,
   Github,
+  ThumbsUp,
+  MessageCircle,
+  Share2,
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import axios from "axios";
@@ -56,35 +59,18 @@ export default function ProfilePage() {
   const [experiences, setExperiences] = useState([]);
   const [editingExperience, setEditingExperience] = useState(null);
   const [userPosts, setUserPosts] = useState([]);
+  const [profileImage, setProfileImage] = useState(null);
 
-  const fetchUserPosts = async () => {
-    const token = localStorage.getItem("token");
-    setIsLoading(true);
-
-    const user = JSON.parse(localStorage.getItem("user"));
-    const userId = user.id;
-    try {
-      const response = await axios.get(
-        `http://localhost:3000/api/users/${userId}/posts?limit=10&offset=0`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      setUserPosts(response.data.data);
-      console.log(userPosts);
-      console.log(response.data.data); 
-      
-      
-    } catch (error) {
-      console.error("Failed to fetch user posts:", error);
-      toast.error("Failed to load posts");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Initialize user state with empty values
+  const [user, setUser] = useState({
+    id: "",
+    name: "",
+    headline: "",
+    about: "",
+    skills: [],
+    socials: {},
+    photo: null,
+  });
 
   // Education Form State
   const [educationForm, setEducationForm] = useState({
@@ -97,17 +83,6 @@ export default function ProfilePage() {
     end_year: "Year",
     caption: "",
     schoolLogo: null,
-  });
-
-  // User Data State
-  const [user, setUser] = useState({
-    id: "",
-    name: "",
-    headline: "",
-    about: "",
-    skills: [],
-    socials: {},
-    photo: null,
   });
 
   // Experience Form State
@@ -144,6 +119,31 @@ export default function ProfilePage() {
     "Year",
     ...Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i),
   ];
+
+  const fetchUserPosts = async () => {
+    const token = localStorage.getItem("token");
+    setIsLoading(true);
+
+    const user = JSON.parse(localStorage.getItem("user"));
+    const userId = user.id;
+    try {
+      const response = await axios.get(
+        `http://localhost:3000/api/users/${userId}/posts?limit=10&offset=0`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setUserPosts(response.data.data);
+    } catch (error) {
+      console.error("Failed to fetch user posts:", error);
+      toast.error("Failed to load posts");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Fetch user profile data
   const fetchProfile = async () => {
@@ -190,6 +190,9 @@ export default function ProfilePage() {
         socials: socialsObject,
         photo: response.data.data.photo || null,
       });
+
+      // Set profile image separately if needed
+      setProfileImage(response.data.data.photo || null);
     } catch (error) {
       console.error("Failed to fetch profile:", error);
       toast.error("Failed to load profile data");
@@ -622,19 +625,21 @@ export default function ProfilePage() {
           <div className="w-full md:w-1/3 space-y-4">
             <div className="bg-white rounded-lg shadow-md p-6 text-center">
               <div className="relative w-28 h-28 mx-auto bg-gray-200 rounded-full overflow-hidden flex items-center justify-center">
-                {user.photo ? (
+                {profileImage ? (
                   <img
-                    src={user.photo || "/placeholder.svg"}
+                    src={"http://localhost:3000/" + profileImage}
                     alt="Profile"
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-2xl font-bold">
-                    {user.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
-                  </span>
+                  <div className="w-full h-full flex items-center justify-center bg-gray-300">
+                    <span className="text-lg font-bold text-gray-600">
+                      {user.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")}
+                    </span>
+                  </div>
                 )}
               </div>
               <h2 className="font-bold text-xl mt-4">{user.name}</h2>
@@ -939,40 +944,93 @@ export default function ProfilePage() {
                 id="post-container"
                 className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide"
               >
-                {userPosts.length > 0 ? (
+                {userPosts && userPosts.length > 0 ? (
                   userPosts.map((post) => (
                     <div
                       key={post.id}
                       className="flex-shrink-0 w-64 border rounded-lg overflow-hidden bg-white shadow-sm"
                     >
-                      <div className="h-40 bg-gray-100 relative">
-                        {post.images && (
-                          <img
-                            src={"http://localhost:3000/" + post.images[0]}
-                            alt={`Post ${post.id}`}
-                            className="w-full h-full object-cover"
-                          />
-                        )}
+                      {/* Post header */}
+                      <div className="p-4 border-b">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                            {profileImage ? (
+                              <img
+                                src={"http://localhost:3000/" + profileImage}
+                                alt="Profile"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-gray-300">
+                                <span className="text-lg font-bold text-gray-600">
+                                  {user.name
+                                    .split(" ")
+                                    .map((n) => n[0])
+                                    .join("")}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-sm">
+                              {user.name}
+                            </h4>
+                            <p className="text-xs text-gray-500">
+                              {user.headline || "No headline"}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-0.5">
+                              {new Date(post.created_at).toLocaleDateString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                }
+                              )}{" "}
+                              • 🌐
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div className="p-4"> 
-                        <p className="text-sm text-gray-600 mt-1">
-                          {post.content || "No provider"}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {new Date(post.created_at).toLocaleDateString(
-                            "en-US",
-                            { month: "long", year: "numeric" }
-                          )}
+
+                      {/* Post content */}
+                      <div className="p-4">
+                        <p className="text-sm text-gray-700 mb-3">
+                          {post.content || "No content"}
                         </p>
 
-                        <div className="flex justify-between items-center mt-3">
-                          <div className="flex items-center text-xs text-gray-500">
-                            <span>{post.likes_count || 0} likes</span>
-                            <span className="mx-2">•</span>
-                            <span>{post.comments_count || 0} comments</span>
+                        {/* Only show image if exists */}
+                        {post.images && post.images.length > 0 && (
+                          <div className="mb-3">
+                            <img
+                              src={"http://localhost:3000/" + post.images[0]}
+                              alt={`Post ${post.id}`}
+                              className="w-full rounded-md"
+                            />
                           </div>
-                          <button className="text-xs text-[#00AEEF]">
-                            Share
+                        )}
+
+                        {/* Post footer */}
+                        <div className="flex justify-between items-center text-xs text-gray-500">
+                          <div className="flex items-center gap-1">
+                            <ThumbsUp size={14} />
+                            <span>{post.likes_count || 0}</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <span>{post.comments_count || 0} comments</span>
+                            <span>{post.shares_count || 0} shares</span>
+                          </div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex border-t mt-3 pt-2">
+                          <button className="flex-1 flex items-center justify-center gap-1 py-1 hover:bg-gray-50 rounded text-gray-600 text-sm">
+                            <ThumbsUp size={16} /> Like
+                          </button>
+                          <button className="flex-1 flex items-center justify-center gap-1 py-1 hover:bg-gray-50 rounded text-gray-600 text-sm">
+                            <MessageCircle size={16} /> Comment
+                          </button>
+                          <button className="flex-1 flex items-center justify-center gap-1 py-1 hover:bg-gray-50 rounded text-gray-600 text-sm">
+                            <Share2 size={16} /> Share
                           </button>
                         </div>
                       </div>
@@ -986,14 +1044,14 @@ export default function ProfilePage() {
               </div>
 
               <style>{`
-                .scrollbar-hide::-webkit-scrollbar {
-                  display: none;
-                }
-                .scrollbar-hide {
-                  -ms-overflow-style: none;
-                  scrollbar-width: none;
-                }
-              `}</style>
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  `}</style>
               <div className="flex justify-center mt-4">
                 <button className="text-[#00AEEF] text-asmibold font-semibold hover:underline">
                   <Link to="/post-page"> See All Post </Link>

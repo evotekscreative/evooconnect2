@@ -12,7 +12,6 @@ var allowedReasons = []string{
 	"Threats or violence", "self-harm", "Graphic or violent content",
 	"Dangerous or extremist organizations", "Sexual Content", "Fake Account",
 	"Child Exploitation", "Illegal products and services", "Infringement","Other",
-	"Child Exploitation", "Illegal products and services", "Infringement", "Other",
 }
 
 func ValidateReport(reason, other string) error {
@@ -24,7 +23,7 @@ func ValidateReport(reason, other string) error {
 			return nil
 		}
 	}
-	return errors.New("reason the report is invalid")
+	return errors.New("invalid report reason")
 }
 
 func WriteJSON(w http.ResponseWriter, statusCode int, payload interface{}) {

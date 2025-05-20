@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"time"
-
+	"fmt"
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/domain"
 	"github.com/google/uuid"
@@ -95,12 +95,16 @@ func (repository *GroupRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx, g
 }
 
 func (repository *GroupRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, groupId uuid.UUID) (domain.Group, error) {
-	SQL := `SELECT id, name, description, rule, creator_id, image, privacy_level, invite_policy, created_at, updated_at 
+	SQL := `SELECT id, name, description, rule, creator_id, privacy_level, invite_policy, image, created_at, updated_at 
 			FROM groups 
 			WHERE id = $1`
-
+	
+	fmt.Printf("DEBUG SQL: %s with param: %s\n", SQL, groupId)
+	
 	rows, err := tx.QueryContext(ctx, SQL, groupId)
-	helper.PanicIfError(err)
+	if err != nil {
+		return domain.Group{}, err
+	}
 	defer rows.Close()
 
 	group := domain.Group{}
@@ -111,16 +115,18 @@ func (repository *GroupRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx,
 			&group.Description,
 			&group.Rule,
 			&group.CreatorId,
-			&group.Image,
 			&group.PrivacyLevel,
 			&group.InvitePolicy,
+			&group.Image,
 			&group.CreatedAt,
 			&group.UpdatedAt,
 		)
-		helper.PanicIfError(err)
+		if err != nil {
+			return domain.Group{}, err
+		}
 		return group, nil
 	} else {
-		return group, errors.New("group not found")
+		return domain.Group{}, errors.New("group not found")
 	}
 }
 

@@ -11,8 +11,9 @@ type Group struct {
 	Name         string    `gorm:"size:100;not null"`
 	Description  string    `gorm:"type:text"`
 	Rule         string    `gorm:"type:text"`
-	CreatorId    uuid.UUID `gorm:"type:uuid;not null"`
 	Image        *string   `gorm:"size:255"`
+	CreatorId    uuid.UUID `gorm:"type:uuid;not null"`
+	Creator      *User     `gorm:"foreignkey:CreatorId;association_foreignkey:Id"`
 	PrivacyLevel string    `gorm:"size:20;not null;default:'public'"` // public, private
 	InvitePolicy string    `gorm:"size:20;not null;default:'admin'"`  // admin, all_members
 	CreatedAt    time.Time `gorm:"not null"`

@@ -59,7 +59,6 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 	if strings.ToLower(request.Reason) == "Other" && strings.TrimSpace(request.OtherReason) == "" {
 		return web.ReportResponse{}, errors.New("other reason must be filled")
 	}
-
 	ctx := context.Background()
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -71,7 +70,7 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 	if request.TargetType != "blog" {
 		targetUUID, err = uuid.Parse(request.TargetID)
 		if err != nil {
-			return web.ReportResponse{}, errors.New("target ID is not valid (must be UUID)")
+			return web.ReportResponse{}, errors.New("invalid target ID (must be UUID)")
 		}
 	}
 
@@ -99,7 +98,7 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 		return web.ReportResponse{}, err
 	}
 	if reported {
-		return web.ReportResponse{}, errors.New("you have already reported this content")
+		return web.ReportResponse{}, errors.New("You have already reported this content")
 	}
 
 	report := domain.Report{

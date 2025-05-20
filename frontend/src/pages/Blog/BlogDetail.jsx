@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Case from "../../components/Case";
+import { useParams, useNavigate } from "react-router-dom";
+import Case from "../../components/Case";
+import { MoreVertical, Pencil, Reply, Trash2, ChevronUp, ChevronDown, Flag } from "lucide-react";
+import { categories } from "../../components/Blog/CategoryStep";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import axios from "axios";
 import RandomPosts from "../../components/Blog/RandomPosts";
 import EditBlog from "../../components/Blog/EditBlog";
@@ -9,7 +15,6 @@ import Toast from "../../components/Blog/Toast";
 import BlogMenu from "../../components/Blog/BlogMenu";
 import ReportModal from "../../components/Blog/ReportModal";
 import CommentSection from "../../components/Blog/CommentSection";
-import DOMPurify from "dompurify"; 
 
 const linkStyles = `
   .prose a {

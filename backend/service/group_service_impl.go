@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"mime/multipart"
 	"time"
 
@@ -22,6 +23,7 @@ type GroupServiceImpl struct {
 	MemberRepository     repository.GroupMemberRepository
 	InvitationRepository repository.GroupInvitationRepository
 	UserRepository       repository.UserRepository
+	NotificationService  NotificationService
 	Validate             *validator.Validate
 }
 
@@ -31,6 +33,7 @@ func NewGroupService(
 	memberRepository repository.GroupMemberRepository,
 	invitationRepository repository.GroupInvitationRepository,
 	userRepository repository.UserRepository,
+	notificationService NotificationService,
 	validate *validator.Validate) GroupService {
 	return &GroupServiceImpl{
 		DB:                   db,
@@ -38,6 +41,7 @@ func NewGroupService(
 		MemberRepository:     memberRepository,
 		InvitationRepository: invitationRepository,
 		UserRepository:       userRepository,
+		NotificationService:  notificationService,
 		Validate:             validate,
 	}
 }
@@ -89,6 +93,10 @@ func (service *GroupServiceImpl) Create(ctx context.Context, userId uuid.UUID, r
 	}
 
 	service.MemberRepository.AddMember(ctx, tx, member)
+
+	creator, err := service.UserRepository.FindById(ctx, tx, userId)
+	helper.PanicIfError(err)
+	group.Creator = &creator
 
 	return helper.ToGroupResponse(group)
 }
@@ -316,6 +324,32 @@ func (service *GroupServiceImpl) AddMember(ctx context.Context, groupId, userId,
 
 	member = service.MemberRepository.AddMember(ctx, tx, member)
 
+	// Ambil data yang diperlukan untuk notifikasi
+	adder, _ := service.UserRepository.FindById(ctx, tx, userId)
+	adderName := "Someone"
+	if adder.Id != uuid.Nil {
+    adderName = adder.Name
+}
+
+	groupName := group.Name
+
+	// Kirim notifikasi ke user yang ditambahkan
+	if service.NotificationService != nil {
+    refType := "group_member_added"
+    go func() {
+        service.NotificationService.Create(
+            context.Background(),
+            newMemberId,
+            string(domain.NotificationCategoryGroup),
+            "group_member_added",
+            "Added to Group",
+            fmt.Sprintf("%s added you to the group %s", adderName, groupName),
+            &groupId,
+            &refType,
+            &userId,
+        )
+    }()
+}
 	user, _ := service.UserRepository.FindById(ctx, tx, newMemberId) // Error already checked above
 
 	response := helper.ToGroupMemberResponse(member)
@@ -390,6 +424,9 @@ func (service *GroupServiceImpl) UpdateMemberRole(ctx context.Context, groupId, 
 		panic(exception.NewBadRequestError("cannot change creator's role"))
 	}
 
+	// Simpan role lama untuk perbandingan
+	oldRole := member.Role
+	
 	member.Role = role
 	member = service.MemberRepository.UpdateMemberRole(ctx, tx, groupId, memberId, role)
 
@@ -398,6 +435,37 @@ func (service *GroupServiceImpl) UpdateMemberRole(ctx context.Context, groupId, 
 		panic(exception.NewNotFoundError("user not found"))
 	}
 
+	// Ambil data yang diperlukan untuk notifikasi
+	updater, _ := service.UserRepository.FindById(ctx, tx, userId)
+	updaterName := "Group admin"
+	if updater.Id != uuid.Nil {
+    updaterName = updater.Name
+}
+
+	groupName := group.Name
+
+	// Kirim notifikasi jika role berubah
+	if oldRole != role && service.NotificationService != nil {
+    refType := "group_role_updated"
+    roleText := "member"
+    if role == "admin" {
+        roleText = "admin"
+}
+    
+    go func() {
+        service.NotificationService.Create(
+            context.Background(),
+            memberId,
+            string(domain.NotificationCategoryGroup),
+            "group_role_updated",
+            "Role Updated",
+            fmt.Sprintf("%s made you %s of the group %s", updaterName, roleText, groupName),
+            &groupId,
+            &refType,
+            &userId,
+        )
+    }()
+}
 	response := helper.ToGroupMemberResponse(member)
 	response.User = helper.ToUserBriefResponse(user)
 
@@ -481,6 +549,27 @@ func (service *GroupServiceImpl) CreateInvitation(ctx context.Context, groupId, 
 
 	invitation = service.InvitationRepository.Save(ctx, tx, invitation)
 
+	// Kirim notifikasi ke user yang diundang
+	if service.NotificationService != nil {
+		refType := "group_invite"
+		inviterName := inviter.Name
+		groupName := group.Name
+		
+		go func() {
+			service.NotificationService.Create(
+				context.Background(),
+				inviteeId,
+				string(domain.NotificationCategoryGroup),
+				string(domain.NotificationTypeGroupInvite),
+				"Group Invitation",
+				fmt.Sprintf("%s invited you to join %s", inviterName, groupName),
+				&invitation.Id,
+				&refType,
+				&userId,
+			)
+		}()
+	}
+
 	// Build the complete response
 	response := helper.ToGroupInvitationResponse(invitation)
 
@@ -528,6 +617,33 @@ func (service *GroupServiceImpl) AcceptInvitation(ctx context.Context, invitatio
 	invitation.Status = "accepted"
 	invitation.UpdatedAt = time.Now()
 	service.InvitationRepository.Update(ctx, tx, invitation)
+
+	// Ambil data yang diperlukan untuk notifikasi
+	group, err := service.GroupRepository.FindById(ctx, tx, invitation.GroupId)
+	if err == nil {
+		groupName := group.Name
+		
+		user, err := service.UserRepository.FindById(ctx, tx, userId)
+		if err == nil && service.NotificationService != nil {
+			userName := user.Name
+			
+			// Kirim notifikasi ke user yang mengundang
+			refType := "group_invitation_accepted"
+			go func() {
+				service.NotificationService.Create(
+					context.Background(),
+					invitation.InviterId,
+					string(domain.NotificationCategoryGroup),
+					"group_invitation_accepted",
+					"Invitation Accepted",
+					fmt.Sprintf("%s accepted your invitation to join %s", userName, groupName),
+					&invitation.GroupId,
+					&refType,
+					&userId,
+				)
+			}()
+		}
+	}
 
 	// Add user to group
 	member := domain.GroupMember{
@@ -654,7 +770,7 @@ func (service *GroupServiceImpl) LeaveGroup(ctx context.Context, groupId, userId
 	return leaveResponse
 }
 
-func (service *GroupServiceImpl) JoinPublicGroup(ctx context.Context, groupId, userId uuid.UUID) web.GroupMemberResponse {
+func (service *GroupServiceImpl) JoinGroup(ctx context.Context, userId uuid.UUID, groupId uuid.UUID) web.GroupMemberResponse {
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
@@ -687,6 +803,34 @@ func (service *GroupServiceImpl) JoinPublicGroup(ctx context.Context, groupId, u
 		}
 	}
 
+	// Send notification to group admins about join request
+	user, err := service.UserRepository.FindById(ctx, tx, userId)
+	if err == nil {
+		// Get group admins - using existing methods instead of FindAdminsByGroupId
+		members := service.MemberRepository.FindByGroupId(ctx, tx, groupId)
+		
+		refType := "group_join_request"
+		for _, admin := range members {
+			if admin.Role == "admin" && admin.UserId != userId { // Only notify admins
+				go func(adminId uuid.UUID) {
+					if service.NotificationService != nil {
+						service.NotificationService.Create(
+							context.Background(),
+							adminId,
+							string(domain.NotificationCategoryGroup),
+							string(domain.NotificationTypeGroupJoinRequest),
+							"Group Join Request",
+							fmt.Sprintf("%s requested to join %s", user.Name, group.Name),
+							&groupId,
+							&refType,
+							&userId,
+						)
+					}
+				}(admin.UserId)
+			}
+		}
+	}
+
 	// Add user as a new member
 	member := domain.GroupMember{
 		GroupId:  groupId,
@@ -698,10 +842,11 @@ func (service *GroupServiceImpl) JoinPublicGroup(ctx context.Context, groupId, u
 
 	member = service.MemberRepository.AddMember(ctx, tx, member)
 
-	user, _ := service.UserRepository.FindById(ctx, tx, userId)
-
+	// Return member response
 	response := helper.ToGroupMemberResponse(member)
-	response.User = helper.ToUserBriefResponse(user)
+	if user.Id != uuid.Nil {
+		response.User = helper.ToUserBriefResponse(user)
+	}
 
 	return response
 }
@@ -728,5 +873,109 @@ func (service *GroupServiceImpl) CancelInvitation(ctx context.Context, invitatio
 	helper.PanicIfError(err)
 
 	response := helper.ToGroupInvitationResponse(invitation)
+	return response
+}
+
+func (service *GroupServiceImpl) JoinPublicGroup(ctx context.Context, userId uuid.UUID, groupId uuid.UUID) web.GroupMemberResponse {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Tambahkan log untuk debugging
+	fmt.Printf("DEBUG: Attempting to join public group. UserID: %s, GroupID: %s\n", userId, groupId)
+
+	// Check if the group exists - tambahkan log SQL query
+	fmt.Printf("DEBUG: Executing FindById for group\n")
+	group, err := service.GroupRepository.FindById(ctx, tx, groupId)
+	if err != nil {
+		fmt.Printf("DEBUG: Group not found error: %v\n", err)
+		panic(exception.NewNotFoundError("group not found"))
+	}
+
+	fmt.Printf("DEBUG: Group found: %s (ID: %s), Privacy Level: %s\n", group.Name, group.Id, group.PrivacyLevel)
+
+	// If the group is private, hide its existence with "not found" error
+	if group.PrivacyLevel == "private" {
+		fmt.Printf("DEBUG: Group is private, denying access\n")
+		panic(exception.NewNotFoundError("group not found"))
+	}
+
+	// Check if user is already a member - perbaiki pengecekan is_active
+	existingMember := service.MemberRepository.FindByGroupIdAndUserId(ctx, tx, groupId, userId)
+	fmt.Printf("DEBUG: Existing member check - GroupId: %v, IsActive: %v\n", 
+		existingMember.GroupId, existingMember.IsActive)
+	
+	if existingMember.GroupId != uuid.Nil {
+		// Jika member sudah ada tapi tidak aktif, aktifkan kembali
+		if !existingMember.IsActive {
+			fmt.Printf("DEBUG: Reactivating inactive membership\n")
+			existingMember.IsActive = true
+			existingMember = service.MemberRepository.UpdateMemberActive(ctx, tx, groupId, userId, true)
+
+			user, _ := service.UserRepository.FindById(ctx, tx, userId)
+			response := helper.ToGroupMemberResponse(existingMember)
+			response.User = helper.ToUserBriefResponse(user)
+			return response
+		} else {
+			// Jika member sudah aktif, tolak
+			fmt.Printf("DEBUG: User is already an active member\n")
+			panic(exception.NewBadRequestError("you are already a member of this group"))
+		}
+	}
+
+	fmt.Printf("DEBUG: Adding user as new member\n")
+	// Add user as a new member
+	member := domain.GroupMember{
+		GroupId:  groupId,
+		UserId:   userId,
+		Role:     "member",
+		JoinedAt: time.Now(),
+		IsActive: true, // Pastikan is_active = true
+	}
+
+	member = service.MemberRepository.AddMember(ctx, tx, member)
+	fmt.Printf("DEBUG: Member added successfully with ID: %v, IsActive: %v\n", 
+		member.GroupId, member.IsActive)
+
+	user, err := service.UserRepository.FindById(ctx, tx, userId)
+	if err != nil {
+		fmt.Printf("DEBUG: Error finding user: %v\n", err)
+	}
+	
+	userName := "Someone"
+	if user.Id != uuid.Nil {
+		userName = user.Name
+	}
+
+	// Kirim notifikasi ke pembuat grup
+	if service.NotificationService != nil && group.CreatorId != userId {
+		refType := "group_new_member"
+		groupName := group.Name
+		creatorId := group.CreatorId
+		
+		fmt.Printf("DEBUG: Sending notification to group creator %s\n", creatorId)
+		
+		go func() {
+			notifResponse := service.NotificationService.Create(
+				context.Background(),
+				creatorId,
+				string(domain.NotificationCategoryGroup),
+				"group_new_member",
+				"New Group Member",
+				fmt.Sprintf("%s joined your group %s", userName, groupName),
+				&groupId,
+				&refType,
+				&userId,
+			)
+			fmt.Printf("DEBUG: Notification sent with ID: %v\n", notifResponse.ID)
+		}()
+	} else {
+		fmt.Printf("DEBUG: Not sending notification. NotificationService nil: %v, Creator is joiner: %v\n", 
+			service.NotificationService == nil, group.CreatorId == userId)
+	}
+
+	response := helper.ToGroupMemberResponse(member)
+	response.User = helper.ToUserBriefResponse(user)
+	
 	return response
 }
