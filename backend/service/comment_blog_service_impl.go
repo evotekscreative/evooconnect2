@@ -8,7 +8,8 @@ import (
 	"evoconnect/backend/model/domain"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
-
+	"fmt"
+	"time"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
@@ -17,6 +18,7 @@ type CommentBlogServiceImpl struct {
 	CommentBlogRepository repository.CommentBlogRepository
 	BlogRepository        repository.BlogRepository
 	UserRepository        repository.UserRepository
+	NotificationService   NotificationService // Tambahkan NotificationService
 	DB                    *sql.DB
 	Validate              *validator.Validate
 }
@@ -25,47 +27,81 @@ func NewCommentBlogService(
 	commentBlogRepository repository.CommentBlogRepository,
 	blogRepository repository.BlogRepository,
 	userRepository repository.UserRepository,
+	notificationService NotificationService, // Tambahkan parameter
 	db *sql.DB,
 	validate *validator.Validate) CommentBlogService {
 	return &CommentBlogServiceImpl{
 		CommentBlogRepository: commentBlogRepository,
 		BlogRepository:        blogRepository,
-		UserRepository:       userRepository,
-		DB:                   db,
-		Validate:             validate,
+		UserRepository:        userRepository,
+		NotificationService:   notificationService, // Inisialisasi field
+		DB:                    db,
+		Validate:              validate,
 	}
 }
 
 func (service *CommentBlogServiceImpl) Create(ctx context.Context, blogId uuid.UUID, userId uuid.UUID, request web.CreateCommentBlogRequest) web.CommentBlogResponse {
-	err := service.Validate.Struct(request)
-	helper.PanicIfError(err)
+    // Validasi request
+    err := service.Validate.Struct(request)
+    helper.PanicIfError(err)
 
-	tx, err := service.DB.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
+    tx, err := service.DB.Begin()
+    helper.PanicIfError(err)
+    defer helper.CommitOrRollback(tx)
 
-	if _, err := service.BlogRepository.FindByID(ctx, blogId.String()); err != nil {
+    // Periksa apakah blog ada
+    blog, err := service.BlogRepository.FindByID(ctx, blogId.String()) // Gunakan FindByID bukan FindById
+    if err != nil {
         panic(exception.NewNotFoundError("Blog not found"))
     }
 
-	// HAPUS: if blog.Visibility == ... (karena field-nya gak ada)
+    // Create comment
+    comment := domain.CommentBlog{
+        Id:        uuid.New(),
+        BlogId:    blogId,
+        UserId:    userId,
+        Content:   request.Content,
+        ParentId:  request.ParentId, // Null untuk komentar utama
+        CreatedAt: time.Now(),
+        UpdatedAt: time.Now(),
+    }
 
-	comment := domain.CommentBlog{
-		BlogId:   blogId,
-		UserId:   userId,
-		Content:  request.Content,
-		ParentId: request.ParentId,
-	}
+    newComment := service.CommentBlogRepository.Save(ctx, tx, comment)
 
-	newComment := service.CommentBlogRepository.Save(ctx, tx, comment)
+    // Get user info
+    user, err := service.UserRepository.FindById(ctx, tx, userId)
+    if err != nil {
+        panic(exception.NewNotFoundError("User not found"))
+    }
+    newComment.User = &user
 
-	user, err := service.UserRepository.FindById(ctx, tx, userId)
-	if err != nil {
-		panic(exception.NewNotFoundError("User not found"))
-	}
-	newComment.User = &user
+    // Kirim notifikasi ke pemilik blog jika bukan diri sendiri
+    blogUserID, err := uuid.Parse(blog.UserID) // Parse string ke UUID
+    if err == nil && blogUserID != userId && service.NotificationService != nil {
+        // Ambil data yang diperlukan
+        userName := user.Name
+        blogTitle := blog.Title
+        
+        fmt.Printf("DEBUG: Sending blog comment notification. From: %s, To: %s, BlogID: %s\n", 
+            userId, blogUserID, blogId)
+        
+        refType := "blog_comment"
+        go func() {
+            service.NotificationService.Create(
+                context.Background(),
+                blogUserID,
+                "blog", // Gunakan string literal karena konstanta belum didefinisikan
+                "blog_comment", // Gunakan string literal karena konstanta belum didefinisikan
+                "Blog Comment",
+                fmt.Sprintf("%s commented on your blog '%s'", userName, blogTitle),
+                &blogId,
+                &refType,
+                &userId,
+            )
+        }()
+    }
 
-	return helper.ToCommentBlogResponse(newComment)
+    return helper.ToCommentBlogResponse(newComment)
 }
 
 func (service *CommentBlogServiceImpl) GetByBlogId(ctx context.Context, blogId uuid.UUID, limit, offset int) web.CommentBlogListResponse {
@@ -154,38 +190,79 @@ func (service *CommentBlogServiceImpl) Delete(ctx context.Context, commentId uui
 }
 
 func (service *CommentBlogServiceImpl) Reply(ctx context.Context, commentId uuid.UUID, userId uuid.UUID, request web.CreateCommentBlogRequest) web.CommentBlogResponse {
-	err := service.Validate.Struct(request)
-	helper.PanicIfError(err)
+    // Validasi request
+    err := service.Validate.Struct(request)
+    helper.PanicIfError(err)
 
-	tx, err := service.DB.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
+    tx, err := service.DB.Begin()
+    helper.PanicIfError(err)
+    defer helper.CommitOrRollback(tx)
 
-	parentComment, err := service.CommentBlogRepository.FindById(ctx, tx, commentId)
-	if err != nil {
-		panic(exception.NewNotFoundError("Parent comment not found"))
-	}
+    // Periksa apakah komentar induk ada
+    parentComment, err := service.CommentBlogRepository.FindById(ctx, tx, commentId)
+    if err != nil {
+        panic(exception.NewNotFoundError("Parent comment not found"))
+    }
 
-	if parentComment.ParentId != nil {
-		panic(exception.NewBadRequestError("Cannot reply to a reply"))
-	}
+    // Periksa apakah komentar induk sudah merupakan balasan
+    if parentComment.ParentId != nil {
+        panic(exception.NewBadRequestError("Cannot reply to a reply"))
+    }
 
-	reply := domain.CommentBlog{
-		BlogId:   parentComment.BlogId,
-		UserId:   userId,
-		ParentId: &commentId,
-		Content:  request.Content,
-	}
+    // Buat balasan komentar
+    reply := domain.CommentBlog{
+        Id:        uuid.New(),
+        BlogId:    parentComment.BlogId,
+        UserId:    userId,
+        ParentId:  &commentId, // Set parent ID
+        Content:   request.Content,
+        CreatedAt: time.Now(),
+        UpdatedAt: time.Now(),
+    }
 
-	newReply := service.CommentBlogRepository.Save(ctx, tx, reply)
+    newReply := service.CommentBlogRepository.Save(ctx, tx, reply)
 
-	user, err := service.UserRepository.FindById(ctx, tx, userId)
-	if err != nil {
-		panic(exception.NewNotFoundError("User not found"))
-	}
-	newReply.User = &user
+    // Get user info
+    user, err := service.UserRepository.FindById(ctx, tx, userId)
+    if err != nil {
+        panic(exception.NewNotFoundError("User not found"))
+    }
+    newReply.User = &user
 
-	return helper.ToCommentBlogResponse(newReply)
+    // Kirim notifikasi ke pemilik komentar jika bukan diri sendiri
+    if parentComment.UserId != userId && service.NotificationService != nil {
+        // Ambil data yang diperlukan
+        userName := user.Name
+        parentUserId := parentComment.UserId
+        blogId := parentComment.BlogId
+        
+        // Ambil data blog untuk judul
+        blog, err := service.BlogRepository.FindByID(ctx, blogId.String()) // Gunakan FindByID bukan FindById
+        blogTitle := "a blog"
+        if err == nil {
+            blogTitle = blog.Title
+        }
+        
+        fmt.Printf("DEBUG: Sending blog comment reply notification. From: %s, To: %s, CommentID: %s\n", 
+            userId, parentUserId, commentId)
+        
+        refType := "blog_comment_reply"
+        go func() {
+            service.NotificationService.Create(
+                context.Background(),
+                parentUserId,
+                "blog", // Gunakan string literal karena konstanta belum didefinisikan
+                "blog_comment_reply", // Gunakan string literal karena konstanta belum didefinisikan
+                "Blog Comment Reply",
+                fmt.Sprintf("%s replied to your comment on '%s'", userName, blogTitle),
+                &blogId,
+                &refType,
+                &userId,
+            )
+        }()
+    }
+
+    return helper.ToCommentBlogResponse(newReply)
 }
 
 func (service *CommentBlogServiceImpl) GetReplies(ctx context.Context, commentId uuid.UUID, limit, offset int) web.CommentBlogListResponse {

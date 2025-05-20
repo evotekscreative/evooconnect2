@@ -59,7 +59,6 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 	if strings.ToLower(request.Reason) == "other" && strings.TrimSpace(request.OtherReason) == "" {
 		return web.ReportResponse{}, errors.New("other reason must be provided")
 	}
-
 	ctx := context.Background()
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -126,6 +125,12 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 		TargetType: result.TargetType,
 		TargetID:   result.TargetID,
 		Reason:     result.Reason,
+		Description: func() string {
+			if strings.EqualFold(result.Reason, "Other") {
+				return result.OtherReason
+			}
+			return ""
+		}(),
 		Status:     result.Status,
 	}, nil
 }

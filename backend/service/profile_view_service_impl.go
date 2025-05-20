@@ -7,6 +7,7 @@ import (
 	"evoconnect/backend/model/domain"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
+	"fmt"
 	"github.com/google/uuid"
 	"time"
 )
@@ -15,16 +16,17 @@ type ProfileViewServiceImpl struct {
 	DB                    *sql.DB
 	ProfileViewRepository repository.ProfileViewRepository
 	UserRepository        repository.UserRepository
+	NotificationService   NotificationService
 }
 
-func NewProfileViewService(db *sql.DB, profileViewRepository repository.ProfileViewRepository, userRepository repository.UserRepository) ProfileViewService {
+func NewProfileViewService(db *sql.DB, profileViewRepository repository.ProfileViewRepository, userRepository repository.UserRepository, notificationService NotificationService) ProfileViewService {
 	return &ProfileViewServiceImpl{
 		DB:                    db,
 		ProfileViewRepository: profileViewRepository,
 		UserRepository:        userRepository,
+		NotificationService:   notificationService,
 	}
 }
-
 func (service *ProfileViewServiceImpl) RecordView(ctx context.Context, profileUserId uuid.UUID, viewerId uuid.UUID) error {
 	// Don't record if user views their own profile
 	if profileUserId == viewerId {
@@ -52,8 +54,33 @@ func (service *ProfileViewServiceImpl) RecordView(ctx context.Context, profileUs
 	}
 
 	service.ProfileViewRepository.Save(ctx, tx, view)
+	
+	// Ambil data viewer terlebih dahulu
+	viewer, err := service.UserRepository.FindById(ctx, tx, viewerId)
+	if err == nil && service.NotificationService != nil {
+		// Simpan data yang diperlukan
+		viewerName := viewer.Name
+		
+		// Send notification to profile owner
+		go func() {
+			refType := "profile_visit"
+			service.NotificationService.Create(
+				context.Background(),
+				profileUserId,
+				string(domain.NotificationCategoryProfile),
+				string(domain.NotificationTypeProfileVisit),
+				"Profile Visit",
+				fmt.Sprintf("%s viewed your profile", viewerName),
+				nil,
+				&refType,
+				&viewerId,
+			)
+		}()
+	}
+	
 	return nil
 }
+
 
 func (service *ProfileViewServiceImpl) GetViewsThisWeek(ctx context.Context, userId uuid.UUID) web.ProfileViewsResponse {
 	tx, err := service.DB.Begin()
