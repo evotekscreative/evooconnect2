@@ -18,7 +18,6 @@ var validReasons = []string{
 	"Harassment", "Fraud", "Spam", "Missinformation", "Hate Speech",
 	"Threats or violence", "self-harm", "Graphic or violent content",
 	"Dangerous or extremist organizations", "Sexual Content", "Fake Account",
-	"Child Exploitation", "Illegal products and services", "Infringement","Other",
 	"Child Exploitation", "Illegal products and services", "Infringement", "Other",
 }
 
@@ -57,8 +56,6 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 		return web.ReportResponse{}, errors.New("invalid report reason")
 	}
 
-	if strings.ToLower(request.Reason) == "other" && strings.TrimSpace(request.OtherReason) == "" {
-		return web.ReportResponse{}, errors.New("other reason must be provided")
 	if strings.ToLower(request.Reason) == "Other" && strings.TrimSpace(request.OtherReason) == "" {
 		return web.ReportResponse{}, errors.New("other reason must be filled")
 	}
@@ -74,7 +71,6 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 	if request.TargetType != "blog" {
 		targetUUID, err = uuid.Parse(request.TargetID)
 		if err != nil {
-			return web.ReportResponse{}, errors.New("invalid target ID (must be UUID)")
 			return web.ReportResponse{}, errors.New("target ID is not valid (must be UUID)")
 		}
 	}
@@ -91,11 +87,6 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 	case "user":
 		_, err = s.userRepository.FindById(ctx, tx, targetUUID)
 	default:
-		return web.ReportResponse{}, errors.New("unrecognized content type")
-	}
-
-	if err != nil {
-		return web.ReportResponse{}, fmt.Errorf("%s The reported content was not found", request.TargetType)
 		return web.ReportResponse{}, errors.New("unknown content type")
 	}
 
@@ -108,7 +99,6 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 		return web.ReportResponse{}, err
 	}
 	if reported {
-		return web.ReportResponse{}, errors.New("You have already reported this content")
 		return web.ReportResponse{}, errors.New("you have already reported this content")
 	}
 

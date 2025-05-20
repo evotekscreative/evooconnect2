@@ -2931,7 +2931,7 @@
               ]
             },
             "url": {
-              "raw": "http://localhost:3000/api/blogs/{{blog_id}}/photo",
+              "raw": "http://localhost:3000/api/blogs/{{blog_id}}",
               "protocol": "http",
               "host": ["localhost"],
               "port": "3000",

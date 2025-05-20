@@ -19,13 +19,11 @@ func ValidateReport(reason, other string) error {
 	for _, allowed := range allowedReasons {
 		if reason == allowed {
 			if reason == "Other" && strings.TrimSpace(other) == "" {
-				return errors.New("the 'Other' reason must be specified")
 				return errors.New("other reasons must be filled in")
 			}
 			return nil
 		}
 	}
-	return errors.New("invalid report reason")
 	return errors.New("reason the report is invalid")
 }
 
