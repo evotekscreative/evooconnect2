@@ -18,6 +18,8 @@ export default function Groups() {
   const [activeTab, setActiveTab] = useState('myGroups');
   const navigate = useNavigate();
   const [error, setError] = useState(null);
+  const [suggestedGroups, setSuggestedGroups] = useState([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   const [groupForm, setGroupForm] = useState({
     name: "",
@@ -39,12 +41,17 @@ export default function Groups() {
     fetchMyInvitations();
   }, []);
 
+  useEffect(() => {
+    fetchSuggestedGroups();
+  }, [adminGroups, joinedGroups]);
+
   const fetchGroupsData = async () => {
     try {
       const token = localStorage.getItem("token");
       setIsLoading(true);
 
-      const [adminResponse, joinedResponse] = await Promise.all([
+      // Ambil grup yang dibuat user dan semua grup
+      const [adminResponse, allGroupsResponse] = await Promise.all([
         axios.get(`${base_url}/api/my-groups`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
@@ -53,6 +60,10 @@ export default function Groups() {
         })
       ]);
 
+      console.log("Admin response:", adminResponse.data);
+      console.log("All groups response:", allGroupsResponse.data);
+
+      // Grup yang dibuat user
       const adminGroupsData = Array.isArray(adminResponse.data.data)
         ? adminResponse.data.data.map(group => ({
           ...group,
@@ -61,15 +72,31 @@ export default function Groups() {
         }))
         : [];
 
-      const joinedGroupsData = Array.isArray(joinedResponse.data.data)
-        ? joinedResponse.data.data
-          .filter(group => !adminGroupsData.some(adminGroup => adminGroup.id === group.id))
+      // ID grup yang dibuat user
+      const adminGroupIds = adminGroupsData.map(group => group.id);
+      console.log("Admin group IDs:", adminGroupIds);
+
+      // Grup yang di-join user (bukan yang dibuat)
+      const joinedGroupsData = Array.isArray(allGroupsResponse.data.data)
+        ? allGroupsResponse.data.data
+          .filter(group => {
+            // Log untuk debugging
+            if (group.joined_at) {
+              console.log(`Group ${group.id} has joined_at:`, group.joined_at);
+            }
+
+            // Pastikan grup ini bukan grup yang dibuat sendiri dan sudah di-join
+            return group.joined_at && !adminGroupIds.includes(group.id);
+          })
           .map(group => ({
             ...group,
             isAdmin: false,
             joinedDate: group.joined_at ? group.joined_at.split('T')[0] : new Date().toISOString().split('T')[0]
           }))
         : [];
+
+      console.log("Admin groups data:", adminGroupsData);
+      console.log("Joined groups data:", joinedGroupsData);
 
       setAdminGroups(adminGroupsData);
       setJoinedGroups(joinedGroupsData);
@@ -78,6 +105,61 @@ export default function Groups() {
       toast.error("Failed to load groups");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchSuggestedGroups = async () => {
+    try {
+      setLoadingSuggestions(true);
+      const token = localStorage.getItem("token");
+
+      // Ambil semua grup
+      const allGroupsResponse = await axios.get(`${base_url}/api/groups`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Ambil grup yang dibuat user
+      const adminResponse = await axios.get(`${base_url}/api/my-groups`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Dapatkan ID semua grup yang sudah dibuat user
+      const adminGroupIds = Array.isArray(adminResponse.data.data)
+        ? adminResponse.data.data.map(g => g.id)
+        : [];
+
+      // Filter saran grup: hanya tampilkan grup publik yang belum dibuat/diikuti user
+      const filteredSuggestions = allGroupsResponse.data.data
+        .filter(group =>
+          // Hanya tampilkan grup publik
+          group.privacy_level === "public" &&
+          // Jangan tampilkan grup yang sudah dibuat user
+          !adminGroupIds.includes(group.id) &&
+          // Jangan tampilkan grup yang sudah di-join
+          !group.joined_at
+        );
+
+      let randomSuggestions = [];
+
+      if (filteredSuggestions.length <= 3) {
+        randomSuggestions = filteredSuggestions;
+      } else {
+        const availableGroups = [...filteredSuggestions];
+        const count = Math.min(3, availableGroups.length);
+
+        for (let i = 0; i < count; i++) {
+          const randomIndex = Math.floor(Math.random() * availableGroups.length);
+          randomSuggestions.push(availableGroups[randomIndex]);
+          availableGroups.splice(randomIndex, 1);
+        }
+      }
+
+      setSuggestedGroups(randomSuggestions);
+    } catch (error) {
+      console.error("Failed to fetch suggested groups:", error);
+      setSuggestedGroups([]);
+    } finally {
+      setLoadingSuggestions(false);
     }
   };
 
@@ -103,9 +185,9 @@ export default function Groups() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    console.log(`Setting ${name} to ${value}`);  // Add this debug line
     setGroupForm(prev => ({ ...prev, [name]: value }));
   };
-
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     setGroupForm(prev => ({ ...prev, image: file }));
@@ -126,13 +208,29 @@ export default function Groups() {
     try {
       const token = localStorage.getItem("token");
       const formData = new FormData();
+
+      // Append form data with proper field names
       formData.append("name", groupForm.name);
       formData.append("description", groupForm.description);
       formData.append("rule", groupForm.rule);
       formData.append("privacy_level", groupForm.privacy_level);
       formData.append("invite_policy", groupForm.invite_policy);
+
+      // Make sure we're using the correct field name for the image
+      // Check if the API expects "photo" or "image"
       formData.append("photo", groupForm.image);
 
+      // Log FormData entries for debugging (won't show in console directly)
+      console.log("Form values being sent:", {
+        name: groupForm.name,
+        description: groupForm.description,
+        rule: groupForm.rule,
+        privacy_level: groupForm.privacy_level,
+        invite_policy: groupForm.invite_policy,
+        hasImage: !!groupForm.image
+      });
+
+      // Make the API request
       const response = await axios.post(`${base_url}/api/groups`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -162,8 +260,35 @@ export default function Groups() {
       setFormSubmitted(false);
     } catch (error) {
       console.error("Failed to create group:", error);
-      setError(error.response?.data?.message || "Failed to create group");
-      toast.error(error.response?.data?.message || "Failed to create group");
+
+      // Enhanced error logging
+      if (error.response) {
+        console.error("Server response data:", error.response.data);
+        console.error("Server response status:", error.response.status);
+        console.error("Server response headers:", error.response.headers);
+
+        // Show detailed error message from server if available
+        if (error.response.data && error.response.data.message) {
+          setError(error.response.data.message);
+          toast.error(error.response.data.message);
+        } else if (error.response.data && typeof error.response.data === 'object') {
+          // If there's a validation error object, stringify it
+          const errorMessage = JSON.stringify(error.response.data);
+          setError(errorMessage);
+          toast.error(`Validation error: ${errorMessage}`);
+        } else {
+          setError(`Server error: ${error.response.status}`);
+          toast.error(`Server error: ${error.response.status}`);
+        }
+      } else if (error.request) {
+        console.error("No response received:", error.request);
+        setError("No response from server. Please check your connection.");
+        toast.error("No response from server. Please check your connection.");
+      } else {
+        console.error("Error details:", error.message);
+        setError(`Error: ${error.message}`);
+        toast.error(`Error: ${error.message}`);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -189,6 +314,9 @@ export default function Groups() {
           inv.id === invitationId ? { ...inv, status: "accepted" } : inv
         )
       );
+
+      // Refresh the groups data
+      fetchGroupsData();
 
       toast.success("Invitation accepted successfully!");
     } catch (error) {
@@ -240,6 +368,84 @@ export default function Groups() {
         console.error("Failed to delete group:", error);
         toast.error(error.response?.data?.message || "Failed to delete group");
       }
+    }
+  };
+
+  const handleLeaveGroup = async (groupId) => {
+    if (window.confirm("Are you sure you want to leave this group?")) {
+      try {
+        const token = localStorage.getItem("token");
+
+        // Try with PUT method (commonly used for this type of action)
+        await axios.put(`${base_url}/api/groups/${groupId}/leave`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        // Update the UI by removing the group from joined groups
+        setJoinedGroups(joinedGroups.filter(group => group.id !== groupId));
+
+        toast.success("You have left the group successfully!");
+      } catch (error) {
+        console.error("Error leaving group:", error);
+        toast.error(error.response?.data?.message || "Failed to leave group");
+      }
+    }
+  };
+
+  const handleJoinGroup = async (groupId) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      // Make the API request to join the group
+      const joinResponse = await axios.post(`${base_url}/api/groups/${groupId}/join`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      console.log("Join response:", joinResponse.data);
+
+      // Ambil data grup yang baru di-join dari server
+      const groupResponse = await axios.get(`${base_url}/api/groups/${groupId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      console.log("Group data after join:", groupResponse.data);
+
+      // Gunakan data dari server untuk memastikan data yang benar
+      const joinedGroupData = groupResponse.data.data;
+
+      if (joinedGroupData) {
+        // Tambahkan ke joined groups dengan data yang benar dari server
+        const groupWithJoinedDate = {
+          ...joinedGroupData,
+          isAdmin: false, // Pastikan isAdmin false untuk grup yang di-join
+          joined_at: new Date().toISOString(),
+          joinedDate: new Date().toISOString().split('T')[0]
+        };
+
+        // Update state
+        setJoinedGroups(prev => [groupWithJoinedDate, ...prev]);
+        setSuggestedGroups(prev => prev.filter(group => group.id !== groupId));
+
+        toast.success("Successfully joined the group!");
+      } else {
+        // Fallback ke cara lama jika tidak bisa mendapatkan data dari server
+        const joinedGroup = suggestedGroups.find(group => group.id === groupId);
+
+        if (joinedGroup) {
+          const groupWithJoinedDate = {
+            ...joinedGroup,
+            isAdmin: false,
+            joined_at: new Date().toISOString(),
+            joinedDate: new Date().toISOString().split('T')[0]
+          };
+
+          setJoinedGroups(prev => [groupWithJoinedDate, ...prev]);
+          setSuggestedGroups(prev => prev.filter(group => group.id !== groupId));
+        }
+      }
+    } catch (error) {
+      console.error("Error joining group:", error);
+      toast.error(error.response?.data?.message || "Failed to join group");
     }
   };
 
@@ -563,30 +769,45 @@ export default function Groups() {
             {/* Suggested Groups */}
             <div className="bg-white rounded-xl shadow p-4">
               <h3 className="font-medium mb-2 border-b pb-4">Groups You Might Like</h3>
-              {(adminGroups.length + joinedGroups.length) < 3 ? (
-                <>
-                  <p className="text-sm text-gray-500 mb-2">
-                    Here are some suggestions for you:
-                  </p>
-                  <div className="space-y-2">
-                    <div key="suggested-1" className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
-                      <span className="text-sm truncate">JavaScript Developers</span>
-                      <button className="text-blue-600 text-xs hover:underline whitespace-nowrap ml-2">
-                        Join
-                      </button>
+              {loadingSuggestions ? (
+                <div className="flex justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                </div>
+              ) : suggestedGroups.length > 0 ? (
+                <div className="space-y-3">
+                  {suggestedGroups.map((group) => (
+                    <div key={`suggested-${group.id}`} className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                      <div className="flex-shrink-0">
+                        <img
+                          className="w-10 h-10 rounded-full"
+                          src={group.image ? `${base_url}/${group.image}` : "/default-group.png"}
+                          alt="Group"
+                          onError={(e) => {
+                            e.target.src = "/default-group.png";
+                          }}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-medium text-gray-900 truncate">{group.name}</h4>
+                        <p className="text-xs text-gray-500 truncate">{group.description}</p>
+                        <p className="text-xs text-gray-500 mt-1">{group.members_count} members</p>
+                        <p className="text-xs text-blue-500 mt-1">
+                          {group.privacy_level === "public" ? "Public Group" : "Private Group"}
+                        </p>
+                      </div>
+                      {group.privacy_level === "public" && (
+                        <button
+                          onClick={() => handleJoinGroup(group.id)}
+                          className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded whitespace-nowrap"
+                        >
+                          Join
+                        </button>
+                      )}
                     </div>
-                    <div key="suggested-2" className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
-                      <span className="text-sm truncate">UI/UX Designers</span>
-                      <button className="text-blue-600 text-xs hover:underline whitespace-nowrap ml-2">
-                        Join
-                      </button>
-                    </div>
-                  </div>
-                </>
+                  ))}
+                </div>
               ) : (
-                <p className="text-sm text-gray-500 mb-2">
-                  You've joined all available groups.
-                </p>
+                <p className="text-sm text-gray-500">No group suggestions available.</p>
               )}
             </div>
           </div>
@@ -648,8 +869,8 @@ export default function Groups() {
                     required
                     className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="public">Public</option>
-                    <option value="private">Private</option>
+                    <option value="public">Public (Anyone can see and request to join)</option>
+                    <option value="private">Private (Only visible to members)</option>
                   </select>
                 </div>
 
@@ -662,8 +883,8 @@ export default function Groups() {
                     required
                     className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="admin">Admin Only</option>
-                    <option value="member">All Members</option>
+                    <option value="admin">Admin Only (Only admins can invite new members)</option>
+                    <option value="member">All Members (Any member can invite new members)</option>
                   </select>
                 </div>
 
