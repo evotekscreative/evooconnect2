@@ -43,6 +43,7 @@ func NewRouter(
 
 	// Blog routes - static paths first
 	router.POST("/api/blogs", blogController.Create)
+	router.POST("/api/blogs-with-image", blogController.CreateWithImage)
 	router.GET("/api/blogs", blogController.FindAll)
 	router.GET("/api/blogs/random", blogController.GetRandomBlogs)
 	router.GET("/api/blogs/slug/:slug", blogController.GetBySlug)
@@ -65,6 +66,7 @@ func NewRouter(
 	router.POST("/api/posts", postController.Create)
 	router.GET("/api/posts", postController.FindAll)
 
+
 	// Post comment routes
 	router.POST("/api/post-comments/:postId", commentController.Create)
 	router.GET("/api/post-comments/:postId", commentController.GetByPostId)
@@ -79,7 +81,6 @@ func NewRouter(
 
 	// Experience routes - static paths first
 	// router.POST("/api/experience", experienceController.Create)
-
 	// // Blog routes with parameters
 	// router.GET("/api/blogs/slug/:slug", blogController.GetBySlug)
 	// router.DELETE("/api/blogs/:blogId", blogController.Delete)
@@ -97,8 +98,6 @@ func NewRouter(
 	// blog routes static paths first
 	// router.POST("/api/blogs/:blogId/upload-photo", blogController.UploadPhoto)
 
-	// Education routes with parameters
-	router.PUT("/api/education/:educationId", educationController.Update)
 	router.DELETE("/api/education/:educationId", educationController.Delete)
 	router.GET("/api/education/:educationId", educationController.GetById)
 	router.GET("/api/users/:userId/education", educationController.GetByUserId)

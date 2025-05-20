@@ -4,18 +4,16 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, LogOut, ArrowLeft, ChevronDown, ChevronUp, User, Check, X } from "lucide-react";
 import axios from 'axios';
 import { toast } from "sonner";
+import { useParams } from "react-router-dom";
 
 const base_url = "http://localhost:3000";
 
 export default function Groups() {
+  const {groupId} = useParams();
   const [showModal, setShowModal] = useState(false);
   const [showAllAdminGroups, setShowAllAdminGroups] = useState(false);
   const [showAllJoinedGroups, setShowAllJoinedGroups] = useState(false);
-<<<<<<< HEAD
-  const [isLoading, setIsLoading] = useState(false);
-=======
   const [activeTab, setActiveTab] = useState('myGroups');
->>>>>>> faab8b12d402bdb372b5729ced9806eaf54539fd
   const navigate = useNavigate();
   const [error, setError] = useState(null);
 
@@ -36,38 +34,13 @@ export default function Groups() {
 
   useEffect(() => {
     fetchGroupsData();
-    fetchInvitations();
   }, []);
 
-<<<<<<< HEAD
-  // Handle form input changes
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  // Handle file upload
-  const handleFileChange = (e) => {
-    setFormData(prev => ({
-      ...prev,
-      image: e.target.files[0]
-    }));
-  };
-
-  // Handle group creation
-  const handleCreateGroup = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-=======
   const fetchGroupsData = async () => {
->>>>>>> faab8b12d402bdb372b5729ced9806eaf54539fd
     try {
       const token = localStorage.getItem("token");
       setIsLoading(true);
-      
+
       const [adminResponse, joinedResponse] = await Promise.all([
         axios.get(`${base_url}/api/my-groups`, {
           headers: { Authorization: `Bearer ${token}` }
@@ -77,103 +50,55 @@ export default function Groups() {
         })
       ]);
 
-      const adminGroupsData = Array.isArray(adminResponse.data) 
+      const adminGroupsData = Array.isArray(adminResponse.data)
         ? adminResponse.data.map(group => ({
-            ...group,
-            isAdmin: true,
-            createdDate: group.created_at ? group.created_at.split('T')[0] : new Date().toISOString().split('T')[0]
-          }))
+          ...group,
+          isAdmin: true,
+          createdDate: group.created_at ? group.created_at.split('T')[0] : new Date().toISOString().split('T')[0]
+        }))
         : [];
 
       const joinedGroupsData = Array.isArray(joinedResponse.data.data)
         ? joinedResponse.data.data
-            .filter(group => !adminGroupsData.some(adminGroup => adminGroup.id === group.id))
-            .map(group => ({
-              ...group,
-              isAdmin: false,
-              joinedDate: group.joined_at ? group.joined_at.split('T')[0] : new Date().toISOString().split('T')[0]
-            }))
+          .filter(group => !adminGroupsData.some(adminGroup => adminGroup.id === group.id))
+          .map(group => ({
+            ...group,
+            isAdmin: false,
+            joinedDate: group.joined_at ? group.joined_at.split('T')[0] : new Date().toISOString().split('T')[0]
+          }))
         : [];
 
-<<<<<<< HEAD
-      setGroups(prev => [newGroup, ...prev]);
-      setShowModal(false);
-      setSuccessMessage('Group created successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
-
-      // Reset form
-      setFormData({
-        name: '',
-        description: '',
-        rule: '',
-        privacy_level: 'public',
-        invite_policy: 'admin',
-        image: null
-      });
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to create group');
-=======
       setAdminGroups(adminGroupsData);
       setJoinedGroups(joinedGroupsData);
     } catch (error) {
       console.error("Failed to fetch groups:", error);
       toast.error("Failed to load groups");
->>>>>>> faab8b12d402bdb372b5729ced9806eaf54539fd
     } finally {
       setIsLoading(false);
     }
   };
 
-<<<<<<< HEAD
-  // Handle group deletion
-  const handleDeleteGroup = async (groupId) => {
-    if (window.confirm("Are you sure you want to delete this group? This action cannot be undone.")) {
-      try {
-        await axios.delete(`http://localhost:3000/api/groups/${groupId}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        setGroups(groups.filter(group => group.id !== groupId));
-        setSuccessMessage('Group deleted successfully!');
-        setTimeout(() => setSuccessMessage(''), 3000);
-      } catch (err) {
-        toast.error(err.response?.data?.message || 'Failed to delete group');
-      }
-=======
   const fetchInvitations = async () => {
     try {
-      setLoadingInvitations(true);
       const token = localStorage.getItem("token");
-      const response = await axios.get(`${base_url}/api/invitations`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await axios.get(`http://localhost:3000/api/groups/${groupId}/invitations`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
-      // Map API response to our invitation format
-      const formattedInvitations = response.data.map(invite => ({
-        id: invite.id,
-        group: {
-          id: invite.group.id,
-          name: invite.group.name,
-          members: invite.group.members_count || 0,
-          image: invite.group.image
-        },
-        inviter: {
-          id: invite.inviter.id,
-          name: invite.inviter.name
-        },
-        status: "pending"
-      }));
-      
-      setInvitations(formattedInvitations);
+      setInvitations(response.data.data || []);
     } catch (error) {
-      console.error("Failed to fetch invitations:", error);
-      toast.error("Failed to load invitations");
-    } finally {
-      setLoadingInvitations(false);
->>>>>>> faab8b12d402bdb372b5729ced9806eaf54539fd
+      console.error("Error fetching invitations:", error);
+      toast.error("Failed to load invitations.");
     }
   };
+
+  // Call this function in useEffect
+  useEffect(() => {
+    if (groupId) {
+      fetchInvitations();
+    }
+  }, [groupId]);
 
   const showcaseAdminGroups = showAllAdminGroups ? adminGroups : adminGroups.slice(0, 3);
   const showcaseJoinedGroups = showAllJoinedGroups ? joinedGroups : joinedGroups.slice(0, 3);
@@ -185,19 +110,11 @@ export default function Groups() {
         await axios.delete(`${base_url}/api/groups/${groupId}/leave`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-<<<<<<< HEAD
-        setGroups(groups.filter(group => group.id !== groupId));
-        setSuccessMessage('You have left the group');
-        setTimeout(() => setSuccessMessage(''), 3000);
-      } catch (err) {
-        toast.error(err.response?.data?.message || 'Failed to leave group');
-=======
         setJoinedGroups(joinedGroups.filter(group => group.id !== groupId));
         toast.success("You have left the group");
       } catch (error) {
         console.error("Failed to leave group:", error);
         toast.error(error.response?.data?.message || "Failed to leave group");
->>>>>>> faab8b12d402bdb372b5729ced9806eaf54539fd
       }
     }
   };
@@ -282,92 +199,46 @@ export default function Groups() {
   const handleAcceptInvitation = async (invitationId) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.post(`${base_url}/api/invitations/${invitationId}/accept`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      // Update the invitation status
-      const updatedInvitations = invitations.map(inv =>
-        inv.id === invitationId ? { ...inv, status: "accepted" } : inv
+      await axios.post(
+        `http://localhost:3000/api/groups/${groupId}/invitations/${invitationId}/accept`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
-      setInvitations(updatedInvitations);
-
-      // Add the group to joined groups
-      const acceptedInvitation = invitations.find(inv => inv.id === invitationId);
-      const newGroup = {
-        id: acceptedInvitation.group.id,
-        name: acceptedInvitation.group.name,
-        members_count: acceptedInvitation.group.members,
-        isAdmin: false,
-        joinedDate: new Date().toISOString().split('T')[0],
-        image: acceptedInvitation.group.image || ""
-      };
-      setJoinedGroups(prev => [...prev, newGroup]);
-
-<<<<<<< HEAD
-      setSuccessMessage('Invitation accepted!');
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to accept invitation');
-=======
+      setInvitations((prev) => prev.filter((inv) => inv.id !== invitationId));
       toast.success("Invitation accepted successfully!");
     } catch (error) {
-      console.error("Failed to accept invitation:", error);
-      toast.error(error.response?.data?.message || "Failed to accept invitation");
->>>>>>> faab8b12d402bdb372b5729ced9806eaf54539fd
+      console.error("Error accepting invitation:", error);
+      toast.error("Failed to accept invitation.");
     }
   };
 
   const handleRejectInvitation = async (invitationId) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.post(`${base_url}/api/invitations/${invitationId}/reject`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      // Update the invitation status
-      const updatedInvitations = invitations.map(inv =>
-        inv.id === invitationId ? { ...inv, status: "rejected" } : inv
+      await axios.post(
+        `http://localhost:3000/api/groups/${groupId}/invitations/${invitationId}/reject`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
-      setInvitations(updatedInvitations);
-
-<<<<<<< HEAD
-      setSuccessMessage('Invitation declined');
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to reject invitation');
-    }
-  };
-
-  // Separate admin groups and joined groups
-  const adminGroups = Array.isArray(groups) ? groups.filter(group => group.is_admin) : [];
-  const joinedGroups = Array.isArray(groups) ? groups.filter(group => !group.is_admin) : [];
-  const pendingInvitations = Array.isArray(invitations) ? invitations.filter(inv => inv.status === "pending") : [];
-
-  // Get first 3 groups for showcase
-  const showcaseAdminGroups = showAllAdminGroups ? adminGroups : adminGroups.slice(0, 3);
-  const showcaseJoinedGroups = showAllJoinedGroups ? joinedGroups : joinedGroups.slice(0, 3);
-
-  if (loading) {
-    return (
-      <Case>
-        <div className="flex justify-center items-center min-h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
-      </Case>
-    );
-  }
-=======
+      setInvitations((prev) => prev.filter((inv) => inv.id !== invitationId));
       toast.success("Invitation rejected successfully!");
     } catch (error) {
-      console.error("Failed to reject invitation:", error);
-      toast.error(error.response?.data?.message || "Failed to reject invitation");
+      console.error("Error rejecting invitation:", error);
+      toast.error("Failed to reject invitation.");
     }
   };
 
   const pendingInvitations = invitations.filter(inv => inv.status === "pending");
   const processedInvitations = invitations.filter(inv => inv.status !== "pending");
->>>>>>> faab8b12d402bdb372b5729ced9806eaf54539fd
+
 
   return (
     <Case>
@@ -408,11 +279,6 @@ export default function Groups() {
                   className={`px-4 py-2 border-b-2 ${activeTab === 'invitations' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'} font-medium whitespace-nowrap`}
                 >
                   Group Invitations
-                  {pendingInvitations.length > 0 && (
-                    <span className="ml-1 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
-                      {pendingInvitations.length}
-                    </span>
-                  )}
                 </button>
               </div>
             </div>
@@ -445,34 +311,24 @@ export default function Groups() {
                       {showcaseAdminGroups.map((group) => (
                         <div key={`admin-${group.id}`} className="bg-white rounded-xl shadow p-3 sm:p-4 flex flex-col justify-between h-36 sm:h-40 border border-gray-200 hover:border-blue-300 transition-colors">
                           <div className="flex items-center space-x-2 sm:space-x-3 border-b pb-3">
-                            <img 
-<<<<<<< HEAD
-                              className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover" 
-                              src={group.image ? `${base_url}/${group.image}` : "https://via.placeholder.com/150"} 
-                              alt={group.name} 
-=======
-                              className="w-10 h-10 rounded-full" 
-                              src={group.image ? `${base_url}/${group.image}` : "/default-group.png"} 
-                              alt="Group" 
+                            <img
+                              className="w-10 h-10 rounded-full"
+                              src={group.image ? `${base_url}/${group.image}` : "/default-group.png"}
+                              alt="Group"
                               onError={(e) => {
                                 e.target.src = "/default-group.png";
                               }}
->>>>>>> faab8b12d402bdb372b5729ced9806eaf54539fd
                             />
                             <div className="flex-1 min-w-0">
                               <div className="font-medium capitalize text-blue-500 truncate">{group.name}</div>
-                              <div className="text-gray-500 text-xs sm:text-sm">{group.member_count || 0} Members</div>
+                              <div className="text-gray-500 text-xs sm:text-sm">{group.members_count || 0} Members</div>
                               <span className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded whitespace-nowrap">
-                                Created on {new Date(group.created_at).toLocaleDateString()}
+                                Created on {group.createdDate}
                               </span>
                             </div>
                           </div>
                           <div className="flex justify-between items-center mt-3">
-<<<<<<< HEAD
-                            <Link 
-=======
                             <Link
->>>>>>> faab8b12d402bdb372b5729ced9806eaf54539fd
                               to={`/groups/${group.id}`}
                               className="text-xs sm:text-sm text-blue-600 hover:underline"
                             >
@@ -518,18 +374,9 @@ export default function Groups() {
                       {showcaseJoinedGroups.map((group) => (
                         <div key={`joined-${group.id}`} className="bg-white rounded-xl shadow p-3 sm:p-4 flex flex-col justify-between h-36 sm:h-40 border border-gray-200 hover:border-blue-300 transition-colors">
                           <div className="flex items-center space-x-2 sm:space-x-3 border-b pb-3">
-                            <img 
-<<<<<<< HEAD
-                              className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover" 
-                              src={group.image ? `${base_url}/${group.image}` : "https://via.placeholder.com/150"} 
-                              alt={group.name} 
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium capitalize text-blue-500 truncate">{group.name}</div>
-                              <div className="text-gray-500 text-xs sm:text-sm">{group.member_count || 0} Members</div>
-=======
-                              className="w-10 h-10 rounded-full" 
-                              src={group.image ? `${base_url}/${group.image}` : "/default-group.png"} 
+                            <img
+                              className="w-10 h-10 rounded-full"
+                              src={group.image ? `${base_url}/${group.image}` : "/default-group.png"}
                               alt="Group"
                               onError={(e) => {
                                 e.target.src = "/default-group.png";
@@ -538,9 +385,8 @@ export default function Groups() {
                             <div className="flex-1 min-w-0">
                               <div className="font-medium capitalize text-blue-500 truncate">{group.name}</div>
                               <div className="text-gray-500 text-xs sm:text-sm">{group.members_count} Members</div>
->>>>>>> faab8b12d402bdb372b5729ced9806eaf54539fd
                               <span className="text-xs bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded whitespace-nowrap">
-                                Joined on {new Date(group.joined_at).toLocaleDateString()}
+                                Joined on {group.joinedDate}
                               </span>
                             </div>
                           </div>
@@ -592,9 +438,9 @@ export default function Groups() {
                       <div key={`invite-${invitation.id}`} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                         <div className="flex items-start space-x-3">
                           <div className="flex-shrink-0">
-                            <img 
-                              className="w-10 h-10 rounded-full" 
-                              src={invitation.group.image ? `${base_url}/${invitation.group.image}` : "/default-group.png"} 
+                            <img
+                              className="w-10 h-10 rounded-full"
+                              src={invitation.group.image ? `${base_url}/${invitation.group.image}` : "/default-group.png"}
                               alt="Group"
                               onError={(e) => {
                                 e.target.src = "/default-group.png";
@@ -602,18 +448,12 @@ export default function Groups() {
                             />
                           </div>
                           <div className="flex-1">
-<<<<<<< HEAD
-                            <div className="font-medium text-gray-900">{invitation.inviter?.name || 'Unknown user'}</div>
-                            <p className="text-sm text-gray-600">
-                              Invited you to join <span className="font-medium">{invitation.group?.name || 'Unknown group'}</span>
-=======
                             <div className="font-medium text-gray-900">{invitation.group.name}</div>
                             <p className="text-sm text-gray-600">
                               Invited by <span className="font-medium">{invitation.inviter.name}</span>
->>>>>>> faab8b12d402bdb372b5729ced9806eaf54539fd
                             </p>
                             <div className="mt-1 text-xs text-gray-500">
-                              {invitation.group?.members || 0} members
+                              {invitation.group.members_count} members
                             </div>
                           </div>
                         </div>
@@ -649,9 +489,9 @@ export default function Groups() {
                           <div key={`history-${invitation.id}`} className="flex items-center justify-between p-2 border-b">
                             <div className="flex items-center space-x-2">
                               <div className="flex-shrink-0">
-                                <img 
-                                  className="w-8 h-8 rounded-full" 
-                                  src={invitation.group.image ? `${base_url}/${invitation.group.image}` : "/default-group.png"} 
+                                <img
+                                  className="w-8 h-8 rounded-full"
+                                  src={invitation.group.image ? `${base_url}/${invitation.group.image}` : "/default-group.png"}
                                   alt="Group"
                                   onError={(e) => {
                                     e.target.src = "/default-group.png";
@@ -660,10 +500,10 @@ export default function Groups() {
                               </div>
                               <div>
                                 <p className="text-sm">
-                                  {invitation.inviter?.name || 'Unknown user'}'s invitation to {invitation.group?.name || 'Unknown group'}
+                                  {invitation.inviter.name}'s invitation to {invitation.group.name}
                                 </p>
                                 <p className="text-xs text-gray-500">
-                                  {new Date(invitation.created_at).toLocaleDateString()}
+                                  {new Date(invitation.updated_at).toLocaleDateString()}
                                 </p>
                               </div>
                             </div>
@@ -825,7 +665,7 @@ export default function Groups() {
                   />
                 </div>
 
-                <div className="flex justify-end space-x-3 mt-4">
+                <div className="flex justify-end space-x-3">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}

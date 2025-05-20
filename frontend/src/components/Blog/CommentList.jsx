@@ -1,7 +1,6 @@
-// CommentList.jsx
 import React from 'react';
-import Comment from './Comment'; // Import komponen Comment yang menampilkan tiap komentar
-import CommentDropdown from './CommentDropdown'; // Import komponen CommentDropdown
+import Comment from './Comment';
+import CommentDropdown from './CommentDropdown';
 
 const CommentList = ({ comments, onDelete, onReply, toggleCommentExpansion, expandedComments }) => {
   return (

@@ -1,66 +1,76 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { categories } from "./CategoryStep";
+import { CKEditor } from "@ckeditor/ckeditor5-react";
+import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 
-const cleanHTML = (html) => {
-  return html
-    .replace(/<p[^>]*>/g, "")
-    .replace(/<\/p>/g, "\n")
-    .replace(/<[^>]+>/g, "")
-    .trim();
-};
+const customEditorStyles = `
+  .ck-powered-by { display: none !important; }
+  .ck-content a { color: #3b82f6 !important; text-decoration: underline !important; }
+`;
 
 const EditBlog = ({ article, setArticle, onClose, onSuccess, showToast }) => {
   const [loading, setLoading] = useState(false);
+  const [imageFile, setImageFile] = useState(null);
+  const [content, setContent] = useState("");
+  
+  useEffect(() => {
+    if (article) {
+      setContent(article.content || "");
+    }
+  }, [article]);
 
-  const handleUploadImage = async (e) => {
+  const handleUploadImagePreview = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const token = localStorage.getItem("token");
-    const formData = new FormData();
-    formData.append("photo", file);
-
-    try {
-      const res = await fetch(
-        `http://localhost:3000/api/blogs/${article.id}/upload-photo`,
-        {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        }
-      );
-
-      const result = await res.json();
-      setArticle({ ...article, images: [result.imageUrl] });
-      showToast("Gambar berhasil diunggah!", "success");
-    } catch {
-      showToast("Gagal upload gambar.", "error");
+    if (!file.type.startsWith("image/")) {
+      showToast("File harus berupa gambar.", "error");
+      return;
     }
+
+    setImageFile(file);
   };
 
   const handleSave = async () => {
     const token = localStorage.getItem("token");
     setLoading(true);
+  
     try {
-      await fetch(`http://localhost:3000/api/blogs/${article.id}`, {
+      const formData = new FormData();
+      formData.append("title", article.title);
+      formData.append("category", article.category);
+      formData.append("content", content);
+  
+      if (imageFile) {
+        formData.append("image", imageFile);
+      }
+  
+      const res = await fetch(`http://localhost:3000/api/blogs/${article.id}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
         },
-        body: JSON.stringify(article),
+        body: formData,
       });
-      showToast("Blog berhasil diperbarui!", "success");
+  
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || "Bad request");
+      }
+  
       onSuccess();
-    } catch {
-      showToast("Gagal update blog.", "error");
+      onClose(); 
+    } catch (err) {
+      showToast(err.message || "Gagal update blog.", "error");
     } finally {
       setLoading(false);
     }
   };
+  
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+      <style>{customEditorStyles}</style>
       <div className="bg-white max-w-3xl w-full p-6 rounded-xl shadow-lg relative max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
@@ -87,7 +97,7 @@ const EditBlog = ({ article, setArticle, onClose, onSuccess, showToast }) => {
               className="w-full px-3 py-2 rounded border bg-white"
             >
               <option value="" disabled>
-                Pilih kategori
+                Choose a category
               </option>
               {categories.map((cat) => (
                 <option key={cat} value={cat}>
@@ -101,20 +111,56 @@ const EditBlog = ({ article, setArticle, onClose, onSuccess, showToast }) => {
             <input
               type="file"
               accept="image/*"
-              onChange={handleUploadImage}
+              onChange={handleUploadImagePreview}
               className="w-full px-3 py-2 rounded border"
             />
+            <div className="mt-3">
+              {imageFile ? (
+                <img
+                  src={URL.createObjectURL(imageFile)}
+                  alt="Preview"
+                  className="rounded max-h-60 object-cover"
+                />
+              ) : article.photo ? (
+                <img
+                  src={article.photo}
+                  alt="Current Image"
+                  className="rounded max-h-60 object-cover"
+                />
+              ) : null}
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Content</label>
-            <textarea
-              rows={6}
-              value={cleanHTML(article.content)}
-              onChange={(e) =>
-                setArticle({ ...article, content: cleanHTML(e.target.value) })
-              }
-              className="w-full border px-3 py-2 rounded"
-            />
+            <div className="border rounded">
+              <CKEditor
+                editor={ClassicEditor}
+                data={content}
+                onChange={(event, editor) => {
+                  const data = editor.getData();
+                  setContent(data);
+                }}
+                config={{
+                  toolbar: [
+                    'heading',
+                    '|',
+                    'bold',
+                    'italic',
+                    'link',
+                    'bulletedList',
+                    'numberedList',
+                    '|',
+                    'outdent',
+                    'indent',
+                    '|',
+                    'blockQuote',
+                    'undo',
+                    'redo'
+                  ],
+                  removePlugins: ['Table']
+                }}
+              />
+            </div>
           </div>
         </div>
         <div className="text-right mt-6">

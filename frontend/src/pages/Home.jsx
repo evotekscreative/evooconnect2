@@ -205,7 +205,7 @@ export default function SocialNetworkFeed() {
           setPosts(
             response.data.data.map((post) => ({
               ...post,
-              comments_count: post.comments_count || 0, // Berikan nilai default jika undefined
+              comments_count: post.comments_count || 0, 
             }))
           );
         } else {
@@ -348,13 +348,13 @@ export default function SocialNetworkFeed() {
       formData.append("content", content);
       formData.append("visibility", postVisibility);
 
-      // Tambahkan semua gambar ke FormData
+      // Tambah semua gambar ke FormData
       articleImages.forEach((img) => {
         if (img.file) {
-          // Jika ini file baru yang diupload
+          // file baru yang diupload
           formData.append("images", img.file);
         } else if (typeof img === "string") {
-          // Jika ini URL gambar yang sudah ada
+          // URL gambar yang sudah ada
           formData.append("existingImages", img);
         }
       });
@@ -374,14 +374,13 @@ export default function SocialNetworkFeed() {
         throw new Error("Invalid response from server");
       }
 
-      // Pastikan response.data.data.images adalah array URL gambar
+      // response.data.data.images adalah array URL gambar
       const images = response.data.data.images || [];
 
       const newPost = {
         id: response.data.data.id,
         content: response.data.data.content || content,
         images: images.map((img) => {
-          // Pastikan URL gambar lengkap jika backend hanya mengembalikan nama file
           return img.startsWith("http") ? img : `http://localhost:3000/${img}`;
         }),
         visibility: response.data.data.visibility || postVisibility,
