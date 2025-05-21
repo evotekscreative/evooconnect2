@@ -19,6 +19,7 @@ import (
 type PostServiceImpl struct {
 	UserRepository        repository.UserRepository
 	PostRepository        repository.PostRepository
+	CommentRepository     repository.CommentRepository
 	ConnectionRepository  repository.ConnectionRepository
 	GroupRepository       repository.GroupRepository
 	GroupMemberRepository repository.GroupMemberRepository
@@ -30,6 +31,7 @@ type PostServiceImpl struct {
 func NewPostService(
 	userRepository repository.UserRepository,
 	postRepository repository.PostRepository,
+	commentRepository repository.CommentRepository,
 	connectionRepository repository.ConnectionRepository,
 	groupRepository repository.GroupRepository,
 	groupMemberRepository repository.GroupMemberRepository,
@@ -38,6 +40,7 @@ func NewPostService(
 	return &PostServiceImpl{
 		UserRepository:        userRepository,
 		PostRepository:        postRepository,
+		CommentRepository:     commentRepository,
 		ConnectionRepository:  connectionRepository,
 		GroupRepository:       groupRepository,
 		GroupMemberRepository: groupMemberRepository,
@@ -91,6 +94,8 @@ func (service *PostServiceImpl) Create(ctx context.Context, userId uuid.UUID, re
 	helper.PanicIfError(err)
 
 	fullPost.IsLiked = service.PostRepository.IsLiked(ctx, tx, post.Id, userId)
+	// fullPost.CommentsCount, _ = service.CommentRepository.CountByPostId(ctx, tx, post.Id)
+	fullPost.LikesCount = service.PostRepository.GetLikesCount(ctx, tx, post.Id)
 
 	// Kirim notifikasi ke koneksi pengguna
 if service.NotificationService != nil {
@@ -207,6 +212,8 @@ func (service *PostServiceImpl) Update(ctx context.Context, postId uuid.UUID, us
 
 	// Check if the current user has liked this post
 	updatedPost.IsLiked = service.PostRepository.IsLiked(ctx, tx, postId, userId)
+	updatedPost.CommentsCount, _ = service.CommentRepository.CountByPostId(ctx, tx, postId)
+	updatedPost.LikesCount = service.PostRepository.GetLikesCount(ctx, tx, postId)
 
 	// After successful update, clean up unused images in background
 	go service.cleanupUnusedImages(originalImages, imagePaths)
@@ -277,6 +284,8 @@ func (service *PostServiceImpl) FindById(ctx context.Context, postId uuid.UUID, 
 
 	// Check if the current user has liked this post
 	post.IsLiked = service.PostRepository.IsLiked(ctx, tx, postId, currentUserId)
+	post.CommentsCount, _ = service.CommentRepository.CountByPostId(ctx, tx, postId)
+	post.LikesCount = service.PostRepository.GetLikesCount(ctx, tx, postId)
 	post.User.IsConnected = service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, post.UserId)
 
 	return helper.ToPostResponse(post)
@@ -300,6 +309,8 @@ func (service *PostServiceImpl) FindAll(ctx context.Context, limit, offset int, 
 	var postResponses []web.PostResponse
 	for _, post := range posts {
 		post.IsLiked = service.PostRepository.IsLiked(ctx, tx, post.Id, currentUserId)
+		post.CommentsCount, _ = service.CommentRepository.CountByPostId(ctx, tx, post.Id)
+		post.LikesCount = service.PostRepository.GetLikesCount(ctx, tx, post.Id)
 		post.User.IsConnected = service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, post.UserId)
 		if post.GroupId != nil {
 			group, err := service.GroupRepository.FindById(ctx, tx, *post.GroupId)
@@ -324,6 +335,8 @@ func (service *PostServiceImpl) FindByUserId(ctx context.Context, targetUserId u
 	var postResponses []web.PostResponse
 	for _, post := range posts {
 		post.IsLiked = service.PostRepository.IsLiked(ctx, tx, post.Id, currentUserId)
+		post.CommentsCount, _ = service.CommentRepository.CountByPostId(ctx, tx, post.Id)
+		post.LikesCount = service.PostRepository.GetLikesCount(ctx, tx, post.Id)
 		post.User.IsConnected = service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, post.UserId)
 		postResponses = append(postResponses, helper.ToPostResponse(post))
 	}
@@ -520,6 +533,7 @@ func (service *PostServiceImpl) FindByGroupId(ctx context.Context, groupId uuid.
 	// Check if current user has liked each post
 	for i := range posts {
 		posts[i].IsLiked = service.PostRepository.IsLiked(ctx, tx, posts[i].Id, userId)
+		posts[i].CommentsCount, _ = service.CommentRepository.CountByPostId(ctx, tx, posts[i].Id)
 	}
 
 	return helper.ToPostResponses(posts)

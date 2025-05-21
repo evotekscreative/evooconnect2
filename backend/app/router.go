@@ -25,7 +25,8 @@ func NewRouter(
 	groupController controller.GroupController,
 	chatController controller.ChatController,
 	profileViewController controller.ProfileViewController,
-	notificationController controller.NotificationController, 
+	notificationController controller.NotificationController,
+	searchController controller.SearchController, 
 ) *httprouter.Router {
 	router := httprouter.New()
 
@@ -168,8 +169,12 @@ func NewRouter(
 	router.POST("/api/notifications/mark-all-read", notificationController.MarkAllAsRead)
 	router.DELETE("/api/notifications", notificationController.DeleteNotifications)
 	router.DELETE("/api/notifications/selected", notificationController.DeleteSelectedNotifications)
+
+	// search
+	router.GET("/api/search", searchController.Search)
 	
 	uploadFS := http.FileServer(http.Dir("uploads"))
+	publicFS := http.FileServer(http.Dir("public")) // Add this line
 
 	// Add custom file server handler to serve static files
 	router.GET("/uploads/*filepath", func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -182,6 +187,18 @@ func NewRouter(
 
 		// Serve the file
 		uploadFS.ServeHTTP(w, r)
+	})
+
+	router.GET("/public/*filepath", func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		// Remove /uploads prefix from path
+		r.URL.Path = ps.ByName("filepath")
+
+		// Set headers for browser caching
+		w.Header().Set("Cache-Control", "public, max-age=31536000")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+
+		// Serve the file
+		publicFS.ServeHTTP(w, r)
 	})
 
 	// Add custom NotFound handler

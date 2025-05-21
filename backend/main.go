@@ -22,6 +22,10 @@ func main() {
 	// ===== Server initialization =====
 	helper.LoadEnv()
 	db := app.NewDB()
+	if db == nil {
+		log.Fatal("Failed to connect to the database")
+		return
+	}
 	validate := validator.New()
 	utils.InitPusherClient()
 	jwtSecret := helper.GetEnv("JWT_SECRET_KEY", "your-secret-key")
@@ -349,6 +353,7 @@ reportController := controller.NewReportController(reportService)
 	postService := service.NewPostService(
 		userRepository,
 		postRepository,
+		commentRepository,
 		connectionRepository,
 		groupRepository,
 		groupMemberRepository,
@@ -398,6 +403,16 @@ reportController := controller.NewReportController(reportService)
 		db,
 	)
 
+	// Search service
+	searchService := service.NewSearchService(
+    db,
+    userRepository,
+    postRepository,
+    blogRepository,
+    groupRepository,
+    connectionRepository,
+)
+
 	// ===== Controllers =====
 	// User-related controllers
 	userController := controller.NewUserController(
@@ -433,6 +448,9 @@ reportController := controller.NewReportController(reportService)
 	// Notification controller
 	notificationController := controller.NewNotificationController(notificationService)
 
+	// Search controller
+	searchController := controller.NewSearchController(searchService)
+
 	// ===== Router and Middleware =====
 	// Initialize router with all controllers
 	router := app.NewRouter(
@@ -450,6 +468,7 @@ reportController := controller.NewReportController(reportService)
 		chatController,
 		profileViewController,
 		notificationController,
+		searchController,
 	)
 
 	// Create middleware chain
@@ -462,7 +481,7 @@ reportController := controller.NewReportController(reportService)
 		Addr:    "localhost:3000",
 		Handler: handler,
 	}
-
+	// http://localhost:5173/
 	fmt.Println("\nServer starting on http://localhost:3000")
 	err := server.ListenAndServe()
 	helper.PanicIfError(err)

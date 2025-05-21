@@ -1124,7 +1124,7 @@
             },
             "method": "POST",
             "header": [],
-            "url": "{{base_url}}/api/posts/{{postId}}/like",
+            "url": "{{base_url}}/api/post-actions/{{postId}}/like",
             "description": "Menyukai sebuah postingan"
           },
           "response": [
@@ -1160,7 +1160,7 @@
             },
             "method": "DELETE",
             "header": [],
-            "url": "{{base_url}}/api/posts/{{postId}}/like",
+            "url": "{{base_url}}/api/post-actions/{{postId}}/like",
             "description": "Batal menyukai sebuah postingan"
           },
           "response": [
@@ -3075,7 +3075,7 @@
             },
             "method": "POST",
             "header": [],
-            "url": "{{base_url}}/api/posts/{{postId}}/like",
+            "url": "{{base_url}}/api/post-actions/{{postId}}/like",
             "description": "Like a post in a group. For private groups, only members can like posts."
           },
           "response": [

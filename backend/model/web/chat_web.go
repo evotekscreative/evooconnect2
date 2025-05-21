@@ -8,8 +8,9 @@ import (
 
 // Request models
 type SendMessageRequest struct {
-	Content     string `json:"content,omitempty"`
-	MessageType string `json:"message_type" validate:"required,oneof=text image document audio"`
+	Content     string     `json:"content,omitempty"`
+	MessageType string     `json:"message_type" validate:"required,oneof=text image document audio"`
+	ReplyToId   *uuid.UUID `json:"reply_to_id,omitempty"` // New field for reply functionality
 }
 
 type CreateConversationRequest struct {
@@ -34,19 +35,22 @@ type ParticipantResponse struct {
 }
 
 type ChatMessageResponse struct {
-	Id             uuid.UUID         `json:"id"`
-	ConversationId uuid.UUID         `json:"conversation_id"`
-	SenderId       uuid.UUID         `json:"sender_id"`
-	Sender         UserBriefResponse `json:"sender,omitempty"`
-	MessageType    string            `json:"message_type"`
-	Content        string            `json:"content,omitempty"`
-	FilePath       string            `json:"file_path,omitempty"`
-	FileName       string            `json:"file_name,omitempty"`
-	FileSize       int               `json:"file_size,omitempty"`
-	FileType       string            `json:"file_type,omitempty"`
-	CreatedAt      time.Time         `json:"created_at"`
-	UpdatedAt      time.Time         `json:"updated_at"`
-	IsRead         bool              `json:"is_read"`
+	Id             uuid.UUID            `json:"id"`
+	ConversationId uuid.UUID            `json:"conversation_id"`
+	SenderId       uuid.UUID            `json:"sender_id"`
+	Sender         UserBriefResponse    `json:"sender,omitempty"`
+	MessageType    string               `json:"message_type"`
+	Content        string               `json:"content,omitempty"`
+	FilePath       string               `json:"file_path,omitempty"`
+	FileName       string               `json:"file_name,omitempty"`
+	FileSize       int                  `json:"file_size,omitempty"`
+	FileType       string               `json:"file_type,omitempty"`
+	CreatedAt      time.Time            `json:"created_at"`
+	UpdatedAt      time.Time            `json:"updated_at"`
+	DeletedAt      *time.Time           `json:"deleted_at,omitempty"` // Added field for soft deletion
+	IsRead         bool                 `json:"is_read"`
+	ReplyToId      *uuid.UUID           `json:"reply_to_id,omitempty"`
+	ReplyTo        *ChatMessageResponse `json:"reply_to,omitempty"` // Fixed to use proper type
 }
 
 type ConversationsResponse struct {
