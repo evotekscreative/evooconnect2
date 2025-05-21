@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom"; // Tambahkan useLocation
 import Logo from "../assets/img/logo1.png";
 import axios from "axios";
 import Pusher from "pusher-js";
@@ -19,6 +19,7 @@ import {
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const location = useLocation(); // Tambahkan ini
   const [isMsgOpen, setIsMsgOpen] = useState(false);
   const [isBellOpen, setIsBellOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -76,6 +77,11 @@ const Navbar = () => {
     },
   ]);
 
+  const [searchQuery, setSearchQuery] = useState(() => {
+    const searchParams = new URLSearchParams(location.search);
+    return searchParams.get("q") || "";
+  });
+
   const msgRef = useRef(null);
   const bellRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -90,6 +96,14 @@ const Navbar = () => {
     } catch (error) {
       console.error("Error extracting user ID from token:", error);
       return null;
+    }
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+      // Tidak perlu reset searchQuery di sini agar tetap ada di input field
     }
   };
 
@@ -345,9 +359,8 @@ const Navbar = () => {
 
   return (
     <nav
-      className={`flex items-center justify-between px-4 sm:px-8 md:px-16 py-[13px] bg-sky-500 text-white shadow-sm relative font-sans sticky top-0 z-50 transition-all duration-300 ${
-        isScrolled ? "shadow-lg" : ""
-      }`}
+      className={`flex items-center justify-between px-4 sm:px-8 md:px-16 py-[13px] bg-sky-500 text-white shadow-sm relative font-sans sticky top-0 z-50 transition-all duration-300 ${isScrolled ? "shadow-lg" : ""
+        }`}
     >
       {/* Left: Logo + Hamburger Menu (mobile) */}
       <div className="flex items-center gap-3">
@@ -369,23 +382,37 @@ const Navbar = () => {
 
         {/* Search - Different styles for mobile vs desktop */}
         <div className="hidden sm:flex items-center bg-white rounded-full px-3 py-2 ml-4 w-[180px] md:w-[220px] lg:w-[280px]">
-          <input
-            type="text"
-            placeholder="Search people, jobs & more"
-            className="flex-grow w-full px-2 text-sm text-black bg-transparent focus:outline-none"
-          />
-          <Search className="w-4 h-4 text-black" />
+          <form onSubmit={handleSearch} className="w-full">
+            <input
+              type="text"
+              placeholder="Search people, jobs & more"
+              className="flex-grow w-full px-2 text-sm text-black bg-transparent focus:outline-none"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <button type="submit" className="hidden">
+              <Search className="w-4 h-4 text-black" />
+            </button>
+          </form>
+          <Search className="w-4 h-4 text-black" onClick={handleSearch} />
         </div>
       </div>
 
       {/* Mobile Search - More elongated */}
       <div className="sm:hidden flex items-center bg-white rounded-md px-3 py-2 mx-2 flex-1 max-w-[180px]">
-        <input
-          type="text"
-          placeholder="Search..."
-          className="flex-grow w-full text-sm text-black bg-transparent focus:outline-none"
-        />
-        <Search className="w-4 h-4 ml-1 text-black" />
+        <form onSubmit={handleSearch} className="w-full">
+          <input
+            type="text"
+            placeholder="Search..."
+            className="flex-grow w-full text-sm text-black bg-transparent focus:outline-none"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <button type="submit" className="hidden">
+            <Search className="w-4 h-4 ml-1 text-black" />
+          </button>
+        </form>
+        <Search className="w-4 h-4 ml-1 text-black" onClick={handleSearch} />
       </div>
 
       {/* Right: Menu, Icons, Avatar */}
@@ -462,9 +489,8 @@ const Navbar = () => {
                       return (
                         <li
                           key={conversation.id}
-                          className={`px-4 py-3 hover:bg-gray-50 cursor-pointer ${
-                            conversation.unread_count > 0 ? "bg-blue-50" : ""
-                          }`}
+                          className={`px-4 py-3 hover:bg-gray-50 cursor-pointer ${conversation.unread_count > 0 ? "bg-blue-50" : ""
+                            }`}
                           onClick={() =>
                             navigateToConversation(conversation.id)
                           }
@@ -496,7 +522,7 @@ const Navbar = () => {
                                 <span className="text-xs text-gray-500">
                                   {formatTime(
                                     conversation.last_message?.created_at ||
-                                      conversation.updated_at
+                                    conversation.updated_at
                                   )}
                                 </span>
                               </div>
@@ -505,15 +531,15 @@ const Navbar = () => {
                                 <p className="text-sm text-gray-600 truncate max-w-[180px]">
                                   {conversation.last_message ? (
                                     conversation.last_message.deleted ||
-                                    conversation.last_message.deleted_at ? (
+                                      conversation.last_message.deleted_at ? (
                                       "Pesan telah dihapus"
                                     ) : conversation.last_message
-                                        .message_type === "text" ? (
+                                      .message_type === "text" ? (
                                       <>
                                         {conversation.last_message.sender_id ===
-                                        getUserIdFromToken(
-                                          localStorage.getItem("token")
-                                        )
+                                          getUserIdFromToken(
+                                            localStorage.getItem("token")
+                                          )
                                           ? "You: "
                                           : ""}
                                         {conversation.last_message.content}
@@ -578,9 +604,8 @@ const Navbar = () => {
                   {notifications.map((notification) => (
                     <li
                       key={notification.id}
-                      className={`px-4 py-3 hover:bg-gray-50 cursor-pointer ${
-                        !notification.read ? "bg-blue-50" : ""
-                      }`}
+                      className={`px-4 py-3 hover:bg-gray-50 cursor-pointer ${!notification.read ? "bg-blue-50" : ""
+                        }`}
                     >
                       <div className="flex items-start gap-3">
                         <div className="p-1 mt-1 bg-gray-100 rounded-full">
@@ -588,9 +613,8 @@ const Navbar = () => {
                         </div>
                         <div className="flex-1">
                           <p
-                            className={`text-sm ${
-                              !notification.read ? "font-medium" : ""
-                            }`}
+                            className={`text-sm ${!notification.read ? "font-medium" : ""
+                              }`}
                           >
                             {notification.content}
                           </p>

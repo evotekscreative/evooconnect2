@@ -27,6 +27,7 @@ import VerifyEmail from "./pages/Auth/VerifyEmail.jsx";
 import ResetPassword from "./pages/Auth/ResetPassword.jsx";
 import IsGuest from "./components/Auth/IsGuest.jsx";
 import SinglePost from "./pages/SinglePost.jsx";
+import SearchResults from "./pages/SearchResults";
 
 const router = createBrowserRouter([
   {
@@ -57,6 +58,12 @@ const router = createBrowserRouter([
     path: "/forgot-password",
     element: <ForgotPassword />,
   },
+
+  {
+    path: "/search",
+    element: <SearchResults />,
+  },
+  
   {
     path: "/terms",
     element: <TermsCondition />,
