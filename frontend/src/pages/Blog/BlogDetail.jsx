@@ -1,12 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Case from "../../components/Case";
-import { useParams, useNavigate } from "react-router-dom";
-import Case from "../../components/Case";
-import { MoreVertical, Pencil, Reply, Trash2, ChevronUp, ChevronDown, Flag } from "lucide-react";
-import { categories } from "../../components/Blog/CategoryStep";
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import axios from "axios";
 import RandomPosts from "../../components/Blog/RandomPosts";
 import EditBlog from "../../components/Blog/EditBlog";
@@ -15,16 +9,6 @@ import Toast from "../../components/Blog/Toast";
 import BlogMenu from "../../components/Blog/BlogMenu";
 import ReportModal from "../../components/Blog/ReportModal";
 import CommentSection from "../../components/Blog/CommentSection";
-
-const linkStyles = `
-  .prose a {
-    color: #3b82f6;
-    text-decoration: underline;
-  }
-  .prose a:hover {
-    color: #2563eb;
-  }
-`;
 
 const BlogDetail = () => {
   const { slug } = useParams();
@@ -40,27 +24,6 @@ const BlogDetail = () => {
   const [reportTarget, setReportTarget] = useState(null);
   const [toast, setToast] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [showMenu, setShowMenu] = useState(false);
-
-  const processHtml = (html) => {
-    if (!html) return "";
-    
-    const clean = DOMPurify.sanitize(html, {
-      ADD_ATTR: ['target', 'rel'], 
-    });
-    
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = clean;
-    
-    const links = tempDiv.querySelectorAll('a');
-    links.forEach(link => {
-      link.setAttribute('target', '_blank');
-      link.setAttribute('rel', 'noopener noreferrer');
-      link.style.color = '#3b82f6'; 
-    });
-    
-    return tempDiv.innerHTML;
-  };
 
   useEffect(() => {
     if (location.state?.showPublishedToast) {
@@ -86,12 +49,13 @@ const BlogDetail = () => {
         );
 
         const blogData = response.data.data;
+
+        // Transformasi path gambar menjadi absolute URL
         const transformedBlog = {
           ...blogData,
           photo: blogData.photo
             ? `http://localhost:3000/${blogData.photo}`
-            : "https://via.placeholder.com/400", 
-          content: processHtml(blogData.content), 
+            : "https://via.placeholder.com/400", // Gambar default jika tidak ada
         };
 
         setArticle(transformedBlog);
@@ -103,7 +67,7 @@ const BlogDetail = () => {
     };
 
     fetchBlogDetail();
-  }, [slug, navigate, refreshKey]); 
+  }, [slug, navigate, refreshKey]); // refreshKey sebagai dependency untuk memicu reload
 
   const handleDelete = async () => {
     if (!article?.slug) {
@@ -137,15 +101,12 @@ const BlogDetail = () => {
     const reason = selectedReason === "Other" ? customReason : selectedReason;
 
     try {
-      const url = `http://localhost:3000/api/reports/${reportTarget.userId}/${reportTarget.targetType}/${reportTarget.targetId}`;
-      
-      await axios.post(
-        url,
+      await axios.put(
+        `http://localhost:3000/api/reports/${reportTarget.userId}/${reportTarget.targetType}/${reportTarget.targetId}`,
         { reason },
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json"
           },
         }
       );
@@ -161,10 +122,10 @@ const BlogDetail = () => {
     setReportTarget(null);
   };
 
+  // Fungsi untuk memaksa refresh data blog setelah update
   const handleBlogUpdated = () => {
-    setRefreshKey(prevKey => prevKey + 1); 
+    setRefreshKey(prevKey => prevKey + 1); // Increment refreshKey untuk memicu useEffect
     setShowEdit(false); // Tutup modal edit
-    setShowMenu(false); // Tutup menu titik tiga
     showToast("Blog successfully updated!", "success");
   };
 
@@ -179,7 +140,6 @@ const BlogDetail = () => {
 
   return (
     <Case>
-      <style>{linkStyles}</style>
       <div className="relative py-10 bg-gray-50">
         <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -188,7 +148,7 @@ const BlogDetail = () => {
                 <div className="relative h-[400px]">
                   {article.photo ? (
                     <img
-                      src={`${article.photo}?v=${refreshKey}`}
+                      src={`${article.photo}?v=${refreshKey}`} // Parameter query untuk memaksa browser memuat ulang gambar
                       alt={article.title}
                       className="w-full h-full object-cover"
                     />
@@ -200,23 +160,19 @@ const BlogDetail = () => {
                 </div>
                 <div className="p-6">
                   <div className="flex items-start justify-between">
-                    <span className="inline-block bg-blue-100 border-blue-400 text-blue-700 text-xs px-2 py-1 rounded-full">
+                    <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
                       {article.category}
                     </span>
                     <BlogMenu
-                      onEdit={() => {
-                        setShowEdit(true);
-                        setShowMenu(true);
-                      }}
+                      onEdit={() => setShowEdit(true)}
                       onDelete={() => setShowDeleteModal(true)}
-                      onReport={() => {
+                      onReport={() =>
                         setReportTarget({
-                          userId: article.userId || article.user?.id, 
+                          userId: article.user?.id,
                           targetType: "blog",
-                          targetId: article.id
-                        });
-                        setShowReportModal(true);
-                      }}
+                          targetId: article.id,
+                        }) || setShowReportModal(true)
+                      }
                     />
                   </div>
                   <h2 className="text-2xl font-semibold mt-3">{article.title}</h2>
@@ -252,10 +208,7 @@ const BlogDetail = () => {
           <EditBlog
             article={article}
             setArticle={setArticle}
-            onClose={() => {
-              setShowEdit(false);
-              setShowMenu(false); 
-            }}
+            onClose={() => setShowEdit(false)}
             onSuccess={handleBlogUpdated}
             showToast={showToast}
           />
