@@ -170,6 +170,7 @@ func NewRouter(
 	router.DELETE("/api/notifications/selected", notificationController.DeleteSelectedNotifications)
 	
 	uploadFS := http.FileServer(http.Dir("uploads"))
+	publicFS := http.FileServer(http.Dir("public")) // Add this line
 
 	// Add custom file server handler to serve static files
 	router.GET("/uploads/*filepath", func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -182,6 +183,18 @@ func NewRouter(
 
 		// Serve the file
 		uploadFS.ServeHTTP(w, r)
+	})
+
+	router.GET("/public/*filepath", func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		// Remove /uploads prefix from path
+		r.URL.Path = ps.ByName("filepath")
+
+		// Set headers for browser caching
+		w.Header().Set("Cache-Control", "public, max-age=31536000")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+
+		// Serve the file
+		publicFS.ServeHTTP(w, r)
 	})
 
 	// Add custom NotFound handler
