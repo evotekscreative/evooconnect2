@@ -148,7 +148,7 @@ function CommentModal({ postId, isOpen, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-      <div className="bg-white rounded-lg w-full max-w-md overflow-hidden">
+      <div className="bg-white rounded-lg w-full max-w-md">
         {/* Modal Header */}
         <div className="border-b p-4 flex justify-between items-center">
           <h5 className="font-medium">Comments</h5>

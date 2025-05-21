@@ -1,25 +1,34 @@
 package controller
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/service"
 	"evoconnect/backend/utils"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
+	"github.com/pusher/pusher-http-go/v5"
 )
 
 type ChatControllerImpl struct {
-	ChatService service.ChatService
+	ChatService  service.ChatService
+	PusherClient *pusher.Client
 }
 
 func NewChatController(chatService service.ChatService) ChatController {
 	return &ChatControllerImpl{
-		ChatService: chatService,
+		ChatService:  chatService,
+		PusherClient: utils.PusherClient,
 	}
 }
 
@@ -229,57 +238,78 @@ func (controller *ChatControllerImpl) DeleteMessage(writer http.ResponseWriter, 
 	helper.WriteToResponseBody(writer, webResponse)
 }
 
+type AuthPusherRequest struct {
+	SocketId    string `json:"socket_id"`
+	ChannelName string `json:"channel_name"`
+}
+
 // Pusher Auth
-func (controller *ChatControllerImpl) AuthPusher(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	userId, err := helper.GetUserIdFromToken(request)
-	if err != nil {
-		http.Error(writer, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+func (c *ChatControllerImpl) AuthPusher(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	var socketId, channelName string
 
-	socketId := request.FormValue("socket_id")
-	channel := request.FormValue("channel_name")
+	// Log the content type for debugging
+	contentType := r.Header.Get("Content-Type")
+	log.Printf("Request Content-Type: %s", contentType)
 
-	// Validate channel access
-	userChannel := fmt.Sprintf("private-user-%s", userId)
-	if channel == userChannel {
-		// User can access their own user channel
-		auth, err := utils.PusherClient.AuthenticatePrivateChannel([]byte(socketId + ":" + channel))
-		if err != nil {
-			http.Error(writer, "Authentication failed", http.StatusInternalServerError)
-			return
-		}
-		writer.Header().Set("Content-Type", "application/json")
-		writer.Write(auth)
-		return
-	}
-
-	// For conversation channels, check if the user is a participant
-	if len(channel) > 23 && channel[:23] == "private-conversation-" {
-		conversationIdStr := channel[23:]
-		conversationId, err := uuid.Parse(conversationIdStr)
-		if err != nil {
-			http.Error(writer, "Invalid channel", http.StatusBadRequest)
-			return
-		}
-
-		// Check if user is a participant in this conversation
-		// Use the service to check if the user is a participant
-		// by calling the service method directly
-		conversation := controller.ChatService.FindConversationById(request.Context(), userId, conversationId)
-		isParticipant := conversation.Id != uuid.Nil
-		if isParticipant {
-			auth, err := utils.PusherClient.AuthenticatePrivateChannel([]byte(socketId + ":" + channel))
-			if err != nil {
-				http.Error(writer, "Authentication failed", http.StatusInternalServerError)
-				return
+	// Handle multipart form data (what your client is sending)
+	if strings.Contains(contentType, "multipart/form-data") {
+		// Parse multipart form with 10MB max memory
+		if err := r.ParseMultipartForm(10 << 20); err != nil {
+			log.Printf("Error parsing multipart form: %v", err)
+		} else {
+			// Get form values
+			if values, ok := r.MultipartForm.Value["socket_id"]; ok && len(values) > 0 {
+				socketId = values[0]
 			}
-			writer.Header().Set("Content-Type", "application/json")
-			writer.Write(auth)
-			return
+			if values, ok := r.MultipartForm.Value["channel_name"]; ok && len(values) > 0 {
+				channelName = values[0]
+			}
+			log.Printf("Multipart form data - socket_id: %s, channel_name: %s", socketId, channelName)
+		}
+	} else {
+		// Handle regular form data as fallback
+		if err := r.ParseForm(); err == nil {
+			socketId = r.FormValue("socket_id")
+			channelName = r.FormValue("channel_name")
+			log.Printf("Regular form data - socket_id: %s, channel_name: %s", socketId, channelName)
 		}
 	}
 
-	// Not authorized for this channel
-	http.Error(writer, "Forbidden", http.StatusForbidden)
+	// Log the actual form data as received
+	log.Printf("Raw form data: %+v", r.Form)
+	if r.MultipartForm != nil {
+		log.Printf("Raw multipart form values: %+v", r.MultipartForm.Value)
+	}
+
+	log.Printf("Final values - Socket ID: %s, Channel: %s", socketId, channelName)
+
+	if socketId == "" || channelName == "" {
+		log.Printf("Missing required parameters - socketId: %s, channelName: %s", socketId, channelName)
+		http.Error(w, "Missing required parameters", http.StatusBadRequest)
+		return
+	}
+
+	// Pusher authentication logic
+	appKey := "a579dc17c814f8b723ea"    // Replace with your actual app key
+	appSecret := "70748119d8ea53eece72" // Replace with your actual app secret
+
+	// Create the string to sign
+	stringToSign := fmt.Sprintf("%s:%s", socketId, channelName)
+
+	// Create HMAC SHA256 signature
+	h := hmac.New(sha256.New, []byte(appSecret))
+	h.Write([]byte(stringToSign))
+	signature := hex.EncodeToString(h.Sum(nil))
+
+	// Create auth response
+	authString := fmt.Sprintf("%s:%s", appKey, signature)
+	authResponse := map[string]string{
+		"auth": authString,
+	}
+
+	// Return the response
+	w.Header().Set("Content-Type", "application/json")
+	jsonResponse, _ := json.Marshal(authResponse)
+	log.Printf("Sending auth response: %s", string(jsonResponse))
+	w.Write(jsonResponse)
 }

@@ -45,71 +45,36 @@ function CreateBlog() {
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem('token');
-
-      // 1. Create Blog (tanpa image dulu)
-      const createRes = await axios.post(
+      
+      const formDataToSend = new FormData();
+      formDataToSend.append('title', formData.title);
+      formDataToSend.append('category', formData.category);
+      formDataToSend.append('content', formData.content);
+      
+      if (formData.images.length > 0 && formData.images[0].file) {
+        formDataToSend.append('image', formData.images[0].file);
+      }
+      
+      const response = await axios.post(
         'http://localhost:3000/api/blogs',
-        {
-          title: formData.title,
-          category: formData.category,
-          content: formData.content,
-          date: formData.date,
-        },
+        formDataToSend,
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            'Content-Type': 'multipart/form-data', 
           },
         }
       );
-
-      const blogId = createRes.data.data.id;
-      const blogSlug = createRes.data.data.slug;
-      let uploadedImagePath = '';
-
-      // 2. Upload image (jika ada)
-      if (formData.images.length > 0) {
-        const formDataImage = new FormData();
-        formData.images.forEach((img) => {
-          if (img.file) {
-            formDataImage.append('photos', img.file);
-          }
-        });
-
-        const uploadRes = await axios.post(
-          `http://localhost:3000/api/blogs/${blogId}/upload-photo`,
-          formDataImage,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data',
-            },
-          }
-        );
-
-        uploadedImagePath = uploadRes.data.data.photo;
-
-        // 3. Update blog dengan image path
-        await axios.put(
-          `http://localhost:3000/api/blogs/${blogId}`,
-          {
-            image: uploadedImagePath,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-      }
+      
+      const blogSlug = response.data.data.slug;
+      
       navigate(`/blog-detail/${blogSlug}`, {
         state: { showPublishedToast: true }
       });
       window.scrollTo(0, 0);
     } catch (error) {
       console.error('Error creating blog post:', error);
-      alert('Failed to create blog post.');
+      alert('Failed to create blog post: ' + (error.response?.data?.message || error.message));
     } finally {
       setIsSubmitting(false);
     }
