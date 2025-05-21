@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Case from "../../components/Case";
-import { useParams, useNavigate } from "react-router-dom";
-import Case from "../../components/Case";
 import { MoreVertical, Pencil, Reply, Trash2, ChevronUp, ChevronDown, Flag } from "lucide-react";
 import { categories } from "../../components/Blog/CategoryStep";
 import { ToastContainer, toast } from 'react-toastify';
