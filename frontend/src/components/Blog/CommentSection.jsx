@@ -3,7 +3,7 @@ import axios from "axios";
 import { MoreVertical, Pencil, Trash2, Reply } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-const CommentSection = ({ slug }) => {
+const CommentSection = ({ slug, blogId }) => {
   const navigate = useNavigate();
   const commentsEndRef = useRef(null);
 
@@ -17,13 +17,12 @@ const CommentSection = ({ slug }) => {
   const [toastMessage, setToastMessage] = useState(null);
 
   useEffect(() => {
-    fetchComments();
-  }, [slug]);
+    if (blogId) {
+      fetchComments();
+    }
+  }, [blogId]);
 
   // Fungsi untuk menampilkan toast di bagian atas kanan
-  // type: "success" (hijau) - untuk operasi berhasil
-  // type: "error" (merah) - untuk kesalahan
-  // type: "warning" (kuning) - untuk peringatan atau operasi lokal
   const showToast = (message, type = "success") => {
     setToastMessage({ message, type });
     setTimeout(() => setToastMessage(null), 3000);
@@ -33,29 +32,10 @@ const CommentSection = ({ slug }) => {
     commentsEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const saveCommentsToLocalStorage = (slug, comments) => {
-    try {
-      const allComments = JSON.parse(localStorage.getItem("blogComments")) || {};
-      allComments[slug] = comments;
-      localStorage.setItem("blogComments", JSON.stringify(allComments));
-    } catch (error) {
-      console.error("Error saving comments:", error);
-    }
-  };
-
-  const getCommentsFromLocalStorage = (slug) => {
-    try {
-      const allComments = JSON.parse(localStorage.getItem("blogComments")) || {};
-      return allComments[slug] || [];
-    } catch {
-      return [];
-    }
-  };
-
   const fetchComments = async () => {
+    if (!blogId) return;
+    
     setLoadingComments(true);
-    const cachedComments = getCommentsFromLocalStorage(slug);
-    setComments(cachedComments);
 
     const token = localStorage.getItem("token");
     if (!token) {
@@ -64,39 +44,22 @@ const CommentSection = ({ slug }) => {
     }
 
     try {
+      // Gunakan endpoint yang benar untuk mendapatkan komentar blog
       const res = await axios.get(
-        `http://localhost:3000/api/blog-comments/${article.id}`,
+        `http://localhost:3000/api/blogs/${blogId}/comments`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
       
-      const apiComments = Array.isArray(res.data.data) ? res.data.data : [];
+      const apiComments = Array.isArray(res.data) ? res.data : 
+                         Array.isArray(res.data.data) ? res.data.data : [];
       
-      const commentsWithReplies = await Promise.all(
-        apiComments.map(async (comment) => {
-          if (comment.id) {
-            try {
-              const repliesRes = await axios.get(
-                `http://localhost:3000/api/blog/comments/${comment.id}/replies`,
-                {
-                  headers: { Authorization: `Bearer ${token}` },
-                }
-              );
-              return { ...comment, replies: repliesRes.data || [] };
-            } catch (error) {
-              console.error(`Error fetching replies for comment ${comment.id}:`, error);
-              return { ...comment, replies: [] };
-            }
-          }
-          return { ...comment, replies: [] };
-        })
-      );
-      
-      setComments(commentsWithReplies);
-      saveCommentsToLocalStorage(slug, commentsWithReplies);
+      setComments(apiComments);
     } catch (err) {
       console.error("Error fetching comments:", err);
+      // Jika API gagal, tetap tampilkan UI kosong
+      setComments([]);
     }
 
     setLoadingComments(false);
@@ -104,7 +67,7 @@ const CommentSection = ({ slug }) => {
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
-    if (!newComment.trim()) return;
+    if (!newComment.trim() || !blogId) return;
 
     const token = localStorage.getItem("token");
     if (!token) {
@@ -116,46 +79,23 @@ const CommentSection = ({ slug }) => {
     setSubmittingComment(true);
 
     try {
-      // endpoint untuk membuat komentar
+      // Gunakan endpoint yang benar untuk membuat komentar blog
       const res = await axios.post(
-        `http://localhost:3000/api/blog-comments/${article.id}`,
+        `http://localhost:3000/api/blogs/${blogId}/comments`,
         { content: newComment },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
       const created = res.data?.data || res.data;
       
-      const newCommentObj = {
-        ...created,
-        replies: []
-      };
-      
-      const updated = [...comments, newCommentObj];
-      setComments(updated);
-      saveCommentsToLocalStorage(slug, updated);
+      // Tambahkan komentar baru ke state
+      setComments(prev => [...prev, created]);
       setNewComment("");
-      showToast("Comment submitted successfully!"); 
+      showToast("Comment submitted successfully!");
       scrollToBottom();
     } catch (error) {
       console.error("Error submitting comment:", error);
-
-      const localComment = {
-        id: `local-${Date.now()}`,
-        content: newComment,
-        user: {
-          name: "You",
-          avatar: localStorage.getItem("userAvatar") || "/img/profile.jpg",
-        },
-        createdAt: new Date().toISOString(),
-        isLocal: true,
-        replies: []
-      };
-      
-      const updated = [...comments, localComment];
-      setComments(updated);
-      saveCommentsToLocalStorage(slug, updated);
-      setNewComment("");
-      showToast("Comment saved locally.", "warning"); 
+      showToast("Failed to submit comment.", "error");
     } finally {
       setSubmittingComment(false);
     }
@@ -170,41 +110,31 @@ const CommentSection = ({ slug }) => {
   };
 
   const handleUpdateComment = async (commentId) => {
-    if (!editContent.trim()) return;
+    if (!editContent.trim() || !blogId) return;
 
     const token = localStorage.getItem("token");
     if (!token) return;
 
     try {
-      // endpoint untuk mengedit komentar
+      // Gunakan endpoint yang benar untuk mengedit komentar blog
       await axios.put(
-        `http://localhost:3000/api/blog/comments/${commentId}`,
+        `http://localhost:3000/api/blogs/comments/${commentId}`,
         { content: editContent },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      // Update komentar di state lokal
+      // Update komentar di state
       const updated = comments.map(c => 
         c.id === commentId ? { ...c, content: editContent } : c
       );
       
       setComments(updated);
-      saveCommentsToLocalStorage(slug, updated);
       setEditingCommentId(null);
       setEditContent("");
-      showToast("Comment updated successfully!"); 
+      showToast("Comment updated successfully!");
     } catch (error) {
       console.error("Error updating comment:", error);
-      
-      const updated = comments.map(c => 
-        c.id === commentId ? { ...c, content: editContent } : c
-      );
-      
-      setComments(updated);
-      saveCommentsToLocalStorage(slug, updated);
-      setEditingCommentId(null);
-      setEditContent("");
-      showToast("Comment updated locally.", "warning"); 
+      showToast("Failed to update comment.", "error");
     }
   };
 
@@ -215,29 +145,29 @@ const CommentSection = ({ slug }) => {
 
   const handleDeleteComment = async (commentId) => {
     const confirm = window.confirm("Are you sure you want to delete this comment?");
-    if (!confirm) return;
+    if (!confirm || !blogId) return;
 
     const token = localStorage.getItem("token");
     if (!token) return;
 
     try {
-      await axios.delete(`http://localhost:3000/api/blog/comments/${commentId}`, {
+      // Gunakan endpoint yang benar untuk menghapus komentar blog
+      await axios.delete(`http://localhost:3000/api/blogs/comments/${commentId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
-      showToast("Comment deleted successfully!"); 
+      // Hapus komentar dari state
+      const updated = comments.filter((c) => c.id !== commentId);
+      setComments(updated);
+      showToast("Comment deleted successfully!");
     } catch (error) {
       console.error("Error deleting comment:", error);
-      showToast("Comment removed locally.", "warning"); 
+      showToast("Failed to delete comment.", "error");
     }
-    
-    const updated = comments.filter((c) => c.id !== commentId);
-    setComments(updated);
-    saveCommentsToLocalStorage(slug, updated);
   };
 
   const handleSubmitReply = async (commentId, content) => {
-    if (!content.trim()) return true;
+    if (!content.trim() || !blogId) return false;
     
     const token = localStorage.getItem("token");
     if (!token) {
@@ -247,15 +177,16 @@ const CommentSection = ({ slug }) => {
     }
 
     try {
+      // Gunakan endpoint yang benar untuk membalas komentar blog
       const res = await axios.post(
-        `http://localhost:3000/api/blog/comments/${commentId}/replies`,
+        `http://localhost:3000/api/blogs/comments/${commentId}/replies`,
         { content },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
       const newReply = res.data?.data || res.data;
       
-      // Update state comments with new reply
+      // Update state comments dengan reply baru
       const updated = comments.map((comment) => {
         if (comment.id === commentId) {
           return {
@@ -267,39 +198,13 @@ const CommentSection = ({ slug }) => {
       });
       
       setComments(updated);
-      saveCommentsToLocalStorage(slug, updated);
       setReplyingTo(null);
-      showToast("Reply submitted successfully!"); 
+      showToast("Reply submitted successfully!");
       return true;
     } catch (error) {
       console.error("Error submitting reply:", error);
-      
-      const localReply = {
-        id: `local-${Date.now()}`,
-        content,
-        user: {
-          name: "You",
-          avatar: localStorage.getItem("userAvatar") || "/img/profile.jpg",
-        },
-        createdAt: new Date().toISOString(),
-        isLocal: true,
-      };
-      
-      const updated = comments.map((comment) => {
-        if (comment.id === commentId) {
-          return {
-            ...comment,
-            replies: [...(comment.replies || []), localReply]
-          };
-        }
-        return comment;
-      });
-      
-      setComments(updated);
-      saveCommentsToLocalStorage(slug, updated);
-      setReplyingTo(null);
-      showToast("Reply saved locally.", "warning"); 
-      return true;
+      showToast("Failed to submit reply.", "error");
+      return false;
     }
   };
 
@@ -310,7 +215,7 @@ const CommentSection = ({ slug }) => {
         <div className={`fixed top-4 right-4 px-4 py-2 rounded-md shadow-lg z-50 ${
           toastMessage.type === 'error' ? 'bg-red-500' : 
           toastMessage.type === 'warning' ? 'bg-yellow-500' : 
-          'bg-green-500' 
+          'bg-green-500'
         } text-white font-medium`}>
           {toastMessage.message}
         </div>

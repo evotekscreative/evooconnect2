@@ -1,12 +1,25 @@
 import React, { useState, useEffect } from "react";
 import { categories } from "./CategoryStep";
-import { CKEditor } from "@ckeditor/ckeditor5-react";
-import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 
-const customEditorStyles = `
-  .ck-powered-by { display: none !important; }
-  .ck-content a { color: #3b82f6 !important; text-decoration: underline !important; }
-`;
+// Perbaikan fungsi cleanHTML agar tidak menghapus spasi
+const cleanHTML = (html) => {
+  if (!html) return "";
+  return html
+    .replace(/<p[^>]*>/g, "")
+    .replace(/<\/p>/g, "\n\n") // Ganti </p> dengan double newline untuk mempertahankan paragraf
+    .replace(/<br\s*\/?>/g, "\n") // Ganti <br> dengan newline
+    .replace(/<[^>]+>/g, "")
+    .trim();
+};
+
+// Fungsi untuk memformat teks biasa menjadi HTML sederhana
+const formatToHTML = (text) => {
+  if (!text) return "";
+  return text
+    .split("\n\n") // Pisahkan berdasarkan paragraf (double newline)
+    .map(paragraph => `<p>${paragraph.replace(/\n/g, "<br>")}</p>`) // Ubah newline menjadi <br>
+    .join("");
+};
 
 const EditBlog = ({ article, setArticle, onClose, onSuccess, showToast }) => {
   const [loading, setLoading] = useState(false);
@@ -15,7 +28,8 @@ const EditBlog = ({ article, setArticle, onClose, onSuccess, showToast }) => {
   
   useEffect(() => {
     if (article) {
-      setContent(article.content || "");
+      // Inisialisasi content dengan konten artikel yang sudah dibersihkan
+      setContent(cleanHTML(article.content));
     }
   }, [article]);
 
@@ -34,17 +48,20 @@ const EditBlog = ({ article, setArticle, onClose, onSuccess, showToast }) => {
   const handleSave = async () => {
     const token = localStorage.getItem("token");
     setLoading(true);
-  
+
     try {
       const formData = new FormData();
       formData.append("title", article.title);
       formData.append("category", article.category);
-      formData.append("content", content);
-  
+      
+      // Format konten teks menjadi HTML sebelum mengirim
+      const formattedContent = formatToHTML(content);
+      formData.append("content", formattedContent);
+
       if (imageFile) {
         formData.append("image", imageFile);
       }
-  
+
       const res = await fetch(`http://localhost:3000/api/blogs/${article.id}`, {
         method: "PUT",
         headers: {
@@ -52,25 +69,23 @@ const EditBlog = ({ article, setArticle, onClose, onSuccess, showToast }) => {
         },
         body: formData,
       });
-  
+
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.message || "Bad request");
       }
-  
+
+      // Panggil onSuccess untuk memicu refresh di BlogDetail
       onSuccess();
-      onClose(); 
     } catch (err) {
       showToast(err.message || "Gagal update blog.", "error");
     } finally {
       setLoading(false);
     }
   };
-  
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <style>{customEditorStyles}</style>
       <div className="bg-white max-w-3xl w-full p-6 rounded-xl shadow-lg relative max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
@@ -97,7 +112,7 @@ const EditBlog = ({ article, setArticle, onClose, onSuccess, showToast }) => {
               className="w-full px-3 py-2 rounded border bg-white"
             >
               <option value="" disabled>
-                Choose a category
+                Pilih kategori
               </option>
               {categories.map((cat) => (
                 <option key={cat} value={cat}>
@@ -132,35 +147,12 @@ const EditBlog = ({ article, setArticle, onClose, onSuccess, showToast }) => {
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Content</label>
-            <div className="border rounded">
-              <CKEditor
-                editor={ClassicEditor}
-                data={content}
-                onChange={(event, editor) => {
-                  const data = editor.getData();
-                  setContent(data);
-                }}
-                config={{
-                  toolbar: [
-                    'heading',
-                    '|',
-                    'bold',
-                    'italic',
-                    'link',
-                    'bulletedList',
-                    'numberedList',
-                    '|',
-                    'outdent',
-                    'indent',
-                    '|',
-                    'blockQuote',
-                    'undo',
-                    'redo'
-                  ],
-                  removePlugins: ['Table']
-                }}
-              />
-            </div>
+            <textarea
+              rows={6}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="w-full border px-3 py-2 rounded"
+            />
           </div>
         </div>
         <div className="text-right mt-6">
