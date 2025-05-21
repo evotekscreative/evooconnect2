@@ -7,6 +7,7 @@ import (
 	"evoconnect/backend/repository"
 	"fmt"
 	"github.com/google/uuid"
+	"evoconnect/backend/helper"
 )
 
 type SearchServiceImpl struct {
@@ -75,7 +76,7 @@ func (service *SearchServiceImpl) Search(ctx context.Context, query string, sear
 
     if searchType == "all" || searchType == "group" {
         fmt.Println("Searching groups...")
-        groups := service.searchGroups(ctx, query, limit, offset)
+        groups := service.searchGroups(ctx, query, limit, offset, currentUserId) // Teruskan currentUserId
         response.Groups = groups
         fmt.Printf("Found %d groups\n", len(groups))
     }
@@ -218,35 +219,41 @@ func (service *SearchServiceImpl) searchBlogs(ctx context.Context, query string,
 	return results
 }
 
-func (service *SearchServiceImpl) searchGroups(ctx context.Context, query string, limit int, offset int) []web.GroupSearchResult {
-	tx, err := service.DB.Begin()
-	if err != nil {
-		fmt.Printf("Error starting transaction for group search: %v\n", err)
-		return []web.GroupSearchResult{}
-	}
+func (service *SearchServiceImpl) searchGroups(ctx context.Context, query string, limit int, offset int, currentUserId uuid.UUID) []web.GroupSearchResult {
+    tx, err := service.DB.Begin()
+    if err != nil {
+        fmt.Printf("Error starting transaction for group search: %v\n", err)
+        return []web.GroupSearchResult{}
+    }
+    defer helper.CommitOrRollback(tx)
 
-	fmt.Printf("Searching groups with query: '%s'\n", query)
-	groups := service.GroupRepository.Search(ctx, tx, query, limit, offset)
-	fmt.Printf("Group repository returned %d groups\n", len(groups))
-	
-	var results []web.GroupSearchResult
-	for _, group := range groups {
-		memberCount := service.GroupRepository.CountMembers(ctx, tx, group.Id)
-		
-		result := web.GroupSearchResult{
-			Id:          group.Id.String(),
-			Name:        group.Name,
-			Description: group.Description,
-			MemberCount: memberCount,
-		}
-		results = append(results, result)
-		fmt.Printf("Added group to results: %s (members: %d)\n", group.Name, memberCount)
-	}
+    fmt.Printf("Searching groups with query: '%s'\n", query)
+    groups := service.GroupRepository.Search(ctx, tx, query, limit, offset)
+    fmt.Printf("Group repository returned %d groups\n", len(groups))
+    
+    var results []web.GroupSearchResult
+    for _, group := range groups {
+        memberCount := service.GroupRepository.CountMembers(ctx, tx, group.Id)
+        isMember := service.GroupRepository.IsMember(ctx, tx, group.Id, currentUserId)
+        
+        // Tangani kasus image nil
+        var imageStr string
+        if group.Image != nil {
+            imageStr = *group.Image
+        }
+        
+        result := web.GroupSearchResult{
+            Id:          group.Id.String(),
+            Name:        group.Name,
+            Description: group.Description,
+            Image:       imageStr,        // Gunakan string yang sudah ditangani
+            MemberCount: memberCount,
+            IsMember:    isMember,
+        }
+        results = append(results, result)
+        fmt.Printf("Added group to results: %s (members: %d, isMember: %v)\n", group.Name, memberCount, isMember)
+    }
 
-	err = tx.Commit()
-	if err != nil {
-		fmt.Printf("Error committing transaction for group search: %v\n", err)
-		tx.Rollback()
-	}
-	return results
+    return results
 }
+
