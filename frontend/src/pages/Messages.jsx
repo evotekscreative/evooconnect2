@@ -1,21 +1,19 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useState, useRef, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Pusher from "pusher-js";
-import {
-  Check,
-  ChevronLeft,
-  Paperclip,
-  Send,
-  Smile,
-  X,
-  Image,
-  FileText,
-  File as FileIcon,
-  Music,
-  Mic,
-} from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
+import {
+  Send,
+  Paperclip,
+  Smile,
+  ChevronLeft,
+  Check,
+  FileText,
+  Music,
+  File as FileIcon,
+  X,
+} from "lucide-react";
 
 export const Messages = () => {
   const { conversationId } = useParams();
@@ -36,246 +34,115 @@ export const Messages = () => {
   const [pusher, setPusher] = useState(null);
   const [channels, setChannels] = useState({});
   const [activeMenu, setActiveMenu] = useState(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
 
-  // Add this function to handle clicks outside the menu
+  const [showNewConversationModal, setShowNewConversationModal] =
+    useState(false);
+  const [connections, setConnections] = useState([]);
+  const [connectionsLoading, setConnectionsLoading] = useState(false);
+
+  const isUserScrolling = useRef(false);
+  const isInitialRenderRef = useRef(true);
+  const lastScrollHeightRef = useRef(0);
+  const scrollTimeoutRef = useRef(null);
+
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      // Don't close if clicking the menu button itself
-      if (event.target.closest("[data-menu-button]")) {
-        return;
-      }
-
-      // Close the menu if clicking outside the menu content
-      if (activeMenu && !event.target.closest("[data-menu-content]")) {
+    const handleClickOutside = (e) => {
+      if (
+        activeMenu &&
+        !e.target.closest("[data-menu-button]") &&
+        !e.target.closest("[data-menu-content]")
+      ) {
         setActiveMenu(null);
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [activeMenu]);
 
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-  const navigate = useNavigate();
   const messagesContainerRef = useRef(null);
+  const scrollPositionRef = useRef(null);
+  const token = localStorage.getItem("token");
+  const navigate = useNavigate();
 
-  // Format date function
   // Format date function with error handling
   const formatDate = (dateString) => {
     if (!dateString) return "Unknown date";
-
     try {
-      const today = new Date();
-      const messageDate = new Date(dateString);
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "Invalid date";
 
-      // Check if date is valid
-      if (isNaN(messageDate.getTime())) {
-        console.warn("Invalid date:", dateString);
-        return "Unknown date";
-      }
+      const now = new Date();
+      const yesterday = new Date(now);
+      yesterday.setDate(now.getDate() - 1);
 
-      today.setHours(0, 0, 0, 0);
-      messageDate.setHours(0, 0, 0, 0);
-
-      const diffTime = today - messageDate;
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-      if (diffDays === 0) {
+      if (date.toDateString() === now.toDateString()) {
         return "Today";
-      } else if (diffDays === 1) {
+      } else if (date.toDateString() === yesterday.toDateString()) {
         return "Yesterday";
       } else {
-        return messageDate.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        });
+        return date.toLocaleDateString();
       }
     } catch (error) {
-      console.error("Error formatting date:", error);
-      return "Unknown date";
+      console.error("Date formatting error:", error);
+      return "Date error";
     }
   };
 
   // Format time with error handling
   const formatTime = (dateString) => {
     if (!dateString) return "";
-
     try {
       const date = new Date(dateString);
-
-      // Check if date is valid
-      if (isNaN(date.getTime())) {
-        console.warn("Invalid time:", dateString);
-        return "";
-      }
-
-      return date
-        .toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-        })
-        .replace(/^0/, ""); // Remove leading zero
+      if (isNaN(date.getTime())) return "";
+      return date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     } catch (error) {
-      console.error("Error formatting time:", error);
+      console.error("Time formatting error:", error);
       return "";
     }
   };
 
   // Updated groupMessagesByDate with error handling
-  // Group messages by date
   const groupMessagesByDate = (messages) => {
-    const groups = {};
+    if (!Array.isArray(messages)) return {};
 
-    if (!Array.isArray(messages)) {
-      console.warn("Messages is not an array:", messages);
-      return groups;
-    }
-
-    messages.forEach((message) => {
-      if (!message || !message.created_at) {
-        console.warn("Invalid message or missing created_at:", message);
-        return;
-      }
-
-      try {
-        const date = new Date(message.created_at);
-
-        // Check if date is valid
-        if (isNaN(date.getTime())) {
-          console.warn("Invalid message date:", message.created_at);
-          return;
-        }
-
-        const dateKey = formatDate(message.created_at);
-        if (!groups[dateKey]) {
-          groups[dateKey] = [];
-        }
-        groups[dateKey].push(message);
-      } catch (error) {
-        console.error("Error processing message date:", error, message);
-      }
-    });
-
-    return groups;
-  };
-
-  // Initialize Pusher
-  // Update the Pusher initialization code
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-
-    console.log("Initializing Pusher connection...");
-    const pusherClient = new Pusher("a579dc17c814f8b723ea", {
-      cluster: "ap1",
-      // Customize the auth endpoint to explicitly handle channel_name
-      authorizer: (channel) => {
-        return {
-          authorize: (socketId, callback) => {
-            console.log(
-              `Authorizing channel: ${channel.name}, socketId: ${socketId}`
-            );
-
-            // The backend expects form data with socket_id and channel_name parameters
-            const formData = new FormData();
-            formData.append("socket_id", socketId);
-            formData.append("channel_name", channel.name);
-
-            axios
-              .post(
-                "http://localhost:3000/api/pusher/auth",
-                formData, // Send as FormData instead of JSON
-                {
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                    // Don't set Content-Type, let axios set it with the boundary for FormData
-                  },
-                }
-              )
-              .then((response) => {
-                console.log("✅ Auth successful for channel:", channel.name);
-                callback(null, response.data);
-              })
-              .catch((error) => {
-                console.error(
-                  `Auth error: ${error.response?.statusText || error.message}`,
-                  error
-                );
-                callback(error, null);
-              });
-          },
-        };
-      },
-    });
-
-    // Add connection status events
-    pusherClient.connection.bind("connected", () => {
-      console.log("✅ Pusher connected successfully");
-    });
-
-    pusherClient.connection.bind("connecting", () => {
-      console.log("⏳ Attempting to connect to Pusher...");
-    });
-
-    pusherClient.connection.bind("disconnected", () => {
-      console.log("❌ Disconnected from Pusher");
-    });
-
-    pusherClient.connection.bind("error", (err) => {
-      console.error("Pusher connection error:", err);
-    });
-
-    // Set pusher state
-    setPusher(pusherClient);
-
-    // Get current user ID from token
-    const userId = getUserIdFromToken(token);
-    console.log("Subscribing to user channel:", `private-user-${userId}`);
-
-    // Subscribe to user's private channel with proper error handling
     try {
-      const userChannel = pusherClient.subscribe(`private-user-${userId}`);
+      // First, ensure messages are sorted by created_at timestamp
+      const sortedMessages = [...messages].sort(
+        (a, b) => new Date(a.created_at) - new Date(b.created_at)
+      );
 
-      // Debug channel subscription
-      userChannel.bind("pusher:subscription_succeeded", () => {
-        console.log("✅ Successfully subscribed to user channel");
-      });
+      // Group by date
+      return sortedMessages.reduce((groups, message) => {
+        try {
+          if (!message.created_at) return groups;
 
-      userChannel.bind("pusher:subscription_error", (error) => {
-        console.error("❌ Error subscribing to user channel:", error);
-      });
-
-      // Bind to events
-      userChannel.bind("new-conversation", (data) => {
-        console.log("📬 Received new conversation:", data);
-        handleNewConversation(data);
-      });
-
-      setChannels((prev) => ({
-        ...prev,
-        user: userChannel,
-      }));
+          const date = formatDate(message.created_at);
+          if (!groups[date]) {
+            groups[date] = [];
+          }
+          groups[date].push(message);
+          return groups;
+        } catch (error) {
+          console.error("Error processing message in group:", error);
+          return groups;
+        }
+      }, {});
     } catch (error) {
-      console.error("Error subscribing to user channel:", error);
+      console.error("Error grouping messages by date:", error);
+      return {};
     }
-
-    return () => {
-      console.log("Cleaning up Pusher connection");
-      if (pusherClient) {
-        pusherClient.disconnect();
-      }
-    };
-  }, []);
+  };
 
   // Function to extract user ID from JWT token
   const getUserIdFromToken = (token) => {
@@ -290,22 +157,154 @@ export const Messages = () => {
     }
   };
 
+  // Initialize Pusher
+  useEffect(() => {
+    if (!token) return;
+
+    console.log("Initializing Pusher connection...");
+    const pusherClient = new Pusher("a579dc17c814f8b723ea", {
+      cluster: "ap1",
+      authorizer: (channel) => {
+        return {
+          authorize: (socketId, callback) => {
+            const formData = new FormData();
+            formData.append("socket_id", socketId);
+            formData.append("channel_name", channel.name);
+
+            fetch("http://localhost:3000/api/pusher/auth", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${token}` },
+              body: formData,
+            })
+              .then((response) => response.json())
+              .then((data) => callback(null, data))
+              .catch((error) => callback(error, null));
+          },
+        };
+      },
+    });
+
+    // Add connection status events
+    pusherClient.connection.bind("connected", () => {
+      console.log("✅ Connected to Pusher");
+    });
+
+    pusherClient.connection.bind("connecting", () => {
+      console.log("⏳ Connecting to Pusher...");
+    });
+
+    pusherClient.connection.bind("disconnected", () => {
+      console.log("❌ Disconnected from Pusher");
+    });
+
+    pusherClient.connection.bind("error", (err) => {
+      console.error("❌ Pusher connection error:", err);
+    });
+
+    // Set pusher state
+    setPusher(pusherClient);
+
+    // Get current user ID from token
+    const userId = getUserIdFromToken(token);
+    console.log("Subscribing to user channel:", `private-user-${userId}`);
+
+    // Subscribe to user's private channel with proper error handling
+    try {
+      const userChannel = pusherClient.subscribe(`private-user-${userId}`);
+
+      userChannel.bind("pusher:subscription_succeeded", () => {
+        console.log("✅ Successfully subscribed to user channel");
+      });
+
+      userChannel.bind("pusher:subscription_error", (error) => {
+        console.error("❌ Error subscribing to user channel:", error);
+      });
+
+      // Handle new conversation
+      userChannel.bind("new-conversation", (data) => {
+        console.log("📩 New conversation received:", data);
+        handleNewConversation(data);
+      });
+
+      setChannels((prev) => ({ ...prev, user: userChannel }));
+    } catch (error) {
+      console.error("Error subscribing to user channel:", error);
+    }
+
+    return () => {
+      if (pusherClient) {
+        if (channels.user) {
+          channels.user.unbind_all();
+          pusherClient.unsubscribe(`private-user-${userId}`);
+        }
+        if (channels.conversation) {
+          channels.conversation.unbind_all();
+          pusherClient.unsubscribe(
+            `private-conversation-${channels.conversationId}`
+          );
+        }
+        pusherClient.disconnect();
+      }
+    };
+  }, []);
+
+  const openNewConversationModal = () => {
+    fetchConnections();
+    setShowNewConversationModal(true);
+  };
+
   // Load conversations
   useEffect(() => {
     fetchConversations();
   }, []);
 
+  const fetchConnections = async () => {
+    setConnectionsLoading(true);
+    try {
+      const userId = getUserIdFromToken(token);
+      const response = await axios.get(
+        `http://localhost:3000/api/users/${userId}/connections?limit=50&offset=0`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (
+        response.data &&
+        response.data.data &&
+        response.data.data.connections
+      ) {
+        setConnections(response.data.data.connections);
+      }
+    } catch (error) {
+      console.error("Failed to fetch connections:", error);
+    } finally {
+      setConnectionsLoading(false);
+    }
+  };
+
   const fetchConversations = async () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        `http://localhost:3000/api/conversations?limit=20&offset=0`,
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
+        "http://localhost:3000/api/conversations?limit=40&offset=0",
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setConversations(response.data.data.conversations);
+      if (
+        response.data &&
+        response.data.data &&
+        response.data.data.conversations
+      ) {
+        // Sort by last message timestamp (newest first)
+        const sortedConversations = response.data.data.conversations.sort(
+          (a, b) => {
+            const aTime = a.last_message?.created_at || a.updated_at;
+            const bTime = b.last_message?.created_at || b.updated_at;
+            return new Date(bTime) - new Date(aTime);
+          }
+        );
+
+        setConversations(sortedConversations);
+      }
     } catch (error) {
       console.error("Failed to fetch conversations:", error);
     } finally {
@@ -317,13 +316,12 @@ export const Messages = () => {
     try {
       const response = await axios.get(
         `http://localhost:3000/api/conversations/${id}`,
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (response.data.data) {
         setActiveConversation(response.data.data);
+        setIsInitialLoad(true);
       }
     } catch (error) {
       console.error("Failed to fetch conversation:", error);
@@ -334,25 +332,16 @@ export const Messages = () => {
     if (conversationId) {
       // First try to find in existing conversations
       if (conversations.length > 0) {
-        const conversation = conversations.find(
-          (conv) =>
-            conv.id === parseInt(conversationId) || conv.id === conversationId
+        const found = conversations.find(
+          (c) => c.id === parseInt(conversationId)
         );
-
-        if (conversation) {
-          // Only update activeConversation if it's different
-          if (
-            !activeConversation ||
-            activeConversation.id !== conversation.id
-          ) {
-            setActiveConversation(conversation);
-          }
+        if (found) {
+          setActiveConversation(found);
+          setIsInitialLoad(true);
         } else {
-          // If not found locally, fetch it
           fetchConversationById(conversationId);
         }
       } else {
-        // If conversations not loaded yet, fetch the specific conversation
         fetchConversationById(conversationId);
       }
     }
@@ -364,17 +353,75 @@ export const Messages = () => {
       // Reset pagination when conversation changes
       setPage(0);
       setHasMore(true);
+      setShouldScrollToBottom(true);
+      setIsInitialLoad(true);
+      isInitialRenderRef.current = true;
+
       fetchMessages();
       subscribeToConversation(activeConversation.id);
       markConversationAsRead(activeConversation.id);
     }
-  }, [activeConversation]);
 
+    // Cleanup function to prevent memory leaks
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, [activeConversation?.id]); // Only depend on conversation ID, not the entire object
+
+  // Load more messages when page changes (but only if it's not the initial page)
   useEffect(() => {
     if (page > 0 && activeConversation) {
+      // Save current scroll position before loading more messages
+      if (messagesContainerRef.current) {
+        lastScrollHeightRef.current = messagesContainerRef.current.scrollHeight;
+        scrollPositionRef.current = {
+          scrollTop: messagesContainerRef.current.scrollTop,
+          scrollHeight: messagesContainerRef.current.scrollHeight,
+        };
+      }
+
+      setShouldScrollToBottom(false);
       fetchMessages();
     }
   }, [page]);
+
+  // Update scroll position after loading more messages (for pagination)
+  useEffect(() => {
+    if (messagesLoading) {
+      return;
+    }
+
+    // Only run after messages have loaded
+    if (
+      !isInitialLoad &&
+      !shouldScrollToBottom &&
+      scrollPositionRef.current &&
+      messagesContainerRef.current
+    ) {
+      const container = messagesContainerRef.current;
+      const newScrollHeight = container.scrollHeight;
+      const oldScrollHeight = scrollPositionRef.current.scrollHeight;
+      const oldScrollTop = scrollPositionRef.current.scrollTop;
+
+      // Calculate new position: maintain the same relative position
+      const newPosition = newScrollHeight - oldScrollHeight + oldScrollTop;
+
+      // Use setTimeout to ensure DOM has updated
+      setTimeout(() => {
+        container.scrollTop = newPosition;
+        // Reset user scrolling after programmatic scroll
+        isUserScrolling.current = false;
+      }, 10);
+    } else if (shouldScrollToBottom && messagesEndRef.current) {
+      // Scroll to bottom for new messages or initial load
+      setTimeout(() => {
+        scrollToBottom();
+        isInitialRenderRef.current = false;
+      }, 100);
+    }
+  }, [messages, messagesLoading, isInitialLoad, shouldScrollToBottom]);
 
   // Update the subscribeToConversation function
   const subscribeToConversation = (conversationId) => {
@@ -408,21 +455,16 @@ export const Messages = () => {
 
       // Debug channel subscription
       conversationChannel.bind("pusher:subscription_succeeded", () => {
-        console.log(
-          `✅ Successfully subscribed to conversation ${conversationId}`
-        );
+        console.log("✅ Successfully subscribed to conversation channel");
       });
 
       conversationChannel.bind("pusher:subscription_error", (error) => {
-        console.error(
-          `❌ Error subscribing to conversation ${conversationId}:`,
-          error
-        );
+        console.error("❌ Error subscribing to conversation channel:", error);
       });
 
       // Bind events with debug logging
       conversationChannel.bind("new-message", (message) => {
-        console.log("📨 Received new message:", message);
+        console.log("📩 New message received:", message);
         handleNewMessage(message);
       });
 
@@ -462,26 +504,34 @@ export const Messages = () => {
       const response = await axios.get(
         `http://localhost:3000/api/conversations/${
           activeConversation.id
-        }/messages?limit=20&offset=${page * 20}`,
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
+        }/messages?limit=40&offset=${page * 40}`,
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       // Add a null check here
       const newMessages = response.data.data?.messages || [];
 
+      // Sort the newly fetched messages by created_at timestamp
+      const sortedNewMessages = [...newMessages].sort(
+        (a, b) => new Date(a.created_at) - new Date(b.created_at)
+      );
+
       // If this is the first page, replace messages
-      // For additional pages (scrolling up), add to beginning
       if (page === 0) {
-        // For initial load, reverse to show oldest first
-        setMessages([...newMessages].reverse());
+        setMessages(sortedNewMessages);
       } else {
-        // For pagination, add older messages before current ones
-        setMessages((prev) => [...[...newMessages].reverse(), ...prev]);
+        // For additional pages (scrolling up), add to beginning and ensure order is maintained
+        setMessages((prevMessages) => {
+          // Combine all messages and sort them chronologically
+          const allMessages = [...sortedNewMessages, ...prevMessages];
+          return allMessages.sort(
+            (a, b) => new Date(a.created_at) - new Date(b.created_at)
+          );
+        });
       }
 
-      setHasMore(newMessages.length === 20);
+      setHasMore(newMessages.length === 40);
+      setIsInitialLoad(page === 0);
     } catch (error) {
       console.error("Failed to fetch messages:", error);
     } finally {
@@ -493,13 +543,11 @@ export const Messages = () => {
     try {
       const response = await axios.get(
         `http://localhost:3000/api/messages/${message.reply_to_id}`,
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (response.data.data) {
-        // Update the message with reply_to data
+        // Add reply_to data to the message
         setMessages((prev) =>
           prev.map((msg) =>
             msg.id === message.id
@@ -518,9 +566,7 @@ export const Messages = () => {
       await axios.put(
         `http://localhost:3000/api/conversations/${conversationId}/read`,
         {},
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       // Update local state to reflect read status
@@ -534,12 +580,41 @@ export const Messages = () => {
     }
   };
 
-  // Add this new function
+  // Add this new function with improved scroll detection
   const handleScroll = () => {
     const container = messagesContainerRef.current;
-    if (container && container.scrollTop < 50 && !messagesLoading && hasMore) {
-      // Load more messages when user scrolls to the top
-      setPage((prevPage) => prevPage + 1);
+    if (!container) return;
+
+    // Check if user is near bottom (within 300px of the bottom)
+    const isNearBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight <
+      300;
+
+    // Show/hide scroll button based on position
+    setShowScrollBottom(!isNearBottom);
+
+    // Rest of your existing scroll handler...
+    if (messagesLoading || !hasMore || isUserScrolling.current) return;
+
+    // Clear any pending timeout
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+
+    // Set debounced scroll handler for pagination
+    scrollTimeoutRef.current = setTimeout(() => {
+      if (container.scrollTop <= 100) {
+        // Only load more if we're near the top
+        setPage((prevPage) => prevPage + 1);
+      }
+      isUserScrolling.current = false;
+    }, 200);
+  };
+
+  const scrollToBottomButton = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+      setShowScrollBottom(false);
     }
   };
 
@@ -548,40 +623,76 @@ export const Messages = () => {
     setConversations((prev) => [data, ...prev]);
   };
 
+  // Update the handleNewMessage function to move conversations with new messages to the top
   const handleNewMessage = (message) => {
     // If the message has a reply_to_id, fetch the replied message data
     if (message.reply_to_id) {
       fetchReplyMessage(message);
     }
 
-    const currentUserId = getUserIdFromToken(localStorage.getItem("token"));
+    const currentUserId = getUserIdFromToken(token);
     const isFromCurrentUser = message.sender_id === currentUserId;
 
-    // Add new message to current conversation (at the END for proper display)
+    // Add new message to current conversation
     if (
       activeConversation &&
       activeConversation.id === message.conversation_id
     ) {
-      setMessages((prev) => [...prev, message]);
-      // Auto scroll to bottom when new message arrives
-      setTimeout(() => scrollToBottom(), 100);
+      setMessages((prev) => {
+        // Add new message and ensure chronological sorting
+        const updatedMessages = [...prev, message];
+        return updatedMessages.sort(
+          (a, b) => new Date(a.created_at) - new Date(b.created_at)
+        );
+      });
+
+      // For new messages, trigger a scroll to bottom
+      if (!isFromCurrentUser || isFromCurrentUser) {
+        setShouldScrollToBottom(true);
+      }
+
+      // Auto-mark as read if the message is not from the current user
+      if (!isFromCurrentUser) {
+        markConversationAsRead(message.conversation_id);
+      }
     }
 
-    // Update conversation list with new last message
-    setConversations((prev) =>
-      prev.map((conv) => {
-        if (conv.id === message.conversation_id) {
-          return {
-            ...conv,
-            last_message: message,
-            unread_count: isFromCurrentUser
-              ? conv.unread_count
-              : conv.unread_count + 1,
-          };
-        }
-        return conv;
-      })
-    );
+    // Update conversation list with new last message and move to top
+    setConversations((prev) => {
+      // Find the conversation that received the new message
+      const updatedConversations = [...prev];
+      const conversationIndex = updatedConversations.findIndex(
+        (conv) => conv.id === message.conversation_id
+      );
+
+      if (conversationIndex > -1) {
+        // Get the conversation
+        const conversation = updatedConversations[conversationIndex];
+
+        // Update the conversation with the new message
+        const updatedConversation = {
+          ...conversation,
+          last_message: message,
+          updated_at: message.created_at,
+          unread_count:
+            isFromCurrentUser ||
+            (activeConversation &&
+              activeConversation.id === message.conversation_id)
+              ? 0
+              : (conversation.unread_count || 0) + 1,
+        };
+
+        // Remove the conversation from its current position
+        updatedConversations.splice(conversationIndex, 1);
+
+        // Add it to the beginning of the array (top of the list)
+        updatedConversations.unshift(updatedConversation);
+
+        return updatedConversations;
+      }
+
+      return prev; // If conversation not found, return unchanged
+    });
   };
 
   const handleMessageUpdated = (updatedMessage) => {
@@ -607,7 +718,7 @@ export const Messages = () => {
     setMessages((prev) =>
       prev.map((msg) =>
         msg.id === data.message_id
-          ? { ...msg, deleted: true, content: "" }
+          ? { ...msg, deleted_at: new Date().toISOString(), content: "" }
           : msg
       )
     );
@@ -622,7 +733,7 @@ export const Messages = () => {
             ...conv,
             last_message: {
               ...conv.last_message,
-              deleted: true,
+              deleted_at: new Date().toISOString(),
               content: "Pesan telah dihapus",
             },
           };
@@ -634,7 +745,7 @@ export const Messages = () => {
 
   const handleMessagesRead = ({ user_id }) => {
     // Update read status in the UI when someone else reads messages
-    const currentUserId = getUserIdFromToken(localStorage.getItem("token"));
+    const currentUserId = getUserIdFromToken(token);
     if (user_id !== currentUserId) {
       setMessages((prev) =>
         prev.map((msg) =>
@@ -649,13 +760,9 @@ export const Messages = () => {
     setShowSidebar(!showSidebar);
   };
 
-  // Scroll to bottom of messages
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, activeConversation, showSidebar]);
-
+  // Scroll to bottom of messages - simplified to avoid unnecessary calls
   const scrollToBottom = () => {
-    if (messagesEndRef.current) {
+    if (messagesEndRef.current && !isUserScrolling.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   };
@@ -680,11 +787,10 @@ export const Messages = () => {
 
         // Create attachment object
         const attachment = {
-          id: Date.now() + Math.random(), // Ensure unique ID
+          id: Date.now() + Math.random(),
           file: file,
           type: fileType,
           name: file.name,
-          // For images, we'll generate previews
           preview: fileType === "image" ? null : null,
         };
 
@@ -694,19 +800,17 @@ export const Messages = () => {
         // Generate preview for images
         if (fileType === "image") {
           const reader = new FileReader();
-          reader.onload = () => {
-            // Update the specific attachment with the preview
-            const index = newAttachments.findIndex(
-              (a) => a.id === attachment.id
+          reader.onload = (e) => {
+            setAttachments((prev) =>
+              prev.map((att) =>
+                att.id === attachment.id
+                  ? { ...att, preview: e.target.result }
+                  : att
+              )
             );
-            if (index !== -1) {
-              newAttachments[index].preview = reader.result;
-              setAttachments([...newAttachments]);
-
-              // If it's the first image, set it as the main preview
-              if (index === 0) {
-                setFilePreview(reader.result);
-              }
+            // Set as file preview if first image
+            if (!filePreview) {
+              setFilePreview(e.target.result);
             }
           };
           reader.readAsDataURL(file);
@@ -752,7 +856,6 @@ export const Messages = () => {
   };
 
   // Send message
-  // Update fungsi sendMessage untuk menyertakan replyTo
   const sendMessage = async () => {
     if (
       (!messageInput.trim() && attachments.length === 0) ||
@@ -787,7 +890,7 @@ export const Messages = () => {
             formData,
             {
               headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`,
+                Authorization: `Bearer ${token}`,
                 "Content-Type": "multipart/form-data",
               },
             }
@@ -815,19 +918,18 @@ export const Messages = () => {
           },
           {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
+              Authorization: `Bearer ${token}`,
             },
           }
         );
       }
 
-      // Clear attachments
+      // Clear attachments and enable scroll to bottom for the new message
       setAttachments([]);
       setFilePreview(null);
+      setShouldScrollToBottom(true);
     } catch (error) {
       console.error("Failed to send message:", error);
-      // Optionally restore the message input if sending failed
-      // setMessageInput(textToSend);
     }
   };
 
@@ -835,7 +937,7 @@ export const Messages = () => {
   const deleteMessage = async (messageId) => {
     try {
       await axios.delete(`http://localhost:3000/api/messages/${messageId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
       // Actual state update will happen through Pusher event
     } catch (error) {
@@ -866,7 +968,7 @@ export const Messages = () => {
           message_type: "text",
         },
         {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
@@ -907,10 +1009,7 @@ export const Messages = () => {
 
         // Find participant that's not current user
         const otherParticipants = conv.participants.filter(
-          (p) =>
-            p &&
-            p.user &&
-            p.user_id !== getUserIdFromToken(localStorage.getItem("token"))
+          (p) => p && p.user && p.user_id !== getUserIdFromToken(token)
         );
 
         // Check if any participant names match search query
@@ -924,22 +1023,23 @@ export const Messages = () => {
     : [];
 
   // Start a new conversation
-  const startNewConversation = async (userId) => {
+  const startNewConversation = async (userId, initialMessage = "Hello!") => {
     try {
       const response = await axios.post(
         "http://localhost:3000/api/conversations",
         {
           participant_ids: [userId],
-          initial_message: "Hello!",
+          initial_message: initialMessage,
         },
         {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
       const newConversation = response.data.data;
       setConversations((prev) => [newConversation, ...prev]);
       setActiveConversation(newConversation);
+      navigate(`/messages/${newConversation.id}`);
     } catch (error) {
       console.error("Failed to create conversation:", error);
     }
@@ -955,12 +1055,6 @@ export const Messages = () => {
     });
     inputRef.current?.focus();
   };
-
-  useEffect(() => {
-    if (messages.length > 0 && page === 0) {
-      scrollToBottom();
-    }
-  }, [messages, page]);
 
   // WhatsApp-like message bubble styles - keep your existing styles
   const messageBubbleStyles = {
@@ -996,14 +1090,36 @@ export const Messages = () => {
           } md:flex flex-col w-full md:w-1/3 lg:w-1/4 bg-white border-r`}
         >
           {/* Search bar */}
-          <div className="p-4 border-b">
-            <input
-              type="text"
-              placeholder="Search conversations..."
-              className="w-full p-2 border rounded-lg"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+          <div className="flex items-center gap-2 p-4 border-b">
+            <div className="flex-1">
+              <input
+                type="text"
+                placeholder="Search conversations..."
+                className="w-full p-2 border rounded-lg"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <button
+              onClick={openNewConversationModal}
+              className="p-2 text-white bg-blue-500 rounded-full hover:bg-blue-600"
+              title="New conversation"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
           </div>
 
           {/* Conversations list */}
@@ -1031,10 +1147,7 @@ export const Messages = () => {
                 // Get the other participant(s) - in a group chat there could be multiple
                 const otherParticipants = conversation.participants.filter(
                   (p) =>
-                    p &&
-                    p.user_id &&
-                    p.user_id !==
-                      getUserIdFromToken(localStorage.getItem("token"))
+                    p && p.user_id && p.user_id !== getUserIdFromToken(token)
                 );
 
                 // For simplicity, we'll just use the first other participant for display
@@ -1050,15 +1163,6 @@ export const Messages = () => {
                 }
 
                 return (
-                  // <div
-                  //   key={conversation.id}
-                  //   className={`p-4 border-b flex items-start gap-3 cursor-pointer hover:bg-gray-50 ${
-                  //     activeConversation?.id === conversation.id
-                  //       ? "bg-blue-50"
-                  //       : ""
-                  //   }`}
-                  //   onClick={() => setActiveConversation(conversation)}
-                  // >
                   <div
                     key={conversation.id}
                     className={`p-4 border-b flex items-start gap-3 cursor-pointer hover:bg-gray-50 ${
@@ -1099,15 +1203,27 @@ export const Messages = () => {
                       </div>
                       <div className="flex items-center justify-between">
                         <p className="text-sm text-gray-600 truncate max-w-[180px]">
-                          {conversation.last_message
-                            ? conversation.last_message.deleted ||
-                              conversation.last_message.deleted_at
-                              ? "Pesan telah dihapus"
-                              : conversation.last_message.message_type ===
-                                "text"
-                              ? conversation.last_message.content
-                              : `[${conversation.last_message.message_type}]`
-                            : "No messages yet"}
+                          {conversation.last_message ? (
+                            conversation.last_message.deleted ||
+                            conversation.last_message.deleted_at ? (
+                              <span className="italic">
+                                Pesan telah dihapus
+                              </span>
+                            ) : conversation.last_message.message_type ===
+                              "text" ? (
+                              <>
+                                {conversation.last_message.sender_id ===
+                                getUserIdFromToken(token)
+                                  ? "You: "
+                                  : ""}
+                                {conversation.last_message.content}
+                              </>
+                            ) : (
+                              `[${conversation.last_message.message_type}]`
+                            )
+                          ) : (
+                            "No messages yet"
+                          )}
                         </p>
                         {conversation.unread_count > 0 && (
                           <span className="flex items-center justify-center w-5 h-5 text-xs text-white bg-blue-500 rounded-full">
@@ -1142,11 +1258,7 @@ export const Messages = () => {
 
                 {/* Active conversation participant info */}
                 {activeConversation.participants
-                  .filter(
-                    (p) =>
-                      p.user_id !==
-                      getUserIdFromToken(localStorage.getItem("token"))
-                  )
+                  .filter((p) => p.user_id !== getUserIdFromToken(token))
                   .slice(0, 1)
                   .map((participant) => (
                     <div
@@ -1188,7 +1300,13 @@ export const Messages = () => {
                 className="flex-1 p-4 overflow-y-auto bg-[#E5DDD5]"
                 onScroll={handleScroll}
               >
-                {messagesLoading ? (
+                {messagesLoading && page > 0 && (
+                  <div className="flex items-center justify-center h-12 mb-2">
+                    <div className="w-6 h-6 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+                  </div>
+                )}
+
+                {messagesLoading && page === 0 ? (
                   <div className="flex items-center justify-center h-20">
                     <div className="w-8 h-8 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
                   </div>
@@ -1203,16 +1321,15 @@ export const Messages = () => {
                     .map(([date, dateMessages]) => (
                       <div key={date}>
                         {/* Date separator */}
-                        <div className="flex justify-center my-2">
-                          <span className="px-2 py-1 text-xs text-gray-600 bg-gray-200 rounded-full">
+                        <div className="sticky top-0 z-10 flex justify-center my-2">
+                          <span className="px-3 py-1 text-xs text-gray-600 bg-gray-200 rounded-full shadow-sm">
                             {date}
                           </span>
                         </div>
                         {/* Messages for this date */}
                         {[...dateMessages].map((message) => {
                           const isMe =
-                            message.sender_id ===
-                            getUserIdFromToken(localStorage.getItem("token"));
+                            message.sender_id === getUserIdFromToken(token);
                           return (
                             <div
                               key={message.id}
@@ -1235,15 +1352,11 @@ export const Messages = () => {
                                       {message.reply_to.sender.name || "User"}
                                     </p>
                                     <p className="text-gray-600 truncate">
-                                      {/* {message.reply_to.message_type === "text"
-                                        ? message.reply_to.content
-                                        : `[${message.reply_to.message_type}]`} */}
-
                                       {message.reply_to.deleted_at ? (
                                         <span className="italic text-gray-500">
                                           Pesan ini dihapus
                                         </span>
-                                      ) : message.reply_to.message_type ==
+                                      ) : message.reply_to.message_type ===
                                         "text" ? (
                                         message.reply_to.content
                                       ) : (
@@ -1253,7 +1366,6 @@ export const Messages = () => {
                                   </div>
                                 )}
                                 {/* Message content based on type */}
-                                {/* Inside the message rendering section where you display the message content */}
                                 {message.deleted || message.deleted_at ? (
                                   // Show "message deleted" placeholder for deleted messages
                                   <p className="italic text-gray-500">
@@ -1347,7 +1459,6 @@ export const Messages = () => {
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        console.log("Reply clicked", message);
                                         startReplyToMessage(message);
                                         setActiveMenu(null);
                                       }}
@@ -1426,7 +1537,6 @@ export const Messages = () => {
                                               data-menu-content
                                               className="fixed z-[100] py-2 mt-1 bg-white rounded-lg shadow-xl w-40"
                                               style={{
-                                                // Position near the menu button but as fixed to avoid overflow issues
                                                 top: `${activeMenu.position.top}px`,
                                                 left: `${activeMenu.position.left}px`,
                                               }}
@@ -1435,10 +1545,6 @@ export const Messages = () => {
                                               <button
                                                 type="button"
                                                 onClick={() => {
-                                                  console.log(
-                                                    "Reply clicked",
-                                                    message
-                                                  );
                                                   startReplyToMessage(message);
                                                   setActiveMenu(null);
                                                 }}
@@ -1469,10 +1575,6 @@ export const Messages = () => {
                                                   <button
                                                     type="button"
                                                     onClick={() => {
-                                                      console.log(
-                                                        "Edit clicked",
-                                                        message
-                                                      );
                                                       startEditingMessage(
                                                         message
                                                       );
@@ -1504,10 +1606,6 @@ export const Messages = () => {
                                                 <button
                                                   type="button"
                                                   onClick={() => {
-                                                    console.log(
-                                                      "Delete clicked",
-                                                      message
-                                                    );
                                                     if (
                                                       confirm(
                                                         "Are you sure you want to delete this message?"
@@ -1550,6 +1648,30 @@ export const Messages = () => {
                       </div>
                     ))
                 )}
+
+                {showScrollBottom && (
+                  <button
+                    onClick={scrollToBottomButton}
+                    className="fixed z-50 flex items-center justify-center p-3 transition-all duration-200 bg-white rounded-full shadow-lg bottom-24 right-8 hover:bg-gray-100"
+                    aria-label="Scroll to newest messages"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-gray-700"
+                    >
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <polyline points="19 12 12 19 5 12"></polyline>
+                    </svg>
+                  </button>
+                )}
                 <div ref={messagesEndRef}></div>
               </div>
 
@@ -1577,7 +1699,6 @@ export const Messages = () => {
                   </div>
                 )}
 
-                {/* File preview */}
                 {/* File previews */}
                 {attachments.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-2">
@@ -1599,7 +1720,7 @@ export const Messages = () => {
                             ) : attachment.type === "audio" ? (
                               <Music size={24} className="text-gray-500" />
                             ) : (
-                              <FileIcon size={24} className="text-gray-500" /> // Use FileIcon instead
+                              <FileIcon size={24} className="text-gray-500" />
                             )}
                           </div>
                         )}
@@ -1703,8 +1824,87 @@ export const Messages = () => {
           )}
         </div>
       </div>
+
+      {showNewConversationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="relative w-full max-w-md p-6 mx-4 bg-white rounded-lg shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium">New Conversation</h3>
+              <button
+                onClick={() => setShowNewConversationModal(false)}
+                className="p-1 rounded-full hover:bg-gray-100"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {connectionsLoading ? (
+              <div className="flex items-center justify-center h-40">
+                <div className="w-8 h-8 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+              </div>
+            ) : connections.length === 0 ? (
+              <div className="py-8 text-center text-gray-500">
+                <p className="mb-2">You don't have any connections yet.</p>
+                <p>Connect with people first to start a conversation.</p>
+                <button
+                  onClick={() => {
+                    setShowNewConversationModal(false);
+                    navigate("/connections");
+                  }}
+                  className="px-4 py-2 mt-4 text-white bg-blue-500 rounded hover:bg-blue-600"
+                >
+                  Find Connections
+                </button>
+              </div>
+            ) : (
+              <div className="overflow-y-auto max-h-96">
+                <div className="mb-4">
+                  <input
+                    type="text"
+                    placeholder="Search connections..."
+                    className="w-full p-2 border rounded-lg"
+                    onChange={(e) => {
+                      /* Add search function if needed */
+                    }}
+                  />
+                </div>
+                <div className="space-y-2">
+                  {connections.map((connection) => (
+                    <div
+                      key={connection.id}
+                      className="flex items-center p-2 border rounded-lg cursor-pointer hover:bg-gray-50"
+                      onClick={() => {
+                        startNewConversation(connection.user.id);
+                        setShowNewConversationModal(false);
+                      }}
+                    >
+                      <div className="flex items-center justify-center w-12 h-12 mr-3 overflow-hidden bg-gray-300 rounded-full">
+                        {connection.user.photo ? (
+                          <img
+                            src={`http://localhost:3000/${connection.user.photo}`}
+                            alt={connection.user.name}
+                            className="object-cover w-full h-full"
+                          />
+                        ) : (
+                          <span className="text-lg font-semibold">
+                            {connection.user.name.substring(0, 2).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium">{connection.user.name}</p>
+                        <p className="text-sm text-gray-500">
+                          {connection.user.headline || connection.user.username}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
-
-export default Messages;
