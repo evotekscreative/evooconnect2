@@ -6591,6 +6591,134 @@
             "description": "Menghapus notifikasi yang dipilih berdasarkan ID dan kategori"
           },
           "response": []
+        },
+        {
+          "name": "Mark Notifications as Read",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"notification_ids\": [\n        \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n        \"c3d4e5f6-g7h8-6c5d-a9b8-1j2k3l4m5n6o\"\n    ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/notifications/mark-read",
+            "description": "Menandai notifikasi tertentu sebagai telah dibaca"
+          },
+          "response": [
+            {
+              "name": "Mark Notifications as Read Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"notification_ids\": [\n        \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n        \"c3d4e5f6-g7h8-6c5d-a9b8-1j2k3l4m5n6o\"\n    ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{base_url}}/api/notifications/mark-read"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"unread_count\": 6\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Mark All Notifications as Read",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"category\": \"connection\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/notifications/mark-all-read",
+            "description": "Menandai semua notifikasi sebagai telah dibaca. Jika kategori disediakan, hanya notifikasi dalam kategori tersebut yang akan ditandai sebagai dibaca."
+          },
+          "response": [
+            {
+              "name": "Mark All Notifications as Read Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"category\": \"connection\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{base_url}}/api/notifications/mark-all-read"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"unread_count\": 3\n    }\n}"
+            }
+          ]
         }
       ],
       "description": "Endpoints untuk manajemen notifikasi pengguna"
