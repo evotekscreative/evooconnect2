@@ -18,7 +18,7 @@ type UserSearchResult struct {
     Photo       string  `json:"photo"`
     Headline    *string `json:"headline,omitempty"`
     IsConnected bool    `json:"is_connected"`
-    Highlight   string  `json:"highlight,omitempty"` // Untuk menampilkan bagian yang cocok
+    Highlight   string  `json:"highlight,omitempty"` 
 }
 
 type PostSearchResult struct {
@@ -26,7 +26,7 @@ type PostSearchResult struct {
     Content   string          `json:"content"`
     CreatedAt time.Time       `json:"created_at"`
     User      UserSearchResult `json:"user"`
-    Highlight string          `json:"highlight,omitempty"` // Untuk menampilkan bagian yang cocok
+    Highlight string          `json:"highlight,omitempty"` 
 }
 
 type BlogSearchResult struct {
@@ -35,13 +35,14 @@ type BlogSearchResult struct {
     Content   string          `json:"content"`
     CreatedAt string          `json:"created_at"`
     User      UserSearchResult `json:"user"`
-    Highlight string          `json:"highlight,omitempty"` // Untuk menampilkan bagian yang cocok
+    Highlight string          `json:"highlight,omitempty"` 
 }
 
 type GroupSearchResult struct {
     Id          string `json:"id"`
     Name        string `json:"name"`
     Description string `json:"description"`
+    Image       string `json:"image"`      
     MemberCount int    `json:"member_count"`
-    Highlight   string `json:"highlight,omitempty"` // Untuk menampilkan bagian yang cocok
+    IsMember    bool   `json:"is_member"`
 }
