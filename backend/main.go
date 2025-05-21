@@ -143,6 +143,16 @@ func main() {
 		db,
 	)
 
+	// Search service
+	searchService := service.NewSearchService(
+    db,
+    userRepository,
+    postRepository,
+    blogRepository,
+    groupRepository,
+    connectionRepository,
+)
+
 	// ===== Controllers =====
 	// User-related controllers
 	userController := controller.NewUserController(
@@ -178,6 +188,9 @@ func main() {
 	// Notification controller
 	notificationController := controller.NewNotificationController(notificationService)
 
+	// Search controller
+	searchController := controller.NewSearchController(searchService)
+
 	// ===== Router and Middleware =====
 	// Initialize router with all controllers
 	router := app.NewRouter(
@@ -195,6 +208,7 @@ func main() {
 		chatController,
 		profileViewController,
 		notificationController,
+		searchController,
 	)
 
 	// Create middleware chain

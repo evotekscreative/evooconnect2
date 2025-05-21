@@ -25,7 +25,8 @@ func NewRouter(
 	groupController controller.GroupController,
 	chatController controller.ChatController,
 	profileViewController controller.ProfileViewController,
-	notificationController controller.NotificationController, 
+	notificationController controller.NotificationController,
+	searchController controller.SearchController, 
 ) *httprouter.Router {
 	router := httprouter.New()
 
@@ -168,6 +169,9 @@ func NewRouter(
 	router.POST("/api/notifications/mark-all-read", notificationController.MarkAllAsRead)
 	router.DELETE("/api/notifications", notificationController.DeleteNotifications)
 	router.DELETE("/api/notifications/selected", notificationController.DeleteSelectedNotifications)
+
+	// search
+	router.GET("/api/search", searchController.Search)
 	
 	uploadFS := http.FileServer(http.Dir("uploads"))
 
