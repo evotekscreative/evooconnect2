@@ -3,56 +3,62 @@ import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 
 function ContentStep({ content, images, onContentChange, onImagesChange, onNext, onPrev }) {
-  const [error, setError] = useState('');
+  const [contentError, setContentError] = useState('');
+  const [imageError, setImageError] = useState('');
+  const [charCount, setCharCount] = useState(content?.length || 0);
+  const maxLength = 1500;
   const fileInputRef = useRef(null);
-  
+
   const handleContentChange = (event, editor) => {
     const data = editor.getData();
     onContentChange(data);
-    setError('');
+    setCharCount(data.replace(/<[^>]*>/g, '').length);
+    setContentError('');
   };
-  
+
   const handleImageChange = async (e) => {
     const files = Array.from(e.target.files);
-  
-    // Cek validasi gambar
     const invalidFile = files.find(file => !file.type.startsWith('image/'));
     if (invalidFile) {
-      setError('Only image files are allowed');
+      setImageError('Only image files are allowed');
       return;
     }
-  
-    // Konversi ke base64
-    const toBase64 = (file) => {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-      });
-    };
-  
-    const base64Images = await Promise.all(
-      files.map(async (file) => {
-        const base64 = await toBase64(file);
-        return { base64, preview: URL.createObjectURL(file) };
-      })
-    );
-  
-    onImagesChange([...images, ...base64Images]);
+
+    const updatedImages = files.map(file => ({
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+
+    onImagesChange([...images, ...updatedImages]);
+    setImageError('');
   };
-  
-  
+
   const handleRemoveImage = (indexToRemove) => {
     onImagesChange(images.filter((_, index) => index !== indexToRemove));
   };
-  
+
   const handleNext = () => {
-    if (!content.trim()) {
-      setError('Please write some content for your blog');
-      return;
+    const plainText = content.replace(/<[^>]*>/g, '').trim();
+
+    let hasError = false;
+
+    if (!plainText) {
+      setContentError('Please write some content for your blog');
+      hasError = true;
+    } else {
+      setContentError('');
     }
-    onNext();
+
+    if (images.length === 0) {
+      setImageError('Please upload image for your blog');
+      hasError = true;
+    } else {
+      setImageError('');
+    }
+
+    if (!hasError) {
+      onNext();
+    }
   };
 
   return (
@@ -61,7 +67,8 @@ function ContentStep({ content, images, onContentChange, onImagesChange, onNext,
       <p className="text-gray-600 mb-6">
         Express your ideas and share your knowledge with the world.
       </p>
-      
+
+      {/* CKEditor */}
       <div className="mb-6">
         <label className="block mb-2 font-medium text-gray-700">
           Blog Content <span className="text-red-500">*</span>
@@ -76,37 +83,42 @@ function ContentStep({ content, images, onContentChange, onImagesChange, onNext,
             }}
           />
         </div>
-        {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+        <div className="flex justify-between mt-2">
+          <span className="text-sm text-gray-500">{charCount}/{maxLength} characters</span>
+        </div>
+        {contentError && <p className="mt-2 text-sm text-red-500">{contentError}</p>}
       </div>
 
+      {/* Preview Images */}
       {images.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
-            {images.map((image, index) => (
-              <div key={index} className="relative">
-                <img
-                  src={image.preview}
-                  alt={`Preview ${index + 1}`}
-                  className="w-full h-32 object-cover rounded-md"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleRemoveImage(index)}
-                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
+          {images.map((image, index) => (
+            <div key={index} className="relative">
+              <img
+                src={image.preview}
+                alt={`Preview ${index + 1}`}
+                className="w-full h-32 object-cover rounded-md"
+              />
+              <button
+                type="button"
+                onClick={() => handleRemoveImage(index)}
+                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Upload Images */}
       <div className="mt-8 mb-6">
         <label className="block mb-2 font-medium text-gray-700">
-          Add Images
+          Add Images <span className="text-red-500">*</span>
         </label>
-        <div className="flex items-center mb-4">
+        <div className="flex items-center mb-2">
           <button
             type="button"
             onClick={() => fileInputRef.current.click()}
@@ -126,12 +138,12 @@ function ContentStep({ content, images, onContentChange, onImagesChange, onNext,
             accept="image/*"
             onChange={handleImageChange}
           />
-          <span className="ml-3 text-sm text-gray-500">
-          You can only upload one image for this post
-          </span>
+          <span className="ml-3 text-sm text-gray-500">Upload at least one image</span>
         </div>
+        {imageError && <p className="text-sm text-red-500 mt-1">{imageError}</p>}
       </div>
-      
+
+      {/* Navigation */}
       <div className="border-t border-gray-200 mt-8 pt-6 flex justify-between">
         <button
           type="button"

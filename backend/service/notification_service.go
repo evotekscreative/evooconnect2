@@ -13,5 +13,5 @@ type NotificationService interface {
 	MarkAsRead(ctx context.Context, userId uuid.UUID, request web.MarkNotificationReadRequest) int
 	MarkAllAsRead(ctx context.Context, userId uuid.UUID, category string) int
 	DeleteNotifications(ctx context.Context, userId uuid.UUID, category string) int
-	DeleteSelectedNotifications(ctx context.Context, userId uuid.UUID, notificationIds []uuid.UUID, category string) int
+	DeleteSelectedNotifications(ctx context.Context, userId uuid.UUID, notificationIds []string) web.DeleteNotificationsResponse
 }

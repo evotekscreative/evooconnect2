@@ -1,7 +1,6 @@
-// CommentList.jsx
 import React from 'react';
-import Comment from './Comment'; // Import komponen Comment yang menampilkan tiap komentar
-import CommentDropdown from './CommentDropdown'; // Import komponen CommentDropdown
+import Comment from './Comment';
+import CommentDropdown from './CommentDropdown';
 
 const CommentList = ({ comments, onDelete, onReply, toggleCommentExpansion, expandedComments }) => {
   return (
@@ -24,12 +23,14 @@ const CommentList = ({ comments, onDelete, onReply, toggleCommentExpansion, expa
 
           {expandedComments[comment.id] && comment.replies && comment.replies.length > 0 && (
             <div className="ml-4">
-              {comment.replies.map((reply) => (
-                <div key={reply.id} className="border-b py-2">
-                  <p className="font-semibold">{reply.author}</p>
-                  <p>{reply.content}</p>
-                </div>
-              ))}
+              {(comment.replies || [])
+                .filter(reply => reply && reply.id) 
+                .map((reply) => (
+                  <div key={reply.id} className="border-b py-2">
+                    <p className="font-semibold">{reply.author}</p>
+                    <p>{reply.content}</p>
+                  </div>
+                ))}
             </div>
           )}
         </div>

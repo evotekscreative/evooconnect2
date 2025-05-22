@@ -202,46 +202,43 @@ func (controller *NotificationControllerImpl) DeleteNotifications(writer http.Re
 }
 
 func (controller *NotificationControllerImpl) DeleteSelectedNotifications(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	// Ambil user ID dari context
-	userIdStr, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	// Parse string menjadi UUID
-	userId, err := uuid.Parse(userIdStr)
-	helper.PanicIfError(err)
-
-	// Ambil parameter kategori dari query string (opsional)
-	category := request.URL.Query().Get("category")
-
-	// Parse request body untuk mendapatkan daftar ID notifikasi yang akan dihapus
-	var deleteRequest web.DeleteNotificationsRequest
-	helper.ReadFromRequestBody(request, &deleteRequest)
-
-	// Validasi request
-	if len(deleteRequest.NotificationIds) == 0 {
-		webResponse := web.WebResponse{
-			Code:   http.StatusBadRequest,
-			Status: "BAD REQUEST",
-			Data:   "Notification IDs cannot be empty",
-		}
-		helper.WriteToResponseBody(writer, webResponse)
-		return
-	}
-
-	// Hapus notifikasi yang dipilih, dengan filter kategori jika ada
-	deletedCount := controller.NotificationService.DeleteSelectedNotifications(request.Context(), userId, deleteRequest.NotificationIds, category)
-
-	// Buat response
-	webResponse := web.WebResponse{
-		Code:   200,
-		Status: "OK",
-		Data: map[string]interface{}{
-			"deleted_count": deletedCount,
-			"message":       "Selected notifications deleted successfully",
-		},
-	}
-
-	helper.WriteToResponseBody(writer, webResponse)
+    // Get user ID from context
+    userIdStr, ok := request.Context().Value("user_id").(string)
+    if !ok {
+        helper.WriteToResponseBody(writer, web.WebResponse{
+            Code:   401,
+            Status: "UNAUTHORIZED",
+            Data:   "Unauthorized access",
+        })
+        return
+    }
+    
+    userId, err := uuid.Parse(userIdStr)
+    if err != nil {
+        helper.WriteToResponseBody(writer, web.WebResponse{
+            Code:   400,
+            Status: "BAD REQUEST",
+            Data:   "Invalid user ID",
+        })
+        return
+    }
+    
+    // Parse request body
+    var requestBody struct {
+        NotificationIds []string `json:"notification_ids"`
+    }
+    helper.ReadFromRequestBody(request, &requestBody)
+    
+    // Delete selected notifications
+    response := controller.NotificationService.DeleteSelectedNotifications(request.Context(), userId, requestBody.NotificationIds)
+    
+    // Return response
+    webResponse := web.WebResponse{
+        Code:   200,
+        Status: "OK",
+        Data:   response,
+    }
+    
+    helper.WriteToResponseBody(writer, webResponse)
 }
+

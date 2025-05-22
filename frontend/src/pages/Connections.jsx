@@ -12,7 +12,7 @@ import {
   Clock,
   ArrowLeft,
   UserCheck,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 
 const LoadingSpinner = ({ size = 16 }) => (
@@ -34,6 +34,9 @@ const LoadingSpinner = ({ size = 16 }) => (
 
 // Modal Component
 const CancelRequestModal = ({ isOpen, onClose, onConfirm, userName }) => {
+  const apiUrl =
+    import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
   if (!isOpen) return null;
 
   return (
@@ -43,11 +46,13 @@ const CancelRequestModal = ({ isOpen, onClose, onConfirm, userName }) => {
           <AlertCircle className="mr-2" size={24} />
           <h3 className="text-lg font-medium">Cancel Connection Request</h3>
         </div>
-        
+
         <p className="mb-6 text-gray-600">
-          Are you sure you want to cancel your connection request to <span className="font-medium">{userName}</span>? This action cannot be undone.
+          Are you sure you want to cancel your connection request to{" "}
+          <span className="font-medium">{userName}</span>? This action cannot be
+          undone.
         </p>
-        
+
         <div className="flex justify-end space-x-3">
           <button
             onClick={onClose}
@@ -68,6 +73,9 @@ const CancelRequestModal = ({ isOpen, onClose, onConfirm, userName }) => {
 };
 
 export default function Connection() {
+  const apiUrl =
+    import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
   const [activeTab, setActiveTab] = useState("people");
   const navigate = useNavigate();
   const [connections, setConnections] = useState([]);
@@ -84,7 +92,7 @@ export default function Connection() {
 
     try {
       const response = await axios.get(
-        "http://localhost:3000/api/connections/requests?limit=10&offset=0",
+        apiUrl + "/api/connections/requests?limit=10&offset=0",
         {
           headers: {
             Authorization: "Bearer " + token,
@@ -123,17 +131,15 @@ export default function Connection() {
       const token = localStorage.getItem("token");
       const currentUserId = parseInt(localStorage.getItem("userId"));
       try {
-        const response = await axios.get(
-          "http://localhost:3000/api/user-peoples",
-          {
-            headers: {
-              Authorization: "Bearer " + token,
-            },
-          }
-        );
-  
-        const pendingIds = JSON.parse(localStorage.getItem("pendingConnections")) || [];
-  
+        const response = await axios.get(apiUrl + "/api/user-peoples", {
+          headers: {
+            Authorization: "Bearer " + token,
+          },
+        });
+
+        const pendingIds =
+          JSON.parse(localStorage.getItem("pendingConnections")) || [];
+
         const mappedConnections = response.data.data
           .filter((person) => person.id !== currentUserId)
           .map((person) => ({
@@ -148,11 +154,13 @@ export default function Connection() {
             profile: person.photo || Profile,
             username: person.username || "",
           }));
-  
+
         setConnections(mappedConnections);
-        
+
         // Set connected users
-        const connected = mappedConnections.filter(conn => conn.status === "connected");
+        const connected = mappedConnections.filter(
+          (conn) => conn.status === "connected"
+        );
         setConnectedUsers(connected);
       } catch (error) {
         console.error("Gagal mengambil data user-peoples:", error);
@@ -160,17 +168,18 @@ export default function Connection() {
         setLoading(false);
       }
     };
-  
+
     fetchConnections();
     fetchInvitations();
   }, []);
 
   const handleConnect = async (id) => {
     const token = localStorage.getItem("token");
-    const pendingIds = JSON.parse(localStorage.getItem("pendingConnections")) || [];
-    
+    const pendingIds =
+      JSON.parse(localStorage.getItem("pendingConnections")) || [];
+
     // If status is pending, show the modal instead of directly handling
-    const person = connections.find(conn => conn.id === id);
+    const person = connections.find((conn) => conn.id === id);
     if (person && person.status === "pending") {
       setSelectedUser(person);
       setModalOpen(true);
@@ -183,10 +192,10 @@ export default function Connection() {
           conn.id === id ? { ...conn, status: "processing" } : conn
         )
       );
-  
+
       // This is for new connection requests
       const response = await axios.post(
-        `http://localhost:3000/api/users/${id}/connect`,
+        `${apiUrl}/api/users/${id}/connect`,
         {},
         { headers: { Authorization: "Bearer " + token } }
       );
@@ -251,39 +260,39 @@ export default function Connection() {
       );
     }
   };
-  
+
   const handleCancelRequest = async (id) => {
     const token = localStorage.getItem("token");
-    const pendingIds = JSON.parse(localStorage.getItem("pendingConnections")) || [];
-  
+    const pendingIds =
+      JSON.parse(localStorage.getItem("pendingConnections")) || [];
+
     try {
       setConnections(
         connections.map((conn) =>
           conn.id === id ? { ...conn, status: "processing" } : conn
         )
       );
-  
+
       // Batalkan permintaan di backend - use the id parameter instead of toUserId
-      await axios.delete(
-        `http://localhost:3000/api/connections/requests/${id}`,
-        { headers: { Authorization: "Bearer " + token } }
-      );
-  
+      await axios.delete(`${apiUrl}/api/connections/requests/${id}`, {
+        headers: { Authorization: "Bearer " + token },
+      });
+
       // Update frontend state
       const updatedPending = pendingIds.filter((pid) => pid !== id);
       localStorage.setItem(
         "pendingConnections",
         JSON.stringify(updatedPending)
       );
-  
+
       setConnections(
         connections.map((conn) =>
           conn.id === id ? { ...conn, status: "connect" } : conn
         )
       );
-  
+
       setInvitations((prev) => prev.filter((inv) => inv.id !== id));
-      
+
       // Close modal
       setModalOpen(false);
       setSelectedUser(null);
@@ -304,7 +313,7 @@ export default function Connection() {
       setSelectedUser(null);
     }
   };
-  
+
   const handleAccept = async (id) => {
     const token = localStorage.getItem("token");
 
@@ -316,7 +325,7 @@ export default function Connection() {
       );
 
       await axios.put(
-        `http://localhost:3000/api/connections/requests/${id}/accept`,
+        `${apiUrl}/api/connections/requests/${id}/accept`,
         {},
         { headers: { Authorization: "Bearer " + token } }
       );
@@ -353,13 +362,13 @@ export default function Connection() {
       );
     }
   };
-  
+
   const handleReject = async (id) => {
     const token = localStorage.getItem("token");
 
     try {
       await axios.put(
-        `http://localhost:3000/api/connections/requests/${id}/reject`,
+        `${apiUrl}/api/connections/requests/${id}/reject`,
         {},
         { headers: { Authorization: "Bearer " + token } }
       );
@@ -369,7 +378,7 @@ export default function Connection() {
       console.error("Gagal menolak undangan:", error);
     }
   };
-  
+
   if (loading) {
     return (
       <Case>
@@ -448,9 +457,11 @@ export default function Connection() {
 
                     <div className="pt-8 pb-4 px-4 text-center">
                       <div className="flex items-center justify-center mb-1">
-                        <h3 className="font-semibold text-gray-800 truncate">
-                          {person.name}
-                        </h3>
+                        <Link to={`/user-profile/${person.username}`}>
+                          <h3 className="font-semibold text-gray-800 truncate">
+                            {person.name}
+                          </h3>
+                        </Link>
                         {person.verified && (
                           <span className="ml-1 text-blue-500">
                             <UserCheck size={16} />
@@ -472,7 +483,10 @@ export default function Connection() {
                             ? "bg-gray-100 border border-gray-200 text-gray-500"
                             : "border border-blue-500 text-blue-500"
                         }`}
-                        disabled={person.status === "connected" || person.status === "processing"} 
+                        disabled={
+                          person.status === "connected" ||
+                          person.status === "processing"
+                        }
                       >
                         {person.status === "connected" ? (
                           <>
@@ -537,9 +551,11 @@ export default function Connection() {
                           />
                         </div>
                         <div>
-                          <h3 className="font-medium text-blue-500 text-sm sm:text-base">
-                            {invitation.name}
-                          </h3>
+                          <Link to={`/user-profile/${invitation.username}`}>
+                            <h3 className="font-medium text-blue-500 text-sm sm:text-base">
+                              {invitation.name}
+                            </h3>
+                          </Link>
                           <p className="text-gray-600 text-xs sm:text-sm">
                             {invitation.headline}
                           </p>
@@ -588,15 +604,18 @@ export default function Connection() {
 
           {/* Right side - Manage network */}
           <div className="space-y-4">
-            <div className="bg-white rounded-xl shadow p-4">
-              <h3 className="font-medium mb-2 border-b pb-3 text-sm sm:text-base">
+            <div className="bg-white rounded-xl shadow p-5">
+              <h3 className="font-semibold mb-4 border-b pb-3 text-base sm:text-lg">
                 Manage my network
               </h3>
-              <ul className="text-xs sm:text-sm text-gray-700 space-y-1">
+              <ul className="text-sm sm:text-base text-gray-800 space-y-2">
                 <li className="border-b pb-3">
-                  <Link to="/list-connection" className="flex justify-between">
-                    <span>Connections</span>
-                    <span>
+                  <Link
+                    to="/list-connection"
+                    className="flex justify-between items-center hover:text-blue-600 transition"
+                  >
+                    <span className="font-medium">Connections</span>
+                    <span className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm">
                       {
                         [...connections, ...invitations].filter(
                           (c) => c.status === "connected"
@@ -606,23 +625,41 @@ export default function Connection() {
                   </Link>
                 </li>
                 <li className="border-b pb-3">
-                  <Link to="/messages" className="flex justify-between">
-                    <span>Contacts</span> <span>869</span>
+                  <Link
+                    to="/messages"
+                    className="flex justify-between items-center hover:text-blue-600 transition"
+                  >
+                    <span className="font-medium">Contacts</span>
+                    <span className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm">
+                      869
+                    </span>
                   </Link>
                 </li>
                 <li className="border-b pb-3">
-                  <Link to="/groups" className="flex justify-between">
-                    <span>Groups</span> <span>0</span>
+                  <Link
+                    to="/groups"
+                    className="flex justify-between items-center hover:text-blue-600 transition"
+                  >
+                    <span className="font-medium">Groups</span>
+                    <span className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm">
+                      0
+                    </span>
                   </Link>
                 </li>
                 <li>
-                  <Link to="/hashtags" className="flex justify-between">
-                    <span>Hashtag</span> <span>8</span>
+                  <Link
+                    to="/hashtags"
+                    className="flex justify-between items-center hover:text-blue-600 transition"
+                  >
+                    <span className="font-medium">Hashtag</span>
+                    <span className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm">
+                      8
+                    </span>
                   </Link>
                 </li>
               </ul>
             </div>
-           
+
             <div className="bg-white rounded-xl shadow p-4">
               <h3 className="font-medium mb-3 border-b pb-3">
                 Recently Connected
@@ -641,7 +678,9 @@ export default function Connection() {
                       />
                     </div>
                     <div>
-                      <h4 className="text-sm font-medium">{user.name}</h4>
+                      <Link to={`/user-profile/${user.username}`}>
+                        <h4 className="text-sm font-medium">{user.name}</h4>
+                      </Link>
                       <p className="text-xs text-gray-500">{user.headline}</p>
                     </div>
                   </div>
@@ -681,9 +720,9 @@ export default function Connection() {
           </div>
         </div>
       </div>
-      
+
       {/* Confirmation Modal */}
-      <CancelRequestModal 
+      <CancelRequestModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         onConfirm={() => selectedUser && handleCancelRequest(selectedUser.id)}

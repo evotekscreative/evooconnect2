@@ -49,6 +49,8 @@ const socialPlatforms = [
 ];
 
 export default function UserProfile() {
+      const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
   const [showEditEducationModal, setEditShowEducationModal] = useState(false);
   const [editingEducation, setEditingEducation] = useState(null);
   const [showExperienceModal, setShowExperienceModal] = useState(false);
@@ -126,10 +128,9 @@ export default function UserProfile() {
   setIsLoading(true);
 
   try {
-    const user = JSON.parse(localStorage.getItem("user"));
     const userId = user.id;
     const response = await axios.get(
-      `http://localhost:3000/api/users/${userId}/posts?limit=10&offset=0`,
+      `${apiUrl}/api/users/${userId}/posts?limit=10&offset=0`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -155,7 +156,7 @@ export default function UserProfile() {
 
     try {
       const response = await axios.get(
-        `http://localhost:3000/api/user-profile/${username}`,
+        `${apiUrl}/api/user-profile/${username}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -189,7 +190,7 @@ export default function UserProfile() {
         name: response.data.data.name || "",
         headline: response.data.data.headline || "",
         about: response.data.data.about || "",
-        skills: userSkills,
+        skills: response.data.data.skills,
         socials: socialsObject,
         photo: response.data.data.photo || null,
       });
@@ -215,7 +216,7 @@ export default function UserProfile() {
 
     try {
       const response = await axios.get(
-        `http://localhost:3000/api/users/${user.id}/education`,
+        `${apiUrl}/api/users/${user.id}/education`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -238,7 +239,7 @@ export default function UserProfile() {
 
     try {
       const response = await axios.get(
-        `http://localhost:3000/api/users/${user.id}/experience?limit=10&offset=0`,
+        `${apiUrl}/api/users/${user.id}/experience?limit=10&offset=0`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -298,7 +299,7 @@ export default function UserProfile() {
       // If editing, make PUT request
       if (editingExperience) {
         const response = await axios.put(
-          `http://localhost:3000/api/experience/${editingExperience.id}`,
+          `${apiUrl}/api/experience/${editingExperience.id}`,
           formData,
           {
             headers: {
@@ -318,7 +319,7 @@ export default function UserProfile() {
       } else {
         // If adding new, make POST request
         const response = await axios.post(
-          "http://localhost:3000/api/experience",
+          apiUrl + "/api/experience",
           formData,
           {
             headers: {
@@ -381,7 +382,7 @@ export default function UserProfile() {
       if (editingEducation) {
         // Edit existing education
         const response = await axios.put(
-          `http://localhost:3000/api/education/${editingEducation.id}`,
+          `${apiUrl}/api/education/${editingEducation.id}`,
           formData,
           {
             headers: {
@@ -401,7 +402,7 @@ export default function UserProfile() {
       } else {
         // Add new education
         const response = await axios.post(
-          "http://localhost:3000/api/education",
+          apiUrl + "/api/education",
           formData,
           {
             headers: {
@@ -482,7 +483,7 @@ export default function UserProfile() {
     setIsLoading(true);
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:3000/api/education/${educationId}`, {
+      await axios.delete(`${apiUrl}/api/education/${educationId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -594,7 +595,7 @@ export default function UserProfile() {
     try {
       const token = localStorage.getItem("token");
       await axios.delete(
-        `http://localhost:3000/api/experience/${experienceId}`,
+        `${apiUrl}/api/experience/${experienceId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -635,7 +636,7 @@ export default function UserProfile() {
               <div className="relative w-28 h-28 mx-auto bg-gray-200 rounded-full overflow-hidden flex items-center justify-center">
                 {profileImage ? (
                   <img
-                    src={"http://localhost:3000/" + profileImage}
+                    src={apiUrl + "/" + profileImage}
                     alt="Profile"
                     className="w-full h-full object-cover"
                   />
@@ -768,7 +769,7 @@ export default function UserProfile() {
                       <div className="flex gap-4">
                         {exp.photo ? (
                           <img
-                            src={"http://localhost:3000/" + exp.photo}
+                            src={apiUrl + "/" + exp.photo}
                             alt="Company logo"
                             className="w-12 h-12 rounded-md object-cover"
                           />
@@ -836,7 +837,7 @@ export default function UserProfile() {
                       <div className="flex gap-4">
                         {edu.photo ? (
                           <img
-                            src={"http://localhost:3000/" + edu.photo}
+                            src={apiUrl + "/" + edu.photo}
                             alt="School logo"
                             className="w-12 h-12 rounded-md object-cover"
                           />
@@ -926,7 +927,7 @@ export default function UserProfile() {
                           <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
                             {profileImage ? (
                               <img
-                                src={"http://localhost:3000/" + profileImage}
+                                src={apiUrl + "/" + profileImage}
                                 alt="Profile"
                                 className="w-full h-full object-cover"
                               />
@@ -972,7 +973,7 @@ export default function UserProfile() {
                         {post.images && post.images.length > 0 && (
                           <div className="mb-3">
                             <img
-                              src={"http://localhost:3000/" + post.images[0]}
+                              src={apiUrl + "/" + post.images[0]}
                               alt={`Post ${post.id}`}
                               className="w-full rounded-md"
                             />
@@ -1165,7 +1166,7 @@ export default function UserProfile() {
                       <div className="mt-2">
                         <p className="text-sm text-gray-500">Current logo:</p>
                         <img
-                          src={"http://localhost:3000/" + experienceForm.photo}
+                          src={apiUrl + "/" + experienceForm.photo}
                           alt="Company logo"
                           className="w-20 h-20 object-contain mt-1"
                         />
@@ -1566,7 +1567,7 @@ export default function UserProfile() {
                     <div className="mt-2">
                       <p className="text-sm text-gray-500">Current logo:</p>
                       <img
-                        src={"http://localhost:3000/" + editingEducation.photo}
+                        src={apiUrl + "/" + editingEducation.photo}
                         alt="Current school logo"
                         className="h-12 mt-1"
                       />

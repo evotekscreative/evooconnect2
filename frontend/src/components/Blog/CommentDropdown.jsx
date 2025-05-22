@@ -4,6 +4,8 @@ import axios from "axios";
 import { toast } from "sonner";
 
 const CommentDropdown = ({ commentId, onDelete, onReply }) => {
+        const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
   const [isOpen, setIsOpen] = useState(false);
 
   const handleDeleteComment = async (commentId) => {
@@ -16,7 +18,7 @@ const CommentDropdown = ({ commentId, onDelete, onReply }) => {
 
     try {
       await axios.delete(
-        `http://localhost:3000/api/blog/comments/${commentId}`,
+        `${apiUrl}/api/blog/comments/${commentId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

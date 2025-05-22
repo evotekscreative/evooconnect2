@@ -2,13 +2,14 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 
 const RandomPosts = ({ excludeId }) => {
+          const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
   const [randomPosts, setRandomPosts] = useState([]);
 
   useEffect(() => {
     const fetchRandomPosts = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:3000/api/blogs", {
+        const res = await axios.get(apiUrl +"/api/blogs", {
           headers: { Authorization: `Bearer ${token}` },
         });
 

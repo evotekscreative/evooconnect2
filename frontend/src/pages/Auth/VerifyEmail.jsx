@@ -4,6 +4,8 @@ import axios from "axios";
 
 
 const VerifyEmail = () => {
+        const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
   const [code, setCode] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [message, setMessage] = useState("");
@@ -17,7 +19,7 @@ const VerifyEmail = () => {
   // Get email from location state or localStorage as fallback
   const [email, setEmail] = useState(""); 
 
-  axios.get("http://localhost:3000/api/user/profile", {
+  axios.get(apiUrl + "/api/user/profile", {
     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
   })
   .then((response) => {
@@ -58,7 +60,7 @@ const VerifyEmail = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:3000/api/auth/verify",
+        apiUrl + "/api/auth/verify",
         {
           token: code,
           email // Make sure email is included
@@ -103,7 +105,7 @@ const VerifyEmail = () => {
     setMessage("");
 
     try { 
-      const response = await axios.post("http://localhost:3000/api/auth/verify/send", {
+      const response = await axios.post(apiUrl + "/api/auth/verify/send", {
         email
       });
       setResendMessage("Verification code has been resent to your email.");

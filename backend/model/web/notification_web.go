@@ -21,9 +21,9 @@ type NotificationResponse struct {
 }
 
 type NotificationListResponse struct {
-	Notifications []NotificationResponse `json:"notifications"`
-	Total         int                    `json:"total"`
-	UnreadCount   int                    `json:"unread_count"`
+    Notifications []NotificationResponse `json:"notifications"`
+    Total         int                   `json:"total"`
+    UnreadCount   int                   `json:"unread_count"`
 }
 
 type MarkNotificationReadRequest struct {
@@ -32,4 +32,9 @@ type MarkNotificationReadRequest struct {
 
 type DeleteNotificationsRequest struct {
 	NotificationIds []uuid.UUID `json:"notification_ids"`
+}
+
+type DeleteNotificationsResponse struct {
+    DeletedCount int    `json:"deleted_count"`
+    Message      string `json:"message"`
 }

@@ -27,6 +27,8 @@ import axios from "axios";
 import { toast } from "sonner";
 
 const PostPage = () => {
+  const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
   const [userPosts, setUserPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [profileImage, setProfileImage] = useState(null);
@@ -75,7 +77,7 @@ const PostPage = () => {
     const userId = user.id;
     try {
       const response = await axios.get(
-        `http://localhost:3000/api/users/${userId}/posts?limit=10&offset=0`,
+        `${apiUrl}/api/users/${userId}/posts?limit=10&offset=0`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -98,7 +100,7 @@ const PostPage = () => {
 
     try {
       const response = await axios.get(
-        "http://localhost:3000/api/user/profile",
+        apiUrl + "/api/user/profile",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -175,27 +177,27 @@ const PostPage = () => {
 
       {/* Content */}
       <div className="w-full mx-auto py-6 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-6 justify-center">
-          {/* Left Sidebar - Perbesar */}
-          <div className="w-full md:w-2/5 space-y-4">
-            <div className="bg-white rounded-lg shadow-md p-6 text-center">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-6">
+          {/* Left Sidebar - Narrower */}
+          <div className="w-full md:w-1/4 lg:w-1/5 space-y-4">
+            <div className="bg-white rounded-lg shadow-md p-4 text-center">
               <div className="relative w-28 h-28 mx-auto bg-gray-200 rounded-full overflow-hidden flex items-center justify-center">
-              {profileImage ? (
-                              <img
-                                src={"http://localhost:3000/" + profileImage}
-                                alt="Profile"
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-gray-300">
-                                <span className="text-lg font-bold text-gray-600">
-                                  {user.name
-                                    .split(" ")
-                                    .map((n) => n[0])
-                                    .join("")}
-                                </span>
-                              </div>
-                            )}
+                {profileImage ? (
+                  <img
+                    src={apiUrl + "/" + profileImage}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-300">
+                    <span className="text-lg font-bold text-gray-600">
+                      {user.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")}
+                    </span>
+                  </div>
+                )}
               </div>
               <h2 className="font-bold text-xl mt-4">{user.name}</h2>
               <p className="text-base text-gray-500">
@@ -207,53 +209,53 @@ const PostPage = () => {
                   to="/list-connection"
                   className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md"
                 >
-                  <span className="flex items-center gap-2 text-base">
+                  <span className="flex items-center gap-2 text-sm">
                     <Users size={18} /> Connections
                   </span>
-                  <span className="font-bold text-lg">358</span>
+                  <span className="font-bold text-base">358</span>
                 </Link>
                 <div className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md">
-                  <span className="flex items-center gap-2 text-base">
+                  <span className="flex items-center gap-2 text-sm">
                     <Clock size={18} /> Views
                   </span>
-                  <span className="font-bold text-lg">85</span>
+                  <span className="font-bold text-base">85</span>
                 </div>
                 <Link
                   to="/job-saved"
                   className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md"
                 >
-                  <span className="flex items-center gap-2 text-base">
+                  <span className="flex items-center gap-2 text-sm">
                     <Bookmark size={18} /> Job Saved
                   </span>
-                  <span className="font-bold text-lg">120</span>
+                  <span className="font-bold text-base">120</span>
                 </Link>
               </div>
 
-              <button className="text-blue-600 text-base mt-5">Log Out</button>
+              <button className="text-blue-600 text-sm mt-5">Log Out</button>
             </div>
 
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="font-semibold text-lg">Skills</h3>
+            <div className="bg-white rounded-lg shadow-md p-4">
+              <h3 className="font-semibold text-base">Skills</h3>
               {user.skills && user.skills.length > 0 ? (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {user.skills.map((skill, index) => (
                     <span
                       key={index}
-                      className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm"
+                      className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs"
                     >
                       {skill}
                     </span>
                   ))}
                 </div>
               ) : (
-                <p className="text-base text-gray-500 mt-1">
+                <p className="text-sm text-gray-500 mt-1">
                   No skills added yet.
                 </p>
               )}
             </div>
 
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="font-semibold text-lg mb-2">Social Media</h3>
+            <div className="bg-white rounded-lg shadow-md p-4">
+              <h3 className="font-semibold text-base mb-2">Social Media</h3>
               {Object.keys(user.socials).length > 0 ? (
                 <div className="space-y-2">
                   {Object.entries(user.socials).map(([platform, username]) => {
@@ -272,21 +274,21 @@ const PostPage = () => {
                             {platformInfo.icon}
                           </div>
                         )}
-                        <span className="text-base">@{username}</span>
+                        <span className="text-sm">@{username}</span>
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                <p className="text-base text-gray-500">
+                <p className="text-sm text-gray-500">
                   No social media added yet.
                 </p>
               )}
             </div>
           </div>
 
-          {/* Main Post Content */}
-          <div className="w-full md:w-2/5">
+          {/* Main Post Content - Wider */}
+          <div className="w-full md:w-2/4 lg:w-3/5">
             <div className="bg-white border rounded-lg shadow-sm p-4 mb-4">
               {/* Sample Post */}
               {userPosts.length > 0 ? (
@@ -338,7 +340,7 @@ const PostPage = () => {
                       </p>
                       {post.images && post.images.length > 0 && (
                         <img
-                          src={"http://localhost:3000/" + post.images[0]}
+                          src={apiUrl + "/" + post.images[0]}
                           alt={`Post ${post.id}`}
                           className="mt-2 w-full rounded-lg border object-cover"
                         />
@@ -368,10 +370,10 @@ const PostPage = () => {
             </div>
           </div>
 
-          {/* Right Sidebar */}
-          <div className="w-full md:w-1/3 pl-4">
+          {/* Right Sidebar - Narrower */}
+          <div className="w-full md:w-1/4 lg:w-1/5 space-y-4">
             {/* People You Might Know */}
-            <div className="bg-white rounded-lg shadow mb-4 p-3">
+            <div className="bg-white rounded-lg shadow p-4">
               <h3 className="font-medium text-sm mb-3">
                 People you might know
               </h3>
@@ -407,28 +409,29 @@ const PostPage = () => {
             </div>
 
             {/* Premium Banner */}
-            <div className="bg-white rounded-lg shadow mb-4 p-3">
+            <div className="bg-white rounded-lg shadow p-4">
               <div className="mb-2">
                 <img src="/" alt="Premium" className="w-full rounded" />
               </div>
-              <h3 className="font-bold text-base text-yellow-500 text-center mb-1">
+              <h3 className="font-bold text-sm text-yellow-500 text-center mb-1">
                 EVOConnect Premium
               </h3>
               <p className="text-gray-600 text-xs text-center mb-3">
                 Grow & nurture your network
               </p>
-              <button className="w-full border border-yellow-500 text-yellow-500 py-1.5 rounded-lg font-medium text-sm">
+              <button className="w-full border border-yellow-500 text-yellow-500 py-1.5 rounded-lg font-medium text-xs">
                 ACTIVATE
               </button>
             </div>
+            
             {/* Jobs */}
-            <div className="bg-white rounded-lg shadow p-3">
+            <div className="bg-white rounded-lg shadow p-4">
               <h3 className="font-medium text-sm mb-3">Jobs</h3>
               <div className="mb-4">
-                <div className="bg-gray-100 p-4 rounded-lg ">
+                <div className="bg-gray-100 p-3 rounded-lg">
                   <div className="flex justify-between mb-1">
-                    <h3 className="font-semibold">Product Director</h3>
-                    <div className="bg-white rounded-full p-1 w-10 h-10 flex items-center justify-center">
+                    <h3 className="font-semibold text-sm">Product Director</h3>
+                    <div className="bg-white rounded-full p-1 w-8 h-8 flex items-center justify-center">
                       <img
                         src="/api/placeholder/24/24"
                         alt="Company Logo"
@@ -436,18 +439,18 @@ const PostPage = () => {
                       />
                     </div>
                   </div>
-                  <p className="text-blue-500">Spotify Inc.</p>
-                  <div className="flex items-center text-gray-600 text-sm">
-                    <MapPin size={14} className="mr-1" />
+                  <p className="text-blue-500 text-sm">Spotify Inc.</p>
+                  <div className="flex items-center text-gray-600 text-xs">
+                    <MapPin size={12} className="mr-1" />
                     <span>India, Punjab</span>
                   </div>
                   <div className="mt-2 flex items-center">
                     <div className="flex -space-x-2">
-                      <div className="w-6 h-6 rounded-full bg-gray-300 border-2 border-white"></div>
-                      <div className="w-6 h-6 rounded-full bg-gray-400 border-2 border-white"></div>
-                      <div className="w-6 h-6 rounded-full bg-gray-500 border-2 border-white"></div>
+                      <div className="w-5 h-5 rounded-full bg-gray-300 border-2 border-white"></div>
+                      <div className="w-5 h-5 rounded-full bg-gray-400 border-2 border-white"></div>
+                      <div className="w-5 h-5 rounded-full bg-gray-500 border-2 border-white"></div>
                     </div>
-                    <span className="text-gray-600 text-sm ml-2">
+                    <span className="text-gray-600 text-xs ml-2">
                       18 connections
                     </span>
                   </div>

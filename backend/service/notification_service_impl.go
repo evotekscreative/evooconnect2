@@ -37,71 +37,84 @@ func NewNotificationService(
 }
 
 func (service *NotificationServiceImpl) Create(
-	ctx context.Context,
-	userId uuid.UUID,
-	category string,
-	notificationType string,
-	title string,
-	message string,
-	referenceId *uuid.UUID,
-	referenceType *string,
-	actorId *uuid.UUID,
+    ctx context.Context,
+    userId uuid.UUID,
+    category string,
+    notificationType string,
+    title string,
+    message string,
+    referenceId *uuid.UUID,
+    referenceType *string,
+    actorId *uuid.UUID,
 ) uuid.UUID {
-	fmt.Printf("Creating notification: userId=%s, category=%s, type=%s\n", 
-		userId, category, notificationType)
-		
-	tx, err := service.DB.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
+    fmt.Printf("Creating notification: userId=%s, category=%s, type=%s\n", 
+        userId, category, notificationType)
+        
+    tx, err := service.DB.Begin()
+    helper.PanicIfError(err)
+    defer helper.CommitOrRollback(tx)
 
-	// For post notifications from followed users, limit to random 5 if there are many
-	if category == string(domain.NotificationCategoryPost) && notificationType == string(domain.NotificationTypePostNew) {
-		// Check if we should send this notification (random selection for followed users)
-		if rand.Intn(100) > 20 { // 20% chance to send notification
-			// Create a dummy response without actually saving
-			return uuid.New()
-		}
-	}
+    // For post notifications from followed users, limit to random 5 if there are many
+    if category == string(domain.NotificationCategoryPost) && notificationType == string(domain.NotificationTypePostNew) {
+        // Check if we should send this notification (random selection for followed users)
+        if rand.Intn(100) > 30 { // 20% chance to send notification
+            // Create a dummy response without actually saving
+            return uuid.New()
+        }
+    }
+    
+    // Untuk notifikasi like dan profile visit, cek apakah sudah ada notifikasi serupa
+    if notificationType == string(domain.NotificationTypePostLike) || 
+        notificationType == string(domain.NotificationTypeProfileVisit) {
+        existingNotification, err := service.NotificationRepository.FindSimilarNotification(
+            ctx, tx, userId, category, notificationType, referenceId, actorId)
+        
+        if err == nil {
+            // Notifikasi serupa sudah ada, gunakan yang sudah ada
+            fmt.Printf("Similar notification already exists with ID: %s\n", existingNotification.Id)
+            return existingNotification.Id
+        }
+    }
 
-	notification := domain.Notification{
-		Id:            uuid.New(),
-		UserId:        userId,
-		Category:      domain.NotificationCategory(category),
-		Type:          domain.NotificationType(notificationType),
-		Title:         title,
-		Message:       message,
-		Status:        domain.NotificationStatusUnread,
-		ReferenceId:   referenceId,
-		ReferenceType: referenceType,
-		ActorId:       actorId,
-	}
+    notification := domain.Notification{
+        Id:            uuid.New(),
+        UserId:        userId,
+        Category:      domain.NotificationCategory(category),
+        Type:          domain.NotificationType(notificationType),
+        Title:         title,
+        Message:       message,
+        Status:        domain.NotificationStatusUnread,
+        ReferenceId:   referenceId,
+        ReferenceType: referenceType,
+        ActorId:       actorId,
+    }
 
-	notification = service.NotificationRepository.Save(ctx, tx, notification)
-	fmt.Printf("Notification saved with ID: %s\n", notification.Id)
+    notification = service.NotificationRepository.Save(ctx, tx, notification)
+    fmt.Printf("Notification saved with ID: %s\n", notification.Id)
 
-	// Get actor details if actorId is provided
-	if actorId != nil {
-		actor, err := service.UserRepository.FindById(ctx, tx, *actorId)
-		if err == nil {
-			notification.Actor = &actor
-		}
-	}
+    // Get actor details if actorId is provided
+    if actorId != nil {
+        actor, err := service.UserRepository.FindById(ctx, tx, *actorId)
+        if err == nil {
+            notification.Actor = &actor
+        }
+    }
 
-	// Trigger Pusher event
-	notificationResponse := service.toNotificationResponse(notification)
-	channelName := fmt.Sprintf("private-user-%s", userId)
-	fmt.Printf("Triggering Pusher: channel=%s, event=new-notification\n", channelName)
-	
-	go func() {
-		err := utils.PusherClient.Trigger(channelName, "new-notification", notificationResponse)
-		if err != nil {
-			fmt.Printf("Error triggering Pusher: %v\n", err)
-		} else {
-			fmt.Printf("Successfully triggered Pusher notification\n")
-		}
-	}()
+    // Trigger Pusher event
+    notificationResponse := service.toNotificationResponse(notification)
+    channelName := fmt.Sprintf("private-user-%s", userId)
+    fmt.Printf("Triggering Pusher: channel=%s, event=new-notification\n", channelName)
+    
+    go func() {
+        err := utils.PusherClient.Trigger(channelName, "new-notification", notificationResponse)
+        if err != nil {
+            fmt.Printf("Error triggering Pusher: %v\n", err)
+        } else {
+            fmt.Printf("Successfully triggered Pusher notification\n")
+        }
+    }()
 
-	return notification.Id
+    return notification.Id
 }
 
 func (service *NotificationServiceImpl) GetNotifications(ctx context.Context, userId uuid.UUID, category string, limit, offset int) web.NotificationListResponse {
@@ -211,15 +224,29 @@ func (service *NotificationServiceImpl) DeleteNotifications(ctx context.Context,
 	return deletedCount
 }
 
-func (service *NotificationServiceImpl) DeleteSelectedNotifications(ctx context.Context, userId uuid.UUID, notificationIds []uuid.UUID, category string) int {
-	tx, err := service.DB.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
-	
-	// Hapus notifikasi yang dipilih dengan filter kategori jika ada
-	deletedCount := service.NotificationRepository.DeleteSelectedByUserId(ctx, tx, userId, notificationIds, category)
-	
-	return deletedCount
+func (service *NotificationServiceImpl) DeleteSelectedNotifications(ctx context.Context, userId uuid.UUID, notificationIds []string) web.DeleteNotificationsResponse {
+    tx, err := service.DB.Begin()
+    helper.PanicIfError(err)
+    defer helper.CommitOrRollback(tx)
+    
+    // Konversi string IDs ke UUID
+    uuidIds := make([]uuid.UUID, 0, len(notificationIds))
+    for _, idStr := range notificationIds {
+        id, err := uuid.Parse(idStr)
+        if err != nil {
+            continue // Skip ID yang tidak valid
+        }
+        uuidIds = append(uuidIds, id)
+    }
+    
+    // Hapus notifikasi yang dipilih
+    count, err := service.NotificationRepository.DeleteSelected(ctx, tx, userId, uuidIds)
+    helper.PanicIfError(err)
+    
+    return web.DeleteNotificationsResponse{
+        DeletedCount: int(count),
+        Message:      "Selected notifications deleted successfully",
+    }
 }
 
 func (service *NotificationServiceImpl) toNotificationResponse(notification domain.Notification) web.NotificationResponse {

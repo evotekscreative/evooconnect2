@@ -41,6 +41,8 @@ ChartJS.register(
 );
 
 export default function SocialNetworkFeed() {
+      const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+      const clientUrl = import.meta.env.VITE_APP_CLIENT_URL || "http://localhost:5173";
   const [postContent, setPostContent] = useState("");
   const [articleContent, setArticleContent] = useState("");
   const [selectedPost, setSelectedPost] = useState(null);
@@ -169,7 +171,7 @@ export default function SocialNetworkFeed() {
         setLoadingPosts(true);
         const userToken = localStorage.getItem("token");
         const response = await axios.get(
-          `http://localhost:3000/api/posts/${postId}`,
+          `${apiUrl}/api/posts/${postId}`,
           {
             headers: {
               Authorization: `Bearer ${userToken}`,
@@ -275,7 +277,7 @@ export default function SocialNetworkFeed() {
 
       const userToken = localStorage.getItem("token");
       const response = await axios.get(
-        `http://localhost:3000/api/post-comments/${postId}?limit=10&offset=0&includeReplies=true`,
+        `${apiUrl}/api/post-comments/${postId}?limit=10&offset=0&includeReplies=true`,
         {
           headers: {
             Authorization: `Bearer ${userToken}`,
@@ -329,7 +331,7 @@ export default function SocialNetworkFeed() {
 
       const userToken = localStorage.getItem("token");
       const response = await axios.get(
-        `http://localhost:3000/api/comments/${commentId}/replies?limit=100`,
+        `${apiUrl}/api/comments/${commentId}/replies?limit=100`,
         {
           headers: {
             Authorization: `Bearer ${userToken}`,
@@ -403,7 +405,7 @@ export default function SocialNetworkFeed() {
 
       const userToken = localStorage.getItem("token");
       const response = await axios.get(
-        `http://localhost:3000/api/comments/${commentId}/replies`,
+        `${apiUrl}/api/comments/${commentId}/replies`,
         {
           headers: {
             Authorization: `Bearer ${userToken}`,
@@ -450,7 +452,7 @@ export default function SocialNetworkFeed() {
     try {
       const userToken = localStorage.getItem("token");
       await axios.post(
-        `http://localhost:3000/api/post-comments/${currentPostId}`,
+        `${apiUrl}/api/post-comments/${currentPostId}`,
         { content: commentText },
         {
           headers: {
@@ -490,7 +492,7 @@ export default function SocialNetworkFeed() {
     try {
       const userToken = localStorage.getItem("token");
       const response = await axios.post(
-        `http://localhost:3000/api/comments/${commentId}/replies`,
+        `${apiUrl}/api/comments/${commentId}/replies`,
         {
           content: replyText,
           replyTo: replyToUser?.id,
@@ -567,7 +569,7 @@ export default function SocialNetworkFeed() {
     try {
       const userToken = localStorage.getItem("token");
       const response = await axios.get(
-        `http://localhost:3000/api/comments/${commentId}/replies?limit=100`,
+        `${apiUrl}/api/comments/${commentId}/replies?limit=100`,
         {
           headers: {
             Authorization: `Bearer ${userToken}`,
@@ -764,7 +766,7 @@ export default function SocialNetworkFeed() {
   const handleDeleteComment = async (commentId) => {
     try {
       const userToken = localStorage.getItem("token");
-      await axios.delete(`http://localhost:3000/api/comments/${commentId}`, {
+      await axios.delete(`${apiUrl}/api/comments/${commentId}`, {
         headers: {
           Authorization: `Bearer ${userToken}`,
         },
@@ -808,7 +810,7 @@ export default function SocialNetworkFeed() {
       try {
         const userToken = localStorage.getItem("token");
         await axios.put(
-          `http://localhost:3000/api/comments/${commentId}`,
+          `${apiUrl}/api/comments/${commentId}`,
           { content: commentText },
           {
             headers: {
@@ -878,7 +880,7 @@ export default function SocialNetworkFeed() {
 
       if (isCurrentlyLiked) {
         await axios.delete(
-          `http://localhost:3000/api/post-actions/${postId}/like`,
+          `${apiUrl}/api/post-actions/${postId}/like`,
           {
             headers: {
               Authorization: `Bearer ${userToken}`,
@@ -887,7 +889,7 @@ export default function SocialNetworkFeed() {
         );
       } else {
         await axios.post(
-          `http://localhost:3000/api/post-actions/${postId}/like`,
+          `${apiUrl}/api/post-actions/${postId}/like`,
           {},
           {
             headers: {
@@ -920,7 +922,7 @@ export default function SocialNetworkFeed() {
   const handleDeletePost = async (postId) => {
     try {
       const userToken = localStorage.getItem("token");
-      await axios.delete(`http://localhost:3000/api/posts/${postId}`, {
+      await axios.delete(`${apiUrl}/api/posts/${postId}`, {
         headers: {
           Authorization: `Bearer ${userToken}`,
         },
@@ -956,7 +958,7 @@ export default function SocialNetworkFeed() {
         });
 
         const uploadResponse = await axios.post(
-          "http://localhost:3000/api/posts/images",
+          apiUrl + "mages",
           formData,
           {
             headers: {
@@ -977,7 +979,7 @@ export default function SocialNetworkFeed() {
       };
 
       const response = await axios.put(
-        `http://localhost:3000/api/posts/${editingPost.id}`,
+        `${apiUrl}/api/posts/${editingPost.id}`,
         updatedPost,
         {
           headers: {
@@ -1110,7 +1112,7 @@ export default function SocialNetworkFeed() {
       return (
         <div className="mb-3 rounded-lg overflow-hidden border">
           <img
-            src={"http://localhost:3000/" + images[0]}
+            src={apiUrl + "/" + images[0]}
             className="w-full h-48 md:h-64 lg:h-96 object-cover cursor-pointer"
             alt="Post"
             onClick={() => openImageModal({ images }, 0)}
@@ -1124,7 +1126,7 @@ export default function SocialNetworkFeed() {
             {images.map((photo, index) => (
               <div key={index} className="relative aspect-square">
                 <img
-                  src={"http://localhost:3000/" + photo}
+                  src={apiUrl + "/" + photo}
                   className="w-full h-full object-cover cursor-pointer"
                   alt={`Post ${index + 1}`}
                   onClick={() => openImageModal({ images }, index)}
@@ -1140,7 +1142,7 @@ export default function SocialNetworkFeed() {
           <div className="grid grid-cols-2 gap-1">
             <div className="relative aspect-square row-span-2">
               <img
-                src={"http://localhost:3000/" + images[0]}
+                src={apiUrl + "/" + images[0]}
                 className="w-full h-full object-cover cursor-pointer"
                 alt="Post 1"
                 onClick={() => openImageModal({ images }, 0)}
@@ -1148,7 +1150,7 @@ export default function SocialNetworkFeed() {
             </div>
             <div className="relative aspect-square">
               <img
-                src={"http://localhost:3000/" + images[1]}
+                src={apiUrl + "/" + images[1]}
                 className="w-full h-full object-cover cursor-pointer"
                 alt="Post 2"
                 onClick={() => openImageModal({ images }, 1)}
@@ -1156,7 +1158,7 @@ export default function SocialNetworkFeed() {
             </div>
             <div className="relative aspect-square">
               <img
-                src={"http://localhost:3000/" + images[2]}
+                src={apiUrl + "/" + images[2]}
                 className="w-full h-full object-cover cursor-pointer"
                 alt="Post 3"
                 onClick={() => openImageModal({ images }, 2)}
@@ -1172,7 +1174,7 @@ export default function SocialNetworkFeed() {
             {images.slice(0, 4).map((photo, index) => (
               <div key={index} className="relative aspect-square">
                 <img
-                  src={"http://localhost:3000/" + photo}
+                  src={apiUrl + "/" + photo}
                   className="w-full h-full object-cover cursor-pointer"
                   alt={`Post ${index + 1}`}
                   onClick={() => openImageModal({ images }, index)}
@@ -1205,7 +1207,7 @@ export default function SocialNetworkFeed() {
   };
 
   const copyToClipboard = () => {
-    const urlToCopy = `http://localhost:5173/post/${sharePostId}`;
+    const urlToCopy = `${clientUrl}/post/${sharePostId}`;
     navigator.clipboard.writeText(urlToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -1213,21 +1215,21 @@ export default function SocialNetworkFeed() {
 
   const shareToWhatsApp = () => {
     const url = `https://wa.me/?text=${encodeURIComponent(
-      `Check out this post: http://localhost:5173/post/${sharePostId}`
+      `Check out this post: ${clientUrl}/post/${sharePostId}`
     )}`;
     window.open(url, "_blank");
   };
 
   const shareToTwitter = () => {
     const url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(
-      `http://localhost:5173/post/${sharePostId}`
+      `${clientUrl}/post/${sharePostId}`
     )}`;
     window.open(url, "_blank");
   };
 
   const copyToClipboar = () => {
     navigator.clipboard.writeText(
-      "http://localhost:3000/post/" + currentPostId
+      apiUrl + "/post/" + currentPostId
     );
     setShowNotification(true);
     setTimeout(() => setShowNotification(false), 2000);
@@ -1441,12 +1443,11 @@ export default function SocialNetworkFeed() {
                     </button>
                   </div>
 
-                  <div
-                    id="comments-section"
-                    className="bg-white rounded-lg shadow-md p-4"
-                  >
+                 
+                    
+                  
                     {/* Add Comment dengan Button Kirim */}
-                    <div className="flex items-start mb-6">
+                    <div id="comments-section" className="flex items-start mb-6">
                       <div className="rounded-full bg-gray-200 w-8 h-8 flex items-center justify-center text-xs mr-3">
                         {currentUserId ? "ME" : "UU"}
                       </div>
@@ -1713,7 +1714,7 @@ export default function SocialNetworkFeed() {
                         </div>
                       )}
                     </div>
-                  </div>
+                  
                 </div>
               ))
             )}
@@ -1738,7 +1739,7 @@ export default function SocialNetworkFeed() {
                 <div className="flex items-center border rounded-lg p-2">
                   <input
                     type="text"
-                    value={`http://localhost:5173/post/${sharePostId}`}
+                    value={`${clientUrl}/post/${sharePostId}`}
                     readOnly
                     className="flex-grow text-sm text-gray-700 mr-2 outline-none"
                   />
@@ -2092,7 +2093,7 @@ export default function SocialNetworkFeed() {
               <div className="relative">
                 <img
                   src={
-                    "http://localhost:3000/" +
+                    apiUrl + "/" +
                     selectedPost.images[selectedImageIndex]
                   }
                   className="w-full max-h-[80vh] object-contain"

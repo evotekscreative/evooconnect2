@@ -8,7 +8,7 @@ import (
 	"evoconnect/backend/model/domain"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
-	"fmt"
+	"evoconnect/backend/utils"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -31,23 +31,15 @@ func optionalStringPtr(s string) *string {
 type ConnectionServiceImpl struct {
 	ConnectionRepository repository.ConnectionRepository
 	UserRepository       repository.UserRepository
-	NotificationService  NotificationService
 	DB                   *sql.DB
 	Validate             *validator.Validate
 }
 
-func NewConnectionService(
-	connectionRepository repository.ConnectionRepository,
-	userRepository repository.UserRepository,
-	notificationService NotificationService,
-	DB *sql.DB,
-	validate *validator.Validate,
-) ConnectionService {
+func NewConnectionService(connectionRepository repository.ConnectionRepository, userRepository repository.UserRepository, db *sql.DB, validate *validator.Validate) ConnectionService {
 	return &ConnectionServiceImpl{
 		ConnectionRepository: connectionRepository,
 		UserRepository:       userRepository,
-		NotificationService:  notificationService,
-		DB:                   DB,
+		DB:                   db,
 		Validate:             validate,
 	}
 }
@@ -113,22 +105,6 @@ func (service *ConnectionServiceImpl) SendConnectionRequest(ctx context.Context,
 		panic(exception.NewNotFoundError("Sender user not found"))
 	}
 
-	// Send notification to receiver
-	refType := "connection_request"
-	go func() {
-		service.NotificationService.Create(
-			context.Background(),
-			receiverId,
-			string(domain.NotificationCategoryConnection),
-			string(domain.NotificationTypeConnectionRequest),
-			"New Connection Request",
-			fmt.Sprintf("%s wants to connect with you", sender.Name),
-			&createdRequest.Id,
-			&refType,
-			&senderId,
-		)
-	}()
-	
 	// Prepare response
 	return web.ConnectionRequestResponse{
 		Id:        createdRequest.Id,
@@ -240,22 +216,6 @@ func (service *ConnectionServiceImpl) AcceptConnectionRequest(ctx context.Contex
 		panic(exception.NewNotFoundError("Receiver user not found"))
 	}
 
-	// Send notification to sender that request was accepted
-	refType := "connection_accept"
-	go func() {
-		service.NotificationService.Create(
-			context.Background(),
-			request.SenderId,
-			string(domain.NotificationCategoryConnection),
-			string(domain.NotificationTypeConnectionAccept),
-			"Connection Request Accepted",
-			fmt.Sprintf("%s accepted your connection request", receiver.Name),
-			&updatedRequest.Id,
-			&refType,
-			&userId,
-		)
-	}()
-
 	// Prepare response
 	return web.ConnectionRequestResponse{
 		Id:        updatedRequest.Id,
@@ -341,10 +301,65 @@ func (service *ConnectionServiceImpl) RejectConnectionRequest(ctx context.Contex
 }
 
 func (service *ConnectionServiceImpl) GetConnections(ctx context.Context, userId uuid.UUID, limit, offset int) web.ConnectionListResponse {
-	return web.ConnectionListResponse{}
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Check if user exists
+	_, err = service.UserRepository.FindById(ctx, tx, userId)
+	if err != nil {
+		panic(exception.NewNotFoundError("User not found"))
+	}
+
+	// Get connections for user
+	connections, count := service.ConnectionRepository.FindConnectionsByUserId(ctx, tx, userId, limit, offset)
+
+	var connectionResponses []web.ConnectionResponse
+	for _, connection := range connections {
+		var otherUser *domain.User
+		if connection.UserId1 == userId && connection.User2 != nil {
+			otherUser = connection.User2
+		} else if connection.UserId2 == userId && connection.User1 != nil {
+			otherUser = connection.User1
+		} else {
+			continue
+		}
+
+		userShort := utils.ToUserShortWithConnection(ctx, tx, service.ConnectionRepository, userId, *otherUser)
+		connectionResponse := web.ConnectionResponse{
+			Id:        connection.Id,
+			CreatedAt: connection.CreatedAt.Format("2006-01-02T15:04:05Z"),
+			User:      &userShort, // Buat pointer secara manual
+		}
+
+		connectionResponses = append(connectionResponses, connectionResponse)
+	}
+
+	return web.ConnectionListResponse{
+		Connections: connectionResponses,
+		Total:       count,
+	}
 }
 
 func (service *ConnectionServiceImpl) Disconnect(ctx context.Context, userId, targetUserId uuid.UUID) web.DisconnectResponse {
+	tx, err := service.DB.Begin()
+	if err != nil {
+		panic(err)
+	}
+	defer helper.CommitOrRollback(tx)
+
+	// Check if the users are connected
+	isConnected := service.ConnectionRepository.CheckConnectionExists(ctx, tx, userId, targetUserId)
+	if !isConnected {
+		panic(exception.NewBadRequestError("You are not connected with this user"))
+	}
+
+	// Perform disconnect operation
+	err = service.ConnectionRepository.Disconnect(ctx, tx, userId, targetUserId)
+	if err != nil {
+		panic(exception.NewInternalServerError("Failed to disconnect users: " + err.Error()))
+	}
+
 	return web.DisconnectResponse{
 		Message:        "Successfully disconnected",
 		UserId:         targetUserId,
@@ -353,5 +368,31 @@ func (service *ConnectionServiceImpl) Disconnect(ctx context.Context, userId, ta
 }
 
 func (service *ConnectionServiceImpl) CancelConnectionRequest(ctx context.Context, userId, toUserId uuid.UUID) string {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Get connection request
+	request, err := service.ConnectionRepository.FindRequest(ctx, tx, userId, toUserId)
+	if err != nil {
+		panic(exception.NewNotFoundError("Connection request not found"))
+	}
+
+	// Verify the current user is the sender of the request
+	if request.SenderId != userId {
+		panic(exception.NewForbiddenError("You can only cancel requests you've sent"))
+	}
+
+	// Verify the request is pending
+	if request.Status != domain.ConnectionStatusPending {
+		panic(exception.NewBadRequestError("Connection request is not pending"))
+	}
+
+	// Update request status to canceled
+	err = service.ConnectionRepository.DeleteConnectionRequest(ctx, tx, request.Id)
+	if err != nil {
+		panic(exception.NewInternalServerError("Failed to cancel connection request: " + err.Error()))
+	}
+
 	return "Connection request canceled successfully"
 }

@@ -205,7 +205,7 @@ func (repository *ChatRepositoryImpl) FindConversationsByUserId(ctx context.Cont
         JOIN users u ON m.sender_id = u.id
         WHERE m.conversation_id IN (%s)
     )
-    SELECT id, conversation_id, sender_id, message_type, content, file_path, file_name, file_size, file_type, created_at, updated_at, is_read,
+    SELECT id, conversation_id, sender_id, message_type, content, file_path, file_name, file_size, file_type, created_at, updated_at, is_read, deleted_at,
         user_id, name, username, photo, conversation_id
     FROM ranked WHERE rn = 1
 `, strings.Join(placeholders, ","))
@@ -229,6 +229,7 @@ func (repository *ChatRepositoryImpl) FindConversationsByUserId(ctx context.Cont
 				&message.CreatedAt,
 				&message.UpdatedAt,
 				&message.IsRead,
+				&message.DeletedAt,
 				&user.Id,
 				&user.Name,
 				&user.Username,
@@ -361,8 +362,12 @@ func (repository *ChatRepositoryImpl) CreateMessage(ctx context.Context, tx *sql
 	message.UpdatedAt = now
 
 	SQL := `
-        INSERT INTO messages (id, conversation_id, sender_id, message_type, content, file_path, file_name, file_size, file_type, created_at, updated_at, is_read)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        INSERT INTO messages (
+            id, conversation_id, sender_id, message_type, content, 
+            file_path, file_name, file_size, file_type, 
+            reply_to_id, created_at, updated_at, is_read
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
     `
 	_, err := tx.ExecContext(ctx, SQL,
 		message.Id,
@@ -374,6 +379,7 @@ func (repository *ChatRepositoryImpl) CreateMessage(ctx context.Context, tx *sql
 		message.FileName,
 		message.FileSize,
 		message.FileType,
+		message.ReplyToId,
 		message.CreatedAt,
 		message.UpdatedAt,
 		message.IsRead,
@@ -391,8 +397,8 @@ func (repository *ChatRepositoryImpl) CreateMessage(ctx context.Context, tx *sql
 func (repository *ChatRepositoryImpl) FindMessagesByConversationId(ctx context.Context, tx *sql.Tx, conversationId uuid.UUID, limit, offset int) ([]domain.Message, int) {
 	SQL := `
         SELECT m.id, m.conversation_id, m.sender_id, m.message_type, m.content, 
-            m.file_path, m.file_name, m.file_size, m.file_type, 
-            m.created_at, m.updated_at, m.is_read,
+            m.file_path, m.file_name, m.file_size, m.file_type, m.reply_to_id,
+            m.created_at, m.updated_at, m.is_read, m.deleted_at,
             u.id, u.name, u.username, COALESCE(u.photo, '')
         FROM messages m
         JOIN users u ON m.sender_id = u.id
@@ -406,10 +412,13 @@ func (repository *ChatRepositoryImpl) FindMessagesByConversationId(ctx context.C
 	defer rows.Close()
 
 	var messages []domain.Message
+	var messageMap = make(map[uuid.UUID]*domain.Message)
 
 	for rows.Next() {
 		message := domain.Message{}
 		user := domain.User{}
+		var replyToId sql.NullString
+		var deletedAt sql.NullTime
 
 		err := rows.Scan(
 			&message.Id,
@@ -421,9 +430,11 @@ func (repository *ChatRepositoryImpl) FindMessagesByConversationId(ctx context.C
 			&message.FileName,
 			&message.FileSize,
 			&message.FileType,
+			&replyToId,
 			&message.CreatedAt,
 			&message.UpdatedAt,
 			&message.IsRead,
+			&message.DeletedAt,
 			&user.Id,
 			&user.Name,
 			&user.Username,
@@ -432,10 +443,40 @@ func (repository *ChatRepositoryImpl) FindMessagesByConversationId(ctx context.C
 		helper.PanicIfError(err)
 
 		message.Sender = &user
+
+		// Handle reply_to_id if present
+		if replyToId.Valid {
+			replyId, _ := uuid.Parse(replyToId.String)
+			message.ReplyToId = &replyId
+		}
+
+		// Handle deleted_at if present (though these should be filtered out)
+		if deletedAt.Valid {
+			val := deletedAt.Time
+			message.DeletedAt = &val
+		}
+
 		messages = append(messages, message)
+		messageMap[message.Id] = &messages[len(messages)-1]
 	}
 
-	// Count total messages
+	// Load reply messages for each message that has a reply_to_id
+	for i, msg := range messages {
+		if msg.ReplyToId != nil {
+			// Check if the referenced message is in our current result set
+			if replyMsg, exists := messageMap[*msg.ReplyToId]; exists {
+				messages[i].ReplyTo = replyMsg
+			} else {
+				// Otherwise load it from the database
+				replyMsg, err := repository.FindMessageById(ctx, tx, *msg.ReplyToId)
+				if err == nil {
+					messages[i].ReplyTo = &replyMsg
+				}
+			}
+		}
+	}
+
+	// Count total messages (excluding deleted ones)
 	var total int
 	countSQL := `SELECT COUNT(*) FROM messages WHERE conversation_id = $1`
 	err = tx.QueryRowContext(ctx, countSQL, conversationId).Scan(&total)
@@ -448,10 +489,10 @@ func (repository *ChatRepositoryImpl) FindMessageById(ctx context.Context, tx *s
 	SQL := `
         SELECT m.id, m.conversation_id, m.sender_id, m.message_type, m.content, 
             m.file_path, m.file_name, m.file_size, m.file_type,
-            m.created_at, m.updated_at, m.is_read,
+            m.created_at, m.updated_at, m.is_read, m.deleted_at,
             u.id, u.name, u.username, COALESCE(u.photo, '')
         FROM messages m
-        JOIN users u ON m.sender_id = u.id
+        JOIN users u ON m.sender_id = u.id 
         WHERE m.id = $1
     `
 
@@ -473,6 +514,7 @@ func (repository *ChatRepositoryImpl) FindMessageById(ctx context.Context, tx *s
 		&message.CreatedAt,
 		&message.UpdatedAt,
 		&message.IsRead,
+		&message.DeletedAt,
 		&user.Id,
 		&user.Name,
 		&user.Username,
@@ -483,6 +525,8 @@ func (repository *ChatRepositoryImpl) FindMessageById(ctx context.Context, tx *s
 	}
 
 	message.Sender = &user
+
+	fmt.Println("Message found:", message.DeletedAt)
 	return message, nil
 }
 
@@ -501,6 +545,14 @@ func (repository *ChatRepositoryImpl) UpdateMessage(ctx context.Context, tx *sql
 }
 
 func (repository *ChatRepositoryImpl) DeleteMessage(ctx context.Context, tx *sql.Tx, id uuid.UUID) error {
+	// Soft delete by setting deleted_at timestamp
+	now := time.Now()
+	SQL := `UPDATE messages SET deleted_at = $1 WHERE id = $2`
+	_, err := tx.ExecContext(ctx, SQL, now, id)
+	return err
+}
+
+func (repository *ChatRepositoryImpl) HardDeleteMessage(ctx context.Context, tx *sql.Tx, id uuid.UUID) error {
 	SQL := `DELETE FROM messages WHERE id = $1`
 	_, err := tx.ExecContext(ctx, SQL, id)
 	return err

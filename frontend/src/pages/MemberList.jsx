@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 
 export default function MemberList() {
+      const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
   const { groupId } = useParams();
   const [members, setMembers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,7 +40,7 @@ export default function MemberList() {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(
-        `http://localhost:3000/api/groups/${groupId}/members`,
+        `${apiUrl}/api/groups/${groupId}/members`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -69,7 +71,7 @@ export default function MemberList() {
     try {
       const token = localStorage.getItem("token");
       await axios.put(
-        `http://localhost:3000/api/groups/${groupId}/members/${selectedMember.user.id}/role`,
+        `${apiUrl}/api/groups/${groupId}/members/${selectedMember.user.id}/role`,
         { role: selectedRole },
         {
           headers: {
@@ -99,7 +101,7 @@ export default function MemberList() {
     try {
       const token = localStorage.getItem("token");
       await axios.delete(
-        `http://localhost:3000/api/groups/${groupId}/members/${selectedMember.user.id}`,
+        `${apiUrl}/api/groups/${groupId}/members/${selectedMember.user.id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -183,7 +185,7 @@ export default function MemberList() {
                         member.user.photo
                           ? member.user.photo.startsWith("http")
                             ? member.user.photo
-                            : `http://localhost:3000/${member.user.photo}`
+                            : `${apiUrl}/${member.user.photo}`
                           : "/default-user.png"
                       }
                       className="w-12 h-12 rounded-full object-cover"

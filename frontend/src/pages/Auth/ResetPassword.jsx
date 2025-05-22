@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 
 const ResetPassword = () => {
+        const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
   const [token, setToken] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -39,7 +41,7 @@ const ResetPassword = () => {
   
     try {
       const response = await axios.post(
-        "http://localhost:3000/api/auth/reset-password",
+        apiUrl + "/api/auth/reset-password",
         {
           token,
           password,

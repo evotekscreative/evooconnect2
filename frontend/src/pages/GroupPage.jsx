@@ -21,6 +21,8 @@ import {
 import GroupCover from "../assets/img/cover.jpg";
 
 export default function GroupPage() {
+      const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+  const clientUrl = import.meta.env.VITE_APP_CLIENT_URL || "http://localhost:5173";
   const [imagePreviews, setImagePreviews] = useState([]);
   const [imageFiles, setImageFiles] = useState([]);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
@@ -67,7 +69,7 @@ export default function GroupPage() {
   const openImageModal = (post, index) => {
     // Ensure post.images is an array of full URLs
     const images = post.images.map((img) =>
-      img.startsWith("http") ? img : `http://localhost:3000/${img}`
+      img.startsWith("http") ? img : `${apiUrl}/${img}`
     );
 
     setSelectedPost({
@@ -102,7 +104,7 @@ export default function GroupPage() {
     const validImages = images
       .map((img) => {
         if (typeof img === "string") {
-          return img.startsWith("http") ? img : `http://localhost:3000/${img}`;
+          return img.startsWith("http") ? img : `${apiUrl}/${img}`;
         }
         return "";
       })
@@ -229,12 +231,12 @@ export default function GroupPage() {
       // Send request to backend
       if (isCurrentlyLiked) {
         await axios.delete(
-          `http://localhost:3000/api/post-actions/${postId}/like`,
+          `${apiUrl}/api/post-actions/${postId}/like`,
           { headers: { Authorization: `Bearer ${userToken}` } }
         );
       } else {
         await axios.post(
-          `http://localhost:3000/api/post-actions/${postId}/like`,
+          `${apiUrl}/api/post-actions/${postId}/like`,
           {},
           { headers: { Authorization: `Bearer ${userToken}` } }
         );
@@ -268,7 +270,7 @@ export default function GroupPage() {
 
       const userToken = localStorage.getItem("token");
       const response = await axios.get(
-        `http://localhost:3000/api/post-comments/${postId}?limit=10&offset=0`,
+        `${apiUrl}/api/post-comments/${postId}?limit=10&offset=0`,
         {
           headers: {
             Authorization: `Bearer ${userToken}`,
@@ -308,7 +310,7 @@ export default function GroupPage() {
     try {
       const userToken = localStorage.getItem("token");
       await axios.post(
-        `http://localhost:3000/api/post-comments/${postId}`,
+        `${apiUrl}/api/post-comments/${postId}`,
         { content: commentText },
         {
           headers: {
@@ -368,7 +370,7 @@ export default function GroupPage() {
   };
 
   const copyToClipboard = () => {
-    const urlToCopy = `http://localhost:5173/post/${sharePostId}`;
+    const urlToCopy = `${clientUrl}/post/${sharePostId}`;
     navigator.clipboard.writeText(urlToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -376,14 +378,14 @@ export default function GroupPage() {
 
   const shareToWhatsApp = () => {
     const url = `https://wa.me/?text=${encodeURIComponent(
-      `Check out this post: http://localhost:5173/post/${sharePostId}`
+      `Check out this post: ${clientUrl}/post/${sharePostId}`
     )}`;
     window.open(url, "_blank");
   };
 
   const shareToTwitter = () => {
     const url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(
-      `http://localhost:5173/post/${sharePostId}`
+      `${clientUrl}/post/${sharePostId}`
     )}`;
     window.open(url, "_blank");
   };
@@ -402,7 +404,7 @@ export default function GroupPage() {
   const handleDeletePost = async (postId) => {
     try {
       const userToken = localStorage.getItem("token");
-      await axios.delete(`http://localhost:3000/api/posts/${postId}`, {
+      await axios.delete(`${apiUrl}/api/posts/${postId}`, {
         headers: {
           Authorization: `Bearer ${userToken}`,
         },
@@ -483,7 +485,7 @@ export default function GroupPage() {
               post.user.photo
                 ? post.user.photo.startsWith("http")
                   ? post.user.photo
-                  : `http://localhost:3000/${post.user.photo}`
+                  : `${apiUrl}/${post.user.photo}`
                 : "/default-user.png"
             }
             alt={post.user.name}
@@ -517,7 +519,7 @@ export default function GroupPage() {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(
-        `http://localhost:3000/api/groups/${groupId}/posts`,
+        `${apiUrl}/api/groups/${groupId}/posts`,
         {
           params: {
             limit: 10,
@@ -533,7 +535,7 @@ export default function GroupPage() {
         ...post,
         images:
           post.images?.map((img) =>
-            img.startsWith("http") ? img : `http://localhost:3000/${img}`
+            img.startsWith("http") ? img : `${apiUrl}/${img}`
           ) || [],
 
         user: post.user || {
@@ -570,7 +572,7 @@ export default function GroupPage() {
       }
 
       const response = await axios.post(
-        `http://localhost:3000/api/groups/${groupId}/posts`,
+        `${apiUrl}/api/groups/${groupId}/posts`,
         formData,
         {
           headers: {
@@ -591,7 +593,7 @@ export default function GroupPage() {
         },
         images: response.data.data.images
           ? response.data.data.images.map((img) =>
-              img.startsWith("http") ? img : `http://localhost:3000/${img}`
+              img.startsWith("http") ? img : `${apiUrl}/${img}`
             )
           : [],
         likes_count: 0,
@@ -613,7 +615,7 @@ export default function GroupPage() {
       const user = JSON.parse(localStorage.getItem("user"));
 
       const response = await axios.get(
-        `http://localhost:3000/api/groups/${groupId}`,
+        `${apiUrl}/api/groups/${groupId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -650,7 +652,7 @@ export default function GroupPage() {
       }
 
       const response = await axios.get(
-        `http://localhost:3000/api/groups/${groupId}/members`,
+        `${apiUrl}/api/groups/${groupId}/members`,
         {
           headers: {
             Authorization: "Bearer " + token,
@@ -701,7 +703,7 @@ export default function GroupPage() {
       }
 
       const response = await axios.get(
-        `http://localhost:3000/api/users/${user.id}/connections`,
+        `${apiUrl}/api/users/${user.id}/connections`,
         {
           params: {
             limit: 10,
@@ -768,7 +770,7 @@ export default function GroupPage() {
       const token = localStorage.getItem("token");
 
       const response = await axios.put(
-        `http://localhost:3000/api/groups/${groupId}/members/${userId}/role`,
+        `${apiUrl}/api/groups/${groupId}/members/${userId}/role`,
         { role: selectedRole },
         {
           headers: {
@@ -804,7 +806,7 @@ export default function GroupPage() {
       const token = localStorage.getItem("token");
 
       await axios.delete(
-        `http://localhost:3000/api/groups/${groupId}/members/${memberToRemove.user.id}`,
+        `${apiUrl}/api/groups/${groupId}/members/${memberToRemove.user.id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -899,7 +901,7 @@ export default function GroupPage() {
       });
 
       const response = await axios.post(
-        `http://localhost:3000/api/groups/${groupId}/posts`,
+        `${apiUrl}/api/groups/${groupId}/posts`,
         formData,
         {
           headers: {
@@ -955,7 +957,7 @@ export default function GroupPage() {
       }
 
       const response = await axios.post(
-        `http://localhost:3000/api/groups/${groupId}/invitations/${userId}`,
+        `${apiUrl}/api/groups/${groupId}/invitations/${userId}`,
         {},
         {
           headers: {
@@ -1059,7 +1061,7 @@ export default function GroupPage() {
                   <div className="profile-photo-container">
                     {group.creator.photo ? (
                       <img
-                        src={`http://localhost:3000/${group.creator.photo}`}
+                        src={`${apiUrl}/${group.creator.photo}`}
                         alt="avatar"
                         className="rounded-full w-20 h-20 mx-auto object-cover"
                       />
@@ -1106,7 +1108,7 @@ export default function GroupPage() {
                         className="rounded-full w-16 h-16 border-4 border-white"
                         src={
                           group.image
-                            ? `http://localhost:3000/${group.image}`
+                            ? `${apiUrl}/${group.image}`
                             : "/default-group.png"
                         }
                         alt={group.name}
@@ -1328,7 +1330,7 @@ export default function GroupPage() {
                       <div className="flex items-center border rounded-lg p-2">
                         <input
                           type="text"
-                          value={`http://localhost:5173/post/${sharePostId}`}
+                          value={`${clientUrl}/post/${sharePostId}`}
                           readOnly
                           className="flex-grow text-sm text-gray-700 mr-2 outline-none"
                         />
@@ -1547,7 +1549,9 @@ export default function GroupPage() {
                   {group?.members?.length > 0 ? (
                     <div className="flex flex-wrap gap-4">
                       {/* Tampilkan maksimal 3 anggota pertama */}
-                      {group.members.slice(0, 3).map((member) => (
+                      {group.members.slice(0, 3).map((member) => {
+                        console.log(member)
+                        return (
                         <div
                           key={member.id}
                           className="flex items-center gap-3"
@@ -1557,14 +1561,18 @@ export default function GroupPage() {
                               member.user.photo
                                 ? member.user.photo.startsWith("http")
                                   ? member.user.photo
-                                  : `http://localhost:3000/${member.user.photo}`
+                                  : `${apiUrl}/${member.user.photo.replace(
+                                      /^\/+/,
+                                      ""
+                                    )}`
                                 : "/default-user.png"
                             }
                             className="rounded-full w-10 h-10 object-cover"
                             alt={member.user.name}
                           />
                         </div>
-                      ))}
+                      )
+                      })}
 
                       {/* Jika anggota lebih dari 3, tampilkan angka tambahan */}
                       {group.members.length > 3 && (
@@ -1681,7 +1689,7 @@ export default function GroupPage() {
                   <div className="p-4 text-center">
                     <img
                       src={
-                        "http://localhost:3000/" + group.creator.photo ||
+                        apiUrl + "/" + group.creator.photo ||
                         "/default-user.png"
                       }
                       className="rounded-full w-20 h-20 mx-auto mb-2"

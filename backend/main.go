@@ -22,6 +22,10 @@ func main() {
 	// ===== Server initialization =====
 	helper.LoadEnv()
 	db := app.NewDB()
+	if db == nil {
+		log.Fatal("Failed to connect to the database")
+		return
+	}
 	validate := validator.New()
 	utils.InitPusherClient()
 	jwtSecret := helper.GetEnv("JWT_SECRET_KEY", "your-secret-key")
@@ -71,7 +75,7 @@ func main() {
 	// ===== Services =====
 	// User-related services
 	profileViewService := service.NewProfileViewService(db, profileViewRepository, userRepository, notificationService)
-	connectionService := service.NewConnectionService(connectionRepository, userRepository, notificationService, db, validate)
+	connectionService := service.NewConnectionService(connectionRepository, userRepository, db, validate)
 	userService := service.NewUserService(userRepository, connectionRepository, profileViewService, db, validate)
 	authService := service.NewAuthService(userRepository, db, validate, jwtSecret)
 
@@ -96,6 +100,7 @@ func main() {
 	postService := service.NewPostService(
 		userRepository,
 		postRepository,
+		commentRepository,
 		connectionRepository,
 		groupRepository,
 		groupMemberRepository,
@@ -143,6 +148,18 @@ func main() {
 		db,
 	)
 
+	    // Search service
+    searchService := service.NewSearchService(
+    db,
+    userRepository,
+    postRepository,
+    blogRepository,
+    groupRepository,
+    connectionRepository,
+)
+
+
+
 	// ===== Controllers =====
 	// User-related controllers
 	userController := controller.NewUserController(
@@ -180,6 +197,10 @@ func main() {
 	// Notification controller
 	notificationController := controller.NewNotificationController(notificationService)
 
+	// Search controller
+    searchController := controller.NewSearchController(searchService)
+
+
 	// ===== Router and Middleware =====
 	// Initialize router with all controllers
 	router := app.NewRouter(
@@ -197,6 +218,7 @@ func main() {
 		chatController,
 		profileViewController,
 		notificationController,
+		searchController,
 	)
 
 	// Create middleware chain
@@ -204,13 +226,15 @@ func main() {
 	handler = middleware.NewAuthMiddleware(handler, jwtSecret)
 	handler = middleware.CORSMiddleware(handler)
 
+	addres := helper.GetEnv("APP_SERVER", "localhost:3000")
+
 	// ===== Start Server =====
 	server := http.Server{
-		Addr:    "localhost:3000",
+		Addr:    addres,
 		Handler: handler,
 	}
-
-	fmt.Println("\nServer starting on http://localhost:3000")
+	// http://localhost:5173/
+	fmt.Println("\nServer starting on ", addres)
 	err := server.ListenAndServe()
 	helper.PanicIfError(err)
 }

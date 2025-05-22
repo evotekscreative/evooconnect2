@@ -8,6 +8,8 @@ import "../../assets/css/style.css";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 
 function Login() {
+        const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -65,7 +67,7 @@ function Login() {
       console.log("Google credential:", credentialResponse.credential);
 
       const response = await axios.post(
-        "http://localhost:3000/api/auth/google",
+        apiUrl + "ogle",
         {
           token: credentialResponse.credential,
         }
@@ -127,7 +129,7 @@ function Login() {
 
     try {
       const response = await axios.post(
-        "http://localhost:3000/api/auth/login",
+        apiUrl + "/api/auth/login",
         formData
       );
 

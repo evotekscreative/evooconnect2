@@ -5,7 +5,18 @@ import BlogHeader from "../../components/Blog/BlogHeader";
 import BlogCard from "../../components/Blog/BlogCard";
 import Pagination from "../../components/Blog/Pagination";
 
+const cleanHTML = (html) => {
+  if (!html) return "";
+  return html
+    .replace(/<p[^>]*>/g, "")
+    .replace(/<\/p>/g, " ")
+    .replace(/<[^>]+>/g, "")
+    .trim();
+};
+
 const Blog = () => {
+          const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
   const [blogs, setBlogs] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageGroup, setPageGroup] = useState(0);
@@ -15,12 +26,22 @@ const Blog = () => {
     const fetchBlogs = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await axios.get("http://localhost:3000/api/blogs", {
+        const response = await axios.get(apiUrl + "/api/blogs", {
           headers: {
             Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json", 
           },
         });
-        setBlogs(response.data.reverse());
+
+        const blogsWithCleanContent = response.data.map((blog) => ({
+          ...blog,
+          content: cleanHTML(blog.content),
+          photo: blog.photo && /\.(jpg|jpeg|png)$/i.test(blog.photo)
+            ? `${apiUrl}/${blog.photo}`
+            : "https://via.placeholder.com/300", 
+        }));
+
+        setBlogs(blogsWithCleanContent.reverse());
       } catch (error) {
         console.error("Error fetching blogs:", error);
       }

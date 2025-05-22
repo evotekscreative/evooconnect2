@@ -27,14 +27,17 @@ type Message struct {
 	Id             uuid.UUID
 	ConversationId uuid.UUID
 	SenderId       uuid.UUID
-	Sender         *User
-	MessageType    string // "text", "image", "document", "audio"
+	MessageType    string
 	Content        string
 	FilePath       string
 	FileName       string
 	FileSize       int
 	FileType       string
+	ReplyToId      *uuid.UUID // New field for reply functionality
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
+	DeletedAt      *time.Time // New field for soft deletion
 	IsRead         bool
+	Sender         *User
+	ReplyTo        *Message // Referenced message when replying
 }

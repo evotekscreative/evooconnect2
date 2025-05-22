@@ -395,3 +395,63 @@ func (repository *GroupRepositoryImpl) FindInvitationsByGroup(ctx context.Contex
 	}
 	return invitations
 }
+
+
+func (repository *GroupRepositoryImpl) Search(ctx context.Context, tx *sql.Tx, query string, limit int, offset int) []domain.Group {
+    SQL := `SELECT id, name, description, rule, creator_id, image, privacy_level, invite_policy, created_at, updated_at
+            FROM groups
+            WHERE LOWER(name) LIKE LOWER($1) OR LOWER(description) LIKE LOWER($1)
+            ORDER BY name
+            LIMIT $2 OFFSET $3`
+   
+    searchPattern := "%" + query + "%"
+    fmt.Printf("Executing group search SQL with pattern: %s\n", searchPattern)
+   
+    rows, err := tx.QueryContext(ctx, SQL, searchPattern, limit, offset)
+    if err != nil {
+        fmt.Printf("Error executing group search: %v\n", err)
+        return []domain.Group{}
+    }
+    defer rows.Close()
+   
+    var groups []domain.Group
+    for rows.Next() {
+        group := domain.Group{}
+        err := rows.Scan(
+            &group.Id,
+            &group.Name,
+            &group.Description,
+            &group.Rule,
+            &group.CreatorId,
+            &group.Image,
+            &group.PrivacyLevel,
+            &group.InvitePolicy,
+            &group.CreatedAt,
+            &group.UpdatedAt,
+        )
+        if err != nil {
+            fmt.Printf("Error scanning group: %v\n", err)
+            continue
+        }
+        groups = append(groups, group)
+        fmt.Printf("Found group: %s\n", group.Name)
+    }
+   
+    return groups
+}
+
+
+func (repository *GroupRepositoryImpl) CountMembers(ctx context.Context, tx *sql.Tx, groupId uuid.UUID) int {
+    SQL := `SELECT COUNT(*) FROM group_members WHERE group_id = $1 AND is_active = true`
+   
+    var count int
+    err := tx.QueryRowContext(ctx, SQL, groupId).Scan(&count)
+    if err != nil {
+        fmt.Printf("Error counting members: %v\n", err)
+        return 0
+    }
+   
+    return count
+}
+
+

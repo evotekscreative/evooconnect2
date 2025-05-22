@@ -8,6 +8,8 @@ import ContentStep from '../../components/Blog/ContentStep';
 import PreviewStep from '../../components/Blog/PreviewStep';
 
 function CreateBlog() {
+            const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -45,71 +47,44 @@ function CreateBlog() {
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem('token');
-
-      // 1. Create Blog (tanpa image dulu)
-      const createRes = await axios.post(
-        'http://localhost:3000/api/blogs',
-        {
-          title: formData.title,
-          category: formData.category,
-          content: formData.content,
-          date: formData.date,
-        },
+      
+      const formDataToSend = new FormData();
+      formDataToSend.append('title', formData.title);
+      formDataToSend.append('category', formData.category);
+      formDataToSend.append('content', formData.content);
+      
+      if (formData.images.length > 0 && formData.images[0].file) {
+        formDataToSend.append('image', formData.images[0].file);
+      }
+      
+      const response = await axios.post(
+        apiUrl + '/api/blogs',
+        formDataToSend,
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            'Content-Type': 'multipart/form-data', 
           },
         }
       );
-
-      const blogId = createRes.data.data.id;
-      const blogSlug = createRes.data.data.slug;
-      let uploadedImagePath = '';
-
-      // 2. Upload image (jika ada)
-      if (formData.images.length > 0) {
-        const formDataImage = new FormData();
-        formData.images.forEach((img) => {
-          if (img.file) {
-            formDataImage.append('photos', img.file);
-          }
-        });
-
-        const uploadRes = await axios.post(
-          `http://localhost:3000/api/blogs/${blogId}/upload-photo`,
-          formDataImage,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data',
-            },
-          }
-        );
-
-        uploadedImagePath = uploadRes.data.data.photo;
-
-        // 3. Update blog dengan image path
-        await axios.put(
-          `http://localhost:3000/api/blogs/${blogId}`,
-          {
-            image: uploadedImagePath,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-      }
+      
+      const blogSlug = response.data.data.slug;
+      
       navigate(`/blog-detail/${blogSlug}`, {
         state: { showPublishedToast: true }
       });
       window.scrollTo(0, 0);
+    setAlertInfo({
+        show: true,
+        type: "success",
+        message: "Successfully created blog!",
+      });
     } catch (error) {
-      console.error('Error creating blog post:', error);
-      alert('Failed to create blog post.');
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: "Failed to create blog!",
+      });
     } finally {
       setIsSubmitting(false);
     }

@@ -16,7 +16,8 @@ type NotificationRepository interface {
 	MarkAsRead(ctx context.Context, tx *sql.Tx, userId uuid.UUID, notificationIds []uuid.UUID) int
 	MarkAllAsRead(ctx context.Context, tx *sql.Tx, userId uuid.UUID, category string) int
 	DeleteByUserIdAndCategory(ctx context.Context, tx *sql.Tx, userId uuid.UUID, category string) int
-	DeleteSelectedByUserId(ctx context.Context, tx *sql.Tx, userId uuid.UUID, notificationIds []uuid.UUID, category string) int
+	DeleteSelected(ctx context.Context, tx *sql.Tx, userId uuid.UUID, notificationIds []uuid.UUID) (int64, error)
+	FindSimilarNotification(ctx context.Context, tx *sql.Tx, userId uuid.UUID, category string, notificationType string, referenceId *uuid.UUID, actorId *uuid.UUID) (domain.Notification, error)
 }
 
 
