@@ -22,7 +22,8 @@ type ChatRepository interface {
 	FindMessagesByConversationId(ctx context.Context, tx *sql.Tx, conversationId uuid.UUID, limit, offset int) ([]domain.Message, int)
 	FindMessageById(ctx context.Context, tx *sql.Tx, id uuid.UUID) (domain.Message, error)
 	UpdateMessage(ctx context.Context, tx *sql.Tx, message domain.Message) domain.Message
-	DeleteMessage(ctx context.Context, tx *sql.Tx, id uuid.UUID) error
+	DeleteMessage(ctx context.Context, tx *sql.Tx, id uuid.UUID) error     // Now performs soft-delete
+	HardDeleteMessage(ctx context.Context, tx *sql.Tx, id uuid.UUID) error // New method
 	CountUnreadMessages(ctx context.Context, tx *sql.Tx, conversationId, userId uuid.UUID) int
 	MarkMessagesAsRead(ctx context.Context, tx *sql.Tx, conversationId, userId uuid.UUID) error
 }

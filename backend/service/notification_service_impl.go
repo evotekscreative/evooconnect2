@@ -10,7 +10,7 @@ import (
 	"evoconnect/backend/utils"
 	"fmt"
 	"math/rand"
-
+	
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
@@ -211,15 +211,29 @@ func (service *NotificationServiceImpl) DeleteNotifications(ctx context.Context,
 	return deletedCount
 }
 
-func (service *NotificationServiceImpl) DeleteSelectedNotifications(ctx context.Context, userId uuid.UUID, notificationIds []uuid.UUID, category string) int {
-	tx, err := service.DB.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
-	
-	// Hapus notifikasi yang dipilih dengan filter kategori jika ada
-	deletedCount := service.NotificationRepository.DeleteSelectedByUserId(ctx, tx, userId, notificationIds, category)
-	
-	return deletedCount
+func (service *NotificationServiceImpl) DeleteSelectedNotifications(ctx context.Context, userId uuid.UUID, notificationIds []string) web.DeleteNotificationsResponse {
+    tx, err := service.DB.Begin()
+    helper.PanicIfError(err)
+    defer helper.CommitOrRollback(tx)
+    
+    // Konversi string IDs ke UUID
+    uuidIds := make([]uuid.UUID, 0, len(notificationIds))
+    for _, idStr := range notificationIds {
+        id, err := uuid.Parse(idStr)
+        if err != nil {
+            continue // Skip ID yang tidak valid
+        }
+        uuidIds = append(uuidIds, id)
+    }
+    
+    // Hapus notifikasi yang dipilih
+    count, err := service.NotificationRepository.DeleteSelected(ctx, tx, userId, uuidIds)
+    helper.PanicIfError(err)
+    
+    return web.DeleteNotificationsResponse{
+        DeletedCount: int(count),
+        Message:      "Selected notifications deleted successfully",
+    }
 }
 
 func (service *NotificationServiceImpl) toNotificationResponse(notification domain.Notification) web.NotificationResponse {

@@ -33,3 +33,8 @@ type MarkNotificationReadRequest struct {
 type DeleteNotificationsRequest struct {
 	NotificationIds []uuid.UUID `json:"notification_ids"`
 }
+
+type DeleteNotificationsResponse struct {
+    DeletedCount int    `json:"deleted_count"`
+    Message      string `json:"message"`
+}

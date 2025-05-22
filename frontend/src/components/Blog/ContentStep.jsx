@@ -5,48 +5,41 @@ import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 function ContentStep({ content, images, onContentChange, onImagesChange, onNext, onPrev }) {
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
-  
+
+  // Handle perubahan konten
   const handleContentChange = (event, editor) => {
     const data = editor.getData();
     onContentChange(data);
     setError('');
   };
-  
+
+  // Handle perubahan gambar
   const handleImageChange = async (e) => {
     const files = Array.from(e.target.files);
-  
+
     // Cek validasi gambar
     const invalidFile = files.find(file => !file.type.startsWith('image/'));
     if (invalidFile) {
       setError('Only image files are allowed');
       return;
     }
-  
-    // Konversi ke base64
-    const toBase64 = (file) => {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-      });
-    };
-  
-    const base64Images = await Promise.all(
-      files.map(async (file) => {
-        const base64 = await toBase64(file);
-        return { base64, preview: URL.createObjectURL(file) };
-      })
-    );
-  
-    onImagesChange([...images, ...base64Images]);
+
+    // Simpan gambar asli (File) dan preview-nya
+    const updatedImages = files.map(file => ({
+      file, // Simpan File asli
+      preview: URL.createObjectURL(file), // Simpan URL sementara untuk preview
+    }));
+
+    // Update state images dengan gambar baru
+    onImagesChange([...images, ...updatedImages]);
   };
-  
-  
+
+  // Handle remove gambar
   const handleRemoveImage = (indexToRemove) => {
     onImagesChange(images.filter((_, index) => index !== indexToRemove));
   };
-  
+
+  // Handle next button
   const handleNext = () => {
     if (!content.trim()) {
       setError('Please write some content for your blog');
@@ -61,7 +54,7 @@ function ContentStep({ content, images, onContentChange, onImagesChange, onNext,
       <p className="text-gray-600 mb-6">
         Express your ideas and share your knowledge with the world.
       </p>
-      
+
       <div className="mb-6">
         <label className="block mb-2 font-medium text-gray-700">
           Blog Content <span className="text-red-500">*</span>
@@ -79,29 +72,31 @@ function ContentStep({ content, images, onContentChange, onImagesChange, onNext,
         {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
       </div>
 
+      {/* Preview gambar yang diupload */}
       {images.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
-            {images.map((image, index) => (
-              <div key={index} className="relative">
-                <img
-                  src={image.preview}
-                  alt={`Preview ${index + 1}`}
-                  className="w-full h-32 object-cover rounded-md"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleRemoveImage(index)}
-                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
+          {images.map((image, index) => (
+            <div key={index} className="relative">
+              <img
+                src={image.preview}
+                alt={`Preview ${index + 1}`}
+                className="w-full h-32 object-cover rounded-md"
+              />
+              <button
+                type="button"
+                onClick={() => handleRemoveImage(index)}
+                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Upload gambar */}
       <div className="mt-8 mb-6">
         <label className="block mb-2 font-medium text-gray-700">
           Add Images
@@ -127,11 +122,11 @@ function ContentStep({ content, images, onContentChange, onImagesChange, onNext,
             onChange={handleImageChange}
           />
           <span className="ml-3 text-sm text-gray-500">
-          You can only upload one image for this post
+            You can only upload one image for this post
           </span>
         </div>
       </div>
-      
+
       <div className="border-t border-gray-200 mt-8 pt-6 flex justify-between">
         <button
           type="button"

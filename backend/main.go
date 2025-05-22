@@ -92,17 +92,19 @@ func main() {
 		validate,
 	)
 
-	// Post service
-	postService := service.NewPostService(
-		userRepository,
-		postRepository,
-		connectionRepository,
-		groupRepository,
-		groupMemberRepository,
-		notificationService,
-		db,
-		validate,
-	)
+// Post service
+postService := service.NewPostService(
+    userRepository,
+    postRepository,
+    commentRepository,
+    connectionRepository,
+    groupRepository,
+    groupMemberRepository,
+    notificationService,
+    db,
+    validate,
+)
+
 	
 	// Comment service
 	commentService := service.NewCommentService(
@@ -143,6 +145,16 @@ func main() {
 		db,
 	)
 
+	// Search service
+	searchService := service.NewSearchService(
+    db,
+    userRepository,
+    postRepository,
+    blogRepository,
+    groupRepository,
+    connectionRepository,
+)
+
 	// ===== Controllers =====
 	// User-related controllers
 	userController := controller.NewUserController(
@@ -180,6 +192,9 @@ func main() {
 	// Notification controller
 	notificationController := controller.NewNotificationController(notificationService)
 
+	// Search controller
+	searchController := controller.NewSearchController(searchService)
+
 	// ===== Router and Middleware =====
 	// Initialize router with all controllers
 	router := app.NewRouter(
@@ -197,6 +212,7 @@ func main() {
 		chatController,
 		profileViewController,
 		notificationController,
+		searchController,
 	)
 
 	// Create middleware chain

@@ -1,59 +1,84 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { categories } from "./CategoryStep";
 
+// Perbaikan fungsi cleanHTML agar tidak menghapus spasi
 const cleanHTML = (html) => {
+  if (!html) return "";
   return html
     .replace(/<p[^>]*>/g, "")
-    .replace(/<\/p>/g, "\n")
+    .replace(/<\/p>/g, "\n\n") // Ganti </p> dengan double newline untuk mempertahankan paragraf
+    .replace(/<br\s*\/?>/g, "\n") // Ganti <br> dengan newline
     .replace(/<[^>]+>/g, "")
     .trim();
 };
 
+// Fungsi untuk memformat teks biasa menjadi HTML sederhana
+const formatToHTML = (text) => {
+  if (!text) return "";
+  return text
+    .split("\n\n") // Pisahkan berdasarkan paragraf (double newline)
+    .map(paragraph => `<p>${paragraph.replace(/\n/g, "<br>")}</p>`) // Ubah newline menjadi <br>
+    .join("");
+};
+
 const EditBlog = ({ article, setArticle, onClose, onSuccess, showToast }) => {
   const [loading, setLoading] = useState(false);
+  const [imageFile, setImageFile] = useState(null);
+  const [content, setContent] = useState("");
+  
+  useEffect(() => {
+    if (article) {
+      // Inisialisasi content dengan konten artikel yang sudah dibersihkan
+      setContent(cleanHTML(article.content));
+    }
+  }, [article]);
 
-  const handleUploadImage = async (e) => {
+  const handleUploadImagePreview = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const token = localStorage.getItem("token");
-    const formData = new FormData();
-    formData.append("photo", file);
-
-    try {
-      const res = await fetch(
-        `http://localhost:3000/api/blogs/${article.id}/upload-photo`,
-        {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        }
-      );
-
-      const result = await res.json();
-      setArticle({ ...article, images: [result.imageUrl] });
-      showToast("Gambar berhasil diunggah!", "success");
-    } catch {
-      showToast("Gagal upload gambar.", "error");
+    if (!file.type.startsWith("image/")) {
+      showToast("File harus berupa gambar.", "error");
+      return;
     }
+
+    setImageFile(file);
   };
 
   const handleSave = async () => {
     const token = localStorage.getItem("token");
     setLoading(true);
+
     try {
-      await fetch(`http://localhost:3000/api/blogs/${article.id}`, {
+      const formData = new FormData();
+      formData.append("title", article.title);
+      formData.append("category", article.category);
+      
+      // Format konten teks menjadi HTML sebelum mengirim
+      const formattedContent = formatToHTML(content);
+      formData.append("content", formattedContent);
+
+      if (imageFile) {
+        formData.append("image", imageFile);
+      }
+
+      const res = await fetch(`http://localhost:3000/api/blogs/${article.id}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
         },
-        body: JSON.stringify(article),
+        body: formData,
       });
-      showToast("Blog berhasil diperbarui!", "success");
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || "Bad request");
+      }
+
+      // Panggil onSuccess untuk memicu refresh di BlogDetail
       onSuccess();
-    } catch {
-      showToast("Gagal update blog.", "error");
+    } catch (err) {
+      showToast(err.message || "Gagal update blog.", "error");
     } finally {
       setLoading(false);
     }
@@ -101,18 +126,31 @@ const EditBlog = ({ article, setArticle, onClose, onSuccess, showToast }) => {
             <input
               type="file"
               accept="image/*"
-              onChange={handleUploadImage}
+              onChange={handleUploadImagePreview}
               className="w-full px-3 py-2 rounded border"
             />
+            <div className="mt-3">
+              {imageFile ? (
+                <img
+                  src={URL.createObjectURL(imageFile)}
+                  alt="Preview"
+                  className="rounded max-h-60 object-cover"
+                />
+              ) : article.photo ? (
+                <img
+                  src={article.photo}
+                  alt="Current Image"
+                  className="rounded max-h-60 object-cover"
+                />
+              ) : null}
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Content</label>
             <textarea
               rows={6}
-              value={cleanHTML(article.content)}
-              onChange={(e) =>
-                setArticle({ ...article, content: cleanHTML(e.target.value) })
-              }
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
               className="w-full border px-3 py-2 rounded"
             />
           </div>
