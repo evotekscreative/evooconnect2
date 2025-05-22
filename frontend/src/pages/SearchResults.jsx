@@ -92,8 +92,8 @@ export default function SearchResults() {
             <div className="p-4 sm:p-6 bg-gray-100 min-h-screen">
                 <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-6">
                     {/* Navigation Card */}
-                    <div className="w-full md:w-64 flex-shrink-0">
-                        <div className="bg-white rounded-lg shadow-sm p-4 sticky top-6">
+                    <div className="w-full md:w-1/4 ">
+                        <div className="bg-white rounded-lg shadow-sm p-4 sticky top-16">
                             <h2 className="font-semibold text-lg mb-4">Jump to Section</h2>
                             <nav className="space-y-2">
                                 {results.users.length > 0 && (
