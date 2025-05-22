@@ -1,24 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Pencil, Trash2, MoreVertical, Flag } from "lucide-react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { Pencil, Trash2, MoreVertical, Flag, Reply, ChevronUp, ChevronDown } from "lucide-react";
 import Case from "../../components/Case";
-import { MoreVertical, Pencil, Reply, Trash2, ChevronUp, ChevronDown, } from "lucide-react";
 import { categories } from "../../components/Blog/CategoryStep";
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import axios from "axios";
 import RandomPosts from "../../components/Blog/RandomPosts";
 import EditBlog from "../../components/Blog/EditBlog";
 import deleteBlog from "../../components/Blog/DeleteBlog";
 import Toast from "../../components/Blog/Toast";
-import { useLocation } from "react-router-dom";
 import BlogMenu from "../../components/Blog/BlogMenu";
 import ReportModal from "../../components/Blog/ReportModal";
 import CommentSection from "../../components/Blog/CommentSection";
-import { toast } from "sonner";
-import { categories } from "../../components/Blog/CategoryStep";
 import DeleteComment from "../../components/Blog/DeleteComment";
 import CommentDropdown from "../../components/Blog/CommentDropdown";
+import { ToastContainer, toast as reactToast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { toast as sonnerToast } from "sonner";
+import axios from "axios";
 
 
 const BlogDetail = () => {

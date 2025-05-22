@@ -6,9 +6,9 @@ import App from "./App";
 import Connections from "./pages/Connections.jsx";
 import PrivacyPolicy from "./pages/PrivacyPolicy.jsx";
 import TermsCondition from "./pages/TermsCondition.jsx";
-import Jobs from "./pages/Jobs/index.jsx";
+import Jobs from "./pages/Jobs/jobs.jsx";
 import JobProfile from "./pages/Profile/job-profile.jsx";
-import Faq from "./pages/Faq/index.jsx";
+import Faq from "./pages/Faq/faq.jsx";
 import CompanyProfile from "./pages/Profile/company-profile.jsx";
 import Groups from "./pages/Groups.jsx";
 import CreateBlog from "./pages/Blog/CreateBlog.jsx";
@@ -27,6 +27,11 @@ import VerifyEmail from "./pages/Auth/VerifyEmail.jsx";
 import ResetPassword from "./pages/Auth/ResetPassword.jsx";
 import IsGuest from "./components/Auth/IsGuest.jsx";
 import SinglePost from "./pages/SinglePost.jsx";
+// Admin
+import LoginAdmin from "./pages/Admin/AuthAdmin/LoginAdmin.jsx";
+import Dashboard from "./pages/Admin/Admin1/Dashboard.jsx";
+import Settings from "./pages/Admin/Admin1/Settings.jsx";
+import Tables from "./pages/Admin/Admin1/Tables.jsx";
 
 const router = createBrowserRouter([
   {
@@ -217,7 +222,37 @@ const router = createBrowserRouter([
 {
   path : "/post/:postId",
    element : <SinglePost />
-}
+},
+
+// Admin
+{
+  path: "/login-admin",
+  element: <LoginAdmin />,
+},
+{
+  path: "/dashboard",
+  element: (
+    // <ProtectedRoute>
+      <Dashboard />
+    // </ProtectedRoute>
+  ),
+},
+{
+  path: "/settings",
+  element: (
+    // <ProtectedRoute>
+      <Settings />
+    // </ProtectedRoute>
+  ),
+},
+{
+  path: "/tables",
+  element: (
+    // <ProtectedRoute>
+      <Tables />
+    // </ProtectedRoute>
+  ),
+},
 ]);
 
 export default router;

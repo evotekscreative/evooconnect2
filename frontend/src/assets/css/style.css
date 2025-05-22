@@ -12,6 +12,9 @@
     );
 }
 
+* {
+    font-family: "avenir", sans-serif;
+}
 .ck-editor-mode ul {
     list-style: none;
     padding-left: 10px;
