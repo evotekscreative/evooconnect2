@@ -66,8 +66,8 @@ func NewRouter(
 	router.POST("/api/blog/comments/:commentId/replies", commentBlogController.Reply) // <-- path ini diubah
 	router.GET("/api/blog/comments/:commentId/replies", commentBlogController.GetReplies) // <-- path ini diubah
 	// Post routes - static paths first
-	// router.POST("/api/posts", postController.Create)
-	// router.GET("/api/posts", postController.FindAll)
+	 router.POST("/api/posts", postController.Create)
+	 router.GET("/api/posts", postController.FindAll)
 
 	// Post comment routes
 	router.POST("/api/post-comments/:postId", commentController.Create)
@@ -94,10 +94,17 @@ func NewRouter(
 	router.DELETE("/api/experience/:experienceId", experienceController.Delete)
 	router.GET("/api/experience/:experienceId", experienceController.GetById)
 	router.GET("/api/users/:userId/experience", experienceController.GetByUserId)
+ 
+	// Post like routes - carefully ordered to avoid conflicts
+	router.POST("/api/post-actions/:postId/like", postController.LikePost)
 
-	// Post routes
-	router.POST("/api/posts", postController.Create)
-	router.GET("/api/posts", postController.FindAll)
+	// Post comment routes - carefully ordered to avoid conflicts
+	router.POST("/api/post-comments/:postId", commentController.Create)
+	router.GET("/api/post-comments/:postId", commentController.GetByPostId)
+
+	// User post routes
+	router.GET("/api/users/:userId/posts", postController.FindByUserId)
+ 
 	router.GET("/api/posts/:postId", postController.FindById)
 	router.PUT("/api/posts/:postId", postController.Update)
 	router.DELETE("/api/posts/:postId", postController.Delete)
