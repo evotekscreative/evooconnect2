@@ -1,82 +1,235 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Case from "../../components/Case";
-import { useParams } from "react-router-dom";
+import axios from "axios";
+import RandomPosts from "../../components/Blog/RandomPosts";
+import EditBlog from "../../components/Blog/EditBlog";
+import DeleteBlog from "../../components/Blog/DeleteBlog";
+import Toast from "../../components/Blog/Toast";
+import BlogMenu from "../../components/Blog/BlogMenu";
+import ReportModal from "../../components/Blog/ReportModal";
+import CommentSection from "../../components/Blog/CommentSection";
 
 const BlogDetail = () => {
-  const { id } = useParams();
-  const article = {
-    id: 1,
-    title: `Blog Title #1`,
-    category: "Career",
-    description: "A short description of the blog content will be shown here as preview.",
-    author: "Author Name",
-    date: "April 18, 2025",
-    image: "https://via.placeholder.com/600x300",
-    avatar: "https://via.placeholder.com/32",
+  const { slug } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [article, setArticle] = useState(null);
+  const [showEdit, setShowEdit] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [selectedReason, setSelectedReason] = useState("");
+  const [customReason, setCustomReason] = useState("");
+  const [reportTarget, setReportTarget] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    if (location.state?.showPublishedToast) {
+      showToast("Blog has been published successfully.", "success");
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    if (!slug) {
+      showToast("Undefined Blog", "error");
+      navigate("/blog");
+      return;
+    }
+
+    const fetchBlogDetail = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get(
+          `http://localhost:3000/api/blogs/slug/${slug}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        const blogData = response.data.data;
+
+        // Transformasi path gambar menjadi absolute URL
+        const transformedBlog = {
+          ...blogData,
+          photo: blogData.photo
+            ? `http://localhost:3000/${blogData.photo}`
+            : "https://via.placeholder.com/400", // Gambar default jika tidak ada
+        };
+
+        setArticle(transformedBlog);
+      } catch (error) {
+        console.error("Failed to load blog:", error);
+        showToast("Undefined Blog", "error");
+        navigate("/blog");
+      }
+    };
+
+    fetchBlogDetail();
+  }, [slug, navigate, refreshKey]); // refreshKey sebagai dependency untuk memicu reload
+
+  const handleDelete = async () => {
+    if (!article?.slug) {
+      showToast("Blog not found.", "error");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`http://localhost:3000/api/blogs/${article.slug}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      showToast("Blog has been deleted.", "success");
+      navigate("/blog");
+    } catch (error) {
+      console.error("Failed to delete blog:", error);
+      showToast("Failed to delete blog.", "error");
+    }
+    setShowDeleteModal(false);
+  };
+
+  const handleReportSubmit = async () => {
+    if (!reportTarget || !selectedReason) return;
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      showToast("You must be logged in to report.", "error");
+      return;
+    }
+
+    const reason = selectedReason === "Other" ? customReason : selectedReason;
+
+    try {
+      await axios.put(
+        `http://localhost:3000/api/reports/${reportTarget.userId}/${reportTarget.targetType}/${reportTarget.targetId}`,
+        { reason },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      showToast("Report successfully submitted", "success");
+    } catch (err) {
+      console.error("Failed to submit report:", err);
+      showToast("Failed to submit report.", "error");
+    }
+
+    setShowReportModal(false);
+    setSelectedReason("");
+    setCustomReason("");
+    setReportTarget(null);
+  };
+
+  // Fungsi untuk memaksa refresh data blog setelah update
+  const handleBlogUpdated = () => {
+    setRefreshKey(prevKey => prevKey + 1); // Increment refreshKey untuk memicu useEffect
+    setShowEdit(false); // Tutup modal edit
+    showToast("Blog successfully updated!", "success");
+  };
+
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
   };
 
   if (!article) {
-    return (
-      <Case>
-      <div className="flex flex-col items-center justify-center py-20 text-xl text-gray-700">
-        <div className="text-6xl mb-4">😢</div>
-        <p className="mb-6">Blog tidak ditemukan</p>
-        <a
-          href="/"
-          className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-        >
-          Kembali ke Beranda
-        </a>
-      </div>
-      </Case>
-    );
+    return <div className="text-center py-10">Loading blog detail...</div>;
   }
 
   return (
     <Case>
-    <div className="py-10 bg-gray-50">
-      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 space-y-6">
-            <div className="bg-white shadow-md rounded-lg overflow-hidden">
-                <img
-                  className="w-full h-[400px] object-cover"
-                  src={article.image}
-                  alt="Blog"
-                />
-              <div className="p-6">
-                <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
-                  {article.category}
-                </span>
-                <h2 className="text-2xl font-semibold mt-3">{article.title}</h2>
-                <p className="text-sm text-gray-500 mb-4">{article.date}</p>
-                <div
-                  className="prose max-w-none text-gray-700"
-                  dangerouslySetInnerHTML={{ __html: article.description }}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div className="bg-white shadow-md rounded-lg p-6">
-              <h5 className="text-lg font-semibold mb-4">Popular Posts</h5>
-              <div className="space-y-3">
-                {["Contoh 1", "Contoh 2", "Contoh 3"].map((title, index) => (
-                  <div key={index}>
-                    <a href="#" className="text-blue-600 font-medium hover:underline">
-                      {title}
-                    </a>
-                    <p className="text-gray-500 text-sm">April 05, 2020</p>
-                    {index < 2 && <hr />}
+      <div className="relative py-10 bg-gray-50">
+        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-2 space-y-6 relative">
+              <div className="bg-white shadow-md rounded-lg relative">
+                <div className="relative h-[400px]">
+                  {article.photo ? (
+                    <img
+                      src={`${article.photo}?v=${refreshKey}`} // Parameter query untuk memaksa browser memuat ulang gambar
+                      alt={article.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                      <span className="text-gray-500">No Image Available</span>
+                    </div>
+                  )}
+                </div>
+                <div className="p-6">
+                  <div className="flex items-start justify-between">
+                    <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
+                      {article.category}
+                    </span>
+                    <BlogMenu
+                      onEdit={() => setShowEdit(true)}
+                      onDelete={() => setShowDeleteModal(true)}
+                      onReport={() =>
+                        setReportTarget({
+                          userId: article.user?.id,
+                          targetType: "blog",
+                          targetId: article.id,
+                        }) || setShowReportModal(true)
+                      }
+                    />
                   </div>
-                ))}
+                  <h2 className="text-2xl font-semibold mt-3">{article.title}</h2>
+                  <p className="text-sm text-gray-500 mb-4">{article.date}</p>
+                  <div
+                    className="prose max-w-none text-gray-700"
+                    dangerouslySetInnerHTML={{ __html: article.content }}
+                  />
+                </div>
               </div>
+
+              <CommentSection slug={slug} />
+            </div>
+
+            <div className="space-y-6">
+              <RandomPosts excludeSlug={slug} />
             </div>
           </div>
         </div>
+
+        {showDeleteModal && (
+          <DeleteBlog
+            articleId={article.id}
+            onSuccess={() => {
+              showToast("Blog has been deleted.", "success");
+              navigate("/blog");
+            }}
+            onCancel={() => setShowDeleteModal(false)}
+          />
+        )}
+
+        {showEdit && (
+          <EditBlog
+            article={article}
+            setArticle={setArticle}
+            onClose={() => setShowEdit(false)}
+            onSuccess={handleBlogUpdated}
+            showToast={showToast}
+          />
+        )}
+
+        <ReportModal
+          show={showReportModal}
+          onClose={() => {
+            setShowReportModal(false);
+            setSelectedReason("");
+            setCustomReason("");
+          }}
+          onSubmit={handleReportSubmit}
+          selectedReason={selectedReason}
+          setSelectedReason={setSelectedReason}
+          customReason={customReason}
+          setCustomReason={setCustomReason}
+        />
+
+        {toast && <Toast message={toast.message} type={toast.type} />}
       </div>
-    </div>
     </Case>
   );
 };

@@ -292,7 +292,7 @@ export default function CompanyProfile() {
                   <div className="flex items-start mb-6">
                     <img
                       src="https://randomuser.me/api/portraits/women/44.jpg"
-                      alt="User Avatar"
+                      alt="User photo"
                       className="w-10 h-10 rounded-full mr-4"
                     />
                     <div className="flex-1">
@@ -333,7 +333,7 @@ export default function CompanyProfile() {
                       <div key={review.id} className="flex items-start space-x-4">
                         <img
                           src={`https://randomuser.me/api/portraits/men/${index + 30}.jpg`}
-                          alt="Commenter Avatar"
+                          alt="Commenter photo"
                           className="w-10 h-10 rounded-full"
                         />
                         <div className="flex-1">

@@ -23,6 +23,7 @@ type PostServiceImpl struct {
 	ConnectionRepository  repository.ConnectionRepository
 	GroupRepository       repository.GroupRepository
 	GroupMemberRepository repository.GroupMemberRepository
+	NotificationService   NotificationService
 	DB                    *sql.DB
 	Validate              *validator.Validate
 }
@@ -34,6 +35,7 @@ func NewPostService(
 	connectionRepository repository.ConnectionRepository,
 	groupRepository repository.GroupRepository,
 	groupMemberRepository repository.GroupMemberRepository,
+	notificationService NotificationService,
 	db *sql.DB, validate *validator.Validate) PostService {
 	return &PostServiceImpl{
 		UserRepository:        userRepository,
@@ -42,6 +44,7 @@ func NewPostService(
 		ConnectionRepository:  connectionRepository,
 		GroupRepository:       groupRepository,
 		GroupMemberRepository: groupMemberRepository,
+		NotificationService:   notificationService,
 		DB:                    db,
 		Validate:              validate,
 	}
@@ -94,7 +97,55 @@ func (service *PostServiceImpl) Create(ctx context.Context, userId uuid.UUID, re
 	// fullPost.CommentsCount, _ = service.CommentRepository.CountByPostId(ctx, tx, post.Id)
 	fullPost.LikesCount = service.PostRepository.GetLikesCount(ctx, tx, post.Id)
 
-	// fmt.Println("start create post")
+	// Kirim notifikasi ke koneksi pengguna
+if service.NotificationService != nil {
+	// Ambil data pengguna terlebih dahulu sebelum goroutine
+	user, err := service.UserRepository.FindById(ctx, tx, userId)
+	if err == nil { // Hanya lanjutkan jika berhasil mendapatkan user
+		// Ambil koneksi pengguna terlebih dahulu - gunakan limit yang lebih besar
+		connections, _ := service.ConnectionRepository.FindConnectionsByUserId(ctx, tx, userId, 100, 0)
+		
+		// Salin data yang diperlukan untuk goroutine
+		userName := user.Name
+		postId := post.Id
+		
+		// Debug: cetak jumlah koneksi yang ditemukan
+		fmt.Printf("Sending notifications to %d connections for user %s\n", len(connections), userId)
+		
+		go func() {
+			// Kirim notifikasi ke setiap koneksi
+			for _, connection := range connections {
+				var connectedUserId uuid.UUID
+				
+				// Tentukan ID pengguna yang terhubung
+				if connection.UserId1 == userId {
+					connectedUserId = connection.UserId2
+				} else if connection.UserId2 == userId {
+					connectedUserId = connection.UserId1
+				} else {
+					continue
+				}
+				
+				// Debug: cetak ID user yang akan menerima notifikasi
+				fmt.Printf("Sending notification to user %s\n", connectedUserId)
+				
+				refType := "post"
+				service.NotificationService.Create(
+					context.Background(),
+					connectedUserId,
+					string(domain.NotificationCategoryPost),
+					string(domain.NotificationTypePostNew),
+					"New Post",
+					fmt.Sprintf("%s shared a new post", userName),
+					&postId,
+					&refType,
+					&userId,
+				)
+			}
+		}()
+	}
+}
+
 	return helper.ToPostResponse(fullPost)
 }
 
@@ -252,15 +303,8 @@ func (service *PostServiceImpl) FindAll(ctx context.Context, limit, offset int, 
 	currentUserIdStr, ok := ctx.Value("user_id").(string)
 	if ok {
 		currentUserId, _ = uuid.Parse(currentUserIdStr)
-		// if err == nil {
-		// 	// Cek koneksi untuk setiap post
-		// 	for i := range posts {
-		// 		if posts[i].User != nil && posts[i].UserId != currentUserId {
-		// 			posts[i].User.IsConnected = service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, posts[i].UserId)
-		// 		}
-		// 	}
-		// }
 	}
+	
 	// Check which posts the current user has liked
 	var postResponses []web.PostResponse
 	for _, post := range posts {
@@ -268,7 +312,6 @@ func (service *PostServiceImpl) FindAll(ctx context.Context, limit, offset int, 
 		post.CommentsCount, _ = service.CommentRepository.CountByPostId(ctx, tx, post.Id)
 		post.LikesCount = service.PostRepository.GetLikesCount(ctx, tx, post.Id)
 		post.User.IsConnected = service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, post.UserId)
-		// fmt.Println("connected: ", post.User.IsConnected, "postId: ", post.Id, "userId: ", post.UserId, "currentUserId: ", currentUserId)
 		if post.GroupId != nil {
 			group, err := service.GroupRepository.FindById(ctx, tx, *post.GroupId)
 			if err == nil {
@@ -279,7 +322,6 @@ func (service *PostServiceImpl) FindAll(ctx context.Context, limit, offset int, 
 	}
 
 	return postResponses
-
 }
 
 func (service *PostServiceImpl) FindByUserId(ctx context.Context, targetUserId uuid.UUID, limit, offset int, currentUserId uuid.UUID) []web.PostResponse {
@@ -322,6 +364,32 @@ func (service *PostServiceImpl) LikePost(ctx context.Context, postId uuid.UUID, 
 		}
 	}
 
+	// Kirim notifikasi ke pemilik post jika bukan diri sendiri
+	if post.UserId != userId && service.NotificationService != nil {
+		// Ambil data user terlebih dahulu
+		user, err := service.UserRepository.FindById(ctx, tx, userId)
+		if err == nil {
+			// Simpan data yang diperlukan
+			userName := user.Name
+			postOwnerId := post.UserId
+			
+			go func() {
+				refType := "post_like"
+				service.NotificationService.Create(
+					context.Background(),
+					postOwnerId,
+					string(domain.NotificationCategoryPost),
+					string(domain.NotificationTypePostLike),
+					"Post Like",
+					fmt.Sprintf("%s liked your post", userName),
+					&postId,
+					&refType,
+					&userId,
+				)
+			}()
+		}
+	}
+
 	// Re-fetch post with updated like count
 	post, err = service.PostRepository.FindById(ctx, tx, postId)
 	helper.PanicIfError(err)
@@ -330,6 +398,7 @@ func (service *PostServiceImpl) LikePost(ctx context.Context, postId uuid.UUID, 
 
 	return helper.ToPostResponse(post)
 }
+
 
 func (service *PostServiceImpl) UnlikePost(ctx context.Context, postId uuid.UUID, userId uuid.UUID) web.PostResponse {
 	tx, err := service.DB.Begin()
@@ -410,6 +479,31 @@ func (service *PostServiceImpl) CreateGroupPost(ctx context.Context, groupId uui
 	user, _ := service.UserRepository.FindById(ctx, tx, userId)
 	post.User = &user
 	post.Group = &group
+
+	// Kirim notifikasi ke anggota grup
+	if service.NotificationService != nil {
+		go func() {
+			// Get group members
+			members := service.GroupMemberRepository.FindByGroupId(context.Background(), nil, groupId)
+			
+			for _, member := range members {
+				if member.UserId != userId { // Jangan kirim notifikasi ke diri sendiri
+					refType := "group_post"
+					service.NotificationService.Create(
+						context.Background(),
+						member.UserId,
+						string(domain.NotificationCategoryGroup),
+						string(domain.NotificationTypeGroupPost),
+						"New Group Post",
+						fmt.Sprintf("%s posted in %s", user.Name, group.Name),
+						&post.Id,
+						&refType,
+						&userId,
+					)
+				}
+			}
+		}()
+	}
 
 	return helper.ToPostResponse(post)
 }

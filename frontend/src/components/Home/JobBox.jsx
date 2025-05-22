@@ -24,10 +24,10 @@ function JobBox() {
             location: 'India, Punjab',
             logo: '/img/l3.png',
             connections: [
-              { id: 1, name: 'Sophia Lee', avatar: '/img/p9.png' },
-              { id: 2, name: 'John Doe', avatar: '/img/p10.png' },
-              { id: 3, name: 'Julia Cox', avatar: '/img/p11.png' },
-              { id: 4, name: 'Robert Cook', avatar: '/img/p12.png' }
+              { id: 1, name: 'Sophia Lee', photo: '/img/p9.png' },
+              { id: 2, name: 'John Doe', photo: '/img/p10.png' },
+              { id: 3, name: 'Julia Cox', photo: '/img/p11.png' },
+              { id: 4, name: 'Robert Cook', photo: '/img/p12.png' }
             ],
             posted_at: '3 Days ago'
           },
@@ -38,9 +38,9 @@ function JobBox() {
             location: 'London, UK',
             logo: '/img/l4.png',
             connections: [
-              { id: 1, name: 'Sophia Lee', avatar: '/img/p13.png' },
-              { id: 2, name: 'John Doe', avatar: '/img/p1.png' },
-              { id: 3, name: 'Robert Cook', avatar: '/img/p3.png' }
+              { id: 1, name: 'Sophia Lee', photo: '/img/p13.png' },
+              { id: 2, name: 'John Doe', photo: '/img/p1.png' },
+              { id: 3, name: 'Robert Cook', photo: '/img/p3.png' }
             ],
             posted_at: '3 Days ago'
           }
@@ -99,7 +99,7 @@ function JobBox() {
                     <img 
                       key={idx}
                       className="w-7 h-7 rounded-full border-2 border-white shadow-sm" 
-                      src={connection.avatar} 
+                      src={connection.photo} 
                       alt={connection.name}
                       title={connection.name}
                     />

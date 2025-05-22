@@ -6,6 +6,7 @@ import (
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/web"
 	"net/http"
+	
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -18,14 +19,18 @@ func NewRouter(
 	commentController controller.CommentController,
 	educationController controller.EducationController,
 	experienceController controller.ExperienceController,
+	commentBlogController controller.CommentBlogController,
 	connectionController controller.ConnectionController,
+	reportController controller.ReportController,
 	groupController controller.GroupController,
 	chatController controller.ChatController,
 	profileViewController controller.ProfileViewController,
+	notificationController controller.NotificationController,
+	searchController controller.SearchController, 
 ) *httprouter.Router {
 	router := httprouter.New()
 
-	// Auth routes - all static paths
+	// Auth routes
 	router.POST("/api/auth/google", authController.GoogleAuth)
 	router.POST("/api/auth/login", authController.Login)
 	router.POST("/api/auth/register", authController.Register)
@@ -34,43 +39,48 @@ func NewRouter(
 	router.POST("/api/auth/forgot-password", authController.ForgotPassword)
 	router.POST("/api/auth/reset-password", authController.ResetPassword)
 
-	// User routes - all static paths
+	// User routes
 	router.GET("/api/user/profile", userController.GetProfile)
 	router.PUT("/api/user/profile", userController.UpdateProfile)
 	router.GET("/api/user-profile/:username", userController.GetByUsername)
 	router.POST("/api/user/photo", userController.UploadPhotoProfile)
-	router.DELETE("/api/user/photo", userController.DeletePhotoProfile)
 	router.GET("/api/user-peoples", userController.GetPeoples)
 
-	// Blog routes - static paths first
+	// Blog routes
 	router.POST("/api/blogs", blogController.Create)
+	// router.POST("/api/blogs-with-image", blogController.CreateWithImage)
 	router.GET("/api/blogs", blogController.FindAll)
+	router.GET("/api/blogs/random", blogController.GetRandomBlogs)
+	router.GET("/api/blogs/slug/:slug", blogController.GetBySlug)
+	router.DELETE("/api/blogs/:blogId", blogController.Delete)
+	router.PUT("/api/blogs/:blogId", blogController.Update)
+	router.POST("/api/blogs/:blogId/upload-photo", blogController.UploadPhoto)
 
+	// Blog comment routes
+	router.POST("/api/blog-comments/:blogId", commentBlogController.Create)
+	router.GET("/api/blog-comments/:blogId", commentBlogController.GetByBlogId)
+	// Ubah path berikut agar tidak konflik
+	router.GET("/api/blog/comments/:commentId", commentBlogController.GetById)  // <-- path ini diubah
+	router.PUT("/api/blog/comments/:commentId", commentBlogController.Update)   // <-- path ini diubah
+	router.DELETE("/api/blog/comments/:commentId", commentBlogController.Delete) // <-- path ini diubah
+	router.POST("/api/blog/comments/:commentId/replies", commentBlogController.Reply) // <-- path ini diubah
+	router.GET("/api/blog/comments/:commentId/replies", commentBlogController.GetReplies) // <-- path ini diubah
 	// Post routes - static paths first
-	router.POST("/api/posts", postController.Create)
-	router.GET("/api/posts", postController.FindAll)
+	 router.POST("/api/posts", postController.Create)
+	 router.GET("/api/posts", postController.FindAll)
 
-	// Comment routes - static paths only
+	// Post comment routes
+	router.POST("/api/post-comments/:postId", commentController.Create)
+	router.GET("/api/post-comments/:postId", commentController.GetByPostId)
 	router.GET("/api/comments/:commentId", commentController.GetById)
 	router.PUT("/api/comments/:commentId", commentController.Update)
 	router.DELETE("/api/comments/:commentId", commentController.Delete)
 	router.POST("/api/comments/:commentId/replies", commentController.Reply)
 	router.GET("/api/comments/:commentId/replies", commentController.GetReplies)
 
-	// Education routes - static paths first
+	// Education routes
 	router.POST("/api/education", educationController.Create)
 
-	// Experience routes - static paths first
-	router.POST("/api/experience", experienceController.Create)
-
-	// Blog routes with parameters
-	router.GET("/api/blogs/slug/:slug", blogController.GetBySlug)
-	router.DELETE("/api/blogs/:blogId", blogController.Delete)
-	router.PUT("/api/blogs/:blogId", blogController.Update)
-	router.GET("/api/blogs/random", blogController.GetRandomBlogs)
-
-	// blog routes static paths first
-	router.POST("/api/blogs/:blogId/upload-photo", blogController.UploadPhoto)
 
 	// Education routes with parameters
 	router.PUT("/api/education/:educationId", educationController.Update)
@@ -78,15 +88,15 @@ func NewRouter(
 	router.GET("/api/education/:educationId", educationController.GetById)
 	router.GET("/api/users/:userId/education", educationController.GetByUserId)
 
-	// Experience routes with parameters
+	// Experience routes
+	router.POST("/api/experience", experienceController.Create)
 	router.PUT("/api/experience/:experienceId", experienceController.Update)
 	router.DELETE("/api/experience/:experienceId", experienceController.Delete)
 	router.GET("/api/experience/:experienceId", experienceController.GetById)
 	router.GET("/api/users/:userId/experience", experienceController.GetByUserId)
-
+ 
 	// Post like routes - carefully ordered to avoid conflicts
 	router.POST("/api/post-actions/:postId/like", postController.LikePost)
-	router.DELETE("/api/post-actions/:postId/like", postController.UnlikePost)
 
 	// Post comment routes - carefully ordered to avoid conflicts
 	router.POST("/api/post-comments/:postId", commentController.Create)
@@ -94,12 +104,24 @@ func NewRouter(
 
 	// User post routes
 	router.GET("/api/users/:userId/posts", postController.FindByUserId)
-
-	// Post routes with parameters - last because they're most generic
+ 
 	router.GET("/api/posts/:postId", postController.FindById)
 	router.PUT("/api/posts/:postId", postController.Update)
 	router.DELETE("/api/posts/:postId", postController.Delete)
 
+	// Post like/unlike
+	router.POST("/api/post-actions/:postId/like", postController.LikePost)
+	router.DELETE("/api/post-actions/:postId/like", postController.UnlikePost)
+
+	// User-specific posts
+	router.GET("/api/users/:userId/posts", postController.FindByUserId)
+
+	// Routes report
+	// Tambahkan di bawah route lain:
+	router.POST("/api/reports/:userId/:targetType/:targetId", reportController.CreateReportHandler())
+
+
+	// NotFound handler
 	router.GET("/api/connections/requests", connectionController.GetConnectionRequests)
 	router.PUT("/api/connections/requests/:requestId/accept", connectionController.AcceptConnectionRequest)
 	router.PUT("/api/connections/requests/:requestId/reject", connectionController.RejectConnectionRequest)
@@ -149,6 +171,16 @@ func NewRouter(
 	router.GET("/api/user/profile/views/this-week", profileViewController.GetViewsThisWeek)
 	router.GET("/api/user/profile/views/last-week", profileViewController.GetViewsLastWeek)
 
+	// notifikasi	
+	router.GET("/api/notifications", notificationController.GetNotifications)
+	router.POST("/api/notifications/mark-read", notificationController.MarkAsRead)
+	router.POST("/api/notifications/mark-all-read", notificationController.MarkAllAsRead)
+	router.DELETE("/api/notifications", notificationController.DeleteNotifications)
+	router.DELETE("/api/notifications/selected", notificationController.DeleteSelectedNotifications)
+
+	// search
+	router.GET("/api/search", searchController.Search)
+	
 	uploadFS := http.FileServer(http.Dir("uploads"))
 	publicFS := http.FileServer(http.Dir("public")) // Add this line
 

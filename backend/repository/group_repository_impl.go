@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"time"
-
+	"fmt"
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/domain"
 	"github.com/google/uuid"
@@ -18,6 +18,7 @@ func NewGroupRepository() GroupRepository {
 	return &GroupRepositoryImpl{}
 }
 
+// repository/group_repository_impl.go
 func (repository *GroupRepositoryImpl) Create(ctx context.Context, tx *sql.Tx, group domain.Group) domain.Group {
 	// Set timestamps
 	now := time.Now()
@@ -60,6 +61,8 @@ func (repository *GroupRepositoryImpl) Create(ctx context.Context, tx *sql.Tx, g
 
 	return group
 }
+
+
 func (repository *GroupRepositoryImpl) Update(ctx context.Context, tx *sql.Tx, group domain.Group) domain.Group {
 	group.UpdatedAt = time.Now()
 
@@ -95,12 +98,16 @@ func (repository *GroupRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx, g
 }
 
 func (repository *GroupRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, groupId uuid.UUID) (domain.Group, error) {
-	SQL := `SELECT id, name, description, rule, creator_id, image, privacy_level, invite_policy, created_at, updated_at 
+	SQL := `SELECT id, name, description, rule, creator_id, privacy_level, invite_policy, image, created_at, updated_at 
 			FROM groups 
 			WHERE id = $1`
-
+	
+	fmt.Printf("DEBUG SQL: %s with param: %s\n", SQL, groupId)
+	
 	rows, err := tx.QueryContext(ctx, SQL, groupId)
-	helper.PanicIfError(err)
+	if err != nil {
+		return domain.Group{}, err
+	}
 	defer rows.Close()
 
 	group := domain.Group{}
@@ -111,16 +118,18 @@ func (repository *GroupRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx,
 			&group.Description,
 			&group.Rule,
 			&group.CreatorId,
-			&group.Image,
 			&group.PrivacyLevel,
 			&group.InvitePolicy,
+			&group.Image,
 			&group.CreatedAt,
 			&group.UpdatedAt,
 		)
-		helper.PanicIfError(err)
+		if err != nil {
+			return domain.Group{}, err
+		}
 		return group, nil
 	} else {
-		return group, errors.New("group not found")
+		return domain.Group{}, errors.New("group not found")
 	}
 }
 
@@ -388,4 +397,60 @@ func (repository *GroupRepositoryImpl) FindInvitationsByGroup(ctx context.Contex
 		invitations = append(invitations, invitation)
 	}
 	return invitations
+}
+
+func (repository *GroupRepositoryImpl) Search(ctx context.Context, tx *sql.Tx, query string, limit int, offset int) []domain.Group {
+    SQL := `SELECT id, name, description, rule, creator_id, image, privacy_level, invite_policy, created_at, updated_at
+            FROM groups
+            WHERE LOWER(name) LIKE LOWER($1) OR LOWER(description) LIKE LOWER($1)
+            ORDER BY name
+            LIMIT $2 OFFSET $3`
+    
+    searchPattern := "%" + query + "%"
+    fmt.Printf("Executing group search SQL with pattern: %s\n", searchPattern)
+    
+    rows, err := tx.QueryContext(ctx, SQL, searchPattern, limit, offset)
+    if err != nil {
+        fmt.Printf("Error executing group search: %v\n", err)
+        return []domain.Group{}
+    }
+    defer rows.Close()
+    
+    var groups []domain.Group
+    for rows.Next() {
+        group := domain.Group{}
+        err := rows.Scan(
+            &group.Id,
+            &group.Name,
+            &group.Description,
+            &group.Rule,
+            &group.CreatorId,
+            &group.Image,
+            &group.PrivacyLevel,
+            &group.InvitePolicy,
+            &group.CreatedAt,
+            &group.UpdatedAt,
+        )
+        if err != nil {
+            fmt.Printf("Error scanning group: %v\n", err)
+            continue
+        }
+        groups = append(groups, group)
+        fmt.Printf("Found group: %s\n", group.Name)
+    }
+    
+    return groups
+}
+
+func (repository *GroupRepositoryImpl) CountMembers(ctx context.Context, tx *sql.Tx, groupId uuid.UUID) int {
+    SQL := `SELECT COUNT(*) FROM group_members WHERE group_id = $1 AND is_active = true`
+    
+    var count int
+    err := tx.QueryRowContext(ctx, SQL, groupId).Scan(&count)
+    if err != nil {
+        fmt.Printf("Error counting members: %v\n", err)
+        return 0
+    }
+    
+    return count
 }

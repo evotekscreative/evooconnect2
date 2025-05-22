@@ -1,204 +1,1129 @@
-import { useState } from 'react';
-import Case from '../components/Case';
-import { MoreHorizontal, Image, Video, ThumbsUp, MessageCircle, Share, ArrowRight, ArrowDown, X, Copy } from 'lucide-react';
-import GroupCover from '../assets/img/cover.jpg';
+import { useState, useEffect } from "react";
+import Case from "../components/Case";
+import axios from "axios";
+import { useParams, Link } from "react-router-dom";
+import { toast } from "sonner";
+import {
+  MoreHorizontal,
+  Image,
+  Video,
+  ThumbsUp,
+  MessageCircle,
+  Share,
+  ArrowRight,
+  ArrowDown,
+  X,
+  Copy,
+  Check,
+  UserPlus,
+  UserMinus,
+} from "lucide-react";
+import GroupCover from "../assets/img/cover.jpg";
 
 export default function GroupPage() {
-  const [group, setGroup] = useState({
-    name: "Web Development Group",
-    description: "A community for web developers to share knowledge and tips",
-    image: "/api/placeholder/80/80",
-    members: [
-      { id: 1, user: { id: 1, name: "Jane Smith", profile_photo: "/api/placeholder/50/50", role: "admin" } },
-      { id: 2, user: { id: 2, name: "Mike Johnson", profile_photo: "/api/placeholder/50/50" } },
-      { id: 3, user: { id: 3, name: "Sarah Williams", profile_photo: "/api/placeholder/50/50" } },
-      { id: 4, user: { id: 4, name: "David Brown", profile_photo: "/api/placeholder/50/50" } },
-      { id: 5, user: { id: 5, name: "Linda Davis", profile_photo: "/api/placeholder/50/50" } },
-    ]
-  });
-
-  const [user, setUser] = useState({
-    id: 1,
-    name: "John Doe",
-    profile_photo: "/api/placeholder/80/80",
-    following_count: 42
-  });
-
-  const [connections, setConnections] = useState([
-    { id: 1, from_user_id: 1, toUser: { id: 6, name: "Robert Wilson", profile_photo: "/api/placeholder/40/40" } },
-    { id: 2, from_user_id: 1, toUser: { id: 7, name: "Emily Clark", profile_photo: "/api/placeholder/40/40" } },
-    { id: 3, from_user_id: 1, toUser: { id: 8, name: "Michael Lee", profile_photo: "/api/placeholder/40/40" } },
-    { id: 4, from_user_id: 3, fromUser: { id: 9, name: "Jessica Taylor", profile_photo: "/api/placeholder/40/40" } }
-  ]);
-
-  const [posts, setPosts] = useState([
-    {
-      id: 1,
-      user: {
-        id: 1,
-        name: "John Doe",
-        profile_photo: "/api/placeholder/40/40"
-      },
-      content: "This is a sample post content. Looking forward to our next group meeting!",
-      image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-      createdAt: "2 hours ago",
-      likes: 5,
-      comments: [
-        { id: 1, user: "Alice", text: "Great post!" },
-        { id: 2, user: "Bob", text: "Looking forward to it!" }
-      ]
-    },
-    {
-      id: 2,
-      user: {
-        id: 2,
-        name: "Jane Smith",
-        profile_photo: "/api/placeholder/40/40"
-      },
-      content: "Just shared a new tutorial on React hooks. Check it out!",
-      createdAt: "5 hours ago",
-      likes: 12,
-      comments: [
-        { id: 1, user: "Charlie", text: "Very helpful!" }
-      ]
-    }
-  ]);
-
-  const [showImagePreview, setShowImagePreview] = useState(false);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState('');
-  const [postContent, setPostContent] = useState('');
+  const [imagePreviews, setImagePreviews] = useState([]);
+  const [imageFiles, setImageFiles] = useState([]);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
+  const [postContent, setPostContent] = useState("");
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
-  const [sharePostId, setSharePostId] = useState(null);
+  const [connections, setConnections] = useState([]);
+  const [showInviteSuccess, setShowInviteSuccess] = useState(false);
+  const [isCurrentUserAdmin, setIsCurrentUserAdmin] = useState(false);
+  const [invitedUserName, setInvitedUserName] = useState("");
+  const [editingMemberId, setEditingMemberId] = useState(null);
+  const [selectedRole, setSelectedRole] = useState("member");
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [showRemoveModal, setShowRemoveModal] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const { groupId } = useParams();
+  const [isLoading, setIsLoading] = useState(true);
+  const [group, setGroup] = useState(null);
+  const [error, setError] = useState(null);
+  const [comments, setComments] = useState({});
+  const [loadingComments, setLoadingComments] = useState({});
+  const [commentError, setCommentError] = useState(null);
+  const [commentText, setCommentText] = useState("");
+  const [showCommentModal, setShowCommentModal] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [showPostOptions, setShowPostOptions] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [commentModalPostId, setCommentModalPostId] = useState(null);
+  const [sharePostId, setSharePostId] = useState(null);
+  const [user, setUser] = useState({
+    name: "",
+    photo: "",
+    following_count: 42,
+  });
+  const [posts, setPosts] = useState([]);
+  const [isLoadingPosts, setIsLoadingPosts] = useState(false);
+  const [postError, setPostError] = useState(null);
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
-  const handleImageUpload = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreviewUrl(e.target.result);
-        setShowImagePreview(true);
-      };
-      reader.readAsDataURL(e.target.files[0]);
+  const openImageModal = (post, index) => {
+    // Ensure post.images is an array of full URLs
+    const images = post.images.map((img) =>
+      img.startsWith("http") ? img : `http://localhost:3000/${img}`
+    );
+
+    setSelectedPost({
+      ...post,
+      images: images,
+    });
+    setSelectedImageIndex(index);
+    setShowImageModal(true);
+  };
+
+  const closeImageModal = () => {
+    setShowImageModal(false);
+    setSelectedPost(null);
+    setSelectedImageIndex(0);
+  };
+
+  const navigateImage = (direction) => {
+    if (direction === "prev") {
+      setSelectedImageIndex((prev) =>
+        prev === 0 ? selectedPost.images.length - 1 : prev - 1
+      );
+    } else {
+      setSelectedImageIndex((prev) =>
+        prev === selectedPost.images.length - 1 ? 0 : prev + 1
+      );
     }
   };
 
-  const removeImage = () => {
-    setShowImagePreview(false);
-    setImagePreviewUrl('');
+  const renderPhotoGrid = (images) => {
+    if (!images || !Array.isArray(images)) return null;
+
+    const validImages = images
+      .map((img) => {
+        if (typeof img === "string") {
+          return img.startsWith("http") ? img : `http://localhost:3000/${img}`;
+        }
+        return "";
+      })
+      .filter((img) => img);
+
+    if (validImages.length === 0) return null;
+
+    if (validImages.length === 1) {
+      return (
+        <div className="mb-3 rounded-lg overflow-hidden border">
+          <img
+            src={validImages[0]}
+            className="w-full h-48 md:h-64 lg:h-96 object-cover cursor-pointer"
+            alt="Post"
+            onClick={() => openImageModal({ images: validImages }, 0)}
+          />
+        </div>
+      );
+    } else if (validImages.length === 2) {
+      return (
+        <div className="mb-3 rounded-lg overflow-hidden border">
+          <div className="grid grid-cols-2 gap-1">
+            {validImages.map((photo, index) => (
+              <div key={index} className="relative aspect-square">
+                <img
+                  src={photo}
+                  className="w-full h-full object-cover cursor-pointer"
+                  alt={`Post ${index + 1}`}
+                  onClick={() => openImageModal({ images: validImages }, index)}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    } else if (validImages.length === 3) {
+      return (
+        <div className="mb-3 rounded-lg overflow-hidden border">
+          <div className="grid grid-cols-2 gap-1">
+            <div className="relative aspect-square row-span-2">
+              <img
+                src={validImages[0]}
+                className="w-full h-full object-cover cursor-pointer"
+                alt="Post 1"
+                onClick={() => openImageModal({ images: validImages }, 0)}
+              />
+            </div>
+            <div className="relative aspect-square">
+              <img
+                src={validImages[1]}
+                className="w-full h-full object-cover cursor-pointer"
+                alt="Post 2"
+                onClick={() => openImageModal({ images: validImages }, 1)}
+              />
+            </div>
+            <div className="relative aspect-square">
+              <img
+                src={validImages[2]}
+                className="w-full h-full object-cover cursor-pointer"
+                alt="Post 3"
+                onClick={() => openImageModal({ images: validImages }, 2)}
+              />
+            </div>
+          </div>
+        </div>
+      );
+    } else if (validImages.length >= 4) {
+      return (
+        <div className="mb-3 rounded-lg overflow-hidden border">
+          <div className="grid grid-cols-2 gap-1">
+            {validImages.slice(0, 4).map((photo, index) => (
+              <div key={index} className="relative aspect-square">
+                <img
+                  src={photo}
+                  className="w-full h-full object-cover cursor-pointer"
+                  alt={`Post ${index + 1}`}
+                  onClick={() => openImageModal({ images: validImages }, index)}
+                />
+                {index === 3 && validImages.length > 4 && (
+                  <div
+                    className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center text-white font-bold text-lg cursor-pointer"
+                    onClick={() => openImageModal({ images: validImages }, 3)}
+                  >
+                    +{validImages.length - 4}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    return null;
   };
 
-  const handleSubmitPost = (e) => {
-    e.preventDefault();
-    const newPost = {
-      id: posts.length + 1,
-      user: {
-        id: user.id,
-        name: user.name,
-        profile_photo: user.profile_photo
-      },
-      content: postContent,
-      image: imagePreviewUrl,
-      createdAt: "Just now",
-      likes: 0,
-      comments: []
-    };
-    
-    setPosts([newPost, ...posts]);
-    setPostContent('');
-    setShowImagePreview(false);
-    setImagePreviewUrl('');
+  useEffect(() => {
+    const userData = JSON.parse(localStorage.getItem("user"));
+    if (userData) {
+      setCurrentUserId(userData.id);
+    }
+  }, []);
+
+  // Like/Unlike post handler
+  const handleLikePost = async (postId, isCurrentlyLiked) => {
+    try {
+      const userToken = localStorage.getItem("token");
+
+      // Optimistic UI update
+      setPosts((prevPosts) =>
+        prevPosts.map((post) => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              likes_count: isCurrentlyLiked
+                ? Math.max(post.likes_count - 1, 0)
+                : post.likes_count + 1,
+              isLiked: !isCurrentlyLiked,
+            };
+          }
+          return post;
+        })
+      );
+
+      // Send request to backend
+      if (isCurrentlyLiked) {
+        await axios.delete(
+          `http://localhost:3000/api/post-actions/${postId}/like`,
+          { headers: { Authorization: `Bearer ${userToken}` } }
+        );
+      } else {
+        await axios.post(
+          `http://localhost:3000/api/post-actions/${postId}/like`,
+          {},
+          { headers: { Authorization: `Bearer ${userToken}` } }
+        );
+      }
+    } catch (error) {
+      console.error("Failed to like post:", error);
+      // Rollback on error
+      setPosts((prevPosts) =>
+        prevPosts.map((post) => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              likes_count: isCurrentlyLiked
+                ? post.likes_count + 1
+                : Math.max(post.likes_count - 1, 0),
+              isLiked: isCurrentlyLiked,
+            };
+          }
+          return post;
+        })
+      );
+      toast.error("Failed to like post. Please try again.");
+    }
   };
 
-  const handleInvite = (userId) => {
-    console.log("Inviting user with ID:", userId);
-    setInviteModalOpen(false);
+  // Fetch comments for a post
+  const fetchComments = async (postId) => {
+    try {
+      setLoadingComments((prev) => ({ ...prev, [postId]: true }));
+      setCommentError(null);
+
+      const userToken = localStorage.getItem("token");
+      const response = await axios.get(
+        `http://localhost:3000/api/post-comments/${postId}?limit=10&offset=0`,
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        }
+      );
+
+      const commentsWithUser = (response.data?.data?.comments || []).map(
+        (comment) => ({
+          ...comment,
+          user: comment.user || {
+            name: "Unknown User",
+            initials: "UU",
+          },
+        })
+      );
+
+      setComments((prev) => ({
+        ...prev,
+        [postId]: commentsWithUser,
+      }));
+    } catch (error) {
+      console.error("Failed to fetch comments:", error);
+      setCommentError("Failed to load comments");
+    } finally {
+      setLoadingComments((prev) => ({ ...prev, [postId]: false }));
+    }
   };
 
-  const handleLikePost = (postId) => {
-    setPosts(posts.map(post => 
-      post.id === postId ? { ...post, likes: post.likes + 1 } : post
-    ));
+  // Add comment handler
+  const handleAddComment = async (postId) => {
+    if (!commentText.trim()) {
+      setCommentError("Comment cannot be empty");
+      return;
+    }
+
+    try {
+      const userToken = localStorage.getItem("token");
+      await axios.post(
+        `http://localhost:3000/api/post-comments/${postId}`,
+        { content: commentText },
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      setPosts((prevPosts) =>
+        prevPosts.map((post) => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              comments_count: (post.comments_count || 0) + 1,
+            };
+          }
+          return post;
+        })
+      );
+
+      fetchComments(postId);
+      setCommentText("");
+      setCommentError(null);
+    } catch (error) {
+      console.error("Failed to add comment:", error);
+      setCommentError(
+        error.response?.data?.message ||
+          "Failed to add comment. Please try again."
+      );
+    }
   };
 
+  // Open comment modal
   const openCommentModal = (postId) => {
     setCommentModalPostId(postId);
+    setShowCommentModal(true);
+    fetchComments(postId);
   };
 
+  // Close comment modal
   const closeCommentModal = () => {
+    setShowCommentModal(false);
     setCommentModalPostId(null);
+    setCommentText("");
   };
 
-  const shareUrl = window.location.href;
+  // Share post handlers
+  const handleOpenShareModal = (postId) => {
+    setSharePostId(postId);
+    setShowShareModal(true);
+  };
+
+  const handleCloseShareModal = () => {
+    setShowShareModal(false);
+    setSharePostId(null);
+  };
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(shareUrl);
-    alert('Link copied to clipboard!');
+    const urlToCopy = `http://localhost:5173/post/${sharePostId}`;
+    navigator.clipboard.writeText(urlToCopy);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
+
+  const shareToWhatsApp = () => {
+    const url = `https://wa.me/?text=${encodeURIComponent(
+      `Check out this post: http://localhost:5173/post/${sharePostId}`
+    )}`;
+    window.open(url, "_blank");
+  };
+
+  const shareToTwitter = () => {
+    const url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(
+      `http://localhost:5173/post/${sharePostId}`
+    )}`;
+    window.open(url, "_blank");
+  };
+
+  // Post options handlers
+  const handleOpenPostOptions = (postId) => {
+    setSelectedPostId(postId);
+    setShowPostOptions(true);
+  };
+
+  const handleClosePostOptions = () => {
+    setShowPostOptions(false);
+    setSelectedPostId(null);
+  };
+
+  const handleDeletePost = async (postId) => {
+    try {
+      const userToken = localStorage.getItem("token");
+      await axios.delete(`http://localhost:3000/api/posts/${postId}`, {
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+        },
+      });
+
+      setPosts(posts.filter((post) => post.id !== postId));
+      handleClosePostOptions();
+      toast.success("Post deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete post:", error);
+      toast.error("Failed to delete post. Please try again.");
+    }
+  };
+
+  // Format post time
+  const formatPostTime = (timestamp) => {
+    if (!timestamp) return "Just now";
+
+    const now = new Date();
+    const postTime = new Date(timestamp);
+    const diffInSeconds = Math.floor((now - postTime) / 1000);
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    const diffInDays = Math.floor(diffInHours / 24);
+
+    if (diffInSeconds < 60) return `${diffInSeconds}s ago`;
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    if (diffInDays < 7) return `${diffInDays}d ago`;
+
+    return postTime.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const renderPostActions = (post) => (
+    <div className="border-t px-4 py-2 flex justify-between">
+      <button
+        className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${
+          post.isLiked
+            ? "text-blue-600 bg-blue-50"
+            : "text-blue-600 hover:bg-blue-50"
+        }`}
+        onClick={() => handleLikePost(post.id, post.isLiked)}
+      >
+        <ThumbsUp size={14} className="mr-2" />
+        Like ({post.likes_count || 0})
+      </button>
+
+      <button
+        className="flex items-center justify-center w-1/3 py-2 rounded-lg text-blue-600 hover:bg-blue-50"
+        onClick={() => openCommentModal(post.id)}
+      >
+        <MessageCircle size={14} className="mr-2" />
+        Comment ({post.comments_count || 0})
+      </button>
+
+      <button
+        className="flex items-center justify-center w-1/3 py-2 rounded-lg text-blue-600 hover:bg-blue-50"
+        onClick={() => handleOpenShareModal(post.id)}
+      >
+        <Share size={14} className="mr-2" />
+        Share
+      </button>
+    </div>
+  );
+
+  // Update the post rendering in the return statement to include options button
+  const renderPost = (post) => (
+    <div key={post.id} className="border-b p-3 relative">
+      <div className="flex items-center mb-3">
+        <Link to={`/user-profile/${post.user.username}`}>
+          <img
+            className="rounded-full w-10 h-10 object-cover"
+            src={
+              post.user.photo
+                ? post.user.photo.startsWith("http")
+                  ? post.user.photo
+                  : `http://localhost:3000/${post.user.photo}`
+                : "/default-user.png"
+            }
+            alt={post.user.name}
+          />
+        </Link>
+        <div className="ml-3">
+          <h6 className="font-bold">{post.user.name}</h6>
+          <small className="text-gray-500">
+            {formatPostTime(post.created_at)}
+          </small>
+        </div>
+        {post.user.id === currentUserId && (
+          <button
+            className="ml-auto text-gray-500 hover:text-gray-700"
+            onClick={() => handleOpenPostOptions(post.id)}
+          >
+            <MoreHorizontal size={16} />
+          </button>
+        )}
+      </div>
+      <p className="mb-3 text-sm sm:text-base">{post.content}</p>
+
+      {post.images && <>{renderPhotoGrid(post.images)}</>}
+
+      {renderPostActions(post)}
+    </div>
+  );
+
+  const fetchGroupPosts = async () => {
+    setIsLoadingPosts(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        `http://localhost:3000/api/groups/${groupId}/posts`,
+        {
+          params: {
+            limit: 10,
+            offset: 0,
+          },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const formattedPosts = response.data.data.map((post) => ({
+        ...post,
+        images:
+          post.images?.map((img) =>
+            img.startsWith("http") ? img : `http://localhost:3000/${img}`
+          ) || [],
+
+        user: post.user || {
+          name: "Unknown User",
+          initials: "UU",
+          username: "unknown",
+        },
+        likes_count: post.likes_count || 0,
+        comments_count: post.comments_count || 0,
+        created_at: post.created_at || new Date().toISOString(),
+      }));
+
+      setPosts(formattedPosts);
+    } catch (error) {
+      console.error("Error fetching group posts:", error);
+      setPostError("Failed to load group posts");
+      toast.error("Failed to load group posts");
+    } finally {
+      setIsLoadingPosts(false);
+    }
+  };
+
+  const createGroupPost = async (postData) => {
+    try {
+      const token = localStorage.getItem("token");
+      const user = JSON.parse(localStorage.getItem("user"));
+
+      const formData = new FormData();
+      formData.append("content", postData.content);
+
+      // Pastikan ini adalah File object, bukan URL
+      if (postData.imageFile) {
+        formData.append("images", postData.imageFile); // Gunakan nama field yang sesuai dengan backend
+      }
+
+      const response = await axios.post(
+        `http://localhost:3000/api/groups/${groupId}/posts`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      // Pastikan response.data.data.images ada dan berupa array
+      const newPost = {
+        ...response.data.data,
+        user: {
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          photo: user.photo,
+        },
+        images: response.data.data.images
+          ? response.data.data.images.map((img) =>
+              img.startsWith("http") ? img : `http://localhost:3000/${img}`
+            )
+          : [],
+        likes_count: 0,
+        comments_count: 0,
+        created_at: new Date().toISOString(),
+      };
+
+      setPosts([newPost, ...posts]);
+      return true;
+    } catch (error) {
+      console.error("Error creating post:", error);
+      toast.error("Failed to create post");
+      return false;
+    }
+  };
+  const fetchGroupData = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const user = JSON.parse(localStorage.getItem("user"));
+
+      const response = await axios.get(
+        `http://localhost:3000/api/groups/${groupId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const groupData = response.data.data;
+      setGroup(groupData);
+
+      if (groupData.creator && user && groupData.creator.id === user.id) {
+        setIsCurrentUserAdmin(true);
+      } else if (groupData.members) {
+        const currentUserMember = groupData.members.find(
+          (member) => member.user.id === user.id && member.role === "admin"
+        );
+        setIsCurrentUserAdmin(!!currentUserMember);
+      }
+    } catch (error) {
+      console.error("Error fetching group data:", error);
+      toast.error("Failed to load group data.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchGroupMembers = async (groupId) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        console.warn("No authentication token found for fetching members");
+        return;
+      }
+
+      const response = await axios.get(
+        `http://localhost:3000/api/groups/${groupId}/members`,
+        {
+          headers: {
+            Authorization: "Bearer " + token,
+          },
+          timeout: 5000,
+        }
+      );
+
+      const members = Array.isArray(response.data.data)
+        ? response.data.data
+        : [];
+
+      setGroup((prevGroup) => ({
+        ...prevGroup,
+        members: members,
+      }));
+    } catch (error) {
+      console.error("Error fetching group members:", error);
+    }
+  };
+
+  const fetchUserConnections = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const user = JSON.parse(localStorage.getItem("user"));
+
+      if (!token || !user) {
+        console.warn("No authentication token or user data found");
+        setConnections([
+          {
+            id: 1,
+            user: {
+              id: 3,
+              name: "Alice Cooper",
+              profile_photo: "/api/placeholder/40/40",
+            },
+          },
+          {
+            id: 2,
+            user: {
+              id: 4,
+              name: "Bob Johnson",
+              profile_photo: "/api/placeholder/40/40",
+            },
+          },
+        ]);
+        return;
+      }
+
+      const response = await axios.get(
+        `http://localhost:3000/api/users/${user.id}/connections`,
+        {
+          params: {
+            limit: 10,
+            offset: 0,
+          },
+          headers: {
+            Authorization: "Bearer " + token,
+          },
+          timeout: 5000,
+        }
+      );
+
+      setConnections(response.data.data.connections || []);
+    } catch (error) {
+      console.error("Error fetching user connections:", error);
+      setConnections([
+        {
+          id: 1,
+          user: {
+            id: 3,
+            name: "Alice Cooper",
+            profile_photo: "/api/placeholder/40/40",
+          },
+        },
+        {
+          id: 2,
+          user: {
+            id: 4,
+            name: "Bob Johnson",
+            profile_photo: "/api/placeholder/40/40",
+          },
+        },
+      ]);
+    }
+  };
+
+  useEffect(() => {
+    if (groupId) {
+      fetchGroupData();
+      fetchGroupPosts();
+    } else {
+      toast.error("Invalid group ID.");
+    }
+  }, [groupId]);
+
+  useEffect(() => {
+    if (groupId && !isLoading && group) {
+      fetchGroupMembers(groupId);
+    }
+  }, [groupId, isLoading]);
+
+  const handleOpenInviteModal = () => {
+    fetchUserConnections();
+    setInviteModalOpen(true);
+  };
+
+  const handleUpdateMemberRole = async (userId) => {
+    if (userId === currentUser?.id) {
+      toast.error("You cannot change your own role");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await axios.put(
+        `http://localhost:3000/api/groups/${groupId}/members/${userId}/role`,
+        { role: selectedRole },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      setGroup((prevGroup) => ({
+        ...prevGroup,
+        members: prevGroup.members.map((member) =>
+          member.user.id === userId ? { ...member, role: selectedRole } : member
+        ),
+      }));
+
+      toast.success(`Successfully updated user role to ${selectedRole}`);
+      setShowRoleModal(false);
+      setEditingMemberId(null);
+    } catch (error) {
+      console.error("Error updating member role:", error);
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to update role. Please try again."
+      );
+    }
+  };
+
+  const handleRemoveMember = async () => {
+    if (!memberToRemove) return;
+
+    try {
+      const token = localStorage.getItem("token");
+
+      await axios.delete(
+        `http://localhost:3000/api/groups/${groupId}/members/${memberToRemove.user.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setGroup((prevGroup) => ({
+        ...prevGroup,
+        members: prevGroup.members.filter(
+          (m) => m.user.id !== memberToRemove.user.id
+        ),
+        members_count: prevGroup.members_count - 1,
+      }));
+
+      toast.success(
+        `Successfully removed ${memberToRemove.user.name} from the group`
+      );
+      setShowRemoveModal(false);
+      setMemberToRemove(null);
+    } catch (error) {
+      console.error("Error removing member:", error);
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to remove member. Please try again."
+      );
+    }
+  };
+
+  const openRemoveConfirmation = (member) => {
+    setMemberToRemove(member);
+    setShowRemoveModal(true);
+  };
+
+  useEffect(() => {
+    const userData = JSON.parse(localStorage.getItem("user"));
+    setCurrentUser(userData);
+  }, []);
+
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
+    // Validate files
+    const validFiles = files.filter((file) => {
+      if (!file.type.match("image.*")) {
+        toast.error(`File ${file.name} is not an image`);
+        return false;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(`Image ${file.name} is too large (max 5MB)`);
+        return false;
+      }
+      return true;
+    });
+
+    if (!validFiles.length) return;
+
+    // Create preview URLs
+    const newPreviews = validFiles.map((file) => ({
+      url: URL.createObjectURL(file),
+      name: file.name,
+    }));
+
+    setImagePreviews((prev) => [...prev, ...newPreviews]);
+    setImageFiles((prev) => [...prev, ...validFiles]);
+  };
+
+  // Update the removeImage function
+  const removeImage = (index) => {
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmitPost = async (e) => {
+    e.preventDefault();
+    if (!postContent.trim() && imageFiles.length === 0) {
+      toast.error("Post content or image is required");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      const user = JSON.parse(localStorage.getItem("user"));
+      const formData = new FormData();
+
+      formData.append("content", postContent);
+
+      // Append all image files
+      imageFiles.forEach((file) => {
+        formData.append("images", file);
+      });
+
+      const response = await axios.post(
+        `http://localhost:3000/api/groups/${groupId}/posts`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      // Reset form after successful post
+      setPostContent("");
+      setImagePreviews([]);
+      setImageFiles([]);
+      e.target.elements["post-image"].value = "";
+
+      toast.success("Post created successfully");
+      fetchGroupPosts(); // Refresh posts
+    } catch (error) {
+      console.error("Error creating post:", error);
+      toast.error("Failed to create post");
+    }
+  };
+
+  const handleInvite = async (userId) => {
+    try {
+      const token = localStorage.getItem("token");
+      const currentUser = JSON.parse(localStorage.getItem("user"));
+
+      if (!token || !currentUser) {
+        toast.error("You need to be logged in to invite users");
+        return;
+      }
+
+      if (!isCurrentUserAdmin) {
+        toast.error("Only group admins can invite members");
+        return;
+      }
+
+      const isAlreadyMember = group.members?.some(
+        (member) => member.user.id === userId
+      );
+      if (isAlreadyMember) {
+        toast.error("This user is already a group member");
+        return;
+      }
+
+      const hasPendingInvite = group.invitations?.some(
+        (inv) => inv.user_id === userId && inv.status === "pending"
+      );
+      if (hasPendingInvite) {
+        toast.error("An invitation has already been sent to this user");
+        return;
+      }
+
+      const response = await axios.post(
+        `http://localhost:3000/api/groups/${groupId}/invitations/${userId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const invitedUser = connections.find(
+        (conn) => conn.user.id === userId
+      )?.user;
+      if (invitedUser) {
+        setInvitedUserName(invitedUser.name);
+        setShowInviteSuccess(true);
+        setTimeout(() => setShowInviteSuccess(false), 3000);
+
+        setGroup((prevGroup) => ({
+          ...prevGroup,
+          invitations: [
+            ...(prevGroup.invitations || []),
+            {
+              user_id: userId,
+              status: "pending",
+              user: invitedUser,
+            },
+          ],
+        }));
+      }
+      toast.success(`Invitation sent to ${invitedUser?.name || "user"}`);
+    } catch (error) {
+      console.error("Error inviting user:", error);
+      if (error.response) {
+        if (
+          error.response.status === 400 &&
+          error.response.data?.data === "invitation already sent to this user"
+        ) {
+          toast.error("An invitation has already been sent to this user");
+        } else {
+          toast.error(
+            error.response.data?.message || `Error: ${error.response.status}`
+          );
+        }
+      } else {
+        toast.error("Network error - please check your connection");
+      }
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error && !group) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">{error}</p>
+          <button
+            className="bg-blue-500 text-white px-4 py-2 rounded"
+            onClick={() => fetchGroupData(groupId)}
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!group) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p className="text-gray-500">Group not found.</p>
+      </div>
+    );
+  }
 
   return (
     <Case>
-      <div className="bg-gray-100 min-h-screen pb-8">
-        {/* Cover Photo - Full width on all screens */}
-        <div className="h-32 sm:h-48 w-full bg-gray-300">
-          <img className="h-full w-full object-cover" src={GroupCover} alt="Cover" />
-        </div>
+      <div className="flex flex-col md:flex-row bg-gray-50 px-4 md:px-6 lg:px-12 xl:px-32 py-2 md:py-4">
+        {showInviteSuccess && (
+          <div className="fixed top-5 right-5 z-50">
+            <div className="bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center">
+              <Check className="mr-2" />
+              <span>Successfully invited {invitedUserName} to the group!</span>
+            </div>
+          </div>
+        )}
 
         {/* Main Content Area */}
         <div className="container mx-auto px-2 sm:px-4">
           <div className="flex flex-col lg:flex-row gap-4 mt-4">
-            {/* Left Sidebar - Hidden on mobile, shown on lg+ */}
-            <aside className="hidden lg:block lg:w-1/4">
+            {/* Left Sidebar */}
+            <aside className="lg:block lg:w-1/4">
               <div className="rounded-lg border bg-white shadow-sm">
                 <div className="p-4 text-center">
                   <div className="profile-photo-container">
-                    <img 
-                      src={user.profile_photo}
-                      className="rounded-full w-20 h-20 mx-auto" 
-                      alt="Profile" 
-                    />
-                    <h5 className="font-bold text-gray-800 mt-3">{user.name}</h5>
-                    <small className="text-gray-500">Group Admin</small>
+                    {group.creator.photo ? (
+                      <img
+                        src={`http://localhost:3000/${group.creator.photo}`}
+                        alt="avatar"
+                        className="rounded-full w-20 h-20 mx-auto object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-300">
+                        <span className="text-sm font-bold text-gray-600">
+                          {group.creator.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </span>
+                      </div>
+                    )}
+                    <h5 className="font-bold text-gray-800 mt-3">
+                      {group.creator?.name || "Admin"}
+                    </h5>
                   </div>
 
                   <div className="mt-4 p-2">
                     <div className="flex items-center justify-between py-2">
-                      <p className="text-gray-500">Request Join</p>
-                      <p className="font-bold text-gray-800">{user.following_count}</p>
+                      <p className="text-gray-500">Members</p>
+                      <p className="font-bold text-gray-800">
+                        {group.members_count || 0}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
             </aside>
 
-            {/* Main Content - Full width on mobile, 2/4 on lg+ */}
+            {/* Main Content */}
             <main className="w-full lg:w-2/4">
-              {/* Group Info Box - Stacked on mobile */}
-              <div className="rounded-lg border bg-white shadow-sm mb-4">
-                <div className="p-4">
-                  <div className="flex flex-col sm:flex-row items-center">
-                    <img 
-                      className="rounded-full w-16 h-16 sm:w-20 sm:h-20" 
-                      src={group.image} 
-                      alt="Group" 
-                    />
-                    <div className="mt-3 sm:mt-0 sm:ml-4 text-center sm:text-left">
-                      <h5 className="font-bold text-gray-800">{group.name}</h5>
-                      <p className="text-gray-500 text-sm">{group.description}</p>
-                    </div>
-                  </div>
-                  <div className="flex justify-between mt-4">
-                    <div className="text-center">
-                      <p className="text-gray-500 text-sm">Members</p>
-                      <p className="font-bold">25</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-gray-500 text-sm">Posts</p>
-                      <p className="font-bold">120</p>
+              {/* Group Info */}
+              <div className="rounded-lg border bg-white shadow-sm mb-4 relative">
+                <div className="h-14 sm:h-24 w-full bg-gray-300 relative">
+                  <img
+                    className="h-full w-full object-cover"
+                    src={GroupCover}
+                    alt="Cover"
+                  />
+                  <div className="absolute -bottom-8 left-4">
+                    <div className="relative">
+                      <img
+                        className="rounded-full w-16 h-16 border-4 border-white"
+                        src={
+                          group.image
+                            ? `http://localhost:3000/${group.image}`
+                            : "/default-group.png"
+                        }
+                        alt={group.name}
+                      />
                     </div>
                   </div>
                 </div>
+                <div className="pt-10 px-4 pb-4">
+                  <div className="ml-4">
+                    <h5 className="font-bold text-gray-800">{group.name}</h5>
+                    <p className="text-gray-500 text-sm">{group.description}</p>
+                    <p className="text-gray-500 text-sm">
+                      {group.members_count || 0} Members
+                    </p>
+                  </div>
+                </div>
               </div>
-
               {/* Create Post Box */}
               <div className="rounded-lg border bg-white shadow-sm mb-4">
                 <div className="border-b p-3">
@@ -207,61 +1132,61 @@ export default function GroupPage() {
                 <div className="p-3">
                   <form onSubmit={handleSubmitPost}>
                     <div className="mb-3">
-                      <div className="flex items-center mb-3">
-                        <img 
-                          src={user.profile_photo} 
-                          className="rounded-full mr-2 w-10 h-10" 
-                          alt="" 
-                        />
-                        <span className="font-bold">{user.name}</span>
-                      </div>
-                      <textarea 
-                        className="w-full p-2 border rounded text-sm sm:text-base" 
-                        rows="3" 
+                      <textarea
+                        className="w-full p-2 border rounded text-sm sm:text-base"
+                        rows="3"
                         placeholder="What's on your mind?"
                         value={postContent}
                         onChange={(e) => setPostContent(e.target.value)}
                       ></textarea>
                     </div>
 
-                    {showImagePreview && (
-                      <div className="mb-3 relative">
-                        <img 
-                          src={imagePreviewUrl || "#"} 
-                          alt="Preview" 
-                          className="w-full rounded max-h-64 object-contain"
-                        />
-                        <button 
-                          type="button" 
-                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1"
-                          onClick={removeImage}
-                        >
-                          <X size={16} />
-                        </button>
+                    {/* Multiple image preview */}
+                    {imagePreviews.length > 0 && (
+                      <div className="mb-3 grid grid-cols-2 gap-2">
+                        {imagePreviews.map((preview, index) => (
+                          <div key={index} className="relative aspect-square">
+                            <img
+                              src={preview.url}
+                              alt={`Preview ${index + 1}`}
+                              className="w-full h-full object-cover rounded"
+                            />
+                            <button
+                              type="button"
+                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"
+                              onClick={() => removeImage(index)}
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ))}
                       </div>
                     )}
 
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
                       <div className="flex gap-3 w-full sm:w-auto">
-                        <label htmlFor="post-image" className="text-blue-500 cursor-pointer flex items-center text-sm">
+                        <label
+                          htmlFor="post-image"
+                          className="text-blue-500 cursor-pointer flex items-center text-sm"
+                        >
                           <Image size={16} className="mr-1" /> Photo
+                          <input
+                            type="file"
+                            id="post-image"
+                            multiple
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleImageUpload}
+                          />
                         </label>
-                        <input 
-                          type="file" 
-                          id="post-image" 
-                          accept="image/*" 
-                          className="hidden"
-                          onChange={handleImageUpload}
-                        />
-
-                        <span className="text-blue-500 cursor-pointer flex items-center text-sm">
-                          <Video size={16} className="mr-1" /> Video
-                        </span>
                       </div>
 
-                      <button 
-                        type="submit" 
+                      <button
+                        type="submit"
                         className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full sm:w-auto"
+                        disabled={
+                          !postContent.trim() && imageFiles.length === 0
+                        }
                       >
                         Post
                       </button>
@@ -270,305 +1195,593 @@ export default function GroupPage() {
                 </div>
               </div>
 
-              {/* Posts Display */}
               <div className="rounded-lg border bg-white shadow-sm">
                 <div className="border-b p-3">
                   <h6 className="font-medium">Recent Posts</h6>
                 </div>
                 <div>
-                  {posts.map(post => (
-                    <div key={post.id} className="border-b p-3">
-                      <div className="flex items-center mb-3">
-                        <img 
-                          src={post.user.profile_photo} 
-                          className="rounded-full mr-2 w-10 h-10" 
-                          alt="User" 
-                        />
-                        <div className="flex-1">
-                          <h6 className="font-bold">{post.user.name}</h6>
-                          <small className="text-gray-500">{post.createdAt}</small>
-                        </div>
-                        <div className="relative group">
-                          <button className="bg-gray-100 hover:bg-gray-200 rounded-full p-1">
-                            <MoreHorizontal size={16} />
-                          </button>
-                          <div className="hidden group-hover:block absolute right-0 bg-white border rounded shadow-lg z-10 w-32">
-                            <button className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">Edit</button>
-                            <button className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">Delete</button>
-                            <button className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">Report</button>
-                          </div>
-                        </div>
-                      </div>
-                      <p className="mb-3 text-sm sm:text-base">{post.content}</p>
-                      {post.image && (
-                        <div className="mb-3 rounded-lg overflow-hidden border">
-                          <img 
-                            src={post.image} 
-                            className="w-full h-auto object-cover" 
-                            alt="Posted content" 
-                          />
-                        </div>
-                      )}
-                      <div className="flex flex-wrap justify-between border-t pt-3 gap-2">
-                        <div className="flex gap-2">
-                          <button
-                            className="bg-sky-100 hover:bg-sky-200 px-3 py-1 rounded text-sm flex items-center"
-                            onClick={() => handleLikePost(post.id)}
-                          >
-                            <ThumbsUp size={14} className="mr-1" />
-                            Like ({post.likes})
-                          </button>
-                          <button
-                            className="bg-sky-100 hover:bg-sky-200 px-3 py-1 rounded text-sm flex items-center"
-                            onClick={() => openCommentModal(post.id)}
-                          >
-                            <MessageCircle size={14} className="mr-1" />
-                            Comment ({post.comments.length})
-                          </button>
-                        </div>
-                        <div className="relative">
-                          <button
-                            className="bg-sky-100 hover:bg-sky-200 px-3 py-1 rounded text-sm flex items-center text-blue-500"
-                            onClick={() => setSharePostId(post.id)}
-                          >
-                            <Share size={14} className="mr-1" /> Share
-                          </button>
+                  {isLoadingPosts ? (
+                    <div className="flex justify-center items-center p-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                    </div>
+                  ) : postError ? (
+                    <div className="p-4 text-center text-red-500">
+                      {postError}
+                    </div>
+                  ) : posts.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500">
+                      No posts yet
+                    </div>
+                  ) : (
+                    posts.map(renderPost)
+                  )}
+                </div>
+              </div>
 
-                          {sharePostId === post.id && (
-                            <div className="absolute top-full right-0 mt-2 w-64 bg-white shadow-xl border rounded-lg z-50 p-4">
-                              <div className="flex justify-between items-center mb-2">
-                                <h2 className="font-semibold text-gray-700 text-sm">
-                                  Share
-                                </h2>
-                                <button onClick={() => setSharePostId(null)}>
-                                  <X size={16} />
-                                </button>
-                              </div>
-                              <div className="mb-3">
-                                <label className="text-xs text-gray-500">Link</label>
-                                <div className="flex items-center mt-1 bg-gray-100 px-2 py-1 rounded">
-                                  <input
-                                    type="text"
-                                    readOnly
-                                    value={shareUrl}
-                                    className="text-xs w-full bg-transparent focus:outline-none"
-                                  />
-                                  <button onClick={copyToClipboard}>
-                                    <Copy size={14} className="text-gray-500 ml-2" />
-                                  </button>
+              {/* Comment Modal */}
+              {showCommentModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+                  <div className="bg-white rounded-lg w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
+                    <div className="p-3 md:p-4 border-b flex justify-between items-center">
+                      <h3 className="text-base md:text-lg font-semibold">
+                        Comments
+                      </h3>
+                      <button onClick={closeCommentModal}>
+                        <X size={20} />
+                      </button>
+                    </div>
+
+                    <div className="p-3 md:p-4 overflow-y-auto flex-1">
+                      {loadingComments[commentModalPostId] ? (
+                        <div className="text-center py-4">
+                          Loading comments...
+                        </div>
+                      ) : !Array.isArray(comments[commentModalPostId]) ||
+                        comments[commentModalPostId].length === 0 ? (
+                        <p className="text-gray-500 text-center py-4">
+                          No comments yet. Be the first to comment!
+                        </p>
+                      ) : (
+                        comments[commentModalPostId].map((comment) => (
+                          <div key={comment.id} className="mb-4">
+                            <div className="flex items-start mb-2">
+                              <img
+                                className="rounded-full w-8 h-8 object-cover mr-2"
+                                src={
+                                  comment.user.profile_photo ||
+                                  "/default-user.png"
+                                }
+                                alt={comment.user.name}
+                              />
+                              <div className="flex-1">
+                                <div className="bg-gray-100 rounded-lg p-2 md:p-3">
+                                  <div className="font-semibold text-xs md:text-sm">
+                                    {comment.user.name}
+                                  </div>
+                                  <p className="text-xs md:text-sm">
+                                    {comment.content}
+                                  </p>
+                                </div>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {formatPostTime(comment.createdAt)}
                                 </div>
                               </div>
-
-                              <div className="flex justify-end space-x-3 text-sm mt-2">
-                                <a
-                                  href={`https://wa.me/?text=${encodeURIComponent(
-                                    shareUrl
-                                  )}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center text-green-500 hover:underline"
-                                >
-                                  <svg
-                                    className="w-4 h-4 mr-2"
-                                    fill="currentColor"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path d="M20.52 3.48A11.77 11.77 0 0012 0C5.37 0 .13 6.41.13 12.72c0 2.01.52 3.97 1.5 5.69L0 24l5.81-1.52a11.91 11.91 0 006.2 1.71h.01c6.63 0 11.87-6.42 11.87-12.73 0-2.8-1.12-5.44-3.17-7.47zm-8.5 17.6c-1.79 0-3.55-.47-5.08-1.35l-.36-.21-3.45.91.92-3.36-.23-.35a9.4 9.4 0 01-1.42-5c0-5.05 4.07-9.72 9.1-9.72a9.4 9.4 0 019.23 9.46c0 5.15-4.07 9.62-9.7 9.62zm5.3-7.27c-.29-.14-1.71-.84-1.97-.93-.26-.1-.45-.14-.64.15-.19.28-.74.93-.91 1.12-.17.19-.34.22-.63.07-.29-.14-1.23-.46-2.34-1.47-.86-.77-1.44-1.71-1.6-2-.17-.29-.02-.45.13-.6.13-.13.29-.34.44-.51.15-.17.2-.28.29-.47.1-.19.05-.36-.02-.51-.07-.14-.64-1.53-.88-2.1-.23-.56-.47-.49-.64-.5-.16 0-.36 0-.55 0-.19 0-.5.07-.76.35-.26.28-1 1-1 2.43 0 1.42 1.02 2.8 1.16 3 .14.19 2 3.15 4.87 4.42.68.29 1.21.46 1.62.59.68.21 1.3.18 1.79.11.55-.08 1.71-.7 1.95-1.38.24-.68.24-1.26.17-1.38-.07-.13-.26-.2-.55-.34z" />
-                                  </svg>
-                                </a>
-
-                                <a
-                                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-                                    shareUrl
-                                  )}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center text-blue-600 hover:underline"
-                                >
-                                  <svg
-                                    className="w-4 h-4 mr-2"
-                                    fill="currentColor"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path d="M22.675 0h-21.35C.6 0 0 .6 0 1.343v21.314C0 23.4.6 24 1.343 24H12.82V14.706h-3.3v-3.622h3.3V8.413c0-3.26 1.993-5.034 4.902-5.034 1.393 0 2.593.104 2.942.15v3.412l-2.02.001c-1.582 0-1.89.752-1.89 1.854v2.43h3.78l-.492 3.622h-3.288V24h6.453C23.4 24 24 23.4 24 22.657V1.343C24 .6 23.4 0 22.675 0z" />
-                                  </svg>
-                                </a>
-
-                                <a
-                                  href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(
-                                    shareUrl
-                                  )}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center text-blue-400 hover:underline"
-                                >
-                                  <svg
-                                    className="w-4 h-4 mr-2"
-                                    fill="currentColor"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path d="M23.953 4.57a10.004 10.004 0 01-2.825.775 4.933 4.933 0 002.163-2.724 10.038 10.038 0 01-3.127 1.195 4.918 4.918 0 00-8.38 4.482C7.69 8.095 4.066 6.13 1.64 3.161a4.822 4.822 0 00-.666 2.475 4.902 4.902 0 002.188 4.084 4.897 4.897 0 01-2.229-.616c-.054 2.281 1.581 4.415 3.949 4.89a4.935 4.935 0 01-2.224.085c.63 1.953 2.445 3.376 4.6 3.418A9.867 9.867 0 010 19.54 13.94 13.94 0 007.548 22c9.142 0 14.307-7.721 13.995-14.646a10.006 10.006 0 002.41-2.584z" />
-                                  </svg>
-                                </a>
-                              </div>
                             </div>
-                          )}
-                        </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="p-3 md:p-4 border-t">
+                      <div className="flex items-center mb-2">
+                        <img
+                          className="rounded-full w-8 h-8 bg-gray-200 flex items-center justify-center text-xxs md:text-xs mr-2 md:mr-3"
+                          src={currentUser?.photo || "/default-user.png"}
+                          alt="You"
+                        />
+                        <input
+                          type="text"
+                          className="flex-1 border rounded-lg p-2 text-xs md:text-sm"
+                          placeholder="Write a comment..."
+                          value={commentText}
+                          onChange={(e) => setCommentText(e.target.value)}
+                          onKeyPress={(e) =>
+                            e.key === "Enter" &&
+                            handleAddComment(commentModalPostId)
+                          }
+                        />
+                      </div>
+                      {commentError && (
+                        <span className="text-red-500 text-xs font-medium">
+                          {commentError}
+                        </span>
+                      )}
+                      <div className="flex justify-end">
+                        <button
+                          className="bg-blue-500 text-white px-3 md:px-4 py-1 rounded-lg text-xs md:text-sm"
+                          onClick={() => handleAddComment(commentModalPostId)}
+                        >
+                          Post
+                        </button>
                       </div>
                     </div>
-                  ))}
+                  </div>
                 </div>
-                <button className="font-bold block text-blue-500 w-full bg-transparent p-3 text-center border-t">
-                  Load More <ArrowDown size={16} className="inline ml-1" />
-                </button>
-              </div>
+              )}
+
+              {/* Share Modal */}
+              {showShareModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-medium">Share this post</h3>
+                      <button
+                        onClick={handleCloseShareModal}
+                        className="p-1 rounded-full hover:bg-gray-100"
+                      >
+                        <X size={20} />
+                      </button>
+                    </div>
+
+                    <div className="mb-6">
+                      <p className="text-sm text-gray-500 mb-2">Copy link</p>
+                      <div className="flex items-center border rounded-lg p-2">
+                        <input
+                          type="text"
+                          value={`http://localhost:5173/post/${sharePostId}`}
+                          readOnly
+                          className="flex-grow text-sm text-gray-700 mr-2 outline-none"
+                        />
+                        <button
+                          onClick={copyToClipboard}
+                          className="text-blue-500 hover:text-blue-700"
+                        >
+                          <Copy size={16} />
+                        </button>
+                      </div>
+                      {copied && (
+                        <p className="text-xs text-green-600 mt-1">
+                          Link copied to clipboard!
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <p className="text-sm text-gray-500 mb-3">Share to</p>
+                      <div className="flex justify-around">
+                        <button
+                          onClick={shareToWhatsApp}
+                          className="flex flex-col items-center"
+                        >
+                          <div className="bg-green-100 p-3 rounded-full mb-1">
+                            <MessageCircle
+                              size={24}
+                              className="text-green-600"
+                            />
+                          </div>
+                          <span className="text-xs">WhatsApp</span>
+                        </button>
+
+                        <button
+                          onClick={() =>
+                            window.open("https://www.instagram.com", "_blank")
+                          }
+                          className="flex flex-col items-center"
+                        >
+                          <div className="bg-pink-100 p-3 rounded-full mb-1">
+                            <Image size={24} className="text-pink-600" />
+                          </div>
+                          <span className="text-xs">Instagram</span>
+                        </button>
+
+                        <button
+                          onClick={shareToTwitter}
+                          className="flex flex-col items-center"
+                        >
+                          <div className="bg-blue-100 p-3 rounded-full mb-1">
+                            <Share size={24} className="text-blue-600" />
+                          </div>
+                          <span className="text-xs">Twitter</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Post Options Modal */}
+              {showPostOptions && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-white rounded-lg w-full max-w-xs mx-4">
+                    <div className="p-4">
+                      <h3 className="font-medium text-lg mb-3">Post Options</h3>
+
+                      <button
+                        className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
+                        onClick={() => handleDeletePost(selectedPostId)}
+                      >
+                        <X size={16} className="mr-2" />
+                        Delete Post
+                      </button>
+                    </div>
+
+                    <div className="border-t p-3">
+                      <button
+                        className="w-full py-2 text-gray-500 hover:text-gray-700"
+                        onClick={handleClosePostOptions}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Role Update Modal */}
+              {showRoleModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white rounded-lg w-full max-w-md p-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h5 className="font-bold">Change Member Role</h5>
+                      <button
+                        onClick={() => {
+                          setShowRoleModal(false);
+                          setEditingMemberId(null);
+                        }}
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        <X size={20} />
+                      </button>
+                    </div>
+
+                    {editingMemberId === currentUser?.id ? (
+                      <div className="text-red-500 mb-4">
+                        You cannot change your own role.
+                      </div>
+                    ) : (
+                      <>
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Select Role
+                          </label>
+                          <select
+                            className="w-full p-2 border rounded"
+                            value={selectedRole}
+                            onChange={(e) => setSelectedRole(e.target.value)}
+                          >
+                            <option value="member">Member</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        </div>
+
+                        <div className="flex justify-end gap-2">
+                          <button
+                            className="px-4 py-2 border rounded text-gray-700"
+                            onClick={() => {
+                              setShowRoleModal(false);
+                              setEditingMemberId(null);
+                            }}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            className="px-4 py-2 bg-blue-500 text-white rounded"
+                            onClick={() =>
+                              handleUpdateMemberRole(editingMemberId)
+                            }
+                          >
+                            Update Role
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Remove Member Confirmation Modal */}
+              {showRemoveModal && memberToRemove && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white rounded-lg w-full max-w-md p-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h5 className="font-bold">Remove Member</h5>
+                      <button
+                        onClick={() => {
+                          setShowRemoveModal(false);
+                          setMemberToRemove(null);
+                        }}
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        <X size={20} />
+                      </button>
+                    </div>
+
+                    <div className="mb-4">
+                      <p>
+                        Are you sure you want to remove{" "}
+                        <span className="font-semibold">
+                          {memberToRemove.user.name}
+                        </span>{" "}
+                        from this group?
+                      </p>
+                      {memberToRemove.role === "admin" && (
+                        <p className="text-yellow-600 mt-2">
+                          This user is an admin. Removing them will revoke their
+                          admin privileges.
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex justify-end gap-2">
+                      <button
+                        className="px-4 py-2 border rounded text-gray-700"
+                        onClick={() => {
+                          setShowRemoveModal(false);
+                          setMemberToRemove(null);
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        className="px-4 py-2 bg-red-500 text-white rounded"
+                        onClick={handleRemoveMember}
+                      >
+                        Remove Member
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </main>
 
-            {/* Right Sidebar - Hidden on mobile, shown on lg+ */}
-            <aside className="hidden lg:block lg:w-1/4">
+            {/* Right Sidebar */}
+            <aside className="lg:block lg:w-1/4">
               {/* Members Box */}
-              <div className="rounded-lg border bg-white shadow-sm mb-4">
-                <div className="border-b p-3">
-                  <h6 className="font-medium">{group.members.length} Members</h6>
+              <div className="rounded-xl border bg-white shadow mb-6">
+                <div className="border-b p-4 flex items-center justify-between">
+                  <h6 className="font-semibold text-gray-800">
+                    {group.members?.length || 0} Members
+                  </h6>
                 </div>
-                <div className="p-3">
-                  <div className="flex flex-wrap gap-2">
-                    {group.members.map(member => (
-                      <div key={member.id} className="text-center">
-                        <img 
-                          src={member.user.profile_photo} 
-                          className="rounded-full w-12 h-12" 
-                          alt={member.user.name}
-                        />
-                        <p className="text-xs mt-1">{member.user.name}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <button 
-                    className="mt-3 border border-blue-500 text-blue-500 hover:bg-blue-50 px-3 py-2 rounded text-sm w-full"
-                    onClick={() => setInviteModalOpen(true)}
-                  >
-                    Invite Connection
-                  </button>
+                <div className="space-y-4 p-4">
+                  {group?.members?.length > 0 ? (
+                    <div className="flex flex-wrap gap-4">
+                      {/* Tampilkan maksimal 3 anggota pertama */}
+                      {group.members.slice(0, 3).map((member) => (
+                        <div
+                          key={member.id}
+                          className="flex items-center gap-3"
+                        >
+                          <img
+                            src={
+                              member.user.photo
+                                ? member.user.photo.startsWith("http")
+                                  ? member.user.photo
+                                  : `http://localhost:3000/${member.user.photo}`
+                                : "/default-user.png"
+                            }
+                            className="rounded-full w-10 h-10 object-cover"
+                            alt={member.user.name}
+                          />
+                        </div>
+                      ))}
+
+                      {/* Jika anggota lebih dari 3, tampilkan angka tambahan */}
+                      {group.members.length > 3 && (
+                        <div className="relative">
+                          <div className="rounded-full w-10 h-10 bg-gray-200 flex items-center justify-center">
+                            <span className="text-gray-600 font-medium">
+                              +{group.members.length - 3}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-sm">No members found.</p>
+                  )}
+
+                  {isCurrentUserAdmin && (
+                    <button
+                      className="text-sm font-medium px-4 py-2 rounded-lg border border-blue-500 text-blue-600 hover:bg-blue-50 transition"
+                      onClick={handleOpenInviteModal}
+                    >
+                      + Invite Connection
+                    </button>
+                  )}
                 </div>
-                <button className="font-bold block text-blue-500 w-full bg-transparent p-3 text-center border-t">
-                  Show all <ArrowRight size={16} className="inline ml-1" />
-                </button>
+
+                <Link
+                  to={`/groups/${groupId}/members`}
+                  className="w-full text-sm font-medium px-4 py-2 border text-blue-600 hover:bg-blue-50 transition flex items-center justify-center"
+                >
+                  Show All
+                </Link>
               </div>
 
-              {/* Admin Box */}
-              <div className="rounded-lg border bg-white shadow-sm">
-                <div className="border-b p-3">
-                  <h6 className="font-medium">Admin</h6>
-                </div>
-                <div className="p-3">
-                  {group.members.filter(member => member.user.role === 'admin').map(admin => (
-                    <div key={admin.id} className="flex items-center mb-3">
-                      <img 
-                        src={admin.user.profile_photo} 
-                        className="rounded-full mr-3 w-12 h-12" 
-                        alt={admin.user.name}
-                      />
-                      <div>
-                        <h6 className="font-bold">{admin.user.name}</h6>
-                        <small className="text-blue-500">Group Admin</small>
-                      </div>
+              {/* Invite Modal */}
+              {inviteModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                  <div className="bg-white rounded-xl shadow-lg w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
+                    <div className="flex justify-between items-center border-b p-4">
+                      <h5 className="font-bold text-gray-800">
+                        Invite Connection
+                      </h5>
+                      <button
+                        onClick={() => setInviteModalOpen(false)}
+                        className="text-gray-400 hover:text-gray-600 transition"
+                      >
+                        <X size={20} />
+                      </button>
                     </div>
-                  ))}
+                    <div className="overflow-y-auto flex-1">
+                      {connections.length === 0 ? (
+                        <div className="p-4 text-center text-gray-500">
+                          No connections found
+                        </div>
+                      ) : (
+                        <ul className="divide-y">
+                          {connections.map((connection) => {
+                            const friend = connection.user;
+                            const isActiveMember = group.members?.some(
+                              (member) => member.user.id === friend.id
+                            );
+                            const isInvited = group.invitations?.some(
+                              (inv) =>
+                                inv.user_id === friend.id &&
+                                inv.status === "pending"
+                            );
+
+                            return (
+                              <li
+                                key={friend.id}
+                                className="p-4 flex items-center justify-between"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <img
+                                    src={friend.photo || "/default-user.png"}
+                                    className="w-10 h-10 rounded-full object-cover"
+                                    alt={friend.name}
+                                  />
+                                  <span className="text-gray-800 font-medium">
+                                    {friend.name}
+                                  </span>
+                                </div>
+                                {isActiveMember ? (
+                                  <span className="text-sm text-gray-400">
+                                    Already a member
+                                  </span>
+                                ) : isInvited ? (
+                                  <span className="text-sm text-yellow-500">
+                                    Invitation sent
+                                  </span>
+                                ) : (
+                                  <button
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded text-sm transition"
+                                    onClick={() => handleInvite(friend.id)}
+                                  >
+                                    Invite
+                                  </button>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {group.creator && (
+                <div className="rounded-lg border bg-white shadow-sm mb-4">
+                  <div className="border-b p-3">
+                    <h6 className="font-medium">Group Admin</h6>
+                  </div>
+                  <div className="p-4 text-center">
+                    <img
+                      src={
+                        "http://localhost:3000/" + group.creator.photo ||
+                        "/default-user.png"
+                      }
+                      className="rounded-full w-20 h-20 mx-auto mb-2"
+                      alt={group.creator.name}
+                    />
+                    <h5 className="font-bold text-gray-800">
+                      {group.creator.name}
+                    </h5>
+                    <p className="text-gray-500 text-sm mt-1">
+                      {group.creator.headline || "No headline available"}
+                    </p>
+                    {group.creator.about && (
+                      <p className="text-gray-600 text-sm mt-2 line-clamp-3">
+                        {group.creator.about}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </aside>
           </div>
         </div>
+      </div>
+      {/* Image Modal */}
+      {showImageModal && selectedPost && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <div className="relative max-w-4xl w-full mx-4">
+            <button
+              className="absolute top-2 md:top-4 right-2 md:right-4 text-white bg-black bg-opacity-50 rounded-full p-1 md:p-2 z-10"
+              onClick={closeImageModal}
+            >
+              <X size={20} />
+            </button>
 
-        {/* Invite Modal - Responsive */}
-        {inviteModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] flex flex-col">
-              <div className="flex justify-between items-center border-b p-4">
-                <h5 className="font-bold">Invite Connection</h5>
-                <button 
-                  onClick={() => setInviteModalOpen(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              <div className="overflow-y-auto flex-1">
-                <ul className="divide-y">
-                  {connections.map(connection => {
-                    const friend = connection.from_user_id === user.id ? connection.toUser : connection.fromUser;
-                    if (!friend) return null;
-                    
-                    return (
-                      <li key={connection.id} className="py-3 px-4 flex justify-between items-center">
-                        <div className="flex items-center">
-                          <img 
-                            src={friend.profile_photo} 
-                            className="rounded-full mr-3 w-10 h-10" 
-                            alt=""
-                          />
-                          <span>{friend.name}</span>
-                        </div>
-                        <button 
-                          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
-                          onClick={() => handleInvite(friend.id)}
-                        >
-                          Invite
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
+            <div className="relative">
+              <img
+                src={selectedPost.images[selectedImageIndex]}
+                className="w-full max-h-[80vh] object-contain"
+                alt={`Post ${selectedImageIndex + 1}`}
+              />
+
+              {selectedPost.images.length > 1 && (
+                <>
+                  <button
+                    className="absolute left-2 md:left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white rounded-full p-1 md:p-2"
+                    onClick={() => navigateImage("prev")}
+                  >
+                    <svg
+                      className="w-4 md:w-6 h-4 md:h-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M15 19l-7-7 7-7"
+                      ></path>
+                    </svg>
+                  </button>
+
+                  <button
+                    className="absolute right-2 md:right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white rounded-full p-1 md:p-2"
+                    onClick={() => navigateImage("next")}
+                  >
+                    <svg
+                      className="w-4 md:w-6 h-4 md:h-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 5l7 7-7 7"
+                      ></path>
+                    </svg>
+                  </button>
+                </>
+              )}
             </div>
-          </div>
-        )}
 
-        {/* Comment Modal - Responsive */}
-        {commentModalPostId && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] flex flex-col">
-              <div className="flex justify-between items-center border-b p-4">
-                <h5 className="font-bold">Comments</h5>
-                <button 
-                  onClick={closeCommentModal}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              <div className="overflow-y-auto flex-1 p-4">
-                {posts.find(p => p.id === commentModalPostId)?.comments.map(comment => (
-                  <div key={comment.id} className="mb-4">
-                    <div className="flex items-start">
-                      <div className="mr-3">
-                        <div className="w-8 h-8 rounded-full bg-gray-300"></div>
-                      </div>
-                      <div className="flex-1">
-                        <div className="bg-gray-100 p-3 rounded-lg">
-                          <h6 className="font-bold text-sm">{comment.user}</h6>
-                          <p className="text-sm">{comment.text}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+            <div className="absolute bottom-2 md:bottom-4 left-0 right-0 flex justify-center">
+              <div className="flex space-x-1 md:space-x-2">
+                {selectedPost.images.map((_, index) => (
+                  <button
+                    key={index}
+                    className={`w-2 h-2 md:w-3 md:h-3 rounded-full ${
+                      selectedImageIndex === index ? "bg-white" : "bg-gray-500"
+                    }`}
+                    onClick={() => setSelectedImageIndex(index)}
+                  />
                 ))}
               </div>
-              <div className="border-t p-4">
-                <textarea 
-                  className="w-full p-2 border rounded text-sm" 
-                  rows="3" 
-                  placeholder="Write a comment..."
-                ></textarea>
-                <button className="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full">
-                  Post Comment
-                </button>
-              </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </Case>
   );
 }

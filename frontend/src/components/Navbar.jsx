@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom"; // Tambahkan useLocation
 import Logo from "../assets/img/logo1.png";
-import axios from "axios";
-import Pusher from "pusher-js";
 import {
   Users,
   Briefcase,
@@ -13,12 +11,14 @@ import {
   Menu,
   X,
   User,
-  Briefcase as JobIcon,
-  MessageCircle,
+  Heart,
+  Link2,
+  FileText,
 } from "lucide-react";
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const location = useLocation(); // Tambahkan ini
   const [isMsgOpen, setIsMsgOpen] = useState(false);
   const [isBellOpen, setIsBellOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -76,20 +76,56 @@ const Navbar = () => {
     },
   ]);
 
+  const [searchQuery, setSearchQuery] = useState(() => {
+    const searchParams = new URLSearchParams(location.search);
+    return searchParams.get("q") || "";
+  });
+
   const msgRef = useRef(null);
   const bellRef = useRef(null);
   const dropdownRef = useRef(null);
   const mobileMenuRef = useRef(null);
+  const [notifications, setNotifications] = useState([]);
 
-  // Function to extract user ID from JWT token
-  const getUserIdFromToken = (token) => {
-    if (!token) return null;
+  // Fungsi untuk menandai notifikasi sebagai read dan redirect
+  // Fungsi untuk menandai notifikasi sebagai read dan redirect
+  const handleNotificationClick = async (notif) => {
     try {
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      return payload.user_id;
+      const token = localStorage.getItem("token");
+
+      // Jika notifikasi belum dibaca, kirim request ke API
+      if (!notif.read) {
+        await fetch("http://localhost:3000/api/notifications/mark-read", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ notification_ids: [notif.id] }),
+        });
+
+        // Update status read di local state
+        setNotifications(prev =>
+  prev.map(n => 
+    n.id === notif.id ? { ...n, status: "read" } : n
+  )
+);
+      }
+
+      // Redirect to notification page with appropriate tab
+      navigate(`/notification?tab=${notif.type}`);
+      setIsBellOpen(false);
     } catch (error) {
       console.error("Error extracting user ID from token:", error);
       return null;
+    }
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+      // Tidak perlu reset searchQuery di sini agar tetap ada di input field
     }
   };
 
@@ -114,185 +150,19 @@ const Navbar = () => {
 
   // Initialize Pusher and fetch initial conversations
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
-    const userId = getUserIdFromToken(token);
-    if (!userId) return;
-
-    // Fetch user data to get name if needed
-    const fetchUserData = async () => {
-      try {
-        const response = await axios.get("http://localhost:3000/api/users/me", {
-          headers: { Authorization: `Bearer ${token}` },
+    // Fetch user data from localStorage
+    const fetchUserData = () => {
+      const userData = JSON.parse(localStorage.getItem("user"));
+      if (userData) {
+        setUser({
+          name: userData.name || "",
+          photo: userData.photo || null,
         });
-        if (response.data && response.data.data) {
-          setUserName(response.data.data.name || "User");
-        }
-      } catch (error) {
-        console.error("Failed to fetch user data:", error);
       }
     };
 
     fetchUserData();
 
-    // Fetch conversations
-    const fetchConversations = async () => {
-      try {
-        const response = await axios.get(
-          "http://localhost:3000/api/conversations?limit=10&offset=0",
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        if (
-          response.data &&
-          response.data.data &&
-          response.data.data.conversations
-        ) {
-          // Sort by last message timestamp (newest first)
-          const sortedConversations = response.data.data.conversations.sort(
-            (a, b) => {
-              const aTime = a.last_message?.created_at || a.updated_at;
-              const bTime = b.last_message?.created_at || b.updated_at;
-              return new Date(bTime) - new Date(aTime);
-            }
-          );
-
-          console.log("Sorted conversations:", sortedConversations);
-
-          setConversations(sortedConversations);
-
-          // Calculate total unread count
-          const totalUnread = sortedConversations.reduce(
-            (total, conv) => total + (conv.unread_count || 0),
-            0
-          );
-
-          setTotalUnreadCount(totalUnread);
-        }
-      } catch (error) {
-        console.error("Failed to fetch conversations:", error);
-      }
-    };
-
-    // Initialize Pusher
-    const pusherClient = new Pusher("a579dc17c814f8b723ea", {
-      cluster: "ap1",
-      authorizer: (channel) => {
-        return {
-          authorize: (socketId, callback) => {
-            const formData = new FormData();
-            formData.append("socket_id", socketId);
-            formData.append("channel_name", channel.name);
-
-            fetch("http://localhost:3000/api/pusher/auth", {
-              method: "POST",
-              headers: { Authorization: `Bearer ${token}` },
-              body: formData,
-            })
-              .then((response) => response.json())
-              .then((data) => callback(null, data))
-              .catch((error) => callback(error, null));
-          },
-        };
-      },
-    });
-
-    // Subscribe to user's private channel
-    try {
-      const userChannel = pusherClient.subscribe(`private-user-${userId}`);
-
-      userChannel.bind("pusher:subscription_succeeded", () => {
-        console.log("Successfully subscribed to user channel in Navbar");
-      });
-
-      userChannel.bind("pusher:subscription_error", (error) => {
-        console.error("Error subscribing to user channel:", error);
-      });
-
-      // Handle new message notifications
-      userChannel.bind("new-message-notification", (data) => {
-        console.log("New message notification received in Navbar:", data);
-
-        setConversations((prevConversations) => {
-          // Find the conversation that received the new message
-          const updatedConversations = [...prevConversations];
-          const conversationIndex = updatedConversations.findIndex(
-            (conv) => conv.id === data.conversation_id
-          );
-
-          if (conversationIndex > -1) {
-            // Get the conversation
-            const conversation = updatedConversations[conversationIndex];
-
-            // Get current user ID to determine if this message is TO the user
-            const currentUserId = getUserIdFromToken(
-              localStorage.getItem("token")
-            );
-            const isSentToUser = data.sender_id !== currentUserId;
-
-            // Update the conversation with the new message data
-            const updatedConversation = {
-              ...conversation,
-              last_message: {
-                ...data.message,
-                created_at: data.created_at || new Date().toISOString(),
-              },
-              updated_at: data.created_at || new Date().toISOString(),
-              // Only increment unread count if message was sent TO the current user
-              unread_count: isSentToUser
-                ? (conversation.unread_count || 0) + 1
-                : conversation.unread_count || 0,
-            };
-
-            // Remove the conversation from its current position
-            updatedConversations.splice(conversationIndex, 1);
-
-            // Add it to the beginning of the array (top of the list)
-            updatedConversations.unshift(updatedConversation);
-
-            // Update total unread count
-            // if (isSentToUser) {
-            //   setTotalUnreadCount((prev) => prev + 1);
-            // }
-
-            return updatedConversations;
-          }
-
-          // If conversation not found in current list, fetch all conversations
-          // This will handle edge cases like receiving messages for a new conversation
-          // fetchConversations();
-          return prevConversations;
-        });
-      });
-
-      // Handle new conversation
-      userChannel.bind("new-conversation", (data) => {
-        console.log("New conversation received:", data);
-        setConversations((prev) => [data, ...prev]);
-        setTotalUnreadCount((prev) => prev + 1);
-      });
-
-      setChannels((prev) => ({ ...prev, user: userChannel }));
-    } catch (error) {
-      console.error("Error subscribing to user channel:", error);
-    }
-
-    setPusher(pusherClient);
-    fetchConversations();
-
-    return () => {
-      if (pusherClient) {
-        if (channels.user) {
-          channels.user.unbind_all();
-          pusherClient.unsubscribe(`private-user-${userId}`);
-        }
-        pusherClient.disconnect();
-      }
-    };
-  }, []);
-
-  useEffect(() => {
     const handleClickOutside = (event) => {
       if (!msgRef.current?.contains(event.target)) setIsMsgOpen(false);
       if (!bellRef.current?.contains(event.target)) setIsBellOpen(false);
@@ -319,41 +189,108 @@ const Navbar = () => {
     };
   }, []);
 
+  // ...existing code...
+
+  useEffect(() => {
+    // Fetch notifications mirip Notification.jsx
+    const fetchNotifications = async () => {
+      const token = localStorage.getItem("token");
+      try {
+        const res = await fetch(
+          "http://localhost:3000/api/notifications?limit=10&offset=0",
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const data = await res.json();
+        const notifData = Array.isArray(data.data.notifications)
+          ? data.data.notifications.map((n) => ({
+              id: n.id,
+              type: n.category,
+              title: n.title,
+              desc: n.message,
+              time: new Date(n.created_at).toLocaleString(),
+              icon:
+                n.category === "connection" ? (
+                  <User className="text-sky-500" />
+                ) : n.category === "job" ? (
+                  <Briefcase className="text-green-500" />
+                ) : n.category === "sosmed" ? (
+                  <Bell className="text-pink-500" />
+                ) : (
+                  <Heart className="text-gray-400" />
+                ),
+              status: n.status, // tambahkan ini
+            }))
+          : [];
+        setNotifications(notifData);
+      } catch (error) {
+        console.error("FETCH ERROR", error);
+      }
+    };
+    fetchNotifications();
+  }, []);
+
+  // ...existing code...
+
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
     window.location.href = "/login";
   };
 
-  // Function to get notification icon based on type
-  const getNotificationIcon = (type) => {
-    switch (type) {
-      case "connection":
-        return <User className="w-4 h-4 text-blue-500" />;
-      case "job":
-        return <JobIcon className="w-4 h-4 text-green-500" />;
-      case "message":
-        return <MessageCircle className="w-4 h-4 text-purple-500" />;
-      default:
-        return <Bell className="w-4 h-4 text-gray-500" />;
+  const formatDate = (dateString) => {
+    if (!dateString) return "Unknown date";
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "Invalid date";
+
+      const now = new Date();
+      const yesterday = new Date(now);
+      yesterday.setDate(now.getDate() - 1);
+
+      if (date.toDateString() === now.toDateString()) {
+        return "Today";
+      } else if (date.toDateString() === yesterday.toDateString()) {
+        return "Yesterday";
+      } else {
+        return date.toLocaleDateString();
+      }
+    } catch (error) {
+      console.error("Date formatting error:", error);
+      return "Date error";
     }
   };
 
-  const navigateToConversation = (conversationId) => {
-    setIsMsgOpen(false);
-    navigate(`/messages/${conversationId}`);
+  // Format time with error handling
+  const formatTime = (dateString) => {
+    if (!dateString) return "";
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "";
+      return date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch (error) {
+      console.error("Time formatting error:", error);
+      return "";
+    }
   };
 
   return (
     <nav
-      className={`flex items-center justify-between px-4 sm:px-8 md:px-16 py-[13px] bg-sky-500 text-white shadow-sm relative font-sans sticky top-0 z-50 transition-all duration-300 ${
-        isScrolled ? "shadow-lg" : ""
-      }`}
+      className={`flex items-center justify-between px-4 sm:px-8 md:px-16 py-[13px] bg-sky-500 text-white shadow-sm relative font-sans sticky top-0 z-50 transition-all duration-300 ${isScrolled ? "shadow-lg" : ""
+        }`}
     >
       {/* Left: Logo + Hamburger Menu (mobile) */}
       <div className="flex items-center gap-3">
         {/* Mobile Menu Button */}
         <button
-          className="mr-2 md:hidden"
+          className="md:hidden mr-2"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
           {isMobileMenuOpen ? (
@@ -369,29 +306,43 @@ const Navbar = () => {
 
         {/* Search - Different styles for mobile vs desktop */}
         <div className="hidden sm:flex items-center bg-white rounded-full px-3 py-2 ml-4 w-[180px] md:w-[220px] lg:w-[280px]">
-          <input
-            type="text"
-            placeholder="Search people, jobs & more"
-            className="flex-grow w-full px-2 text-sm text-black bg-transparent focus:outline-none"
-          />
-          <Search className="w-4 h-4 text-black" />
+          <form onSubmit={handleSearch} className="w-full">
+            <input
+              type="text"
+              placeholder="Search people, jobs & more"
+              className="flex-grow w-full px-2 text-sm text-black bg-transparent focus:outline-none"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <button type="submit" className="hidden">
+              <Search className="w-4 h-4 text-black" />
+            </button>
+          </form>
+          <Search className="w-4 h-4 text-black" onClick={handleSearch} />
         </div>
       </div>
 
       {/* Mobile Search - More elongated */}
       <div className="sm:hidden flex items-center bg-white rounded-md px-3 py-2 mx-2 flex-1 max-w-[180px]">
-        <input
-          type="text"
-          placeholder="Search..."
-          className="flex-grow w-full text-sm text-black bg-transparent focus:outline-none"
-        />
-        <Search className="w-4 h-4 ml-1 text-black" />
+        <form onSubmit={handleSearch} className="w-full">
+          <input
+            type="text"
+            placeholder="Search..."
+            className="flex-grow w-full text-sm text-black bg-transparent focus:outline-none"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <button type="submit" className="hidden">
+            <Search className="w-4 h-4 ml-1 text-black" />
+          </button>
+        </form>
+        <Search className="w-4 h-4 ml-1 text-black" onClick={handleSearch} />
       </div>
 
       {/* Right: Menu, Icons, Avatar */}
       <div className="flex items-center gap-4">
         {/* Desktop Menu */}
-        <div className="items-center hidden gap-6 text-sm font-thin text-white md:flex">
+        <div className="hidden md:flex gap-6 text-white font-thin text-sm items-center">
           <Link
             to="/jobs"
             className="flex items-center gap-1 hover:text-gray-200"
@@ -420,24 +371,17 @@ const Navbar = () => {
           <div ref={msgRef} className="relative hidden sm:block">
             <div
               onClick={() => setIsMsgOpen(!isMsgOpen)}
-              className="relative cursor-pointer"
+              className="cursor-pointer relative"
             >
               <MessageSquare className="w-4 h-4" />
-              {totalUnreadCount > 0 && (
-                <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-xs rounded-full px-1 h-3 flex items-center justify-center">
-                  {totalUnreadCount > 99 ? "99+" : totalUnreadCount}
-                </span>
-              )}
+              <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-xs rounded-full px-1 h-3 flex items-center justify-center">
+                8
+              </span>
             </div>
             {isMsgOpen && (
-              <div className="absolute right-0 z-50 mt-2 bg-white rounded-lg shadow-lg w-80">
-                <div className="flex items-center justify-between p-4 font-bold text-black border-b">
-                  <span>Messages</span>
-                  {totalUnreadCount > 0 && (
-                    <span className="text-sm font-normal">
-                      {totalUnreadCount} unread
-                    </span>
-                  )}
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg z-50">
+                <div className="p-4 border-b font-bold text-black">
+                  Messages
                 </div>
 
                 {conversations.length === 0 ? (
@@ -462,9 +406,8 @@ const Navbar = () => {
                       return (
                         <li
                           key={conversation.id}
-                          className={`px-4 py-3 hover:bg-gray-50 cursor-pointer ${
-                            conversation.unread_count > 0 ? "bg-blue-50" : ""
-                          }`}
+                          className={`px-4 py-3 hover:bg-gray-50 cursor-pointer ${conversation.unread_count > 0 ? "bg-blue-50" : ""
+                            }`}
                           onClick={() =>
                             navigateToConversation(conversation.id)
                           }
@@ -496,7 +439,7 @@ const Navbar = () => {
                                 <span className="text-xs text-gray-500">
                                   {formatTime(
                                     conversation.last_message?.created_at ||
-                                      conversation.updated_at
+                                    conversation.updated_at
                                   )}
                                 </span>
                               </div>
@@ -505,15 +448,15 @@ const Navbar = () => {
                                 <p className="text-sm text-gray-600 truncate max-w-[180px]">
                                   {conversation.last_message ? (
                                     conversation.last_message.deleted ||
-                                    conversation.last_message.deleted_at ? (
+                                      conversation.last_message.deleted_at ? (
                                       "Pesan telah dihapus"
                                     ) : conversation.last_message
-                                        .message_type === "text" ? (
+                                      .message_type === "text" ? (
                                       <>
                                         {conversation.last_message.sender_id ===
-                                        getUserIdFromToken(
-                                          localStorage.getItem("token")
-                                        )
+                                          getUserIdFromToken(
+                                            localStorage.getItem("token")
+                                          )
                                           ? "You: "
                                           : ""}
                                         {conversation.last_message.content}
@@ -559,55 +502,62 @@ const Navbar = () => {
           <div ref={bellRef} className="relative hidden sm:block">
             <div
               onClick={() => setIsBellOpen(!isBellOpen)}
-              className="relative cursor-pointer"
+              className="cursor-pointer relative"
             >
               <Bell className="w-4 h-4" />
               <span className="absolute -top-1.5 -right-2 bg-cyan-400 text-white text-xs rounded-full px-1 h-3 flex items-center justify-center">
                 {notifications.filter((n) => !n.read).length}
               </span>
             </div>
+
             {isBellOpen && (
               <div className="absolute right-0 z-50 mt-2 bg-white rounded-lg shadow-lg w-80">
-                <div className="flex items-center justify-between p-4 font-bold text-white border-b bg-sky-500">
+                <div className="flex items-center justify-between p-4 font-bold text-white border-b bg-gradient-to-r from-sky-500 to-cyan-400">
                   <span>Notifications</span>
                   <span className="text-sm font-normal">
                     {notifications.filter((n) => !n.read).length} new
                   </span>
                 </div>
-                <ul className="overflow-y-auto text-black divide-y divide-gray-100 max-h-96">
-                  {notifications.map((notification) => (
+                <ul className="overflow-y-auto text-black divide-y divide-gray-100 max-h-96 scrollbar-hide">
+                  
+                  
+                  {notifications.length === 0 ? (
+        <li className="px-4 py-8 text-center text-gray-400">
+          No notifications
+        </li>
+      ) :notifications.map((n) => (
                     <li
                       key={notification.id}
-                      className={`px-4 py-3 hover:bg-gray-50 cursor-pointer ${
-                        !notification.read ? "bg-blue-50" : ""
-                      }`}
+                      className={`px-4 py-3 hover:bg-gray-50 cursor-pointer ${!notification.read ? "bg-blue-50" : ""
+                        }`}
                     >
                       <div className="flex items-start gap-3">
                         <div className="p-1 mt-1 bg-gray-100 rounded-full">
-                          {getNotificationIcon(notification.type)}
+                          {n.icon}
                         </div>
                         <div className="flex-1">
                           <p
-                            className={`text-sm ${
-                              !notification.read ? "font-medium" : ""
-                            }`}
+                            className={`text-sm ${!notification.read ? "font-medium" : ""
+                              }`}
                           >
-                            {notification.content}
-                          </p>
-                          <p className="mt-1 text-xs text-gray-500">
-                            {notification.timestamp}
-                          </p>
+                            {n.title}
+                          </h3>
+                          <p className="text-xs text-gray-600">{n.desc}</p>
+                          <div className="flex gap-2 mt-1 text-xs text-gray-500">
+                            <span>{formatDate(n.time)}</span>
+                            <span>{formatTime(n.time)}</span>
+                          </div>
                         </div>
-                        {!notification.read && (
-                          <div className="w-2 h-2 mt-2 bg-blue-500 rounded-full"></div>
-                        )}
+                        {n.status === "unread" && (
+  <div className="w-2 h-2 mt-2 bg-blue-500 rounded-full"></div>
+)}
                       </div>
                     </li>
                   ))}
                 </ul>
                 <div className="p-3 text-center border-t">
                   <Link
-                    to="/notifications"
+                    to="/notification"
                     className="text-sm font-medium text-sky-500 hover:text-sky-700"
                     onClick={() => setIsBellOpen(false)}
                   >
@@ -622,32 +572,56 @@ const Navbar = () => {
           <div ref={dropdownRef} className="relative">
             <div
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center justify-center font-semibold text-black bg-white border border-white rounded-full cursor-pointer w-7 h-7"
+              className="flex items-center gap-2 cursor-pointer"
             >
-              <img src="#" alt="" />
+              {user.photo ? (
+                <img
+                  src={`http://localhost:3000/${user.photo}`}
+                  alt="Profile"
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-semibold border border-white">
+                  {user.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
+                </div>
+              )}
             </div>
             {isDropdownOpen && (
-              <div className="absolute right-0 z-50 w-64 mt-2 text-black bg-white rounded-lg shadow-lg">
+              <div className="absolute right-0 mt-2 w-64 bg-white text-black rounded-lg shadow-lg z-50">
                 <div className="flex items-center gap-3 p-4 border-b">
-                  <div className="w-10 h-10 overflow-hidden bg-gray-200 rounded-full">
-                    <img
-                      src="https://via.placeholder.com/40"
-                      alt="avatar"
-                      className="object-cover w-full h-full"
-                    />
+                  <div className="w-10 h-10 bg-gray-200 rounded-full overflow-hidden">
+                    {user.photo ? (
+                      <img
+                        src={`http://localhost:3000/${user.photo}`}
+                        alt="avatar"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-300">
+                        <span className="text-sm font-bold text-gray-600">
+                          {user.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div>
-                    <p className="font-bold">{userName}</p>
-                    <span className="text-sm text-green-500">● Online</span>
+                    <p className="font-bold">{user.name}</p>
+                    <span className="text-green-500 text-sm">● Online</span>
                   </div>
                 </div>
                 <ul className="flex flex-col divide-y">
-                  <li className="px-4 py-2 cursor-pointer hover:bg-gray-100">
+                  <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
                     <Link to="/profile" className="flex items-center gap-2">
                       My Account
                     </Link>
                   </li>
-                  <li className="px-4 py-2 cursor-pointer hover:bg-gray-100">
+                  <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
                     <Link
                       to="/edit-profile"
                       className="flex items-center gap-2"
@@ -657,7 +631,7 @@ const Navbar = () => {
                   </li>
                   <li
                     onClick={() => handleLogout()}
-                    className="px-4 py-2 cursor-pointer hover:bg-gray-100"
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                   >
                     Logout
                   </li>
@@ -672,12 +646,12 @@ const Navbar = () => {
       {isMobileMenuOpen && (
         <div
           ref={mobileMenuRef}
-          className="absolute left-0 z-50 w-full shadow-lg md:hidden top-full bg-sky-600"
+          className="md:hidden absolute top-full left-0 w-full bg-sky-600 shadow-lg z-50"
         >
           <div className="flex flex-col p-4">
             <Link
               to="/jobs"
-              className="flex items-center gap-3 px-4 py-3 rounded hover:bg-sky-700"
+              className="flex items-center gap-3 py-3 px-4 hover:bg-sky-700 rounded"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               <Briefcase className="w-4 h-4" />
@@ -685,7 +659,7 @@ const Navbar = () => {
             </Link>
             <Link
               to="/connections"
-              className="flex items-center gap-3 px-4 py-3 rounded hover:bg-sky-700"
+              className="flex items-center gap-3 py-3 px-4 hover:bg-sky-700 rounded"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               <Users className="w-4 h-4" />
@@ -693,7 +667,7 @@ const Navbar = () => {
             </Link>
             <Link
               to="/blog"
-              className="flex items-center gap-3 px-4 py-3 rounded hover:bg-sky-700"
+              className="flex items-center gap-3 py-3 px-4 hover:bg-sky-700 rounded"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               <Pen className="w-4 h-4" />
@@ -701,27 +675,27 @@ const Navbar = () => {
             </Link>
 
             {/* Mobile version of messages and notifications */}
-            <div className="pt-2 mt-2 border-t border-sky-400">
+            <div className="border-t border-sky-400 mt-2 pt-2">
               <Link
                 to="/messages"
-                className="flex items-center gap-3 px-4 py-3 rounded hover:bg-sky-700"
+                className="flex items-center gap-3 py-3 px-4 hover:bg-sky-700 rounded"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <MessageSquare className="w-4 h-4" />
                 <span>Messages</span>
                 <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
-                  {totalUnreadCount}
+                  8
                 </span>
               </Link>
               <Link
-                to="/notifications"
-                className="flex items-center gap-3 px-4 py-3 rounded hover:bg-sky-700"
+                to="/notification"
+                className="flex items-center gap-3 py-3 px-4 hover:bg-sky-700 rounded"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <Bell className="w-4 h-4" />
                 <span>Notifications</span>
                 <span className="ml-auto bg-cyan-400 text-white text-xs rounded-full px-2 py-0.5">
-                  {notifications.filter((n) => !n.read).length}
+                  6
                 </span>
               </Link>
             </div>

@@ -26,6 +26,8 @@ import ProtectedRoute from "./components/Auth/ProtectedRoute.jsx";
 import VerifyEmail from "./pages/Auth/VerifyEmail.jsx";
 import ResetPassword from "./pages/Auth/ResetPassword.jsx";
 import IsGuest from "./components/Auth/IsGuest.jsx";
+import SinglePost from "./pages/SinglePost.jsx";
+import SearchResults from "./pages/SearchResults";
 
 const router = createBrowserRouter([
   {
@@ -56,6 +58,12 @@ const router = createBrowserRouter([
     path: "/forgot-password",
     element: <ForgotPassword />,
   },
+
+  {
+    path: "/search",
+    element: <SearchResults />,
+  },
+  
   {
     path: "/terms",
     element: <TermsCondition />,
@@ -200,7 +208,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/detail-blog/:id",
+    path: "/blog-detail/:slug",
     element: (
       <ProtectedRoute>
         <BlogDetail />
@@ -221,16 +229,18 @@ const router = createBrowserRouter([
   },
   {
     path: "/verify-email",
-    element: (
-      <ProtectedRoute>
-        <VerifyEmail />
-      </ProtectedRoute>
-    ),
+    element: <VerifyEmail />,
   },
   {
     path: "/reset-password",
-    element: <ResetPassword />,
+    element: (
+      <ResetPassword />
+    )
   },
+  {
+    path: "/post/:postId",
+    element: <SinglePost />
+  }
 ]);
 
 export default router;
