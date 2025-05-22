@@ -1,23 +1,35 @@
 package controller
 
 import (
+	"context"
+	"evoconnect/backend/exception"
 	"evoconnect/backend/helper"
+	"evoconnect/backend/model/domain"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/service"
+	"fmt"
 	"mime/multipart"
 	"net/http"
 	"strconv"
 
+	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 )
 
 type UserControllerImpl struct {
-	UserService service.UserService
+	UserService         service.UserService
+	ProfileViewService  service.ProfileViewService
+	NotificationService service.NotificationService
 }
 
-func NewUserController(userService service.UserService) UserController {
+func NewUserController(
+	userService service.UserService,
+	profileViewService service.ProfileViewService,
+	notificationService service.NotificationService) UserController {
 	return &UserControllerImpl{
-		UserService: userService,
+		UserService:         userService,
+		ProfileViewService:  profileViewService,
+		NotificationService: notificationService,
 	}
 }
 
@@ -58,8 +70,48 @@ func (controller *UserControllerImpl) UpdateProfile(writer http.ResponseWriter, 
 
 func (controller *UserControllerImpl) GetByUsername(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	username := params.ByName("username")
-
+	
+	// Ambil ID pengguna yang sedang login dari context
+	currentUserIdStr, ok := request.Context().Value("user_id").(string)
+	if !ok {
+		panic(exception.NewUnauthorizedError("Unauthorized"))
+	}
+	currentUserId, err := uuid.Parse(currentUserIdStr)
+	helper.PanicIfError(err)
+	
+	// Panggil service untuk mendapatkan profil pengguna
 	userResponse := controller.UserService.GetByUsername(request.Context(), username)
+	
+	// Jika pengguna ditemukan, catat kunjungan profil
+	if userResponse.ID != uuid.Nil && userResponse.ID != currentUserId {
+		// Catat kunjungan profil
+		err := controller.ProfileViewService.RecordView(request.Context(), userResponse.ID, currentUserId)
+		if err != nil {
+			// Log error tapi jangan gagalkan request
+			fmt.Printf("Error recording profile view: %v\n", err)
+		}
+		
+		// Kirim notifikasi ke pemilik profil
+		if controller.NotificationService != nil {
+			go func() {
+				// Ambil data pengguna yang sedang login
+				currentUser := controller.UserService.GetProfile(context.Background(), currentUserId)
+				
+				refType := "profile_visit"
+				controller.NotificationService.Create(
+					context.Background(),
+					userResponse.ID,
+					string(domain.NotificationCategoryProfile),
+					string(domain.NotificationTypeProfileVisit),
+					"Profile Visit",
+					fmt.Sprintf("%s viewed your profile", currentUser.Name),
+					nil,
+					&refType,
+					&currentUserId,
+				)
+			}()
+		}
+	}
 
 	webResponse := web.WebResponse{
 		Code:   200,

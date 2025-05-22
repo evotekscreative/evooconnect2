@@ -48,9 +48,9 @@ func (c *ReportControllerImpl) CreateReportHandler() httprouter.Handle {
 
 			// Penyesuaian status berdasarkan error
 			switch msg {
-			case "kamu sudah pernah melaporkan konten ini":
+			case "you have already reported this content":
 				status = http.StatusConflict
-			case "alasan report tidak valid", "alasan lainnya harus diisi":
+			case "invalid report reason", "other reason must be filled":
 				status = http.StatusBadRequest
 			}
 

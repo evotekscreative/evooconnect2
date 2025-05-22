@@ -11,16 +11,19 @@ import (
 
 // Post represents a user post in the domain layer
 type Post struct {
-	Id         uuid.UUID   `json:"id"`
-	UserId     uuid.UUID   `json:"user_id"`
-	Content    string      `json:"content"`
-	Images     ImagesArray `json:"images"`
-	LikesCount int         `json:"likes_count"`
-	Visibility string      `json:"visibility"`
-	CreatedAt  time.Time   `json:"created_at"`
-	UpdatedAt  time.Time   `json:"updated_at"`
-	User       *User       `json:"user,omitempty"`
-	IsLiked    bool        `json:"is_liked,omitempty"`
+	Id            uuid.UUID   `json:"id"`
+	UserId        uuid.UUID   `json:"user_id"`
+	Content       string      `json:"content"`
+	Images        ImagesArray `json:"images"`
+	LikesCount    int         `json:"likes_count"`
+	CommentsCount int         `json:"comments_count"`
+	Visibility    string      `json:"visibility"`
+	CreatedAt     time.Time   `json:"created_at"`
+	UpdatedAt     time.Time   `json:"updated_at"`
+	User          *User       `json:"user,omitempty"`
+	GroupId       *uuid.UUID
+	Group         *Group `json:"group,omitempty"`
+	IsLiked       bool   `json:"is_liked,omitempty"`
 }
 
 // ImagesArray is a custom type for handling image arrays in PostgreSQL JSONB

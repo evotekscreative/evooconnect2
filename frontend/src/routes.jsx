@@ -27,6 +27,7 @@ import VerifyEmail from "./pages/Auth/VerifyEmail.jsx";
 import ResetPassword from "./pages/Auth/ResetPassword.jsx";
 import IsGuest from "./components/Auth/IsGuest.jsx";
 import SinglePost from "./pages/SinglePost.jsx";
+import SearchResults from "./pages/SearchResults";
 
 const router = createBrowserRouter([
   {
@@ -39,16 +40,30 @@ const router = createBrowserRouter([
   },
   {
     path: "/login",
-    element: <IsGuest><Login /></IsGuest>,
+    element: (
+      <IsGuest>
+        <Login />
+      </IsGuest>
+    ),
   },
   {
     path: "/register",
-    element: <IsGuest><Register /></IsGuest>,
+    element: (
+      <IsGuest>
+        <Register />
+      </IsGuest>
+    ),
   },
   {
     path: "/forgot-password",
     element: <ForgotPassword />,
   },
+
+  {
+    path: "/search",
+    element: <SearchResults />,
+  },
+  
   {
     path: "/terms",
     element: <TermsCondition />,
@@ -161,7 +176,15 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/groups/:groupId",
+    path: "/messages/:conversationId",
+    element: (
+      <ProtectedRoute>
+        <Messages />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/group-page",
     element: (
       <ProtectedRoute>
         <GroupPage />
@@ -211,13 +234,13 @@ const router = createBrowserRouter([
   {
     path: "/reset-password",
     element: (
-        <ResetPassword />
+      <ResetPassword />
     )
   },
-{
-  path : "/post/:postId",
-   element : <SinglePost />
-}
+  {
+    path: "/post/:postId",
+    element: <SinglePost />
+  }
 ]);
 
 export default router;

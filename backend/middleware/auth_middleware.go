@@ -35,7 +35,7 @@ func (middleware *AuthMiddleware) ServeHTTP(writer http.ResponseWriter, request 
 		strings.Contains(request.URL.Path, "/auth/forgot-password") ||
 		strings.Contains(request.URL.Path, "/auth/reset-password") ||
 		strings.Contains(request.URL.Path, "/uploads") ||
-		request.URL.Path == "/api/health" {
+		strings.Contains(request.URL.Path, "/public") {
 		middleware.Handler.ServeHTTP(writer, request)
 		return
 	}

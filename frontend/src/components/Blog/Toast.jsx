@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { toast } from "sonner";
 import {
   CheckCircle,
   XCircle,
@@ -24,7 +25,10 @@ const bgColors = {
 const Toast = ({ message, type = "success", onClose }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
-      onClose();
+      // Tambahkan pengecekan untuk onClose
+      if (typeof onClose === 'function') {
+        onClose();
+      }
     }, 3000);
     return () => clearTimeout(timer);
   }, [onClose]);
@@ -36,7 +40,15 @@ const Toast = ({ message, type = "success", onClose }) => {
       >
         <div>{icons[type]}</div>
         <div className="flex-1 font-medium">{message}</div>
-        <button onClick={onClose} className="hover:text-gray-200">
+        <button 
+          onClick={() => {
+            // Tambahkan pengecekan untuk onClose saat tombol diklik
+            if (typeof onClose === 'function') {
+              onClose();
+            }
+          }} 
+          className="hover:text-gray-200"
+        >
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -44,10 +56,10 @@ const Toast = ({ message, type = "success", onClose }) => {
   );
 };
 
-const YourComponent = () => {
-  const [toastMessage, setToastMessage] = useState(""); // State for toast message
-  const [toastType, setToastType] = useState("success"); // State for toast type (success, error, etc.)
-  const [showToast, setShowToast] = useState(false); // State for managing toast visibility
+const Message = () => {
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState("success");
+  const [showToast, setShowToast] = useState(false); 
 
   const showToastMessage = (message, type = "success") => {
     setToastMessage(message);

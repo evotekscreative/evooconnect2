@@ -944,7 +944,7 @@ export default function ProfilePage() {
                 id="post-container"
                 className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide"
               >
-                {userPosts.length > 0 ? (
+                {userPosts && userPosts.length > 0 ? (
                   userPosts.map((post) => (
                     <div
                       key={post.id}
