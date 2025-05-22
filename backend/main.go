@@ -181,6 +181,8 @@ postService := service.NewPostService(
 	// Chat controller
 	chatController := controller.NewChatController(chatService)
 
+
+	// ✅ Inject all controllers into router including reportController
 	// Report controller
 	reportController := controller.NewReportController(reportService)
 
