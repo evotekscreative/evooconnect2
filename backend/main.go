@@ -75,7 +75,7 @@ func main() {
 	// ===== Services =====
 	// User-related services
 	profileViewService := service.NewProfileViewService(db, profileViewRepository, userRepository, notificationService)
-	connectionService := service.NewConnectionService(connectionRepository, userRepository, db, validate)
+	connectionService := service.NewConnectionService(connectionRepository, userRepository,notificationService, db, validate)
 	userService := service.NewUserService(userRepository, connectionRepository, profileViewService, db, validate)
 	authService := service.NewAuthService(userRepository, db, validate, jwtSecret)
 
