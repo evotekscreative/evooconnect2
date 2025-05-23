@@ -28,8 +28,10 @@ import ResetPassword from "./pages/Auth/ResetPassword.jsx";
 import IsGuest from "./components/Auth/IsGuest.jsx";
 import SinglePost from "./pages/SinglePost.jsx";
 import UserProfile from "./pages/userProfile.jsx";
+import UserPostPage from "./pages/UserPostPage.jsx";
 import MemberList from "./pages/MemberList.jsx";
-import SearchResults from "./pages/SearchResults.jsx"
+import SearchResults from "./pages/SearchResults.jsx";
+import CreateCompany from "./pages/CreateCompany.jsx";
 
 const router = createBrowserRouter([
   {
@@ -164,6 +166,14 @@ const router = createBrowserRouter([
     ),
   },
   {
+    path: "/list-connection/:username",
+    element: (
+      <ProtectedRoute>
+        <ListConnection />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: "/messages",
     element: (
       <ProtectedRoute>
@@ -221,51 +231,69 @@ const router = createBrowserRouter([
   },
   {
     path: "/post-page",
-    element: <PostPage />,
+    element: (
+      <ProtectedRoute>
+        <PostPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/post-page/:username",
+    element:(
+      <ProtectedRoute>
+        <UserPostPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/verify-email",
-    element: <ProtectedRoute><VerifyEmail /></ProtectedRoute>,
+    element: (
+      <ProtectedRoute>
+        <VerifyEmail />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/reset-password",
-    element: (
-        <ResetPassword />
-    )
-  }, 
+    element: <ResetPassword />,
+  },
   {
-  path: "/user-profile/:username",
-  element: (
-    <ProtectedRoute>
-      <UserProfile />
-    </ProtectedRoute>
-  )
-},
-{
-  path: "/groups/:groupId/members",
-  element: (
-    <ProtectedRoute>
-      <MemberList />
-    </ProtectedRoute>
-  )
-},
-{
-  path: "/search",
-   element: (
-    <ProtectedRoute>
-      <SearchResults />
-    </ProtectedRoute>
-  )
-},
-{
-    path: "/post/:postId",
+    path: "/user-profile/:username",
     element: (
-
-        <SinglePost />
-  
+      <ProtectedRoute>
+        <UserProfile />
+      </ProtectedRoute>
     ),
-},
+  },
+  {
+    path: "/groups/:groupId/members",
+    element: (
+      <ProtectedRoute>
+        <MemberList />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/search",
+    element: (
+      <ProtectedRoute>
+        <SearchResults />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/post/:postId",
+    element: <SinglePost />,
+  },
 
+  {
+  path: "/create-company",
+  element: (
+    <ProtectedRoute>
+      <CreateCompany />
+    </ProtectedRoute>
+  ),
+},
 ]);
 
 export default router;

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import axios from "axios";
 import logo from "../../assets/img/logoB.png";
 import googleIcon from "../../assets/img/google-icon.jpg";
@@ -8,7 +9,8 @@ import "../../assets/css/style.css";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 
 function Login() {
-        const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+  const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+  const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     email: "",
@@ -119,6 +121,12 @@ function Login() {
     });
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setAlertInfo({ show: false, type: "", message: "" });
@@ -135,17 +143,7 @@ function Login() {
 
       // Simpan token dan data user
       localStorage.setItem("token", response.data.data.token);
-
-      localStorage.setItem(
-        "userData",
-        JSON.stringify({
-          id: response.data.data.id,
-          name: response.data.data.name,
-          email: response.data.data.email,
-          photo: response.data.data.photo,
-          // tambahkan data user lainnya sesuai response API
-        })
-      );
+ 
 
       setAlertInfo({
         show: true,
@@ -221,9 +219,8 @@ function Login() {
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      className={`pl-10 w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-black ${
-                        errors.email ? "border-red-500" : "border-gray-300"
-                      }`}
+                      className={`pl-10 w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-black ${errors.email ? "border-red-500" : "border-gray-300"
+                        }`}
                     />
                   </div>
                   {errors.email && (
@@ -257,14 +254,24 @@ function Login() {
                       </svg>
                     </div>
                     <input
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
-                      className={`pl-10 w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-black ${
-                        errors.password ? "border-red-500" : "border-gray-300"
-                      }`}
+                      className={`pl-10 w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-black ${errors.password ? "border-red-500" : "border-gray-300"
+                        }`}
                     />
+                    <button
+                      type="button"
+                      onClick={togglePasswordVisibility}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-5 w-5" />
+                      ) : (
+                        <Eye className="h-5 w-5" />
+                      )}
+                    </button>
                   </div>
                   {errors.password && (
                     <span className="text-red-500 text-sm">
@@ -295,9 +302,8 @@ function Login() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className={`w-full btn-primary text-white py-2 px-4 rounded-md uppercase font-medium ${
-                    loading ? "opacity-70 cursor-not-allowed" : ""
-                  }`}
+                  className={`w-full btn-primary text-white py-2 px-4 rounded-md uppercase font-medium ${loading ? "opacity-70 cursor-not-allowed" : ""
+                    }`}
                 >
                   {loading ? "Signing in..." : "Sign in"}
                 </button>

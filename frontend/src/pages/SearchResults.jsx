@@ -64,7 +64,9 @@ export default function SearchResults() {
           blogs: data.blogs || [],
         });
 
-        console.log(results);
+
+        // console.log("Search Results:", data); 
+        // console.log(results);
       } catch (error) {
         console.error("Error fetching search results:", error);
         setError("Failed to fetch search results. Please try again.");
@@ -219,7 +221,7 @@ export default function SearchResults() {
                   {results.groups.length > 0 && (
                     <button
                       onClick={() => scrollToSection(groupsRef)}
-                      className="group flex items-center justify-between w-full text-left px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all duration-200 border-2 border-transparent hover:border-green-100"
+                      className="group flex items-center justify-between w-full text-left px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-50 transition-all duration-200 border-2 border-transparent hover:border-blue-100"
                     >
                       <div className="flex items-center space-x-3">
                         <div className="p-2 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors">
@@ -234,7 +236,7 @@ export default function SearchResults() {
                           </p>
                         </div>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-green-500 transform group-hover:translate-x-1 transition-all" />
+                      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-sky-500 transform group-hover:translate-x-1 transition-all" />
                     </button>
                   )}
 
@@ -464,7 +466,7 @@ export default function SearchResults() {
                                   className="flex items-center justify-between p-4 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 rounded-xl transition-all duration-200 border-2 border-transparent hover:border-blue-100 group"
                                 >
                                   <Link
-                                    to={`/profile/${user.username}`}
+                                    to={`/user-profile/${user.username}`}
                                     className="flex items-center flex-1"
                                   >
                                     <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 mr-4 ring-4 ring-white shadow-lg">
@@ -476,7 +478,7 @@ export default function SearchResults() {
                                           onError={(e) => {}}
                                         />
                                       ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-400 to-purple-500 text-white text-xl font-bold">
+                                        <div className="w-full h-full flex items-center justify-center bg-gray-300 text-white text-xl font-bold">
                                           {user.name.charAt(0).toUpperCase()}
                                         </div>
                                       )}
@@ -495,7 +497,7 @@ export default function SearchResults() {
                                   {/* Connection Button based on connection status */}
                                   {user.is_connected ? (
                                     <button
-                                      className="ml-4 px-6 py-2 bg-gray-100 text-gray-600 rounded-lg font-semibold border-2 border-gray-200"
+                                      className="ml-4 px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:bg-blue-700 text-white  rounded-lg font-semibold border-2 border-gray-200"
                                       disabled
                                     >
                                       Connected
@@ -509,7 +511,7 @@ export default function SearchResults() {
                                     </button>
                                   ) : (
                                     <button
-                                      className="ml-4 px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-purple-600 transform hover:scale-105 transition-all duration-200 shadow-lg"
+                                      className="ml-4 px-6 py-2 bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 text-white rounded-lg font-semibold hover:from-blue-600 to-cyan-500 hover:bg transform hover:scale-105 transition-all duration-200 shadow-lg"
                                       onClick={(e) => {
                                         e.preventDefault();
                                         handleConnect(user.id);
@@ -545,10 +547,10 @@ export default function SearchResults() {
                               {results.groups.map((group) => (
                                 <div
                                   key={group.id}
-                                  className="flex items-center justify-between p-4 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 rounded-xl transition-all duration-200 border-2 border-transparent hover:border-green-100 group"
+                                  className="flex items-center justify-between p-4 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-50 rounded-xl transition-all duration-200 border-2 border-transparent hover:border-blue-100 group"
                                 >
                                   <Link
-                                    to={`/groups/${group.name}`}
+                                    to={`/groups/${group.id}`}
                                     className="flex items-center flex-1"
                                   >
                                     <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 mr-4 ring-4 ring-white shadow-lg">
@@ -562,16 +564,16 @@ export default function SearchResults() {
                                           }}
                                         />
                                       ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-green-400 to-emerald-500 text-white text-xl font-bold">
+                                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 text-white text-xl font-bold">
                                           {group.name.charAt(0).toUpperCase()}
                                         </div>
                                       )}
                                     </div>
                                     <div className="flex-1">
-                                      <h3 className="font-bold text-lg text-gray-900 group-hover:text-green-600 transition-colors">
+                                      <h3 className="font-bold text-lg text-gray-900 group-hover:text--600 transition-colors">
                                         {group.name}
                                       </h3>
-                                      <p className="text-green-600 font-semibold">
+                                      <p className="text-sky-600 font-semibold">
                                         {group.member_count || 0} members
                                       </p>
                                       <p className="text-gray-600 mt-1 line-clamp-2">
@@ -579,14 +581,14 @@ export default function SearchResults() {
                                       </p>
                                     </div>
                                   </Link>
-
+                                    
                                   {group.is_member ? (
-                                    <button className="ml-4 px-6 py-2 bg-gray-100 text-gray-600 rounded-lg font-semibold border-2 border-gray-200">
+                                    <button className="ml-4 px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-500  text-white rounded-lg font-semibold border-2 border-gray-200">
                                       Joined
                                     </button>
                                   ) : (
                                     <button
-                                      className="ml-4 px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg font-semibold hover:from-green-600 hover:to-emerald-600 transform hover:scale-105 transition-all duration-200 shadow-lg"
+                                      className="ml-4 px-6 py-2 bg-gradient-to-r from-blue-500 to-cyan-400  text-white rounded-lg font-semibold hover:from-blue-600 hover:to-cyan-500 transform hover:scale-105 transition-all duration-200 shadow-lg"
                                       onClick={(e) => {
                                         e.preventDefault();
                                         handleJoinGroup(group.id);
@@ -682,13 +684,13 @@ export default function SearchResults() {
                             <div className="space-y-4">
                               {results.blogs.map((blog) => (
                                 <Link
-                                  to={`/blog/${blog.id}`}
+                                  to={`/blog-detail/${blog.slug}`}
                                   key={blog.id}
-                                  className="block p-4 hover:bg-gradient-to-r hover:from-teal-50 hover:to-cyan-50 rounded-xl transition-all duration-200 border-2 border-transparent hover:border-teal-100 group"
+                                  className="block p-4 bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 rounded-xl transition-all duration-200 border-2 border-transparent hover:border-blue-100 group"
                                 >
                                   <div className="flex items-start justify-between">
                                     <div className="flex-1">
-                                      <h3 className="font-bold text-lg text-gray-900 group-hover:text-teal-600 transition-colors mb-2">
+                                      <h3 className="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors mb-2">
                                         {blog.title}
                                       </h3>
                                       <p className="text-gray-600 line-clamp-3 mb-3 leading-relaxed">
@@ -707,7 +709,7 @@ export default function SearchResults() {
                                         </span>
                                       </div>
                                     </div>
-                                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-teal-500 transform group-hover:translate-x-1 transition-all ml-4" />
+                                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transform group-hover:translate-x-1 transition-all ml-4" />
                                   </div>
                                 </Link>
                               ))}
@@ -737,7 +739,7 @@ export default function SearchResults() {
                                 <Link
                                   to={`/post/${post.id}`}
                                   key={post.id}
-                                  className="block p-4 hover:bg-gradient-to-r hover:from-sky-50 hover:to-red-50 rounded-xl transition-all duration-200 border-2 border-transparent hover:border-sky-100 group"
+                                  className="block p-4 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 rounded-xl transition-all duration-200 border-2 border-transparent hover:border-sky-100 group"
                                 >
                                   <div className="flex items-start justify-between">
                                     <div className="flex-1">
@@ -760,7 +762,7 @@ export default function SearchResults() {
                                         </span>
                                       </div>
                                     </div>
-                                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transform group-hover:translate-x-1 transition-all ml-4" />
+                                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transform group-hover:translate-x-1 transition-all ml-4" />
                                   </div>
                                 </Link>
                               ))}

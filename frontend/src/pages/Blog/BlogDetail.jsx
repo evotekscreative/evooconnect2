@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import Case from "../../components/Case";
 import axios from "axios";
 import RandomPosts from "../../components/Blog/RandomPosts";
@@ -9,10 +9,11 @@ import Toast from "../../components/Blog/Toast";
 import BlogMenu from "../../components/Blog/BlogMenu";
 import ReportModal from "../../components/Blog/ReportModal";
 import CommentSection from "../../components/Blog/CommentSection";
+import { CircleArrowLeft } from 'lucide-react';
 
 
 const BlogDetail = () => {
-          const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+  const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -173,6 +174,12 @@ const [alertInfo, setAlertInfo] = useState({
     <Case>
       <div className="relative py-10 bg-gray-50">
         <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* button back */}
+          <Link to="/blog"
+            className="fixed top-20 left-4 bg-blue-500 text-white px-4 py-2 rounded-md shadow-md hover:bg-blue-600 transition duration-200"
+          >
+            <CircleArrowLeft />
+          </Link>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-6 relative">
               <div className="bg-white shadow-md rounded-lg relative">

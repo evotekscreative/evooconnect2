@@ -38,10 +38,13 @@ type BlogSearchResult struct {
     Id        string          `json:"id"`
     Title     string          `json:"title"`
     Content   string          `json:"content"`
+    Slug      string          `json:"slug"`   
+    Image     string          `json:"image"`   
     CreatedAt string          `json:"created_at"`
     User      UserSearchResult `json:"user"`
     Highlight string          `json:"highlight,omitempty"`
 }
+
 
 
 type GroupSearchResult struct {

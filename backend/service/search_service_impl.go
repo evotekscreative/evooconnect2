@@ -189,53 +189,42 @@ func (service *SearchServiceImpl) searchBlogs(ctx context.Context, query string,
         fmt.Printf("Error starting transaction for blog search: %v\n", err)
         return []web.BlogSearchResult{}
     }
+    defer helper.CommitOrRollback(tx)
 
-
-    fmt.Printf("Searching blogs with query: '%s'\n", query)
     blogs := service.BlogRepository.Search(ctx, tx, query, limit, offset)
-    fmt.Printf("Blog repository returned %d blogs\n", len(blogs))
-   
+    
     var results []web.BlogSearchResult
     for _, blog := range blogs {
         userID, err := uuid.Parse(blog.UserID)
         if err != nil {
-            fmt.Printf("Error parsing user ID for blog: %v\n", err)
             continue
         }
-       
+        
         user, err := service.UserRepository.FindById(ctx, tx, userID)
         if err != nil {
-            fmt.Printf("Error finding user for blog: %v\n", err)
             continue
         }
-       
+        
         isConnected := service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, user.Id)
-       
-        userResult := web.UserSearchResult{
-            Id:          user.Id.String(),
-            Name:        user.Name,
-            Username:    user.Username,
-            Photo:       user.Photo,
-            IsConnected: isConnected,
-        }
-       
+        
         result := web.BlogSearchResult{
             Id:        blog.ID,
             Title:     blog.Title,
             Content:   blog.Content,
+            Slug:      blog.Slug,        // Tambahkan slug
+            Image:     blog.ImagePath,   // Tambahkan image
             CreatedAt: blog.CreatedAt,
-            User:      userResult,
+            User: web.UserSearchResult{
+                Id:          user.Id.String(),
+                Name:        user.Name,
+                Username:    user.Username,
+                Photo:       user.Photo,
+                IsConnected: isConnected,
+            },
         }
         results = append(results, result)
-        fmt.Printf("Added blog to results: %s by %s\n", blog.Title, user.Name)
     }
 
-
-    err = tx.Commit()
-    if err != nil {
-        fmt.Printf("Error committing transaction for blog search: %v\n", err)
-        tx.Rollback()
-    }
     return results
 }
 

@@ -416,9 +416,9 @@ func (repository *ConnectionRepositoryImpl) FindRequest(ctx context.Context, tx 
 
 func (repository *ConnectionRepositoryImpl) Disconnect(ctx context.Context, tx *sql.Tx, userId1, userId2 uuid.UUID) error {
 	// Delete connection in both directions to ensure complete disconnection
-	SQL := `DELETE FROM connections WHERE 
-            (user_id_1 = $1 AND user_id_2 = $2) OR 
-            (user_id_2 = $2 AND user_id_1 = $1)`
+	SQL := `DELETE FROM connections WHERE
+			(user_id_1 = $1 AND user_id_2 = $2) OR
+			(user_id_1 = $2 AND user_id_2 = $1)`
 
 	_, err := tx.ExecContext(ctx, SQL, userId1, userId2)
 	helper.PanicIfError(err)

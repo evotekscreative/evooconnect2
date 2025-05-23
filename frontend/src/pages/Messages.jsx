@@ -1128,7 +1128,6 @@ export const Messages = () => {
         }`}
       >
         <div className="container flex items-center justify-between mx-auto">
-          {!conversationId && (
             <button
               onClick={() => navigate("/")}
               className="p-2 -ml-2 rounded-full hover:bg-blue-600"
@@ -1148,7 +1147,6 @@ export const Messages = () => {
                 <path d="M12 19l-7-7 7-7"></path>
               </svg>
             </button>
-          )}
           <h1 className="text-xl font-bold">Messages</h1>
           <div className="w-8"></div> {/* Spacer for alignment */}
         </div>

@@ -7,10 +7,9 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import Case from "../components/Case.jsx";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import Profile from "../assets/img/logo-evo-2.png";
-import NetworkManager from "../components/NetworkManager";
 
 export default function ConnectionList() {
   const apiUrl =
@@ -24,6 +23,7 @@ export default function ConnectionList() {
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [selectedConnection, setSelectedConnection] = useState(null);
+  const {username } = useParams();
 
   const handleMessageClick = async (connection) => {
     const token = localStorage.getItem("token");
@@ -42,7 +42,6 @@ export default function ConnectionList() {
           Authorization: `Bearer ${token}`,
         },
       });
-
 
       // Find a conversation with this connection
       const existingConversation = checkResponse.data.data.conversations.find((conv) =>
@@ -338,8 +337,34 @@ export default function ConnectionList() {
 
           {/* Right side - Manage network */}
           <div className="space-y-4">
-            <NetworkManager />
-            
+            <div className="bg-white rounded-xl shadow p-4">
+              <h3 className="font-medium mb-2 border-b pb-3 text-sm sm:text-base">
+                Manage my network
+              </h3>
+              <ul className="text-xs sm:text-sm text-gray-700 space-y-1">
+                <li className="border-b pb-3">
+                  <Link to="/list-connection" className="flex justify-between">
+                    <span>Connections</span>
+                    <span>0</span>
+                  </Link>
+                </li>
+                <li className="border-b pb-3">
+                  <Link to="/messages" className="flex justify-between">
+                    <span>Contacts</span> <span>869</span>
+                  </Link>
+                </li>
+                <li className="border-b pb-3">
+                  <Link to="/groups" className="flex justify-between">
+                    <span>Groups</span> <span>0</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/hashtags" className="flex justify-between">
+                    <span>Hashtag</span> <span>8</span>
+                  </Link>
+                </li>
+              </ul>
+            </div>
 
             <div className="bg-white rounded-xl shadow p-4 text-center">
               <img

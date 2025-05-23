@@ -87,9 +87,9 @@ export default function SocialNetworkFeed() {
   const [allReplies, setAllReplies] = useState({});
 
   useEffect(() => {
-    const userData = localStorage.getItem("userData");
+    const userData = localStorage.getItem("user");
     if (userData) {
-      const parsedUser = JSON.parse(userData);
+      const parsedUser = JSON.parse(user);
       setCurrentUserId(parsedUser.id);
     }
   }, []);

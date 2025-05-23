@@ -138,7 +138,7 @@ function ContentStep({ content, images, onContentChange, onImagesChange, onNext,
             accept="image/*"
             onChange={handleImageChange}
           />
-          <span className="ml-3 text-sm text-gray-500">Upload at least one image</span>
+          <span className="ml-3 text-sm text-gray-500">You can only upload one image</span>
         </div>
         {imageError && <p className="text-sm text-red-500 mt-1">{imageError}</p>}
       </div>

@@ -26,12 +26,14 @@ export default function MemberList() {
   const [selectedMember, setSelectedMember] = useState(null);
   const [selectedRole, setSelectedRole] = useState("member");
   const [showOptionsMenu, setShowOptionsMenu] = useState(null);
+  const [group, setGroup] = useState({});
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (user) {
       setCurrentUserId(user.id);
     }
+    fetchGroup();
     fetchMembers();
   }, [groupId]);
 
@@ -62,6 +64,22 @@ export default function MemberList() {
       toast.error("Failed to load group members");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchGroup = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${apiUrl}/api/groups/${groupId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setGroup(response.data.data);
+    } catch (error) {
+      console.error("Error fetching group:", error);
+      setError("Failed to load group");
+      toast.error("Failed to load group");
     }
   };
 
@@ -155,16 +173,15 @@ export default function MemberList() {
         <div className="container mx-auto px-4 py-6">
           <div className="bg-white rounded-lg shadow-sm overflow-hidden min-h-[70vh]">
           {/* Header */}
-          <div className="border-b p-4 flex items-center justify-between">
+          <div className="border-b p-4  ">
             <Link
               to={`/groups/${groupId}`}
-              className="flex items-center text-blue-600 hover:text-blue-800"
+              className="flex items-center text-gray-600 hover:text-gray-800"
             >
               <ArrowLeft size={20} className="mr-2" />
-              Back to Group
+              <h2 className="font-bold">{group.name}</h2>
             </Link>
-            <h2 className="text-xl font-bold text-gray-800">Group Members</h2>
-            <div className="w-8"></div> {/* Spacer for alignment */}
+            <h2 className="text-lg mt-5 font-semibold">{members.length} Members</h2>
           </div>
 
           {/* Member List */}
@@ -192,13 +209,16 @@ export default function MemberList() {
                       alt={member.user.name}
                     />
                     <div>
-                      <h3 className="font-medium text-gray-900">
+                      <Link to={`/user-profile/${member.user.username}`} className="font-medium text-gray-900">
                         {member.user.name}
                         {member.user.id === currentUserId && (
                           <span className="ml-2 text-gray-400">(You)</span>
                         )}
-                      </h3>
-                      <p className="text-sm text-gray-500">
+                      </Link>
+                      <p className="text-sm text-gray-700">
+                        {member.user.headline || "No headline available"}
+                      </p>
+                      <p className="text-xs text-gray-500">
                         {member.role === "admin" ? "Admin" : "Member"}
                       </p>
                     </div>

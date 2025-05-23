@@ -1044,11 +1044,14 @@ export default function GroupPage() {
       <div className="flex flex-col md:flex-row bg-gray-50 px-4 md:px-6 lg:px-12 xl:px-32 py-2 md:py-4">
         {showInviteSuccess && (
           <div className="fixed top-5 right-5 z-50">
-            <div className="bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center">
-              <Check className="mr-2" />
-              <span>Successfully invited {invitedUserName} to the group!</span>
-            </div>
-          </div>
+                  {alertInfo.show && (
+                    <Alert
+                      type={alertInfo.type}
+                      message={alertInfo.message}
+                      onClose={() => setAlertInfo({ ...alertInfo, show: false })}
+                    />
+                  )}
+                </div>
         )}
 
         {/* Main Content Area */}
@@ -1647,7 +1650,7 @@ export default function GroupPage() {
                               >
                                 <div className="flex items-center gap-3">
                                   <img
-                                    src={friend.photo || "/default-user.png"}
+                                    src={apiUrl + '/'+friend.photo || "/default-user.png"}
                                     className="w-10 h-10 rounded-full object-cover"
                                     alt={friend.name}
                                   />

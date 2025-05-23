@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Link, useParams  } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import Case from "../components/Case";
 import {
   Briefcase,
@@ -20,6 +20,12 @@ import {
   ThumbsUp,
   MessageCircle,
   Share2,
+  Mail,
+  Phone,
+  MapPin,
+  Building,
+  Link2,
+  X,
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import axios from "axios";
@@ -49,8 +55,10 @@ const socialPlatforms = [
 ];
 
 export default function UserProfile() {
-      const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+  const apiUrl =
+    import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
+  const [showContactModal, setShowContactModal] = useState(false);
   const [showEditEducationModal, setEditShowEducationModal] = useState(false);
   const [editingEducation, setEditingEducation] = useState(null);
   const [showExperienceModal, setShowExperienceModal] = useState(false);
@@ -63,8 +71,9 @@ export default function UserProfile() {
   const [profileImage, setProfileImage] = useState(null);
   const { username } = useParams(); // Get username from URL
   const [userData, setUserData] = useState(null);
+  const [connections, setConnections] = useState(0);
+  const navigate = useNavigate();
 
-  // Initialize user state with empty values
   const [user, setUser] = useState({
     id: "",
     name: "",
@@ -73,6 +82,13 @@ export default function UserProfile() {
     skills: [],
     socials: {},
     photo: null,
+    email: "",
+    phone: "",
+    location: "",
+    organization: "",
+    website: "",
+    birthdate: "",
+    gender: "",
   });
 
   // Education Form State
@@ -123,40 +139,42 @@ export default function UserProfile() {
     ...Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i),
   ];
 
+  // Fetch connection
+  const fetchConnections = async () => {
+    const token = localStorage.getItem("token");
+    setIsLoading(true);
+    try {
+      const response = await axios.get(
+        `${apiUrl}/api/users/${user.id}/connections`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setConnections(response.data.data.connections ?? []);
+      setUser((prev) => ({
+        ...prev,
+        connections: response.data.data.connections ?? [],
+        connectionsCount: response.data.data.total ?? 0,
+      }));
+      console.log("Connections:", user);
+    } catch (error) {
+      console.error("Failed to fetch connections:", error);
+      toast.error("Failed to load connections");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const fetchUserPosts = async () => {
-  const token = localStorage.getItem("token");
-  setIsLoading(true);
-
-  try {
-    const userId = user.id;
-    const response = await axios.get(
-      `${apiUrl}/api/users/${userId}/posts?limit=10&offset=0`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    // Ensure we always set an array, even if response.data.data is null/undefined
-    setUserPosts(response.data.data || []);
-  } catch (error) {
-    console.error("Failed to fetch user posts:", error);
-    toast.error("Failed to load posts");
-    setUserPosts([]); // Set to empty array on error
-  } finally {
-    setIsLoading(false);
-  }
-};
-
-  // Fetch user profile data
-  const fetchProfile = async () => {
     const token = localStorage.getItem("token");
     setIsLoading(true);
 
     try {
+      const userId = user.id;
       const response = await axios.get(
-        `${apiUrl}/api/user-profile/${username}`,
+        `${apiUrl}/api/users/${userId}/posts?limit=10&offset=0`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -164,49 +182,78 @@ export default function UserProfile() {
         }
       );
 
-      // Convert socials array to object
-      const socialsObject = {};
-      if (
-        response.data.data.socials &&
-        Array.isArray(response.data.data.socials)
-      ) {
-        response.data.data.socials.forEach((social) => {
-          socialsObject[social.platform] = social.username;
-        });
-      }
-
-      // Handle skills data
-      let userSkills = [];
-      if (response.data.data.skills && response.data.data.skills.Valid) {
-        userSkills = Array.isArray(response.data.data.skills.String)
-          ? response.data.data.skills.String
-          : response.data.data.skills.String
-          ? [response.data.data.skills.String]
-          : [];
-      }
-
-      setUser({
-        id: response.data.data.id || "",
-        name: response.data.data.name || "",
-        headline: response.data.data.headline || "",
-        about: response.data.data.about || "",
-        skills: response.data.data.skills,
-        socials: socialsObject,
-        photo: response.data.data.photo || null,
-      });
-
-      // Set profile image separately if needed
-      setProfileImage(response.data.data.photo || null);
+      // Ensure we always set an array, even if response.data.data is null/undefined
+      setUserPosts(response.data.data || []);
     } catch (error) {
-      console.error("Failed to fetch profile:", error);
-      toast.error("Failed to load profile data");
+      console.error("Failed to fetch user posts:", error);
+      toast.error("Failed to load posts");
+      setUserPosts([]); // Set to empty array on error
     } finally {
       setIsLoading(false);
     }
   };
 
-   
   useEffect(() => {
+    const fetchProfile = async () => {
+      const token = localStorage.getItem("token");
+      setIsLoading(true);
+
+      try {
+        const response = await axios.get(
+          apiUrl + "/api/user-profile/" + username,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = response.data.data;
+
+        // Convert socials array to object
+        const socialsObject = {};
+        if (data.socials && Array.isArray(data.socials)) {
+          data.socials.forEach((social) => {
+            socialsObject[social.platform] = social.username;
+          });
+        }
+
+        // Handle skills data
+        let userSkills = [];
+        if (data.skills && data.skills.Valid) {
+          userSkills = Array.isArray(data.skills.String)
+            ? data.skills.String
+            : data.skills.String
+            ? [data.skills.String]
+            : [];
+        }
+
+        setUser({
+          id: data.id || "",
+          name: data.name || "",
+          headline: data.headline || "",
+          about: data.about || "",
+          skills: userSkills,
+          socials: socialsObject,
+          photo: data.photo || null,
+          email: data.email || "",
+          phone: data.phone || "",
+          location: data.location || "",
+          organization: data.organization || "",
+          website: data.website || "",
+          birthdate: data.birthdate || "",
+          gender: data.gender || "",
+        });
+
+        setProfileImage(data.photo || null);
+      } catch (error) {
+        console.error("Failed to fetch profile:", error);
+        toast.error("Failed to load profile data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     fetchProfile();
   }, [username]);
 
@@ -261,14 +308,11 @@ export default function UserProfile() {
   };
 
   useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  useEffect(() => {
     if (user.id) {
       fetchEducations();
       fetchExperiences();
       fetchUserPosts();
+      fetchConnections();
     }
   }, [user.id]);
 
@@ -401,16 +445,12 @@ export default function UserProfile() {
         setEditingEducation(null);
       } else {
         // Add new education
-        const response = await axios.post(
-          apiUrl + "/api/education",
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await axios.post(apiUrl + "/api/education", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         setEducation((prev) => [...prev, response.data.data]);
         toast.success("Education added successfully!");
@@ -594,14 +634,11 @@ export default function UserProfile() {
     setIsLoading(true);
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(
-        `${apiUrl}/api/experience/${experienceId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await axios.delete(`${apiUrl}/api/experience/${experienceId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       setExperiences((prev) =>
         Array.isArray(prev) ? prev.filter((exp) => exp.id !== experienceId) : []
@@ -655,6 +692,14 @@ export default function UserProfile() {
               <p className="text-base text-gray-500">
                 {user.headline || "No headline yet"}
               </p>
+              <div className="mt-2">
+                <button
+                  onClick={() => setShowContactModal(true)}
+                  className="text-blue-600 hover:underline text-sm"
+                >
+                  Contact Information
+                </button>
+              </div>
               <div className="mt-5 space-y-2 text-left">
                 <Link
                   to="/list-connection"
@@ -672,7 +717,7 @@ export default function UserProfile() {
                   <span className="font-bold text-lg">85</span>
                 </div>
                 {/* </Link> */}
-                <Link
+                {/* <Link
                   to="/job-saved"
                   className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md"
                 >
@@ -680,7 +725,7 @@ export default function UserProfile() {
                     <Bookmark size={18} /> Job Saved
                   </span>
                   <span className="font-bold text-lg">120</span>
-                </Link>
+                </Link> */}
               </div>
             </div>
 
@@ -756,7 +801,6 @@ export default function UserProfile() {
                   <Briefcase size={20} className="text-[#00AEEF]" />
                   <h3 className="font-semibold text-lg">Experience</h3>
                 </div>
-
               </div>
 
               {experiences?.length > 0 ? (
@@ -783,7 +827,6 @@ export default function UserProfile() {
                           <p className="text-gray-600">{exp.companyName}</p>
                           <div className="flex justify-between items-start">
                             <h4 className="font-semibold">{exp.job_title}</h4>
-                          
                           </div>
                           <p className="text-gray-600">{exp.company_name}</p>
                           <p className="text-gray-500 text-sm">
@@ -823,8 +866,7 @@ export default function UserProfile() {
                   <GraduationCap size={20} className="text-[#00AEEF]" />
                   <h3 className="font-semibold text-lg">Education</h3>
                 </div>
-                <div className="flex items-center gap-3">
-                </div>
+                <div className="flex items-center gap-3"></div>
               </div>
 
               {educations?.length > 0 ? (
@@ -849,7 +891,6 @@ export default function UserProfile() {
                         <div className="flex-1">
                           <div className="flex justify-between items-start">
                             <h4 className="font-semibold">{edu.major}</h4>
-                            
                           </div>
                           <p className="text-gray-600">{edu.institute_name}</p>
                           <p className="text-gray-500 text-sm">
@@ -965,20 +1006,31 @@ export default function UserProfile() {
 
                       {/* Post content */}
                       <div className="p-4">
-                        <p className="text-sm text-gray-700 mb-3">
-                          {post.content || "No content"}
-                        </p>
+                        <Link
+                          to={`/post/${post.id}`}
+                          className="text-sm text-gray-700 mb-3"
+                        >
+                          <p className="mb-3">
+                            {post.content
+                              ? post.content.length > 100
+                                ? post.content
+                                    .substring(0, 100)
+                                    .replace(/<[^>]*>/g, "") + "..."
+                                : post.content.replace(/<[^>]*>/g, "")
+                              : "No content"}
+                          </p>
 
-                        {/* Only show image if exists */}
-                        {post.images && post.images.length > 0 && (
-                          <div className="mb-3">
-                            <img
-                              src={apiUrl + "/" + post.images[0]}
-                              alt={`Post ${post.id}`}
-                              className="w-full rounded-md"
-                            />
-                          </div>
-                        )}
+                          {/* Only show image if exists */}
+                          {post.images && post.images.length > 0 && (
+                            <div className="mb-3">
+                              <img
+                                src={apiUrl + "/" + post.images[0]}
+                                alt={`Post ${post.id}`}
+                                className="w-full rounded-md"
+                              />
+                            </div>
+                          )}
+                        </Link>
 
                         {/* Post footer */}
                         <div className="flex justify-between items-center text-xs text-gray-500">
@@ -1025,7 +1077,7 @@ export default function UserProfile() {
   `}</style>
               <div className="flex justify-center mt-4">
                 <button className="text-[#00AEEF] text-asmibold font-semibold hover:underline">
-                  <Link to="/post-page"> See All Post </Link>
+                  <Link to={`/post-page/${username}`}> See All Post </Link>
                 </button>
               </div>
             </div>
@@ -1617,6 +1669,121 @@ export default function UserProfile() {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {showContactModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-2xl transform rounded-2xl bg-white p-8 shadow-2xl transition-all duration-300 ease-in-out scale-100">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-gray-200 pb-5">
+              <h2 className="text-2xl font-semibold text-gray-800">
+                Contact Information
+              </h2>
+              <button
+                onClick={() => setShowContactModal(false)}
+                className="rounded-md p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-8 text-base text-gray-700">
+              {/* Contact Details */}
+              <section>
+                <h3 className="mb-4 flex items-center gap-2 text-lg font-medium text-gray-600">
+                  <Mail size={18} className="text-blue-600" />
+                  Contact Details
+                </h3>
+                <div className="space-y-3 pl-6">
+                  {user.email ? (
+                    <div className="flex items-center gap-2">
+                      <Mail size={16} className="text-gray-400" />
+                      <a
+                        href={`mailto:${user.email}`}
+                        className="text-blue-600 hover:underline"
+                      >
+                        {user.email}
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-gray-400">No email provided</p>
+                  )}
+
+                  {user.phone ? (
+                    <div className="flex items-center gap-2">
+                      <Phone size={16} className="text-gray-400" />
+                      <a
+                        href={`tel:${user.phone.replace(/[^0-9]/g, "")}`}
+                        className="text-blue-600 hover:underline"
+                      >
+                        {user.phone}
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-gray-400">No phone number provided</p>
+                  )}
+
+                  {user.location ? (
+                    <div className="flex items-center gap-2">
+                      <MapPin size={16} className="text-gray-400" />
+                      <span>{user.location}</span>
+                    </div>
+                  ) : (
+                    <p className="text-gray-400">No location provided</p>
+                  )}
+                </div>
+              </section>
+
+              {/* Professional Details */}
+              <section>
+                <h3 className="mb-4 flex items-center gap-2 text-lg font-medium text-gray-600">
+                  <Building size={18} className="text-blue-600" />
+                  Professional Details
+                </h3>
+                <div className="space-y-3 pl-6">
+                  {user.organization ? (
+                    <div className="flex items-center gap-2">
+                      <Building size={16} className="text-gray-400" />
+                      <span>{user.organization}</span>
+                    </div>
+                  ) : (
+                    <p className="text-gray-400">No organization provided</p>
+                  )}
+
+                  {user.website ? (
+                    <div className="flex items-center gap-2">
+                      <Link2 size={16} className="text-gray-400 mt-1 flex-shrink-0" />
+                      <a
+                        href={
+                          user.website.startsWith("http")
+                            ? user.website
+                            : `https://${user.website}`
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline break-all"
+                      >
+                        {user.website.replace(/^https?:\/\//, "")}
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-gray-400">No website provided</p>
+                  )}
+                </div>
+              </section>
+            </div>
+
+            {/* Footer */}
+            <div className="mt-8 flex justify-end">
+              <button
+                onClick={() => setShowContactModal(false)}
+                className="rounded-md bg-blue-600 px-5 py-2.5 text-base font-medium text-white transition hover:bg-blue-700"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

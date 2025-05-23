@@ -210,6 +210,7 @@ export default function SocialNetworkFeed() {
               .join("")
           : "UU",
         photo: connection.user.photo || null,
+        status: connection.status,
       }));
 
       setConnections(formattedConnections);
@@ -222,6 +223,7 @@ export default function SocialNetworkFeed() {
   useEffect(() => {
     fetchProfileViews();
     fetchConnections();
+    // console.log("Profile views data fetched successfully", profileViews);
   }, []);
 
   useEffect(() => {
@@ -322,6 +324,11 @@ export default function SocialNetworkFeed() {
     },
   };
 
+  useEffect(() => {
+    console.log("chartOptions", chartOptions);
+    console.log("chartData", chartData);
+  }, [chartOptions, chartData]);
+
   const handlePostAction = (action) => {
     const post = posts.find((p) => p.id === selectedPostId);
 
@@ -345,6 +352,7 @@ export default function SocialNetworkFeed() {
         console.log("Report post:", post.id);
         break;
       case "connect":
+        handleConnectWithUser(post.user?.id);
         console.log("Connect with user:", post.user?.id);
         break;
       default:
@@ -352,6 +360,72 @@ export default function SocialNetworkFeed() {
     }
 
     handleClosePostOptions(); // Tutup modal setelah aksi selesai
+  };
+
+  const handleConnectWithUser = async (userId) => {
+    try {
+      const userToken = localStorage.getItem("token");
+      if (!userToken) {
+        throw new Error("No authentication token found");
+      }
+
+      // Check if already connected (optional - you might want to handle this differently)
+      const isConnected = connections.some((conn) => conn.id === userId);
+
+      if (isConnected) {
+        setAlertInfo({
+          show: true,
+          type: "info",
+          message: "You're already connected with this user",
+        });
+        return;
+      }
+
+      // Send connection request
+      const response = await axios.post(
+        `${apiUrl}/api/users/${userId}/connect`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${userToken}` },
+        }
+      );
+
+      if (response.data.success) {
+        // Update connections list
+        const newConnection = {
+          id: userId,
+          name: response.data.data?.user?.name || "New Connection",
+          username: response.data.data?.user?.username || "newuser",
+          initials: response.data.data?.user?.name
+            ? response.data.data.user.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+            : "NC",
+          photo: response.data.data?.user?.photo || null,
+        };
+
+        setConnections((prev) => [...prev, newConnection]);
+
+        setAlertInfo({
+          show: true,
+          type: "success",
+          message: "Connection request sent successfully!",
+        });
+
+        // Close the post options modal
+        handleClosePostOptions();
+      }
+    } catch (error) {
+      console.error("Failed to connect with user:", error);
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message:
+          error.response?.data?.message ||
+          "You've already sent a connection request to this user",
+      });
+    }
   };
 
   useEffect(() => {
@@ -383,7 +457,7 @@ export default function SocialNetworkFeed() {
             group: post.group || null, // Add this line to ensure group exists
             likes_count: post.likes_count || 0,
             comments_count: post.comments_count || 0,
-            createdAt: post.createdAt || new Date().toISOString(),
+            created_at: post.created_at,
             visibility: post.visibility || "public",
             isLiked: post.is_liked || false,
           }));
@@ -454,21 +528,39 @@ export default function SocialNetworkFeed() {
   const formatPostTime = (timestamp) => {
     if (!timestamp) return "Just now";
 
+    let postTime;
+    try {
+      postTime = dayjs(timestamp);
+      if (!postTime.isValid()) {
+        postTime = dayjs(new Date(timestamp));
+      }
+    } catch (e) {
+      console.error("Error parsing timestamp:", timestamp, e);
+      return "Just now";
+    }
+
+    if (!postTime.isValid()) {
+      return "Just now";
+    }
+
     const now = dayjs();
-    const postTime = dayjs(timestamp);
     const diffInSeconds = now.diff(postTime, "second");
     const diffInMinutes = now.diff(postTime, "minute");
     const diffInHours = now.diff(postTime, "hour");
     const diffInDays = now.diff(postTime, "day");
 
+    // Handle future dates or timezone issues by showing "Just now" instead of negative values
+    if (diffInSeconds < 0) return "Just now";
+    
     if (diffInSeconds < 60) return `${diffInSeconds}s ago`;
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInHours < 24) return `${diffInHours}h ago`;
     if (diffInDays < 7) return `${diffInDays}d ago`;
 
+    // For older dates, return formatted date (e.g. "MMM D, YYYY")
     return postTime.format("MMM D, YYYY");
   };
-
+  
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
 
@@ -1125,6 +1217,7 @@ export default function SocialNetworkFeed() {
     if (!post) return null;
 
     const isCurrentUserPost = (post.user?.id ?? post.user_id) == currentUserId;
+    const isConnected = connections.some((conn) => conn.id === post.user?.id);
 
     // Cek apakah post ini milik user yang sedang login
     return (
@@ -1181,14 +1274,18 @@ export default function SocialNetworkFeed() {
                   Report Post
                 </button>
                 <button
-                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-blue-500"
+                  className={`w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center ${
+                    isConnected ? "text-green-500" : "text-blue-500"
+                  }`}
                   onClick={() => {
-                    handlePostAction("connect");
-                    handleClosePostOptions();
+                    if (!isConnected) {
+                      handleConnectWithUser(post.user?.id);
+                    }
                   }}
+                  disabled={isConnected}
                 >
                   <Users size={16} className="mr-2" />
-                  Connect with User
+                  {isConnected ? "Connected" : "Connect with User"}
                 </button>
               </>
             )}
@@ -1708,14 +1805,14 @@ export default function SocialNetworkFeed() {
             </div>
           </div>
 
-          <h2
-            className="font-bold mb-0 text-sm cursor-pointer hover:underline"
-            onClick={() => user.username && fetchUserProfile(user.username)}
+          <Link
+            to={`/profile`}
+            className="font-bold mb-2 text-sm cursor-pointer "
           >
             {user.name || "Unknown User"}
-          </h2>
+          </Link>
 
-          <div className="flex border-t pt-3">
+          <div className="flex border-t pt-3 mt-2">
             <Link
               to={"/list-connection"}
               className="flex-1 text-center border-r"
@@ -1747,7 +1844,7 @@ export default function SocialNetworkFeed() {
           <div className="flex justify-between mb-2">
             <div className="text-center">
               <div className="text-xl font-semibold text-cyan-400">
-                {profileViews.thisWeek.toLocaleString()}
+                {profileViews.lastWeek.toLocaleString()}
               </div>
               <div className="text-gray-500 text-xs">last 7 days</div>
             </div>
@@ -2906,7 +3003,7 @@ export default function SocialNetworkFeed() {
                               )}
                             </div>
                             <div className="text-xs text-gray-500 mt-1">
-                              {formatPostTime(comment.createdAt)}
+                              {formatPostTime(comment.created_at)}
                             </div>
                             <div className="relative">
                               {/* Main actions row */}
@@ -3058,7 +3155,7 @@ export default function SocialNetworkFeed() {
                                               <div className="flex justify-between items-center">
                                                 <div className="text-xxs md:text-xs text-gray-500 mt-1">
                                                   {formatPostTime(
-                                                    reply.createdAt
+                                                    reply.created_at
                                                   )}
                                                 </div>
                                                 <button
