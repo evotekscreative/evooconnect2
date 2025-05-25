@@ -81,7 +81,7 @@ const CancelRequestModal = ({ isOpen, onClose, onConfirm, userName }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 transform transition-all">
         <div className="flex items-center mb-4 text-blue-600">
-          <AlertCircle className="mr-2" size={24} />
+          <Alert className="mr-2" size={24} />
           <h3 className="text-lg font-medium">Cancel Connection Request</h3>
         </div>
 
@@ -173,6 +173,11 @@ const Alert = ({ type, message, onClose }) => {
         }));
 
       setInvitations(mappedInvitations);
+      setAlertInfo({
+        show: true,
+        type: "success",
+        message: "Invitations fetched successfully",
+      });
     } catch (error) {
       console.error("Gagal mengambil data undangan:", error);
       setInvitations([]);
@@ -424,6 +429,7 @@ const Alert = ({ type, message, onClose }) => {
     }
   };
 
+
   const handleReject = async (id) => {
     const token = localStorage.getItem("token");
 
@@ -458,11 +464,21 @@ const Alert = ({ type, message, onClose }) => {
       </Case>
     );
   }
+  
 
   return (
     <Case>
       <div className="p-4 sm:p-6 bg-gray-100 min-h-screen">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
+          <div className="fixed top-5 right-5 z-50">
+                  {alertInfo.show && (
+                    <Alert
+                      type={alertInfo.type}
+                      message={alertInfo.message}
+                      onClose={() => setAlertInfo({ ...alertInfo, show: false })}
+                    />
+                  )}
+                </div>
           {/* Left side - People suggestions */}
           <div className="lg:col-span-3 space-y-4 bg-white rounded-xl shadow p-4 sm:p-6">
             <div className="flex items-center border-b pb-4">

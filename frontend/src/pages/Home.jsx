@@ -29,6 +29,8 @@ import {
   Ellipsis,
   MoreHorizontal,
   Share2,
+  RefreshCw,
+  UserPlus,
 } from "lucide-react";
 import {
   Chart as ChartJS,
@@ -100,6 +102,8 @@ export default function SocialNetworkFeed() {
   const [showShowcase, setShowShowcase] = useState(false);
   const navigate = useNavigate();
   const [profileImage, setProfileImage] = useState(null);
+  const [suggestedConnections, setSuggestedConnections] = useState([]);
+  const [loadingSuggested, setLoadingSuggested] = useState(false);
   const [user, setUser] = useState({
     name: "",
     username: "",
@@ -119,6 +123,46 @@ export default function SocialNetworkFeed() {
     dailyViews: [],
   });
   const [connections, setConnections] = useState([]);
+
+  const fetchSuggestedConnections = async () => {
+    try {
+      setLoadingSuggested(true);
+      const userToken = localStorage.getItem("token");
+      const response = await axios.get(apiUrl + "/api/user-peoples", {
+        headers: { Authorization: `Bearer ${userToken}` },
+      });
+
+      if (response.data?.data) {
+        // Filter out people you're already connected with
+        const connectedIds = connections.map((conn) => conn.id);
+        const filtered = response.data.data.filter(
+          (person) => !connectedIds.includes(person.id)
+        );
+
+        // Get 3 random suggestions
+        const shuffled = [...filtered].sort(() => 0.5 - Math.random());
+        const suggestions = shuffled.slice(0, 3).map((person) => ({
+          id: person.id,
+          name: person.name || "Unknown User",
+          username: person.username || "unknown",
+          initials: person.name
+            ? person.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+            : "UU",
+          photo: person.photo || null,
+          headline: person.headline || "No headline specified",
+        }));
+
+        setSuggestedConnections(suggestions);
+      }
+    } catch (error) {
+      console.error("Failed to fetch suggested connections:", error);
+    } finally {
+      setLoadingSuggested(false);
+    }
+  };
 
   const fetchProfileViews = async () => {
     try {
@@ -223,6 +267,7 @@ export default function SocialNetworkFeed() {
   useEffect(() => {
     fetchProfileViews();
     fetchConnections();
+    fetchSuggestedConnections();
     // console.log("Profile views data fetched successfully", profileViews);
   }, []);
 
@@ -369,9 +414,8 @@ export default function SocialNetworkFeed() {
         throw new Error("No authentication token found");
       }
 
-      // Check if already connected (optional - you might want to handle this differently)
+      // Check if already connected
       const isConnected = connections.some((conn) => conn.id === userId);
-
       if (isConnected) {
         setAlertInfo({
           show: true,
@@ -380,6 +424,26 @@ export default function SocialNetworkFeed() {
         });
         return;
       }
+
+      setLoadingSuggested(true); // Set loading state
+
+      // Optimistic update
+      const tempConnection = {
+        id: userId,
+        name:
+          suggestedConnections.find((p) => p.id === userId)?.name ||
+          "New Connection",
+        username:
+          suggestedConnections.find((p) => p.id === userId)?.username ||
+          "newuser",
+        initials:
+          suggestedConnections.find((p) => p.id === userId)?.initials || "NC",
+        photo: suggestedConnections.find((p) => p.id === userId)?.photo || null,
+        status: "pending",
+      };
+
+      setConnections((prev) => [...prev, tempConnection]);
+      setSuggestedConnections((prev) => prev.filter((p) => p.id !== userId));
 
       // Send connection request
       const response = await axios.post(
@@ -391,40 +455,57 @@ export default function SocialNetworkFeed() {
       );
 
       if (response.data.success) {
-        // Update connections list
+        // Update with actual data from response
         const newConnection = {
           id: userId,
-          name: response.data.data?.user?.name || "New Connection",
-          username: response.data.data?.user?.username || "newuser",
+          name: response.data.data?.user?.name || tempConnection.name,
+          username:
+            response.data.data?.user?.username || tempConnection.username,
           initials: response.data.data?.user?.name
             ? response.data.data.user.name
                 .split(" ")
                 .map((n) => n[0])
                 .join("")
-            : "NC",
-          photo: response.data.data?.user?.photo || null,
+            : tempConnection.initials,
+          photo: response.data.data?.user?.photo || tempConnection.photo,
+          status: response.data.data?.status || "connected",
         };
 
-        setConnections((prev) => [...prev, newConnection]);
+        setConnections((prev) =>
+          prev.map((conn) => (conn.id === userId ? newConnection : conn))
+        );
 
         setAlertInfo({
           show: true,
           type: "success",
           message: "Connection request sent successfully!",
         });
-
-        // Close the post options modal
-        handleClosePostOptions();
       }
     } catch (error) {
       console.error("Failed to connect with user:", error);
+
+      // Rollback optimistic update
+      setConnections((prev) => prev.filter((conn) => conn.id !== userId));
+      setSuggestedConnections((prev) => [
+        ...prev,
+        suggestedConnections.find((p) => p.id === userId) || {
+          id: userId,
+          name: "Unknown User",
+          username: "unknown",
+          initials: "UU",
+          photo: null,
+        },
+      ]);
+
       setAlertInfo({
         show: true,
         type: "error",
         message:
           error.response?.data?.message ||
-          "You've already sent a connection request to this user",
+          "Failed to send connection request. Please try again.",
       });
+    } finally {
+      setLoadingSuggested(false); // Reset loading state
     }
   };
 
@@ -551,7 +632,7 @@ export default function SocialNetworkFeed() {
 
     // Handle future dates or timezone issues by showing "Just now" instead of negative values
     if (diffInSeconds < 0) return "Just now";
-    
+
     if (diffInSeconds < 60) return `${diffInSeconds}s ago`;
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInHours < 24) return `${diffInHours}h ago`;
@@ -560,7 +641,7 @@ export default function SocialNetworkFeed() {
     // For older dates, return formatted date (e.g. "MMM D, YYYY")
     return postTime.format("MMM D, YYYY");
   };
-  
+
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
 
@@ -716,7 +797,7 @@ export default function SocialNetworkFeed() {
               profile_photo: null,
             },
             replies: replies,
-            repliesCount: comment.repliesCount || replies.length,
+            repliesCount: comment.replies_count || replies.length,
           };
         }
       );
@@ -742,43 +823,22 @@ export default function SocialNetworkFeed() {
   const fetchReplies = async (commentId) => {
     try {
       setLoadingComments((prev) => ({ ...prev, [commentId]: true }));
-      setCommentError(null);
 
       const userToken = localStorage.getItem("token");
       const response = await axios.get(
         `${apiUrl}/api/comments/${commentId}/replies`,
         {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-          },
+          headers: { Authorization: `Bearer ${userToken}` },
         }
       );
 
-      setComments((prev) => {
-        const updatedComments = { ...prev };
-        if (updatedComments[currentPostId]) {
-          updatedComments[currentPostId] = updatedComments[currentPostId].map(
-            (comment) => {
-              if (comment.id === commentId) {
-                return {
-                  ...comment,
-                  replies: response.data.data || [],
-                  repliesCount: response.data.data?.length || 0,
-                };
-              }
-              return comment;
-            }
-          );
-        }
-        return updatedComments;
-      });
-
-      setExpandedReplies((prev) => ({ ...prev, [commentId]: true }));
+      setAllReplies((prev) => ({
+        ...prev,
+        [commentId]: response.data.data.comments || [],
+      }));
     } catch (error) {
       console.error("Failed to fetch replies:", error);
-      setCommentError(
-        error.response?.data?.message || "Failed to load replies"
-      );
+      setCommentError("Failed to load replies");
     } finally {
       setLoadingComments((prev) => ({ ...prev, [commentId]: false }));
     }
@@ -810,22 +870,21 @@ export default function SocialNetworkFeed() {
       // localStorage.setItem(`replies_${commentId}`, JSON.stringify(replies));
 
       // Update comment replies count
+      // Setelah menambahkan reply baru, update replies count
       setComments((prev) => {
-        const updatedComments = { ...prev };
-        if (updatedComments[currentPostId]) {
-          updatedComments[currentPostId] = updatedComments[currentPostId].map(
-            (comment) => {
-              if (comment.id === commentId) {
-                return {
-                  ...comment,
-                  repliesCount: replies.length,
-                };
-              }
-              return comment;
+        const updated = { ...prev };
+        if (updated[currentPostId]) {
+          updated[currentPostId] = updated[currentPostId].map((c) => {
+            if (c.id === commentId) {
+              return {
+                ...c,
+                repliesCount: (c.replies_count || 0) + 1,
+              };
             }
-          );
+            return c;
+          });
         }
-        return updatedComments;
+        return updated;
       });
     } catch (error) {
       console.error("Failed to fetch replies:", error);
@@ -957,22 +1016,21 @@ export default function SocialNetworkFeed() {
       // );
 
       // Update replies count in comments state
+      // Setelah menambahkan reply baru, update replies count
       setComments((prev) => {
-        const updatedComments = { ...prev };
-        if (updatedComments[currentPostId]) {
-          updatedComments[currentPostId] = updatedComments[currentPostId].map(
-            (comment) => {
-              if (comment.id === commentId) {
-                return {
-                  ...comment,
-                  repliesCount: (comment.repliesCount || 0) + 1,
-                };
-              }
-              return comment;
+        const updated = { ...prev };
+        if (updated[currentPostId]) {
+          updated[currentPostId] = updated[currentPostId].map((c) => {
+            if (c.id === commentId) {
+              return {
+                ...c,
+                repliesCount: (c.replies_count || 0) + 1,
+              };
             }
-          );
+            return c;
+          });
         }
-        return updatedComments;
+        return updated;
       });
 
       // Reset form
@@ -1002,26 +1060,12 @@ export default function SocialNetworkFeed() {
   };
 
   const toggleReplies = async (commentId) => {
-    if (!commentId) return;
-
-    // Jika belum ada data di state atau cache, fetch dari API
+    // Jika belum ada data replies, fetch dari API
     if (!allReplies[commentId] || allReplies[commentId].length === 0) {
-      const cachedReplies = localStorage.getItem(`replies_${commentId}`);
-      if (cachedReplies) {
-        try {
-          setAllReplies((prev) => ({
-            ...prev,
-            [commentId]: JSON.parse(cachedReplies),
-          }));
-        } catch (e) {
-          console.error("Failed to parse cached replies", e);
-          await fetchAllReplies(commentId);
-        }
-      } else {
-        await fetchAllReplies(commentId);
-      }
+      await fetchReplies(commentId);
     }
 
+    // Toggle expanded state
     setExpandedReplies((prev) => ({
       ...prev,
       [commentId]: !prev[commentId],
@@ -1275,7 +1319,9 @@ export default function SocialNetworkFeed() {
                 </button>
                 <button
                   className={`w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center ${
-                    isConnected ? "text-green-500" : "text-blue-500"
+                    isConnected
+                      ? "text-white bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 "
+                      : "text-blue-500"
                   }`}
                   onClick={() => {
                     if (!isConnected) {
@@ -1738,13 +1784,13 @@ export default function SocialNetworkFeed() {
     fetchUserData();
   }, []);
 
-  const fetchUserProfile = (username) => {
+  const fetchUserProfile = (username, userId) => {
     try {
-      if (!username) {
-        console.error("No username provided");
-        return;
+      if (userId === currentUserId) {
+        navigate("/profile");
+      } else if (username) {
+        navigate(`/user-profile/${username}`);
       }
-      navigate(`/user-profile/${username}`);
     } catch (error) {
       console.error("Failed to navigate to user profile:", error);
       setAlertInfo({
@@ -1928,8 +1974,8 @@ export default function SocialNetworkFeed() {
                       }}
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-300">
-                      <span className="text-lg font-bold text-gray-600">
+                    <div className="w-full h-full rounded-full flex items-center justify-center bg-gray-300">
+                      <span className=" font-bold text-gray-600">
                         {user.initials}
                       </span>
                     </div>
@@ -2184,7 +2230,9 @@ export default function SocialNetworkFeed() {
                       <div className="ml-3 mt-2">
                         <h6
                           className="font-bold mb-0 text-sm cursor-pointer hover:underline"
-                          onClick={() => fetchUserProfile(post.user.username)}
+                          onClick={() =>
+                            fetchUserProfile(post.user.username, post.user.id)
+                          }
                         >
                           {post.user?.name || "Unknown User"}
                         </h6>
@@ -2601,37 +2649,112 @@ export default function SocialNetworkFeed() {
         } md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pl-2 lg:pr-4`}
       >
         {/* People You Might Know */}
-        <div className="bg-white rounded-lg shadow mb-4 p-3">
-          <h3 className="font-medium text-sm mb-3">People you might know</h3>
-
-          <div className="flex items-center mb-3">
-            <div className="w-8 md:w-10 h-8 md:h-10 rounded-full bg-gray-200 overflow-hidden mr-2">
-              <img
-                src="/api/placeholder/40/40"
-                alt="Profile"
-                className="w-full h-full object-cover"
+        <div className="bg-white rounded-xl shadow-sm border p-4 mb-6 transition-all duration-300">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-100">
+            <h3 className="font-semibold text-gray-800 text-base flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              People you might know
+            </h3>
+            <button
+              onClick={fetchSuggestedConnections}
+              disabled={loadingSuggested}
+              className="flex items-center gap-1 text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors duration-200 disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${loadingSuggested ? "animate-spin" : ""}`}
               />
-            </div>
-            <div className="flex-1">
-              <div className="font-medium text-xs md:text-sm">
-                Bintang Asydqi
-              </div>
-              <div className="text-gray-500 text-xs">Student at Alexander</div>
-            </div>
-            <div className="text-blue-500">
-              <svg
-                className="w-4 md:w-5 h-4 md:h-5"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z"
-                  clipRule="evenodd"
-                ></path>
-              </svg>
-            </div>
+            </button>
           </div>
+
+          {/* Content */}
+          {loadingSuggested ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="flex items-center gap-2 text-gray-500">
+                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-sm">Finding suggestions...</span>
+              </div>
+            </div>
+          ) : suggestedConnections.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <UserPlus className="w-6 h-6 text-gray-400" />
+              </div>
+              <p className="text-gray-500 text-sm">
+                No suggestions available at the moment
+              </p>
+              <p className="text-gray-400 text-xs mt-1">
+                Check back later for new connections
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {suggestedConnections.map((person, index) => (
+                <div
+                  key={person.id}
+                  className="group flex items-center p-3 rounded-lg hover:bg-gray-50 transition-all duration-200 border border-transparent hover:border-gray-200"
+                  style={{
+                    animationDelay: `${index * 100}ms`,
+                    animation: "fadeInUp 0.5s ease-out forwards",
+                  }}
+                >
+                  {/* Profile Picture */}
+                  <div className="relative mr-3 flex-shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden ring-2 ring-white shadow-md">
+                      {person.photo ? (
+                        <img
+                          src={
+                            person.photo.startsWith("http")
+                              ? person.photo
+                              : `${apiUrl}/${person.photo}`
+                          }
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "";
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <span className="text-sm font-semibold text-gray-500">
+                            {person.initials}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* User Info */}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors duration-200">
+                      {person.name}
+                    </h4>
+                    <p className="text-gray-600 text-xs truncate mt-0.5">
+                      {person.headline}
+                    </p>
+                  </div>
+
+                  {/* Connect Button */}
+                  <button
+                    className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 hover:scale-110 transition-all duration-200 group-hover:shadow-md"
+                    onClick={() => handleConnectWithUser(person.id)}
+                    disabled={
+                      connections.some((conn) => conn.id === person.id) ||
+                      loadingSuggested
+                    }
+                    title={`Connect with ${person.name}`}
+                  >
+                    {connections.some((conn) => conn.id === person.id) ? (
+                      <Check size={16} className="text-green-500" />
+                    ) : (
+                      <UserPlus size={16} />
+                    )}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Premium Banner */}
@@ -2964,7 +3087,15 @@ export default function SocialNetworkFeed() {
                           )}
                           <div className="flex-1">
                             <div className="bg-gray-100 rounded-lg p-2 md:p-3">
-                              <div className="font-semibold text-xs md:text-sm">
+                              <div
+                                className="font-semibold text-xs md:text-sm cursor-pointer hover:underline"
+                                onClick={() =>
+                                  fetchUserProfile(
+                                    comment.user.username,
+                                    comment.user.id
+                                  )
+                                }
+                              >
                                 {comment.user.name}
                               </div>
 
@@ -3029,21 +3160,20 @@ export default function SocialNetworkFeed() {
                                   <MoreHorizontal size={14} />
                                 </button>
 
+                                {/* Di dalam map comments */}
                                 {(comment.repliesCount > 0 ||
                                   allReplies[comment.id]?.length > 0) && (
                                   <button
-                                    className="text-gray-500 text-xs hover:underline"
+                                    className="text-xs text-gray-500 hover:text-blue-500 mt-1"
                                     onClick={() => toggleReplies(comment.id)}
                                   >
                                     {expandedReplies[comment.id]
                                       ? "Hide replies"
-                                      : `View replies (${
-                                          comment.repliesCount ||
-                                          allReplies[comment.id]?.length ||
-                                          0
-                                        })`}
+                                      : `Show replies (${comment.repliesCount})`}
                                   </button>
                                 )}
+
+                                
                               </div>
 
                               {/* Dropdown menu */}
@@ -3085,6 +3215,7 @@ export default function SocialNetworkFeed() {
                                 </button>
                               </div>
                             )}
+                            
                             {expandedReplies[comment.id] && (
                               <div className="mt-2 ml-4 md:ml-6 pl-2 md:pl-4 border-l-2 border-gray-200">
                                 {loadingComments[comment.id] ? (
@@ -3129,7 +3260,15 @@ export default function SocialNetworkFeed() {
                                             )}
                                             <div className="flex-1">
                                               <div className="bg-gray-100 rounded-lg p-1 md:p-2">
-                                                <div className="font-semibold text-xxs md:text-xs items-center flex">
+                                                <div
+                                                  className="font-semibold text-xxs md:text-xs items-center flex cursor-pointer hover:underline"
+                                                  onClick={() =>
+                                                    fetchUserProfile(
+                                                      reply.user.username,
+                                                      reply.user.id
+                                                    )
+                                                  }
+                                                >
                                                   {reply.user?.name ||
                                                     "Unknown User"}
                                                   {reply.replyTo && (

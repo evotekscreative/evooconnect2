@@ -12,14 +12,15 @@ type CreateCommentBlogRequest struct {
 }
 
 type CommentBlogResponse struct {
-	Id        uuid.UUID            `json:"id"`
-	BlogId    uuid.UUID            `json:"blog_id"`
-	Content   string               `json:"content"`
-	CreatedAt time.Time            `json:"created_at"`
-	UpdatedAt time.Time            `json:"updated_at"`
-	User      CommentBlogUserInfo  `json:"user"`
-	Replies   []CommentBlogResponse `json:"replies,omitempty"`
-	ParentId  *uuid.UUID           `json:"parent_id,omitempty"`
+    Id           uuid.UUID             `json:"id"`
+    BlogId       uuid.UUID             `json:"blog_id"`
+    Content      string                `json:"content"`
+    CreatedAt    time.Time             `json:"created_at"`
+    UpdatedAt    time.Time             `json:"updated_at"`
+    ParentId     *uuid.UUID            `json:"parent_id,omitempty"`
+    User         CommentBlogUserInfo   `json:"user"`
+    Replies      []CommentBlogResponse `json:"replies,omitempty"`
+    RepliesCount int                   `json:"replies_count"` // Tambahkan field ini
 }
 
 type CommentBlogUserInfo struct {

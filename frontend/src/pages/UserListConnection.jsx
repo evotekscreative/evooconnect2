@@ -11,19 +11,61 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import Profile from "../assets/img/logo-evo-2.png";
 
+// Avatar component for displaying profile photo or initials
+function Avatar({ src, name, size = 64 }) {
+  const initials = name
+    ? name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+    : "?";
+
+  if (
+    src &&
+    !src.includes("undefined") &&
+    !src.includes("null") &&
+    src !== Profile
+  ) {
+    return (
+      <img
+        src={src}
+        alt={name}
+        className="object-cover rounded-full w-full h-full"
+        style={{ width: size, height: size }}
+        onError={(e) => {
+          e.target.onerror = null;
+          e.target.src = "";
+        }}
+      />
+    );
+  }
+  return (
+    <div
+      className="flex items-center justify-center rounded-full bg-gray-200 font-semibold"
+      style={{ width: size, height: size, fontSize: size / 3 }}
+    >
+      {initials}
+    </div>
+  );
+}
+
 export default function ConnectionList() {
   const apiUrl =
     import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
-  const [conversationCache, setConversationCache] = useState({});
-
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
   const [connections, setConnections] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [selectedConnection, setSelectedConnection] = useState(null);
-  const {username } = useParams();
+  const { username } = useParams();
+  const [user, setUser] = useState(null);
+  const [connectionsCount, setConnectionsCount] = useState(0);
+  const [filteredConnections, setFilteredConnections] = useState([]);
+    const [conversationCache, setConversationCache] = useState({});
+
 
   const handleMessageClick = async (connection) => {
     const token = localStorage.getItem("token");
@@ -42,6 +84,7 @@ export default function ConnectionList() {
           Authorization: `Bearer ${token}`,
         },
       });
+
 
       // Find a conversation with this connection
       const existingConversation = checkResponse.data.data.conversations.find((conv) =>
@@ -65,7 +108,7 @@ export default function ConnectionList() {
         const createResponse = await axios.post(
           `${apiUrl}/api/conversations`,
           {
-            participants: [userId],
+            participant_ids: [userId],
             message: null, // No initial message
           },
           {
@@ -93,52 +136,130 @@ export default function ConnectionList() {
     }
   };
 
+  const fetchConnections = async () => {
+    const token = localStorage.getItem("token");
+    setIsLoading(true);
+    try {
+      if (!user || !user.id) {
+        console.error("User or user.id is undefined");
+        return;
+      }
+
+      const response = await axios.get(
+        `${apiUrl}/api/users/${user.id}/connections`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      const connectionsData = response.data.data.connections || [];
+      setConnections(connectionsData);
+      setFilteredConnections(
+        connectionsData.filter(
+          (connection) =>
+            connection.user.name
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase()) ||
+            (connection.user.headline &&
+              connection.user.headline
+                .toLowerCase()
+                .includes(searchTerm.toLowerCase()))
+        )
+      );
+    } catch (error) {
+      console.error("Failed to fetch connections:", error);
+      alert("Failed to load connections");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleConnect = async (connection) => {
+    const token = localStorage.getItem("token");
+    try {
+      await axios.post(
+        `${apiUrl}/api/users/${connection.user.id}/connect`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      // Refresh connections after successful connection
+      fetchConnections();
+    } catch (error) {
+      console.error("Failed to connect:", error);
+      alert("Failed to connect. Please try again.");
+    }
+  };
+
   useEffect(() => {
-    const fetchConnections = async () => {
+    const fetchProfile = async () => {
       const token = localStorage.getItem("token");
-      const user = JSON.parse(localStorage.getItem("user"));
-      console.log(user);
+      setIsLoading(true);
 
       try {
         const response = await axios.get(
-          `${apiUrl}/api/users/${user.id}/connections?limit=100&offset=0`,
+          apiUrl + "/api/user-profile/" + username,
           {
             headers: {
-              Authorization: "Bearer " + token,
+              Authorization: `Bearer ${token}`,
             },
           }
         );
 
-        let mappedConnections = [];
-        if (response.data.data.connections != null) {
-          mappedConnections = response.data.data.connections.map(
-            (connection) => ({
-              id: connection.user.id,
-              name: connection.user.name,
-              headline: connection.user.headline || "No headline",
-              role: connection.user.headline || "", // gunakan headline jika ingin tampilkan di bawah nama
-              connected: true,
-              image: connection.user.photo || Profile,
-              username: connection.user.username || "",
-            })
-          );
-        } else {
-          mappedConnections = [];
-        }
-        console.log(mappedConnections);
-        console.log("API response:", response.data.data);
+        const data = response.data.data;
 
-        setConnections(mappedConnections);
-      } catch (err) {
-        console.error("Failed to fetch connections:", err);
-        setError("Failed to load connections. Please try again later.");
+        const socialsObject = {};
+        if (data.socials && Array.isArray(data.socials)) {
+          data.socials.forEach((social) => {
+            socialsObject[social.platform] = social.username;
+          });
+        }
+
+        let userSkills = [];
+        if (data.skills && data.skills.Valid) {
+          userSkills = Array.isArray(data.skills.String)
+            ? data.skills.String
+            : data.skills.String
+            ? [data.skills.String]
+            : [];
+        }
+
+        setUser({
+          id: data.id || "",
+          name: data.name || "",
+          headline: data.headline || "",
+          about: data.about || "",
+          skills: userSkills,
+          socials: socialsObject,
+          photo: data.photo || null,
+          email: data.email || "",
+          phone: data.phone || "",
+          location: data.location || "",
+          organization: data.organization || "",
+          website: data.website || "",
+          birthdate: data.birthdate || "",
+          gender: data.gender || "",
+        });
+      } catch (error) {
+        console.error("Failed to fetch profile:", error);
+        alert("Failed to load profile data");
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
+    fetchProfile();
+  }, [username]);
+
+  useEffect(() => {
+    if (!user) return;
+    if (!user.id) return;
     fetchConnections();
-  }, []);
+  }, [user]);
 
   const openDisconnectModal = (connection) => {
     setSelectedConnection(connection);
@@ -176,14 +297,7 @@ export default function ConnectionList() {
       alert("Failed to disconnect. Please try again.");
       closeModal();
     }
-  };
-
-  const filteredConnections = connections.filter(
-    (connection) =>
-      connection.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (connection.headline &&
-        connection.headline.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  }; 
 
   if (loading) {
     return (
@@ -215,11 +329,11 @@ export default function ConnectionList() {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
               <h3 className="text-lg font-medium text-blue-600 mb-4">
-                Disconnect from {selectedConnection.name}?
+                Disconnect from {selectedConnection.user.name}?
               </h3>
               <p className="text-gray-600 mb-6">
                 Are you sure you want to disconnect from{" "}
-                {selectedConnection.name}? This action cannot be undone.
+                {selectedConnection.user.name}? This action cannot be undone.
               </p>
               <div className="flex justify-end space-x-3">
                 <button
@@ -250,7 +364,7 @@ export default function ConnectionList() {
                 <ArrowLeft size={20} className="text-gray-600" />
               </button>
               <h1 className="text-2xl font-bold text-gray-800">
-                My Connections
+                {user.name}'s Connections
               </h1>
             </div>
 
@@ -278,38 +392,52 @@ export default function ConnectionList() {
                     className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200"
                   >
                     <div className="flex items-center space-x-4">
-                      <img
-                        src={apiUrl + '/'+connection.image}
-                        alt={connection.name}
-                        className="w-10 h-10 rounded-full object-cover"
-                        onError={(e) => {
-                          e.target.src = Profile;
-                        }}
-                      />
+                      <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200">
+                        <Avatar
+                          src={
+                            connection.user.photo
+                              ? apiUrl + "/" + connection.user.photo
+                              : ""
+                          }
+                          name={connection.user.name}
+                          size={40}
+                        />
+                      </div>
                       <div>
-                        <Link to={`/user-profile/${connection.username}`}>
+                        <Link to={`/user-profile/${connection.user.username}`}>
                           <h3 className="font-medium text-gray-800">
-                            {connection.name}
+                            {connection.user.name}
                           </h3>
                         </Link>
                         <p className="text-sm text-gray-500">
-                          {connection.headline}
+                          {connection.user.headline}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleMessageClick(connection)}
-                        className="px-4 py-1.5 rounded-full text-sm font-medium text-blue-600 border border-blue-600 hover:bg-blue-50 transition"
-                      >
-                        Message
-                      </button>
-                      <button
-                        onClick={() => openDisconnectModal(connection)}
-                        className="px-4 py-1.5 rounded-full text-sm font-medium text-white border bg-red-600 hover:bg-red-700 transition"
-                      >
-                        Disconnect
-                      </button>
+                      {connection.user.is_connected ? (
+                        <>
+                          <button
+                            onClick={() => handleMessageClick(connection.user)}
+                            className="px-4 py-1.5 rounded-full text-sm font-medium text-blue-600 border border-blue-600 hover:bg-blue-50 transition"
+                          >
+                            Message
+                          </button>
+                          <button
+                            onClick={() => openDisconnectModal(connection)}
+                            className="px-4 py-1.5 rounded-full text-sm font-medium text-white border bg-red-600 hover:bg-red-700 transition"
+                          >
+                            Disconnect
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => handleConnect(connection)}
+                          className="px-4 py-1.5 rounded-full text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition"
+                        >
+                          Connect
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))
@@ -345,7 +473,7 @@ export default function ConnectionList() {
                 <li className="border-b pb-3">
                   <Link to="/list-connection" className="flex justify-between">
                     <span>Connections</span>
-                    <span>0</span>
+                    <span>{connections.length}</span>
                   </Link>
                 </li>
                 <li className="border-b pb-3">
@@ -367,11 +495,9 @@ export default function ConnectionList() {
             </div>
 
             <div className="bg-white rounded-xl shadow p-4 text-center">
-              <img
-                src={Profile}
-                alt="Profile"
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-2 object-cover"
-              />
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-2 overflow-hidden">
+                <Avatar src={Profile} name="Gurdeep" size={80} />
+              </div>
               <p className="text-xs sm:text-sm font-medium mb-1">
                 Gurdeep, grow your career by following{" "}
                 <span className="text-blue-600">Askbootsrap</span>

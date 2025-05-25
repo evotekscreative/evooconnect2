@@ -66,7 +66,7 @@ export default function ConnectionList() {
         const createResponse = await axios.post(
           `${apiUrl}/api/conversations`,
           {
-            participants: [userId],
+            participant_ids: [userId],
             message: null, // No initial message
           },
           {

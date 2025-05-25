@@ -32,6 +32,7 @@ import UserPostPage from "./pages/UserPostPage.jsx";
 import MemberList from "./pages/MemberList.jsx";
 import SearchResults from "./pages/SearchResults.jsx";
 import CreateCompany from "./pages/CreateCompany.jsx";
+import UserListConnection from "./pages/UserListConnection.jsx";
 
 const router = createBrowserRouter([
   {
@@ -169,7 +170,7 @@ const router = createBrowserRouter([
     path: "/list-connection/:username",
     element: (
       <ProtectedRoute>
-        <ListConnection />
+        <UserListConnection />
       </ProtectedRoute>
     ),
   },

@@ -101,26 +101,41 @@ func (service *CommentServiceImpl) Create(ctx context.Context, postId uuid.UUID,
 
 // Mengubah FindByPostId menjadi GetByPostId agar sesuai interface
 func (service *CommentServiceImpl) GetByPostId(ctx context.Context, postId uuid.UUID, limit, offset int) web.CommentListResponse {
-	tx, err := service.DB.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
+    tx, err := service.DB.Begin()
+    helper.PanicIfError(err)
+    defer helper.CommitOrRollback(tx)
 
-	// Check if post exists
-	_, err = service.PostRepository.FindById(ctx, tx, postId)
-	if err != nil {
-		panic(exception.NewNotFoundError("Post not found"))
-	}
+    // Check if post exists
+    _, err = service.PostRepository.FindById(ctx, tx, postId)
+    if err != nil {
+        panic(exception.NewNotFoundError("Post not found"))
+    }
 
-	var nilParentId *uuid.UUID = nil
-	comments, err := service.CommentRepository.FindByPostId(ctx, tx, postId, nilParentId, limit, offset)
-	helper.PanicIfError(err)
-	total, err := service.CommentRepository.CountByPostId(ctx, tx, postId)
-	helper.PanicIfError(err)
+    var nilParentId *uuid.UUID = nil
+    comments, err := service.CommentRepository.FindByPostId(ctx, tx, postId, nilParentId, limit, offset)
+    helper.PanicIfError(err)
+    total, err := service.CommentRepository.CountByPostId(ctx, tx, postId)
+    helper.PanicIfError(err)
 
-	return web.CommentListResponse{
-		Comments: helper.ToCommentResponses(comments),
-		Total:    total,
-	}
+    // Hitung jumlah replies untuk setiap komentar
+    commentResponses := make([]web.CommentResponse, 0)
+    for _, comment := range comments {
+        // Konversi ke response
+        commentResponse := helper.ToCommentResponse(comment)
+        
+        // Hitung jumlah replies secara eksplisit
+        repliesCount, err := service.CommentRepository.CountRepliesByParentId(ctx, tx, comment.Id)
+        if err == nil {
+            commentResponse.RepliesCount = repliesCount
+        }
+        
+        commentResponses = append(commentResponses, commentResponse)
+    }
+
+    return web.CommentListResponse{
+        Comments: commentResponses,
+        Total:    total,
+    }
 }
 
 // Mengubah FindById menjadi GetById agar sesuai interface
