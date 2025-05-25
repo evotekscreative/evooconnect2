@@ -10,7 +10,7 @@ import (
 	"evoconnect/backend/repository"
 	"fmt"
 	"time"
-
+	"evoconnect/backend/utils"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
@@ -31,15 +31,23 @@ func optionalStringPtr(s string) *string {
 type ConnectionServiceImpl struct {
 	ConnectionRepository repository.ConnectionRepository
 	UserRepository       repository.UserRepository
+	NotificationService  NotificationService
 	DB                   *sql.DB
 	Validate             *validator.Validate
 }
 
-func NewConnectionService(connectionRepository repository.ConnectionRepository, userRepository repository.UserRepository, db *sql.DB, validate *validator.Validate) ConnectionService {
+func NewConnectionService(
+	connectionRepository repository.ConnectionRepository,
+	userRepository repository.UserRepository,
+	notificationService NotificationService,
+	DB *sql.DB,
+	validate *validator.Validate,
+) ConnectionService {
 	return &ConnectionServiceImpl{
 		ConnectionRepository: connectionRepository,
 		UserRepository:       userRepository,
-		DB:                   db,
+		NotificationService:  notificationService,
+		DB:                   DB,
 		Validate:             validate,
 	}
 }
@@ -105,6 +113,22 @@ func (service *ConnectionServiceImpl) SendConnectionRequest(ctx context.Context,
 		panic(exception.NewNotFoundError("Sender user not found"))
 	}
 
+	// Send notification to receiver
+	refType := "connection_request"
+	go func() {
+		service.NotificationService.Create(
+			context.Background(),
+			receiverId,
+			string(domain.NotificationCategoryConnection),
+			string(domain.NotificationTypeConnectionRequest),
+			"New Connection Request",
+			fmt.Sprintf("%s wants to connect with you", sender.Name),
+			&createdRequest.Id,
+			&refType,
+			&senderId,
+		)
+	}()
+	
 	// Prepare response
 	return web.ConnectionRequestResponse{
 		Id:        createdRequest.Id,
@@ -216,6 +240,22 @@ func (service *ConnectionServiceImpl) AcceptConnectionRequest(ctx context.Contex
 		panic(exception.NewNotFoundError("Receiver user not found"))
 	}
 
+	// Send notification to sender that request was accepted
+	refType := "connection_accept"
+	go func() {
+		service.NotificationService.Create(
+			context.Background(),
+			request.SenderId,
+			string(domain.NotificationCategoryConnection),
+			string(domain.NotificationTypeConnectionAccept),
+			"Connection Request Accepted",
+			fmt.Sprintf("%s accepted your connection request", receiver.Name),
+			&updatedRequest.Id,
+			&refType,
+			&userId,
+		)
+	}()
+
 	// Prepare response
 	return web.ConnectionRequestResponse{
 		Id:        updatedRequest.Id,
@@ -299,7 +339,6 @@ func (service *ConnectionServiceImpl) RejectConnectionRequest(ctx context.Contex
 		},
 	}
 }
-
 func (service *ConnectionServiceImpl) GetConnections(ctx context.Context, userId uuid.UUID, limit, offset int) web.ConnectionListResponse {
     tx, err := service.DB.Begin()
     helper.PanicIfError(err)
