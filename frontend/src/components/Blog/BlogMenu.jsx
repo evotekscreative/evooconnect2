@@ -1,10 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import { FiMoreVertical, FiEdit, FiTrash2, FiFlag } from "react-icons/fi";
 
-const BlogMenu = ({ onEdit, onDelete, onReport }) => {
+const BlogMenu = ({ onEdit, onDelete, onReport, currentUserId, postOwnerId }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
+
+  // Cek apakah user saat ini adalah pemilik postingan
+  const isOwner = currentUserId == postOwnerId;
 
   // Tutup menu saat klik di luar
   useEffect(() => {
@@ -19,9 +22,9 @@ const BlogMenu = ({ onEdit, onDelete, onReport }) => {
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("click", handleClickOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("click", handleClickOutside);
     };
   }, []);
 
@@ -30,13 +33,9 @@ const BlogMenu = ({ onEdit, onDelete, onReport }) => {
       <button
         ref={buttonRef}
         className="p-1 rounded-full hover:bg-gray-100 focus:outline-none"
-        onMouseEnter={() => setIsOpen(true)}
-        onMouseLeave={() => {
-          setTimeout(() => {
-            if (!menuRef.current?.matches(':hover')) {
-              setIsOpen(false);
-            }
-          }, 100);
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(!isOpen);
         }}
       >
         <FiMoreVertical className="text-gray-500" size={20} />
@@ -46,40 +45,51 @@ const BlogMenu = ({ onEdit, onDelete, onReport }) => {
         <div
           ref={menuRef}
           className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10"
-          onMouseEnter={() => setIsOpen(true)}
-          onMouseLeave={() => setIsOpen(false)}
+          onClick={(e) => e.stopPropagation()}
         >
           <div className="py-1">
-            <button
-              onClick={() => {
-                onEdit();
-                setIsOpen(false);
-              }}
-              className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-            >
-              <FiEdit className="mr-2" size={16} />
-              Edit
-            </button>
-            <button
-              onClick={() => {
-                onDelete();
-                setIsOpen(false);
-              }}
-              className="flex items-center w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-            >
-              <FiTrash2 className="mr-2" size={16} />
-              Delete
-            </button>
-            <button
-              onClick={() => {
-                onReport();
-                setIsOpen(false);
-              }}
-              className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-            >
-              <FiFlag className="mr-2" size={16} />
-              Report
-            </button>
+            {/* Tampilkan Edit dan Delete hanya untuk pemilik */}
+            {isOwner && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit?.();
+                    setIsOpen(false);
+                  }}
+                  className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  <FiEdit className="mr-2" size={16} />
+                  Edit
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete?.();
+                    setIsOpen(false);
+                  }}
+                  className="flex items-center w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                >
+                  <FiTrash2 className="mr-2" size={16} />
+                  Delete
+                </button>
+              </>
+            )}
+
+            {/* Tampilkan Report hanya untuk bukan pemilik */}
+            {!isOwner && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onReport?.();
+                  setIsOpen(false);
+                }}
+                className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              >
+                <FiFlag className="mr-2" size={16} />
+                Report
+              </button>
+            )}
           </div>
         </div>
       )}

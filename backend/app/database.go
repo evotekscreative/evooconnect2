@@ -51,3 +51,37 @@ func NewDB() *sql.DB {
 
 	return db
 }
+
+// func NewAdminDB() *sql.DB {
+// 	// Gunakan environment variable terpisah untuk admin DB
+// 	dbHost := os.Getenv("ADMIN_DB_HOST")
+// 	dbUser := os.Getenv("ADMIN_DB_USER")
+// 	dbPassword := os.Getenv("ADMIN_DB_PASSWORD")
+// 	dbName := os.Getenv("ADMIN_DB_NAME")
+
+// 	// Default values if not set
+// 	if dbHost == "" {
+// 		dbHost = os.Getenv("DB_HOST")
+// 	}
+// 	if dbUser == "" {
+// 		dbUser = os.Getenv("DB_USER")
+// 	}
+// 	if dbPassword == "" {
+// 		dbPassword = os.Getenv("DB_PASSWORD")
+// 	}
+// 	if dbName == "" {
+// 		dbName = "admin_evoconnect"
+// 	}
+
+// 	dsn := dbUser + ":" + dbPassword + "@tcp(" + dbHost + ")/" + dbName + "?parseTime=true"
+
+// 	db, err := sql.Open("mysql", dsn)
+// 	helper.PanicIfError(err)
+
+// 	db.SetMaxIdleConns(5)
+// 	db.SetMaxOpenConns(20)
+// 	db.SetConnMaxLifetime(60 * time.Minute)
+// 	db.SetConnMaxIdleTime(10 * time.Minute)
+
+// 	return db
+// }

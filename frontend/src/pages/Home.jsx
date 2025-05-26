@@ -29,6 +29,11 @@ import {
   Ellipsis,
   MoreHorizontal,
   Share2,
+  RefreshCw,
+  UserPlus,
+  TrendingUp,
+  TrendingDown,
+  TriangleAlert,
 } from "lucide-react";
 import {
   Chart as ChartJS,
@@ -100,6 +105,8 @@ export default function SocialNetworkFeed() {
   const [showShowcase, setShowShowcase] = useState(false);
   const navigate = useNavigate();
   const [profileImage, setProfileImage] = useState(null);
+  const [suggestedConnections, setSuggestedConnections] = useState([]);
+  const [loadingSuggested, setLoadingSuggested] = useState(false);
   const [user, setUser] = useState({
     name: "",
     username: "",
@@ -119,6 +126,46 @@ export default function SocialNetworkFeed() {
     dailyViews: [],
   });
   const [connections, setConnections] = useState([]);
+
+  const fetchSuggestedConnections = async () => {
+    try {
+      setLoadingSuggested(true);
+      const userToken = localStorage.getItem("token");
+      const response = await axios.get(apiUrl + "/api/user-peoples", {
+        headers: { Authorization: `Bearer ${userToken}` },
+      });
+
+      if (response.data?.data) {
+        // Filter out people you're already connected with
+        const connectedIds = connections.map((conn) => conn.id);
+        const filtered = response.data.data.filter(
+          (person) => !connectedIds.includes(person.id)
+        );
+
+        // Get 3 random suggestions
+        const shuffled = [...filtered].sort(() => 0.5 - Math.random());
+        const suggestions = shuffled.slice(0, 3).map((person) => ({
+          id: person.id,
+          name: person.name || "Unknown User",
+          username: person.username || "unknown",
+          initials: person.name
+            ? person.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+            : "UU",
+          photo: person.photo || null,
+          headline: person.headline || "No headline specified",
+        }));
+
+        setSuggestedConnections(suggestions);
+      }
+    } catch (error) {
+      console.error("Failed to fetch suggested connections:", error);
+    } finally {
+      setLoadingSuggested(false);
+    }
+  };
 
   const fetchProfileViews = async () => {
     try {
@@ -223,6 +270,7 @@ export default function SocialNetworkFeed() {
   useEffect(() => {
     fetchProfileViews();
     fetchConnections();
+    fetchSuggestedConnections();
     // console.log("Profile views data fetched successfully", profileViews);
   }, []);
 
@@ -369,9 +417,8 @@ export default function SocialNetworkFeed() {
         throw new Error("No authentication token found");
       }
 
-      // Check if already connected (optional - you might want to handle this differently)
+      // Check if already connected
       const isConnected = connections.some((conn) => conn.id === userId);
-
       if (isConnected) {
         setAlertInfo({
           show: true,
@@ -380,6 +427,26 @@ export default function SocialNetworkFeed() {
         });
         return;
       }
+
+      setLoadingSuggested(true); // Set loading state
+
+      // Optimistic update
+      const tempConnection = {
+        id: userId,
+        name:
+          suggestedConnections.find((p) => p.id === userId)?.name ||
+          "New Connection",
+        username:
+          suggestedConnections.find((p) => p.id === userId)?.username ||
+          "newuser",
+        initials:
+          suggestedConnections.find((p) => p.id === userId)?.initials || "NC",
+        photo: suggestedConnections.find((p) => p.id === userId)?.photo || null,
+        status: "pending",
+      };
+
+      setConnections((prev) => [...prev, tempConnection]);
+      setSuggestedConnections((prev) => prev.filter((p) => p.id !== userId));
 
       // Send connection request
       const response = await axios.post(
@@ -391,33 +458,48 @@ export default function SocialNetworkFeed() {
       );
 
       if (response.data.success) {
-        // Update connections list
+        // Update with actual data from response
         const newConnection = {
           id: userId,
-          name: response.data.data?.user?.name || "New Connection",
-          username: response.data.data?.user?.username || "newuser",
+          name: response.data.data?.user?.name || tempConnection.name,
+          username:
+            response.data.data?.user?.username || tempConnection.username,
           initials: response.data.data?.user?.name
             ? response.data.data.user.name
                 .split(" ")
                 .map((n) => n[0])
                 .join("")
-            : "NC",
-          photo: response.data.data?.user?.photo || null,
+            : tempConnection.initials,
+          photo: response.data.data?.user?.photo || tempConnection.photo,
+          status: response.data.data?.status || "connected",
         };
 
-        setConnections((prev) => [...prev, newConnection]);
+        setConnections((prev) =>
+          prev.map((conn) => (conn.id === userId ? newConnection : conn))
+        );
 
         setAlertInfo({
           show: true,
           type: "success",
           message: "Connection request sent successfully!",
         });
-
-        // Close the post options modal
-        handleClosePostOptions();
       }
     } catch (error) {
       console.error("Failed to connect with user:", error);
+
+      // Rollback optimistic update
+      setConnections((prev) => prev.filter((conn) => conn.id !== userId));
+      setSuggestedConnections((prev) => [
+        ...prev,
+        suggestedConnections.find((p) => p.id === userId) || {
+          id: userId,
+          name: "Unknown User",
+          username: "unknown",
+          initials: "UU",
+          photo: null,
+        },
+      ]);
+
       setAlertInfo({
         show: true,
         type: "error",
@@ -425,6 +507,8 @@ export default function SocialNetworkFeed() {
           error.response?.data?.message ||
           "You've already sent a connection request to this user",
       });
+    } finally {
+      setLoadingSuggested(false); // Reset loading state
     }
   };
 
@@ -551,7 +635,7 @@ export default function SocialNetworkFeed() {
 
     // Handle future dates or timezone issues by showing "Just now" instead of negative values
     if (diffInSeconds < 0) return "Just now";
-    
+
     if (diffInSeconds < 60) return `${diffInSeconds}s ago`;
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInHours < 24) return `${diffInHours}h ago`;
@@ -560,7 +644,7 @@ export default function SocialNetworkFeed() {
     // For older dates, return formatted date (e.g. "MMM D, YYYY")
     return postTime.format("MMM D, YYYY");
   };
-  
+
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
 
@@ -648,13 +732,13 @@ export default function SocialNetworkFeed() {
       setAlertInfo({
         show: true,
         type: "success",
-        message: "Post berhasil dibuat!",
+        message: "Successfully created post!",
       });
     } catch (error) {
       setAlertInfo({
         show: true,
         type: "error",
-        message: "Gagal menambahkan post!",
+        message: "Failed to create post",
       });
       setError(
         error.response?.data?.message ||
@@ -716,7 +800,7 @@ export default function SocialNetworkFeed() {
               profile_photo: null,
             },
             replies: replies,
-            repliesCount: comment.repliesCount || replies.length,
+            repliesCount: comment.replies_count || replies.length,
           };
         }
       );
@@ -742,43 +826,22 @@ export default function SocialNetworkFeed() {
   const fetchReplies = async (commentId) => {
     try {
       setLoadingComments((prev) => ({ ...prev, [commentId]: true }));
-      setCommentError(null);
 
       const userToken = localStorage.getItem("token");
       const response = await axios.get(
         `${apiUrl}/api/comments/${commentId}/replies`,
         {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-          },
+          headers: { Authorization: `Bearer ${userToken}` },
         }
       );
 
-      setComments((prev) => {
-        const updatedComments = { ...prev };
-        if (updatedComments[currentPostId]) {
-          updatedComments[currentPostId] = updatedComments[currentPostId].map(
-            (comment) => {
-              if (comment.id === commentId) {
-                return {
-                  ...comment,
-                  replies: response.data.data || [],
-                  repliesCount: response.data.data?.length || 0,
-                };
-              }
-              return comment;
-            }
-          );
-        }
-        return updatedComments;
-      });
-
-      setExpandedReplies((prev) => ({ ...prev, [commentId]: true }));
+      setAllReplies((prev) => ({
+        ...prev,
+        [commentId]: response.data.data.comments || [],
+      }));
     } catch (error) {
       console.error("Failed to fetch replies:", error);
-      setCommentError(
-        error.response?.data?.message || "Failed to load replies"
-      );
+      setCommentError("Failed to load replies");
     } finally {
       setLoadingComments((prev) => ({ ...prev, [commentId]: false }));
     }
@@ -810,22 +873,21 @@ export default function SocialNetworkFeed() {
       // localStorage.setItem(`replies_${commentId}`, JSON.stringify(replies));
 
       // Update comment replies count
+      // Setelah menambahkan reply baru, update replies count
       setComments((prev) => {
-        const updatedComments = { ...prev };
-        if (updatedComments[currentPostId]) {
-          updatedComments[currentPostId] = updatedComments[currentPostId].map(
-            (comment) => {
-              if (comment.id === commentId) {
-                return {
-                  ...comment,
-                  repliesCount: replies.length,
-                };
-              }
-              return comment;
+        const updated = { ...prev };
+        if (updated[currentPostId]) {
+          updated[currentPostId] = updated[currentPostId].map((c) => {
+            if (c.id === commentId) {
+              return {
+                ...c,
+                repliesCount: (c.replies_count || 0) + 1,
+              };
             }
-          );
+            return c;
+          });
         }
-        return updatedComments;
+        return updated;
       });
     } catch (error) {
       console.error("Failed to fetch replies:", error);
@@ -957,22 +1019,21 @@ export default function SocialNetworkFeed() {
       // );
 
       // Update replies count in comments state
+      // Setelah menambahkan reply baru, update replies count
       setComments((prev) => {
-        const updatedComments = { ...prev };
-        if (updatedComments[currentPostId]) {
-          updatedComments[currentPostId] = updatedComments[currentPostId].map(
-            (comment) => {
-              if (comment.id === commentId) {
-                return {
-                  ...comment,
-                  repliesCount: (comment.repliesCount || 0) + 1,
-                };
-              }
-              return comment;
+        const updated = { ...prev };
+        if (updated[currentPostId]) {
+          updated[currentPostId] = updated[currentPostId].map((c) => {
+            if (c.id === commentId) {
+              return {
+                ...c,
+                repliesCount: (c.replies_count || 0) + 1,
+              };
             }
-          );
+            return c;
+          });
         }
-        return updatedComments;
+        return updated;
       });
 
       // Reset form
@@ -1002,26 +1063,12 @@ export default function SocialNetworkFeed() {
   };
 
   const toggleReplies = async (commentId) => {
-    if (!commentId) return;
-
-    // Jika belum ada data di state atau cache, fetch dari API
+    // Jika belum ada data replies, fetch dari API
     if (!allReplies[commentId] || allReplies[commentId].length === 0) {
-      const cachedReplies = localStorage.getItem(`replies_${commentId}`);
-      if (cachedReplies) {
-        try {
-          setAllReplies((prev) => ({
-            ...prev,
-            [commentId]: JSON.parse(cachedReplies),
-          }));
-        } catch (e) {
-          console.error("Failed to parse cached replies", e);
-          await fetchAllReplies(commentId);
-        }
-      } else {
-        await fetchAllReplies(commentId);
-      }
+      await fetchReplies(commentId);
     }
 
+    // Toggle expanded state
     setExpandedReplies((prev) => ({
       ...prev,
       [commentId]: !prev[commentId],
@@ -1101,9 +1148,17 @@ export default function SocialNetworkFeed() {
         setPostContent("");
         setArticleImages([]);
       }
+      setAlertInfo({
+        show: true,
+        type: "success",
+        message: "Deleted post successfully!",
+      });
     } catch (error) {
-      console.error("Failed to delete post:", error);
-      setError("Failed to delete post. Please try again.");
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: "Failed to delete post",
+      });
     }
   };
 
@@ -1275,7 +1330,9 @@ export default function SocialNetworkFeed() {
                 </button>
                 <button
                   className={`w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center ${
-                    isConnected ? "text-green-500" : "text-blue-500"
+                    isConnected
+                      ? "text-white bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 "
+                      : "text-blue-500"
                   }`}
                   onClick={() => {
                     if (!isConnected) {
@@ -1302,10 +1359,20 @@ export default function SocialNetworkFeed() {
       </div>
     );
   };
-  const handleReportClick = (userId, type, id) => {
+  const handleReportClick = (userId, targetType, id) => {
+    if (userId === currentUserId) {
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: "You cannot report your own content",
+      });
+      return;
+    }
+
     setSelectedPostId(id);
     setShowReportModal(true);
     setShowPostOptions(false);
+    setShowCommentOptions(false);
   };
 
   const renderPhotoGrid = (images) => {
@@ -1413,11 +1480,36 @@ export default function SocialNetworkFeed() {
     setSharePostId(null);
   };
 
-  const copyToClipboard = () => {
-    const urlToCopy = `${clientUrl}/post/${sharePostId}`;
-    navigator.clipboard.writeText(urlToCopy);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copyToClipboard = async () => {
+    try {
+      const urlToCopy = `${clientUrl}/post/${sharePostId}`;
+
+      // Fallback untuk browser yang tidak support Clipboard API
+      if (!navigator.clipboard) {
+        const textArea = document.createElement("textarea");
+        textArea.value = urlToCopy;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      } else {
+        await navigator.clipboard.writeText(urlToCopy);
+      }
+
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+      // Fallback manual
+      const input = document.createElement("input");
+      input.value = `${clientUrl}/post/${sharePostId}`;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      document.body.removeChild(input);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const shareToWhatsApp = () => {
@@ -1444,11 +1536,61 @@ export default function SocialNetworkFeed() {
     setShowMobileMenu(!showMobileMenu);
   };
 
+  const handleReportComment = async (userId, targetType, targetId, reason) => {
+    // Validasi tambahan
+    if (userId === currentUserId) {
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: "You cannot report your own content",
+      });
+      return;
+    }
+
+    try {
+      const userToken = localStorage.getItem("token");
+      const response = await axios.post(
+        `${apiUrl}/api/reports/${userId}/${targetType}/${targetId}`,
+        { reason },
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data.success) {
+        setAlertInfo({
+          show: true,
+          type: "success",
+          message: "Report submitted successfully!",
+        });
+      } else {
+        setAlertInfo({
+          show: true,
+          type: "error",
+          message: response.data.message || "Failed to submit report",
+        });
+      }
+    } catch (error) {
+      console.error("Failed to submit report:", error);
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: error.response?.data?.message || "Failed to submit report",
+      });
+    } finally {
+      setShowReportModal(false);
+      setSelectedReason("");
+      setCustomReason("");
+    }
+  };
+
   const renderCommentOptionsModal = () => {
     if (!showCommentOptions || !selectedComment) return null;
 
-    const isCurrentUserComment =
-      selectedComment.user && selectedComment.user.id === currentUserId;
+    const isCurrentUserComment = selectedComment?.user?.id === currentUserId;
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1456,54 +1598,56 @@ export default function SocialNetworkFeed() {
           <div className="p-4">
             <h3 className="font-medium text-lg mb-3">Comment Options</h3>
 
-            <>
-              <button
-                className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
-                onClick={() => {
-                  setEditingCommentId(selectedComment.id);
-                  setCommentText(selectedComment.content);
-                  setShowCommentOptions(false);
-                }}
-              >
-                <SquarePen size={16} className="mr-2" />
-                Edit Comment
-              </button>
-
+            {isCurrentUserComment ? (
+              <>
+                <button
+                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
+                  onClick={() => {
+                    setEditingCommentId(selectedComment.id);
+                    setCommentText(selectedComment.content);
+                    setShowCommentOptions(false);
+                  }}
+                >
+                  <SquarePen size={16} className="mr-2" />
+                  Edit Comment
+                </button>
+                <button
+                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
+                  onClick={() => handleDeleteComment(selectedComment.id)}
+                >
+                  <X size={16} className="mr-2" />
+                  Delete Comment
+                </button>
+              </>
+            ) : (
               <button
                 className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
                 onClick={() => {
-                  handleDeleteComment(selectedComment.id);
+                  handleReportClick(
+                    selectedComment.user?.id,
+                    "comment",
+                    selectedComment.id
+                  );
                   setShowCommentOptions(false);
                 }}
               >
-                <X size={16} className="mr-2" />
-                Delete Comment
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+                Report Comment
               </button>
-            </>
-
-            <button
-              className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
-              onClick={() => {
-                handleReportClick(comment.user?.id, "comment", comment.id);
-                setShowCommentOptions(false);
-              }}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
-              Report Comment
-            </button>
+            )}
           </div>
 
           <div className="border-t p-3">
@@ -1518,6 +1662,110 @@ export default function SocialNetworkFeed() {
       </div>
     );
   };
+
+  const ReportModal = ({
+    showReportModal,
+    setShowReportModal,
+    selectedReason,
+    setSelectedReason,
+    customReason,
+    setCustomReason,
+    handleReportComment,
+    currentUserId,
+    selectedPostId,
+  }) => {
+    return (
+      <div
+        className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] ${
+          showReportModal ? "block" : "hidden"
+        }`}
+      >
+        <div className="bg-white rounded-lg w-full max-w-md mx-4 p-5">
+          <h3 className="text-lg font-semibold mb-4">Report this content</h3>
+          <p className="mb-3 text-sm text-gray-600">
+            Please select a reason for reporting
+          </p>
+
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            {[
+              "Harassment",
+              "Fraud",
+              "Spam",
+              "Misinformation",
+              "Hate speech",
+              "Threats or violence",
+              "Self-harm",
+              "Graphic content",
+              "Extremist organizations",
+              "Sexual content",
+              "Fake account",
+              "Child exploitation",
+              "Illegal products",
+              "Violation",
+              "Other",
+            ].map((reason) => (
+              <button
+                key={reason}
+                className={`py-2 px-3 text-sm border rounded-full ${
+                  selectedReason === reason
+                    ? "bg-blue-100 border-blue-500 text-blue-700"
+                    : "bg-white hover:bg-gray-100"
+                }`}
+                onClick={() => setSelectedReason(reason)}
+              >
+                {reason}
+              </button>
+            ))}
+          </div>
+
+          {selectedReason === "Other" && (
+            <textarea
+              className="w-full p-2 border rounded mb-3 text-sm"
+              rows={3}
+              placeholder="Please describe the reason for your report"
+              value={customReason}
+              onChange={(e) => setCustomReason(e.target.value)}
+            />
+          )}
+
+          <div className="flex justify-end gap-2">
+            <button
+              className="text-gray-500 hover:text-gray-700"
+              onClick={() => {
+                setShowReportModal(false);
+                setSelectedReason("");
+                setCustomReason("");
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              className={`px-4 py-2 rounded text-white ${
+                selectedReason
+                  ? "bg-blue-600 hover:bg-blue-700"
+                  : "bg-gray-300 cursor-not-allowed"
+              }`}
+              disabled={!selectedReason}
+              onClick={() => {
+                const reasonText =
+                  selectedReason === "Other" ? customReason : selectedReason;
+
+                handleReportComment(
+                  currentUserId,
+                  "comment", // targetType
+                  selectedPostId, // targetId (comment id)
+                  reasonText
+                );
+              }}
+            >
+              Report
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const handleDeleteComment = async (commentId) => {
     try {
       const userToken = localStorage.getItem("token");
@@ -1738,13 +1986,13 @@ export default function SocialNetworkFeed() {
     fetchUserData();
   }, []);
 
-  const fetchUserProfile = (username) => {
+  const fetchUserProfile = (username, userId) => {
     try {
-      if (!username) {
-        console.error("No username provided");
-        return;
+      if (userId === currentUserId) {
+        navigate("/profile");
+      } else if (username) {
+        navigate(`/user-profile/${username}`);
       }
-      navigate(`/user-profile/${username}`);
     } catch (error) {
       console.error("Failed to navigate to user profile:", error);
       setAlertInfo({
@@ -1757,7 +2005,6 @@ export default function SocialNetworkFeed() {
 
   return (
     <div className="flex flex-col md:flex-row bg-gray-50 px-4 md:px-6 lg:px-12 xl:px-32 py-4 md:py-6">
-      {renderCommentOptionsModal()}
       {renderShowcase()}
       <div className="fixed top-5 right-5 z-50">
         {alertInfo.show && (
@@ -1850,14 +2097,19 @@ export default function SocialNetworkFeed() {
             </div>
             <div className="text-center">
               <div
-                className={`text-xl font-semibold ${
+                className={`text-xl font-semibold flex items-center justify-center ${
                   profileViews.percentageChange >= 0
                     ? "text-green-500"
                     : "text-red-500"
                 }`}
               >
+                {profileViews.percentageChange >= 0 ? (
+                  <TrendingUp size={16} className="mr-1" />
+                ) : (
+                  <TrendingDown size={16} className="mr-1" />
+                )}
                 {profileViews.percentageChange > 0 ? "+" : ""}
-                {profileViews.percentageChange}%
+                {Math.abs(profileViews.percentageChange)}%
               </div>
               <div className="text-gray-500 text-xs">Since last week</div>
             </div>
@@ -1928,8 +2180,8 @@ export default function SocialNetworkFeed() {
                       }}
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-300">
-                      <span className="text-lg font-bold text-gray-600">
+                    <div className="w-full h-full rounded-full flex items-center justify-center bg-gray-300">
+                      <span className=" font-bold text-gray-600">
                         {user.initials}
                       </span>
                     </div>
@@ -1953,7 +2205,7 @@ export default function SocialNetworkFeed() {
                   {[
                     ["public", <Globe size={14} />],
                     ["private", <LockKeyhole size={14} />],
-                    ["connection", <Users size={14} />],
+                    ["connections", <Users size={14} />],
                   ].map(([type, icon]) => (
                     <Tooltip
                       title={type.charAt(0).toUpperCase() + type.slice(1)}
@@ -2062,7 +2314,7 @@ export default function SocialNetworkFeed() {
                   {[
                     ["public", <Globe size={14} />],
                     ["private", <LockKeyhole size={14} />],
-                    ["connection", <Users size={14} />],
+                    ["connections", <Users size={14} />],
                   ].map(([type, icon]) => (
                     <Tooltip
                       title={type.charAt(0).toUpperCase() + type.slice(1)}
@@ -2133,7 +2385,7 @@ export default function SocialNetworkFeed() {
                             <div className="absolute -left-1 -top-1 z-0">
                               {post.group?.image ? (
                                 <img
-                                  className="object-cover w-full h-full"
+                                  className="object-cover w-10 h-10"
                                   src={
                                     post.group.image.startsWith("http")
                                       ? post.group.image
@@ -2184,7 +2436,9 @@ export default function SocialNetworkFeed() {
                       <div className="ml-3 mt-2">
                         <h6
                           className="font-bold mb-0 text-sm cursor-pointer hover:underline"
-                          onClick={() => fetchUserProfile(post.user.username)}
+                          onClick={() =>
+                            fetchUserProfile(post.user.username, post.user.id)
+                          }
                         >
                           {post.user?.name || "Unknown User"}
                         </h6>
@@ -2226,7 +2480,7 @@ export default function SocialNetworkFeed() {
                         {post.visibility === "private" && (
                           <LockKeyhole size={14} />
                         )}
-                        {post.visibility === "connection" && (
+                        {post.visibility === "connections" && (
                           <Users size={14} />
                         )}
                       </button>
@@ -2383,87 +2637,6 @@ export default function SocialNetworkFeed() {
         </div>
       )}
 
-      {showReportModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-md mx-4 p-5">
-            <h3 className="text-lg font-semibold mb-4">Laporkan posting ini</h3>
-            <p className="mb-3 text-sm text-gray-600">
-              Pilih kebijakan kami yang berlaku
-            </p>
-
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              {[
-                "Pelecehan",
-                "Penipuan",
-                "Spam",
-                "Misinformasi",
-                "Ujaran kebencian",
-                "Ancaman atau kekerasan",
-                "Menyakiti diri sendiri",
-                "Konten sadis",
-                "Organisasi berbahaya atau ekstremis",
-                "Konten seksual",
-                "Akun palsu",
-                "Eksploitasi anak",
-                "Produk dan layanan ilegal",
-                "Pelanggaran",
-                "Lainnya",
-              ].map((reason) => (
-                <button
-                  key={reason}
-                  className={`py-2 px-3 text-sm border rounded-full ${
-                    selectedReason === reason
-                      ? "bg-blue-100 border-blue-500 text-blue-700"
-                      : "bg-white hover:bg-gray-100"
-                  }`}
-                  onClick={() => setSelectedReason(reason)}
-                >
-                  {reason}
-                </button>
-              ))}
-            </div>
-
-            {selectedReason === "Lainnya" && (
-              <textarea
-                className="w-full p-2 border rounded mb-3 text-sm"
-                rows={3}
-                placeholder="Jelaskan alasan Anda melaporkan postingan ini"
-                value={customReason}
-                onChange={(e) => setCustomReason(e.target.value)}
-              />
-            )}
-
-            <div className="flex justify-end gap-2">
-              <button
-                className="text-gray-500 hover:text-gray-700"
-                onClick={() => {
-                  setShowReportModal(false);
-                  setSelectedReason("");
-                  setCustomReason("");
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                className={`px-4 py-2 rounded text-white ${
-                  selectedReason
-                    ? "bg-blue-600 hover:bg-blue-700"
-                    : "bg-gray-300 cursor-not-allowed"
-                }`}
-                disabled={!selectedReason}
-                onClick={() => {
-                  setShowReportModal(false);
-                  setSelectedReason("");
-                  setCustomReason("");
-                }}
-              >
-                Report
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showEditModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg w-full max-w-md p-6">
@@ -2549,7 +2722,7 @@ export default function SocialNetworkFeed() {
                 {[
                   ["public", <Globe size={14} />, "Public"],
                   ["private", <LockKeyhole size={14} />, "Private"],
-                  ["connection", <Users size={14} />, "Connections"],
+                  ["connections", <Users size={14} />, "Connections"],
                 ].map(([type, icon, label]) => (
                   <button
                     key={type}
@@ -2601,37 +2774,114 @@ export default function SocialNetworkFeed() {
         } md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pl-2 lg:pr-4`}
       >
         {/* People You Might Know */}
-        <div className="bg-white rounded-lg shadow mb-4 p-3">
-          <h3 className="font-medium text-sm mb-3">People you might know</h3>
-
-          <div className="flex items-center mb-3">
-            <div className="w-8 md:w-10 h-8 md:h-10 rounded-full bg-gray-200 overflow-hidden mr-2">
-              <img
-                src="/api/placeholder/40/40"
-                alt="Profile"
-                className="w-full h-full object-cover"
+        <div className="bg-white rounded-xl shadow-sm border p-4 mb-6 transition-all duration-300">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-100">
+            <h3 className="font-semibold text-gray-800 text-base flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              People you might know
+            </h3>
+            <button
+              onClick={fetchSuggestedConnections}
+              disabled={loadingSuggested}
+              className="flex items-center gap-1 text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors duration-200 disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${loadingSuggested ? "animate-spin" : ""}`}
               />
-            </div>
-            <div className="flex-1">
-              <div className="font-medium text-xs md:text-sm">
-                Bintang Asydqi
-              </div>
-              <div className="text-gray-500 text-xs">Student at Alexander</div>
-            </div>
-            <div className="text-blue-500">
-              <svg
-                className="w-4 md:w-5 h-4 md:h-5"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z"
-                  clipRule="evenodd"
-                ></path>
-              </svg>
-            </div>
+            </button>
           </div>
+
+          {/* Content */}
+          {loadingSuggested ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="flex items-center gap-2 text-gray-500">
+                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-sm">Finding suggestions...</span>
+              </div>
+            </div>
+          ) : suggestedConnections.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <UserPlus className="w-6 h-6 text-gray-400" />
+              </div>
+              <p className="text-gray-500 text-sm">
+                No suggestions available at the moment
+              </p>
+              <p className="text-gray-400 text-xs mt-1">
+                Check back later for new connections
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {suggestedConnections.map((person, index) => (
+                <div
+                  key={person.id}
+                  className="group flex items-center p-3 rounded-lg hover:bg-gray-50 transition-all duration-200 border border-transparent hover:border-gray-200"
+                  style={{
+                    animationDelay: `${index * 100}ms`,
+                    animation: "fadeInUp 0.5s ease-out forwards",
+                  }}
+                >
+                  {/* Profile Picture */}
+                  <div className="relative mr-3 flex-shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden ring-2 ring-white shadow-md">
+                      {person.photo ? (
+                        <img
+                          src={
+                            person.photo.startsWith("http")
+                              ? person.photo
+                              : `${apiUrl}/${person.photo}`
+                          }
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "";
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <span className="text-sm font-semibold text-gray-500">
+                            {person.initials}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* User Info */}
+                  <div className="flex-1 min-w-0">
+                    <Link to={`/user-profile/${person.username}`}>
+                      <h4 className="font-semibold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors duration-200">
+                        {person.name}
+                      </h4>
+                    </Link>
+                    <p className="text-gray-600 text-xs truncate mt-0.5">
+                      {person.headline}
+                    </p>
+                  </div>
+
+                  {/* Connect Button */}
+                  <button
+                    className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 hover:scale-110 transition-all duration-200 group-hover:shadow-md"
+                    onClick={() => handleConnectWithUser(person.id)}
+                    disabled={
+                      connections.some((conn) => conn.id === person.id) ||
+                      loadingSuggested
+                    }
+                    title={`Connect with ${person.name}`}
+                  >
+                    {connections.some((conn) => conn.id === person.id) ? (
+                      <Check size={16} className="text-green-500" />
+                    ) : (
+                      <UserPlus size={16} />
+                    )}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Premium Banner */}
@@ -2901,18 +3151,35 @@ export default function SocialNetworkFeed() {
         </div>
       )}
 
+      {showReportModal && (
+        <ReportModal
+          showReportModal={showReportModal}
+          setShowReportModal={setShowReportModal}
+          selectedReason={selectedReason}
+          setSelectedReason={setSelectedReason}
+          customReason={customReason}
+          setCustomReason={setCustomReason}
+          handleReportComment={handleReportComment}
+          currentUserId={currentUserId}
+          selectedPostId={selectedPostId || selectedComment?.id}
+        />
+      )}
+
       {/* Comment Modal */}
       {showCommentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-          {renderCommentOptionsModal()}
           {renderShowcase()}
-          <div className="bg-white rounded-lg w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
+          <div
+            className="bg-white rounded-lg w-full max-w-md mx-4 max-h-[90vh] flex flex-col"
+            style={{ zIndex: showReportModal ? 40 : 50 }}
+          >
             <div className="p-3 md:p-4 border-b flex justify-between items-center">
               <h3 className="text-base md:text-lg font-semibold">Comments</h3>
               <button onClick={closeCommentModal}>
                 <X size={20} />
               </button>
             </div>
+
 
             <div className="p-3 md:p-4 overflow-y-auto flex-1">
               {loadingComments[currentPostId] ? (
@@ -2964,7 +3231,15 @@ export default function SocialNetworkFeed() {
                           )}
                           <div className="flex-1">
                             <div className="bg-gray-100 rounded-lg p-2 md:p-3">
-                              <div className="font-semibold text-xs md:text-sm">
+                              <div
+                                className="font-semibold text-xs md:text-sm cursor-pointer hover:underline"
+                                onClick={() =>
+                                  fetchUserProfile(
+                                    comment.user.username,
+                                    comment.user.id
+                                  )
+                                }
+                              >
                                 {comment.user.name}
                               </div>
 
@@ -3018,52 +3293,48 @@ export default function SocialNetworkFeed() {
                                   Reply
                                 </button>
 
-                                <button
-                                  className="text-xs text-gray-500 hover:text-gray-700 flex items-center"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedComment(comment);
-                                    setShowCommentOptions(!showCommentOptions);
-                                  }}
-                                >
-                                  <MoreHorizontal size={14} />
-                                </button>
+                                {comment.user?.id === currentUserId && (
+                                  <button
+                                    className="text-gray-500 hover:text-gray-700 ml-2"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedComment(comment);
+                                      setShowCommentOptions(true);
+                                    }}
+                                  >
+                                    <MoreHorizontal size={14} />
+                                  </button>
+                                )}
 
+                                {comment.user?.id !== currentUserId && (
+                                  <button
+                                    className="text-red-500 hover:text-red-700"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleReportClick(
+                                        comment.user?.id,
+                                        "comment",
+                                        comment.id
+                                      );
+                                    }}
+                                  >
+                                    <TriangleAlert size={14} />
+                                  </button>
+                                )}
+
+                                {/* Di dalam map comments */}
                                 {(comment.repliesCount > 0 ||
                                   allReplies[comment.id]?.length > 0) && (
                                   <button
-                                    className="text-gray-500 text-xs hover:underline"
+                                    className="text-xs text-gray-500 hover:text-blue-500 mt-1"
                                     onClick={() => toggleReplies(comment.id)}
                                   >
                                     {expandedReplies[comment.id]
                                       ? "Hide replies"
-                                      : `View replies (${
-                                          comment.repliesCount ||
-                                          allReplies[comment.id]?.length ||
-                                          0
-                                        })`}
+                                      : `Show replies (${comment.repliesCount})`}
                                   </button>
                                 )}
                               </div>
-
-                              {/* Dropdown menu */}
-                              {showCommentOptions && (
-                                <div className="absolute top-8 right-0 bg-white shadow-lg rounded-md border border-gray-200 w-36 py-1 z-10">
-                                  <button
-                                    className="w-full text-left py-2 px-3 text-sm hover:bg-gray-100 flex items-center"
-                                    onClick={() => {
-                                      if (selectedComment) {
-                                        handleOpenShowcase(selectedComment.id);
-                                        setShowCommentOptions(false);
-                                      }
-                                    }}
-                                  >
-                                    <MessageCircle size={12} className="mr-2" />
-                                    See Thread
-                                  </button>
-                                  {/* You can add more dropdown options here */}
-                                </div>
-                              )}
                             </div>
 
                             {replyingTo === comment.id && (
@@ -3085,6 +3356,7 @@ export default function SocialNetworkFeed() {
                                 </button>
                               </div>
                             )}
+
                             {expandedReplies[comment.id] && (
                               <div className="mt-2 ml-4 md:ml-6 pl-2 md:pl-4 border-l-2 border-gray-200">
                                 {loadingComments[comment.id] ? (
@@ -3129,7 +3401,15 @@ export default function SocialNetworkFeed() {
                                             )}
                                             <div className="flex-1">
                                               <div className="bg-gray-100 rounded-lg p-1 md:p-2">
-                                                <div className="font-semibold text-xxs md:text-xs items-center flex">
+                                                <div
+                                                  className="font-semibold text-xxs md:text-xs items-center flex cursor-pointer hover:underline"
+                                                  onClick={() =>
+                                                    fetchUserProfile(
+                                                      reply.user.username,
+                                                      reply.user.id
+                                                    )
+                                                  }
+                                                >
                                                   {reply.user?.name ||
                                                     "Unknown User"}
                                                   {reply.replyTo && (
@@ -3158,16 +3438,25 @@ export default function SocialNetworkFeed() {
                                                     reply.created_at
                                                   )}
                                                 </div>
-                                                <button
-                                                  className="opacity-0 group-hover:opacity-100 text-xxs text-gray-500 hover:text-gray-700"
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setSelectedComment(reply);
-                                                    setShowCommentOptions(true);
-                                                  }}
-                                                >
-                                                  <Ellipsis size={12} />
-                                                </button>
+                                                {reply.user?.id !==
+                                                  currentUserId && (
+                                                  <button
+                                                    className="text-xxs text-red-500 hover:text-red-700"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      handleReportClick(
+                                                        reply.user?.id,
+                                                        "comment",
+                                                        reply.id
+                                                      );
+                                                    }}
+                                                  >
+                                                    <TriangleAlert
+                                                      size={16}
+                                                      className="mr-1"
+                                                    />
+                                                  </button>
+                                                )}
                                               </div>
                                               <button
                                                 className="text-xxs text-blue-500 mt-1 md:text-xs"
@@ -3194,6 +3483,8 @@ export default function SocialNetworkFeed() {
                   })
               )}
             </div>
+
+             {renderCommentOptionsModal()}
 
             <div className="p-3 md:p-4 border-t">
               <div className="flex items-center mb-2">

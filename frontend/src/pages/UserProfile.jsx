@@ -71,7 +71,14 @@ export default function UserProfile() {
   const [profileImage, setProfileImage] = useState(null);
   const { username } = useParams(); // Get username from URL
   const [userData, setUserData] = useState(null);
-  const [connections, setConnections] = useState(0);
+  const [connections, setConnections] = useState([]);
+  const [connectionsCount, setConnectionsCount] = useState(0);
+  const [profileViews, setProfileViews] = useState({
+    thisWeek: 0,
+    lastWeek: 0,
+    percentageChange: 0,
+    dailyViews: [],
+  });
   const navigate = useNavigate();
 
   const [user, setUser] = useState({
@@ -134,6 +141,73 @@ export default function UserProfile() {
     "December",
   ];
 
+  const [isConnected, setIsConnected] = useState(false);
+
+  // Add this useEffect to check connection status when user data loads
+  useEffect(() => {
+    const checkConnectionStatus = async () => {
+      const token = localStorage.getItem("token");
+      try {
+        const response = await axios.get(
+          `${apiUrl}/api/users/${user.id}/connection-status`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setIsConnected(response.data.isConnected);
+      } catch (error) {
+        console.error("Failed to check connection status:", error);
+      }
+    };
+
+    if (user.id) {
+      checkConnectionStatus();
+    }
+  }, [user.id]);
+
+  const handleConnect = async () => {
+    const token = localStorage.getItem("token");
+    setIsLoading(true);
+
+    try {
+      if (isConnected) {
+        // Already connected, do nothing
+        return;
+      }
+
+      const response = await axios.post(
+        `${apiUrl}/api/users/${user.id}/connect`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data.success) {
+        setIsConnected(true);
+        toast.success("Connection request sent successfully!");
+      }
+    } catch (error) {
+      console.error("Failed to connect:", error);
+
+      // Handle case when users are already connected
+      if (error.response?.data?.data === "Users are already connected") {
+        setIsConnected(true);
+        return;
+      }
+
+      toast.error(
+        error.response?.data?.message || "Failed to send connection request"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const years = [
     "Year",
     ...Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i),
@@ -152,18 +226,71 @@ export default function UserProfile() {
           },
         }
       );
-      setConnections(response.data.data.connections ?? []);
-      setUser((prev) => ({
-        ...prev,
-        connections: response.data.data.connections ?? [],
-        connectionsCount: response.data.data.total ?? 0,
-      }));
-      console.log("Connections:", user);
+      const connectionsData = response.data.data.connections || [];
+      setConnections(connectionsData);
+      setConnectionsCount(response.data.data.total || 0);
     } catch (error) {
       console.error("Failed to fetch connections:", error);
       toast.error("Failed to load connections");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchProfileViews = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const [thisWeekResponse, lastWeekResponse] = await Promise.all([
+        axios.get(`${apiUrl}/api/user/profile/views/this-week`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`${apiUrl}/api/user/profile/views/last-week`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      const thisWeekData = thisWeekResponse.data.data || {};
+      const lastWeekData = lastWeekResponse.data.data || {};
+
+      const days = [];
+      const dailyCounts = [];
+
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const formattedDate = date.toISOString().split("T")[0];
+        days.push(formattedDate);
+
+        const dailyViews =
+          thisWeekData.viewers?.filter(
+            (viewer) =>
+              new Date(viewer.viewed_at).toISOString().split("T")[0] ===
+              formattedDate
+          ) || [];
+
+        dailyCounts.push(dailyViews.length);
+      }
+
+      const thisWeekTotal = thisWeekData.count || 0;
+      const lastWeekTotal = lastWeekData.count || 0;
+
+      let percentageChange = 0;
+      if (lastWeekTotal > 0) {
+        percentageChange =
+          ((thisWeekTotal - lastWeekTotal) / lastWeekTotal) * 100;
+      } else if (thisWeekTotal > 0) {
+        percentageChange = 100;
+      }
+
+      setProfileViews({
+        thisWeek: thisWeekTotal,
+        lastWeek: lastWeekTotal,
+        percentageChange: Math.round(percentageChange),
+        dailyViews: thisWeekData.viewers || [],
+      });
+    } catch (error) {
+      console.error("Failed to fetch profile views:", error);
+      toast.error("Failed to load profile views");
     }
   };
 
@@ -309,10 +436,11 @@ export default function UserProfile() {
 
   useEffect(() => {
     if (user.id) {
+      fetchConnections();
+      fetchProfileViews();
       fetchEducations();
       fetchExperiences();
       fetchUserPosts();
-      fetchConnections();
     }
   }, [user.id]);
 
@@ -702,30 +830,86 @@ export default function UserProfile() {
               </div>
               <div className="mt-5 space-y-2 text-left">
                 <Link
-                  to="/list-connection"
+                  to={`/list-connection/${username}`}
                   className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md"
                 >
                   <span className="flex items-center gap-2 text-base">
                     <Users size={18} /> Connections
                   </span>
-                  <span className="font-bold text-lg">358</span>
+                  <span className="font-bold text-lg">{connectionsCount}</span>
                 </Link>
-                <div className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md">
-                  <span className="flex items-center gap-2 text-base">
-                    <Eye size={18} /> Views
-                  </span>
-                  <span className="font-bold text-lg">85</span>
-                </div>
-                {/* </Link> */}
-                {/* <Link
-                  to="/job-saved"
-                  className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md"
+              </div>
+
+              <div className="mt-2">
+                <button
+                  onClick={handleConnect()}
+                  disabled={isLoading || isConnected}
+                  className={`w-full py-2 rounded-md transition-all duration-200 ${
+                    isConnected
+                      ? "bg-gray-100 text-gray-600 cursor-default"
+                      : "bg-white text-blue-500 border-2 border-blue-400 hover:bg-blue-50 hover:border-blue-500"
+                  } ${isLoading ? "opacity-70 cursor-not-allowed" : ""}`}
                 >
-                  <span className="flex items-center gap-2 text-base">
-                    <Bookmark size={18} /> Job Saved
-                  </span>
-                  <span className="font-bold text-lg">120</span>
-                </Link> */}
+                  {isLoading ? (
+                    <div className="flex items-center justify-center">
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-500"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Processing
+                    </div>
+                  ) : isConnected ? (
+                    <div className="flex items-center justify-center">
+                      <svg
+                        className="w-4 h-4 mr-1"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                      </svg>
+                      Connected
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center">
+                      <svg
+                        className="w-4 h-4 mr-1"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="8.5" cy="7" r="4"></circle>
+                        <line x1="20" y1="8" x2="20" y2="14"></line>
+                        <line x1="23" y1="11" x2="17" y2="11"></line>
+                      </svg>
+                      Connect
+                    </div>
+                  )}
+                </button>
               </div>
             </div>
 
@@ -1754,7 +1938,10 @@ export default function UserProfile() {
 
                   {user.website ? (
                     <div className="flex items-center gap-2">
-                      <Link2 size={16} className="text-gray-400 mt-1 flex-shrink-0" />
+                      <Link2
+                        size={16}
+                        className="text-gray-400 mt-1 flex-shrink-0"
+                      />
                       <a
                         href={
                           user.website.startsWith("http")

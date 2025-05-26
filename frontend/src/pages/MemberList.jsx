@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
-import { toast } from "sonner";
+import Alert from "../components/Auth/alert";
 import Case from "../components/Case";
 import {
   MoreHorizontal,
@@ -27,6 +27,16 @@ export default function MemberList() {
   const [selectedRole, setSelectedRole] = useState("member");
   const [showOptionsMenu, setShowOptionsMenu] = useState(null);
   const [group, setGroup] = useState({});
+  const [alert, setAlert] = useState({
+    show: false,
+    type: "success",
+    message: "",
+  });
+
+  const showAlert = (type, message) => {
+    setAlert({ show: true, type, message });
+    setTimeout(() => setAlert({ ...alert, show: false }), 5000);
+  };
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
@@ -105,11 +115,11 @@ export default function MemberList() {
             : member
         )
       );
-      toast.success("Role updated successfully");
+      showAlert("success", "Role updated successfully");
       setShowRoleModal(false);
     } catch (error) {
       console.error("Error updating role:", error);
-      toast.error("Failed to update role");
+      showAlert("error", "Failed to update role");
     }
   };
 
@@ -130,11 +140,11 @@ export default function MemberList() {
       setMembers((prev) =>
         prev.filter((member) => member.user.id !== selectedMember.user.id)
       );
-      toast.success("Member removed successfully");
+      showAlert("success", "Member removed successfully");
       setShowRemoveModal(false);
     } catch (error) {
       console.error("Error removing member:", error);
-      toast.error("Failed to remove member");
+      showAlert("error", "Failed to remove member");
     }
   };
 
@@ -170,6 +180,15 @@ export default function MemberList() {
   return (
     <Case>
     <div className="bg-gray-100 min-h-screen pb-20"> {/* Tambahkan pb-20 untuk padding bottom yang besar */}
+      {alert.show && (
+          <div className="fixed top-4 right-4 z-50">
+            <Alert
+              type={alert.type}
+              message={alert.message}
+              onClose={() => setAlert({ ...alert, show: false })}
+            />
+          </div>
+        )}
         <div className="container mx-auto px-4 py-6">
           <div className="bg-white rounded-lg shadow-sm overflow-hidden min-h-[70vh]">
           {/* Header */}
@@ -197,17 +216,29 @@ export default function MemberList() {
                   className="p-4 flex items-center justify-between hover:bg-gray-50"
                 >
                   <div className="flex items-center space-x-4">
-                    <img
-                      src={
-                        member.user.photo
-                          ? member.user.photo.startsWith("http")
+                    {member.user.photo ? (
+                      <img
+                        src={
+                          member.user.photo.startsWith("http")
                             ? member.user.photo
                             : `${apiUrl}/${member.user.photo}`
-                          : "/default-user.png"
-                      }
-                      className="w-12 h-12 rounded-full object-cover"
-                      alt={member.user.name}
-                    />
+                        }
+                        className="w-12 h-12 rounded-full object-cover"
+                        alt={member.user.name}
+                      />
+                    ) : (
+                      <div
+                        className={`w-12 h-12 rounded-full flex items-center justify-center font-sembold text-lg uppercase ${
+                          member.user.id === currentUserId
+                        }`}
+                      >
+                        {member.user.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .slice(0, 2)}
+                      </div>
+                    )}
                     <div>
                       <Link to={`/user-profile/${member.user.username}`} className="font-medium text-gray-900">
                         {member.user.name}

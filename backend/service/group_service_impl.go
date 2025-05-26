@@ -104,7 +104,7 @@ func (service *GroupServiceImpl) Create(ctx context.Context, userId uuid.UUID, r
 	return helper.ToGroupResponse(group)
 }
 
-func (service *GroupServiceImpl) Update(ctx context.Context, groupId, userId uuid.UUID, request web.UpdateGroupRequest) web.GroupResponse {
+func (service *GroupServiceImpl) Update(ctx context.Context, groupId, userId uuid.UUID, request web.UpdateGroupRequest, file *multipart.FileHeader) web.GroupResponse {
 	err := service.Validate.Struct(request)
 	helper.PanicIfError(err)
 
@@ -124,18 +124,54 @@ func (service *GroupServiceImpl) Update(ctx context.Context, groupId, userId uui
 	}
 
 	// Update group fields
-	group.Name = request.Name
-	group.Description = request.Description
-	group.Rule = request.Rule
-	group.PrivacyLevel = request.PrivacyLevel
-	group.InvitePolicy = request.InvitePolicy
+	if request.Name != "" {
+		group.Name = request.Name
+	}
+	if request.Description != "" {
+		group.Description = request.Description
+	}
+	if request.Rule != "" {
+		group.Rule = request.Rule
+	}
+	if request.PrivacyLevel != "" {
+		group.PrivacyLevel = request.PrivacyLevel
+	}
+	if request.InvitePolicy != "" {
+		group.InvitePolicy = request.InvitePolicy
+	}
 	group.UpdatedAt = time.Now()
 
-	// Update image if provided
-	if request.Image != "" {
+	// Handle image update based on what was provided
+	if file != nil {
+		// Case 1: Image file was uploaded - process the upload
+		image, err := file.Open()
+		helper.PanicIfError(err)
+		defer image.Close()
+
+		// Upload new image
+		uploadResult, err := helper.UploadImage(image, file, helper.DirGroups, userId.String(), "images")
+		helper.PanicIfError(err)
+
+		// Delete old image if it exists
+		if group.Image != nil && *group.Image != "" {
+			err = helper.DeleteFile(*group.Image)
+			if err != nil {
+				// Just log the error but don't stop the process
+				fmt.Printf("Failed to delete old image: %v\n", err)
+			}
+		}
+
+		if uploadResult != nil {
+			relativePath := uploadResult.RelativePath
+			group.Image = &relativePath
+		}
+	} else if request.Image != "" {
+		// Case 2: Image string/URL was provided - use directly
 		group.Image = &request.Image
 	}
+	// If neither file nor image string was provided, keep existing image
 
+	// Update group in database
 	group = service.GroupRepository.Update(ctx, tx, group)
 
 	// Get creator information
@@ -144,7 +180,7 @@ func (service *GroupServiceImpl) Update(ctx context.Context, groupId, userId uui
 		creator = domain.User{Id: group.CreatorId}
 	}
 
-	// Get members
+	// Get members count
 	members := service.MemberRepository.FindByGroupId(ctx, tx, groupId)
 
 	// Build response
@@ -331,28 +367,28 @@ func (service *GroupServiceImpl) AddMember(ctx context.Context, groupId, userId,
 	adder, _ := service.UserRepository.FindById(ctx, tx, userId)
 	adderName := "Someone"
 	if adder.Id != uuid.Nil {
-    adderName = adder.Name
-}
+		adderName = adder.Name
+	}
 
 	groupName := group.Name
 
 	// Kirim notifikasi ke user yang ditambahkan
 	if service.NotificationService != nil {
-    refType := "group_member_added"
-    go func() {
-        service.NotificationService.Create(
-            context.Background(),
-            newMemberId,
-            string(domain.NotificationCategoryGroup),
-            "group_member_added",
-            "Added to Group",
-            fmt.Sprintf("%s added you to the group %s", adderName, groupName),
-            &groupId,
-            &refType,
-            &userId,
-        )
-    }()
-}
+		refType := "group_member_added"
+		go func() {
+			service.NotificationService.Create(
+				context.Background(),
+				newMemberId,
+				string(domain.NotificationCategoryGroup),
+				"group_member_added",
+				"Added to Group",
+				fmt.Sprintf("%s added you to the group %s", adderName, groupName),
+				&groupId,
+				&refType,
+				&userId,
+			)
+		}()
+	}
 	user, _ := service.UserRepository.FindById(ctx, tx, newMemberId) // Error already checked above
 
 	response := helper.ToGroupMemberResponse(member)
@@ -429,7 +465,7 @@ func (service *GroupServiceImpl) UpdateMemberRole(ctx context.Context, groupId, 
 
 	// Simpan role lama untuk perbandingan
 	oldRole := member.Role
-	
+
 	member.Role = role
 	member = service.MemberRepository.UpdateMemberRole(ctx, tx, groupId, memberId, role)
 
@@ -442,33 +478,33 @@ func (service *GroupServiceImpl) UpdateMemberRole(ctx context.Context, groupId, 
 	updater, _ := service.UserRepository.FindById(ctx, tx, userId)
 	updaterName := "Group admin"
 	if updater.Id != uuid.Nil {
-    updaterName = updater.Name
-}
+		updaterName = updater.Name
+	}
 
 	groupName := group.Name
 
 	// Kirim notifikasi jika role berubah
 	if oldRole != role && service.NotificationService != nil {
-    refType := "group_role_updated"
-    roleText := "member"
-    if role == "admin" {
-        roleText = "admin"
-}
-    
-    go func() {
-        service.NotificationService.Create(
-            context.Background(),
-            memberId,
-            string(domain.NotificationCategoryGroup),
-            "group_role_updated",
-            "Role Updated",
-            fmt.Sprintf("%s made you %s of the group %s", updaterName, roleText, groupName),
-            &groupId,
-            &refType,
-            &userId,
-        )
-    }()
-}
+		refType := "group_role_updated"
+		roleText := "member"
+		if role == "admin" {
+			roleText = "admin"
+		}
+
+		go func() {
+			service.NotificationService.Create(
+				context.Background(),
+				memberId,
+				string(domain.NotificationCategoryGroup),
+				"group_role_updated",
+				"Role Updated",
+				fmt.Sprintf("%s made you %s of the group %s", updaterName, roleText, groupName),
+				&groupId,
+				&refType,
+				&userId,
+			)
+		}()
+	}
 	response := helper.ToGroupMemberResponse(member)
 	response.User = helper.ToUserBriefResponse(user)
 
@@ -570,7 +606,7 @@ func (service *GroupServiceImpl) CreateInvitation(ctx context.Context, groupId, 
 		refType := "group_invite"
 		inviterName := inviter.Name
 		groupName := group.Name
-		
+
 		go func() {
 			service.NotificationService.Create(
 				context.Background(),
@@ -638,11 +674,11 @@ func (service *GroupServiceImpl) AcceptInvitation(ctx context.Context, invitatio
 	group, err := service.GroupRepository.FindById(ctx, tx, invitation.GroupId)
 	if err == nil {
 		groupName := group.Name
-		
+
 		user, err := service.UserRepository.FindById(ctx, tx, userId)
 		if err == nil && service.NotificationService != nil {
 			userName := user.Name
-			
+
 			// Kirim notifikasi ke user yang mengundang
 			refType := "group_invitation_accepted"
 			go func() {
@@ -824,7 +860,7 @@ func (service *GroupServiceImpl) JoinGroup(ctx context.Context, userId uuid.UUID
 	if err == nil {
 		// Get group admins - using existing methods instead of FindAdminsByGroupId
 		members := service.MemberRepository.FindByGroupId(ctx, tx, groupId)
-		
+
 		refType := "group_join_request"
 		for _, admin := range members {
 			if admin.Role == "admin" && admin.UserId != userId { // Only notify admins
@@ -918,9 +954,9 @@ func (service *GroupServiceImpl) JoinPublicGroup(ctx context.Context, userId uui
 
 	// Check if user is already a member - perbaiki pengecekan is_active
 	existingMember := service.MemberRepository.FindByGroupIdAndUserId(ctx, tx, groupId, userId)
-	fmt.Printf("DEBUG: Existing member check - GroupId: %v, IsActive: %v\n", 
+	fmt.Printf("DEBUG: Existing member check - GroupId: %v, IsActive: %v\n",
 		existingMember.GroupId, existingMember.IsActive)
-	
+
 	if existingMember.GroupId != uuid.Nil {
 		// Jika member sudah ada tapi tidak aktif, aktifkan kembali
 		if !existingMember.IsActive {
@@ -950,14 +986,14 @@ func (service *GroupServiceImpl) JoinPublicGroup(ctx context.Context, userId uui
 	}
 
 	member = service.MemberRepository.AddMember(ctx, tx, member)
-	fmt.Printf("DEBUG: Member added successfully with ID: %v, IsActive: %v\n", 
+	fmt.Printf("DEBUG: Member added successfully with ID: %v, IsActive: %v\n",
 		member.GroupId, member.IsActive)
 
 	user, err := service.UserRepository.FindById(ctx, tx, userId)
 	if err != nil {
 		fmt.Printf("DEBUG: Error finding user: %v\n", err)
 	}
-	
+
 	userName := "Someone"
 	if user.Id != uuid.Nil {
 		userName = user.Name
@@ -968,9 +1004,9 @@ func (service *GroupServiceImpl) JoinPublicGroup(ctx context.Context, userId uui
 		refType := "group_new_member"
 		groupName := group.Name
 		creatorId := group.CreatorId
-		
+
 		fmt.Printf("DEBUG: Sending notification to group creator %s\n", creatorId)
-		
+
 		go func() {
 			notifResponse := service.NotificationService.Create(
 				context.Background(),
@@ -986,12 +1022,12 @@ func (service *GroupServiceImpl) JoinPublicGroup(ctx context.Context, userId uui
 			fmt.Printf("DEBUG: Notification sent with ID: %v\n", notifResponse.ID)
 		}()
 	} else {
-		fmt.Printf("DEBUG: Not sending notification. NotificationService nil: %v, Creator is joiner: %v\n", 
+		fmt.Printf("DEBUG: Not sending notification. NotificationService nil: %v, Creator is joiner: %v\n",
 			service.NotificationService == nil, group.CreatorId == userId)
 	}
 
 	response := helper.ToGroupMemberResponse(member)
 	response.User = helper.ToUserBriefResponse(user)
-	
+
 	return response
 }

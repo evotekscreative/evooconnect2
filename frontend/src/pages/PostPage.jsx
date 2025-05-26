@@ -21,17 +21,30 @@ import {
   Github,
   Instagram,
   MapPin,
+  RefreshCw,
+  UserPlus,
+  Eye,
 } from "lucide-react";
 import Case from "../components/Case.jsx";
 import axios from "axios";
 import { toast } from "sonner";
 
 const PostPage = () => {
-  const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+  const apiUrl =
+    import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
   const [userPosts, setUserPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [profileImage, setProfileImage] = useState(null);
+  const [suggestedConnections, setSuggestedConnections] = useState([]);
+  const [loadingSuggested, setLoadingSuggested] = useState(false);
+  const [connections, setConnections] = useState([]);
+  const [connectionsCount, setConnectionsCount] = useState(0);
+  const [profileViews, setProfileViews] = useState({
+    thisWeek: 0,
+    lastWeek: 0,
+    percentageChange: 0,
+    dailyViews: [],
+  });
   const [user, setUser] = useState({
     id: "",
     name: "",
@@ -69,6 +82,130 @@ const PostPage = () => {
     },
   ];
 
+  const fetchConnections = async () => {
+    const token = localStorage.getItem("token");
+    setIsLoading(true);
+    try {
+      const response = await axios.get(
+        `${apiUrl}/api/users/${user.id}/connections`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      const connectionsData = response.data.data.connections || [];
+      setConnections(connectionsData);
+      setConnectionsCount(response.data.data.total || 0);
+    } catch (error) {
+      console.error("Failed to fetch connections:", error);
+      toast.error("Failed to load connections");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchProfileViews = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const [thisWeekResponse, lastWeekResponse] = await Promise.all([
+        axios.get(`${apiUrl}/api/user/profile/views/this-week`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`${apiUrl}/api/user/profile/views/last-week`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      const thisWeekData = thisWeekResponse.data.data || {};
+      const lastWeekData = lastWeekResponse.data.data || {};
+
+      const days = [];
+      const dailyCounts = [];
+
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const formattedDate = date.toISOString().split("T")[0];
+        days.push(formattedDate);
+
+        const dailyViews =
+          thisWeekData.viewers?.filter(
+            (viewer) =>
+              new Date(viewer.viewed_at).toISOString().split("T")[0] ===
+              formattedDate
+          ) || [];
+
+        dailyCounts.push(dailyViews.length);
+      }
+
+      const thisWeekTotal = thisWeekData.count || 0;
+      const lastWeekTotal = lastWeekData.count || 0;
+
+      let percentageChange = 0;
+      if (lastWeekTotal > 0) {
+        percentageChange =
+          ((thisWeekTotal - lastWeekTotal) / lastWeekTotal) * 100;
+      } else if (thisWeekTotal > 0) {
+        percentageChange = 100;
+      }
+
+      setProfileViews({
+        thisWeek: thisWeekTotal,
+        lastWeek: lastWeekTotal,
+        percentageChange: Math.round(percentageChange),
+        dailyViews: thisWeekData.viewers || [],
+      });
+    } catch (error) {
+      console.error("Failed to fetch profile views:", error);
+      toast.error("Failed to load profile views");
+    }
+  };
+  const fetchSuggestedConnections = async () => {
+    try {
+      setLoadingSuggested(true);
+      const userToken = localStorage.getItem("token");
+      const response = await axios.get(apiUrl + "/api/user-peoples", {
+        headers: { Authorization: `Bearer ${userToken}` },
+      });
+
+      console.log("Response data:", response.data);
+
+      if (response.data?.data) {
+        // Filter out people you're already connected with
+        const connectedIds = connections.map((conn) => conn.id);
+        const filtered = response.data.data.filter(
+          (person) => !connectedIds.includes(person.id)
+        );
+
+        // Get 3 random suggestions
+        const shuffled = [...filtered].sort(() => 0.5 - Math.random());
+        const suggestions = shuffled.slice(0, 3).map((person) => ({
+          id: person.id,
+          name: person.name || "Unknown User",
+          username: person.username || "unknown",
+          initials: person.name
+            ? person.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+            : "UU",
+          photo: person.photo || null,
+          headline: person.headline || "No headline specified",
+        }));
+
+        console.log("Suggested connections:", suggestions);
+
+        setSuggestedConnections(suggestions);
+      }
+    } catch (error) {
+      console.error("Failed to fetch suggested connections:", error);
+    } finally {
+      setLoadingSuggested(false);
+      console.log("Suggested connections:", suggestedConnections);
+    }
+  };
+
   const fetchUserPosts = async () => {
     const token = localStorage.getItem("token");
     setIsLoading(true);
@@ -99,14 +236,11 @@ const PostPage = () => {
     setIsLoading(true);
 
     try {
-      const response = await axios.get(
-        apiUrl + "/api/user/profile",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await axios.get(apiUrl + "/api/user/profile", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       // Convert socials array to object
       const socialsObject = {};
@@ -150,6 +284,15 @@ const PostPage = () => {
     fetchUserPosts();
   }, []);
 
+  useEffect(() => {
+    if (user.id) {
+      fetchConnections();
+      fetchProfileViews();
+      fetchSuggestedConnections();
+      fetchUserPosts();
+    }
+  }, [user.id]);
+
   const scrollLeft = () => {
     document
       .getElementById("post-container")
@@ -181,12 +324,22 @@ const PostPage = () => {
           {/* Left Sidebar - Narrower */}
           <div className="w-full md:w-1/4 lg:w-1/5 space-y-4">
             <div className="bg-white rounded-lg shadow-md p-4 text-center">
+              {/* Di komponen gambar profil */}
               <div className="relative w-28 h-28 mx-auto bg-gray-200 rounded-full overflow-hidden flex items-center justify-center">
-                {profileImage ? (
+                {user.photo ? (
                   <img
-                    src={apiUrl + "/" + profileImage}
+                    src={
+                      user.photo.startsWith("http")
+                        ? user.photo
+                        : `${apiUrl}/${user.photo}`
+                    }
                     alt="Profile"
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "";
+                      e.target.parentElement.classList.add("bg-gray-300");
+                    }}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gray-300">
@@ -209,16 +362,18 @@ const PostPage = () => {
                   to="/list-connection"
                   className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md"
                 >
-                  <span className="flex items-center gap-2 text-sm">
+                  <span className="flex items-center gap-2 text-base">
                     <Users size={18} /> Connections
                   </span>
-                  <span className="font-bold text-base">358</span>
+                  <span className="font-bold text-lg">{connectionsCount}</span>
                 </Link>
                 <div className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md">
-                  <span className="flex items-center gap-2 text-sm">
-                    <Clock size={18} /> Views
+                  <span className="flex items-center gap-2 text-base">
+                    <Eye size={18} /> Views
                   </span>
-                  <span className="font-bold text-base">85</span>
+                  <span className="font-bold text-lg">
+                    {profileViews.thisWeek}
+                  </span>
                 </div>
                 <Link
                   to="/job-saved"
@@ -299,11 +454,32 @@ const PostPage = () => {
                   >
                     {/* Header */}
                     <div className="flex items-start gap-3">
-                      {profileImage ? (
+                      {/* Di bagian post */}
+                      {user.photo ? (
                         <img
-                          src={user.photo}
+                          src={
+                            user.photo.startsWith("http")
+                              ? user.photo
+                              : `${apiUrl}/${user.photo}`
+                          }
                           alt="profile"
                           className="rounded-full w-12 h-12 object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "";
+                            e.target.className =
+                              "rounded-full w-12 h-12 bg-gray-200 flex items-center justify-center";
+                            e.target.outerHTML = `
+        <div class="rounded-full w-12 h-12 bg-gray-200 flex items-center justify-center">
+          <span class="text-lg font-bold">
+            ${user.name
+              .split(" ")
+              .map((n) => n[0])
+              .join("")}
+          </span>
+        </div>
+      `;
+                          }}
                         />
                       ) : (
                         <div className="rounded-full w-12 h-12 bg-gray-200 flex items-center justify-center">
@@ -338,9 +514,9 @@ const PostPage = () => {
                       <p className="text-gray-700">
                         {post.content || "No content"}
                       </p>
-                      {post.images && post.images.length > 0 && (
+                      {post.photo && post.photo.length > 0 && (
                         <img
-                          src={apiUrl + "/" + post.images[0]}
+                          src={apiUrl + "/" + post.photo[0]}
                           alt={`Post ${post.id}`}
                           className="mt-2 w-full rounded-lg border object-cover"
                         />
@@ -348,17 +524,55 @@ const PostPage = () => {
                     </div>
 
                     {/* Footer */}
-                    <div className="flex items-center gap-4 text-gray-600 text-sm mt-3">
-                      <button className="flex items-center gap-1 hover:text-blue-600">
-                        <ThumbsUp size={16} /> {post.likes_count || 0} Suka
-                      </button>
-                      <button className="flex items-center gap-1 hover:text-blue-600">
-                        <MessageCircle size={16} /> {post.comments_count || 0}{" "}
-                        Komentar
-                      </button>
-                      <button className="flex items-center gap-1 hover:text-blue-600">
-                        <Share2 size={16} /> Bagikan
-                      </button>
+                    <div>
+                      {/* Likes & Comments Info */}
+                      <div className="flex items-center space-x-4 px-4 py-1 text-xs text-gray-500 justify-between">
+                        <div className="flex items-center space-x-1 pt-1">
+                          <span className="text-black flex">
+                            <ThumbsUp size={14} className="mr-1" />{" "}
+                            {post.likes_count || 0}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-1 cursor-pointer">
+                          <span
+                            className="text-black"
+                            onClick={() => openCommentModal(post.id)}
+                          >
+                            {post.comments_count || 0} Comment
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Post Actions */}
+                      <div className="border-t border-gray-200 px-4 py-2 flex justify-between">
+                        <button
+                          className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${
+                            post.isLiked
+                              ? "text-blue-600 bg-blue-50"
+                              : "text-black hover:bg-gray-100"
+                          }`}
+                          onClick={() => handleLikePost(post.id, post.isLiked)}
+                        >
+                          <ThumbsUp size={14} className="mr-2" />
+                          Like
+                        </button>
+
+                        <button
+                          className="flex items-center justify-center w-1/3 py-2 rounded-lg text-black hover:bg-gray-100"
+                          onClick={() => openCommentModal(post.id)}
+                        >
+                          <MessageCircle size={14} className="mr-2" />
+                          Comment
+                        </button>
+
+                        <button
+                          className="flex items-center justify-center w-1/3 py-2 rounded-lg text-black hover:bg-gray-100"
+                          onClick={() => handleOpenShareModal(post.id)}
+                        >
+                          <Share2 size={14} className="mr-2" />
+                          Share
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))
@@ -373,39 +587,116 @@ const PostPage = () => {
           {/* Right Sidebar - Narrower */}
           <div className="w-full md:w-1/4 lg:w-1/5 space-y-4">
             {/* People You Might Know */}
-            <div className="bg-white rounded-lg shadow p-4">
-              <h3 className="font-medium text-sm mb-3">
-                People you might know
-              </h3>
-
-              <div className="flex items-center mb-3">
-                <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden mr-2">
-                  <img
-                    src="/api/placeholder/40/40"
-                    alt="Profile"
-                    className="w-full h-full object-cover"
+            <div className="bg-white rounded-xl shadow-sm border p-4 mb-6 transition-all duration-300">
+              {/* Header */}
+              <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-100">
+                <h3 className="font-semibold text-gray-800 text-base flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  People you might know
+                </h3>
+                <button
+                  onClick={fetchSuggestedConnections}
+                  disabled={loadingSuggested}
+                  className="flex items-center gap-1 text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors duration-200 disabled:opacity-50"
+                >
+                  <RefreshCw
+                    className={`w-4 h-4 ${
+                      loadingSuggested ? "animate-spin" : ""
+                    }`}
                   />
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium text-sm">Bintang Asydqi</div>
-                  <div className="text-gray-500 text-xs">
-                    Student at Alexander
+                </button>
+              </div>
+
+              {/* Content */}
+              {loadingSuggested ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="flex items-center gap-2 text-gray-500">
+                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-sm">Finding suggestions...</span>
                   </div>
                 </div>
-                <div className="text-blue-500">
-                  <svg
-                    className="w-5 h-5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z"
-                      clipRule="evenodd"
-                    ></path>
-                  </svg>
+              ) : suggestedConnections.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <UserPlus className="w-6 h-6 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 text-sm">
+                    No suggestions available at the moment
+                  </p>
+                  <p className="text-gray-400 text-xs mt-1">
+                    Check back later for new connections
+                  </p>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-3">
+                  {suggestedConnections.map((person, index) => (
+                    <div
+                      key={person.id}
+                      className="group flex items-center p-3 rounded-lg hover:bg-gray-50 transition-all duration-200 border border-transparent hover:border-gray-200"
+                      style={{
+                        animationDelay: `${index * 100}ms`,
+                        animation: "fadeInUp 0.5s ease-out forwards",
+                      }}
+                    >
+                      {/* Profile Picture */}
+                      <div className="relative mr-3 flex-shrink-0">
+                        <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden ring-2 ring-white shadow-md">
+                          {person.photo ? (
+                            <img
+                              src={
+                                person.photo.startsWith("http")
+                                  ? person.photo
+                                  : `${apiUrl}/${person.photo}`
+                              }
+                              alt="Profile"
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = "";
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <span className="text-sm font-semibold text-gray-500">
+                                {person.initials}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* User Info */}
+                      <div className="flex-1 min-w-0">
+                        <Link to={`/user-profile/${person.username}`}>
+                          <h4 className="font-semibold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors duration-200">
+                            {person.name}
+                          </h4>
+                        </Link>
+                        <p className="text-gray-600 text-xs truncate mt-0.5">
+                          {person.headline}
+                        </p>
+                      </div>
+
+                      {/* Connect Button */}
+                      <button
+                        className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 hover:scale-110 transition-all duration-200 group-hover:shadow-md"
+                        onClick={() => handleConnectWithUser(person.id)}
+                        disabled={
+                          connections.some((conn) => conn.id === person.id) ||
+                          loadingSuggested
+                        }
+                        title={`Connect with ${person.name}`}
+                      >
+                        {connections.some((conn) => conn.id === person.id) ? (
+                          <Check size={16} className="text-green-500" />
+                        ) : (
+                          <UserPlus size={16} />
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Premium Banner */}
@@ -423,7 +714,7 @@ const PostPage = () => {
                 ACTIVATE
               </button>
             </div>
-            
+
             {/* Jobs */}
             <div className="bg-white rounded-lg shadow p-4">
               <h3 className="font-medium text-sm mb-3">Jobs</h3>

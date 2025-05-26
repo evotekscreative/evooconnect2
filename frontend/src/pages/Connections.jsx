@@ -15,6 +15,7 @@ import {
   UserCheck,
   AlertCircle,
 } from "lucide-react";
+import Alert from "../components/Auth/Alert";
 
 // Komponen Avatar: Menampilkan foto jika ada, jika tidak tampilkan inisial
 function Avatar({ src, name, size = 64 }) {
@@ -46,7 +47,7 @@ function Avatar({ src, name, size = 64 }) {
   }
   return (
     <div
-      className="flex items-center justify-center rounded font-semibold"
+      className="flex items-center justify-center rounded font-semibold bg-gray-200"
       style={{ width: size, height: size, fontSize: size / 3 }}
     >
       {initials}
@@ -81,7 +82,6 @@ const CancelRequestModal = ({ isOpen, onClose, onConfirm, userName }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 transform transition-all">
         <div className="flex items-center mb-4 text-blue-600">
-          <AlertCircle className="mr-2" size={24} />
           <h3 className="text-lg font-medium">Cancel Connection Request</h3>
         </div>
 
@@ -121,25 +121,11 @@ export default function Connection() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [alertInfo, setAlertInfo] = useState({
-  show: false,
-  type: '', // 'success' or 'error'
-  message: '',
-});
+    show: false,
+    type: '', // 'success' or 'error'
+    message: '',
+  });
 
-const Alert = ({ type, message, onClose }) => {
-  const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
-  
-  return (
-    <div className={`${bgColor} text-white px-4 py-3 rounded shadow-lg max-w-md`}>
-      <div className="flex justify-between items-center">
-        <span>{message}</span>
-        <button onClick={onClose} className="text-white">
-          <X size={16} />
-        </button>
-      </div>
-    </div>
-  );
-};
  
 
   const fetchInvitations = async () => {
@@ -173,6 +159,7 @@ const Alert = ({ type, message, onClose }) => {
         }));
 
       setInvitations(mappedInvitations);
+
     } catch (error) {
       console.error("Gagal mengambil data undangan:", error);
       setInvitations([]);
@@ -230,90 +217,90 @@ const Alert = ({ type, message, onClose }) => {
     fetchInvitations();
   }, [activeTab]);
 
-  const handleConnect = async (id) => {
-  const token = localStorage.getItem("token");
-  const pendingIds = JSON.parse(localStorage.getItem("pendingConnections")) || [];
+ const handleConnect = async (id) => {
+    const token = localStorage.getItem("token");
+    const pendingIds = JSON.parse(localStorage.getItem("pendingConnections")) || [];
 
-  const person = connections.find((conn) => conn.id === id);
-  if (person && person.status === "pending") {
-    setSelectedUser(person);
-    setModalOpen(true);
-    return;
-  }
+    const person = connections.find((conn) => conn.id === id);
+    if (person && person.status === "pending") {
+      setSelectedUser(person);
+      setModalOpen(true);
+      return;
+    }
 
-  try {
-    setConnections(
-      connections.map((conn) =>
-        conn.id === id ? { ...conn, status: "processing" } : conn
-      )
-    );
+    try {
+      setConnections(
+        connections.map((conn) =>
+          conn.id === id ? { ...conn, status: "processing" } : conn
+        )
+      );
 
-    const response = await axios.post(
-      `${apiUrl}/api/users/${id}/connect`,
-      {},
-      { headers: { Authorization: "Bearer " + token } }
-    );
+      const response = await axios.post(
+        `${apiUrl}/api/users/${id}/connect`,
+        {},
+        { headers: { Authorization: "Bearer " + token } }
+      );
 
-    if (response.data?.connected) {
-      const connectedUser = connections.find((conn) => conn.id === id);
-      if (connectedUser) {
-        setConnectedUsers((prev) => [
-          ...prev,
-          { ...connectedUser, status: "connected" },
-        ]);
+      if (response.data?.connected) {
+        const connectedUser = connections.find((conn) => conn.id === id);
+        if (connectedUser) {
+          setConnectedUsers((prev) => [
+            ...prev,
+            { ...connectedUser, status: "connected" },
+          ]);
+        }
+        setAlertInfo({
+          show: true,
+          type: 'success',
+          message: 'Connection request sent successfully!',
+        });
       }
+
+      setConnections(
+        connections.map((conn) =>
+          conn.id === id
+            ? {
+                ...conn,
+                status: response.data?.connected ? "connected" : "pending",
+              }
+            : conn
+        )
+      );
+
+      if (!response.data?.connected) {
+        const newConnection = connections.find((conn) => conn.id === id);
+        if (newConnection) {
+          setInvitations((prev) => [
+            {
+              id: id,
+              name: newConnection.name,
+              headline: newConnection.headline,
+              status: "pending",
+              profile: newConnection.profile,
+              username: newConnection.username,
+            },
+            ...prev,
+          ]);
+        }
+      }
+    } catch (error) {
+      setConnections(
+        connections.map((conn) =>
+          conn.id === id
+            ? {
+                ...conn,
+                status: "connect",
+              }
+            : conn
+        )
+      );
       setAlertInfo({
         show: true,
-        type: 'success',
-        message: 'Connection request sent successfully!',
+        type: 'error',
+        message: error.response?.data?.message || 'You have already sent a connection request to this user',
       });
     }
-
-    setConnections(
-      connections.map((conn) =>
-        conn.id === id
-          ? {
-              ...conn,
-              status: response.data?.connected ? "connected" : "pending",
-            }
-          : conn
-      )
-    );
-
-    if (!response.data?.connected) {
-      const newConnection = connections.find((conn) => conn.id === id);
-      if (newConnection) {
-        setInvitations((prev) => [
-          {
-            id: id,
-            name: newConnection.name,
-            headline: newConnection.headline,
-            status: "pending",
-            profile: newConnection.profile,
-            username: newConnection.username,
-          },
-          ...prev,
-        ]);
-      }
-    }
-  } catch (error) {
-    setConnections(
-      connections.map((conn) =>
-        conn.id === id
-          ? {
-              ...conn,
-              status: "connect",
-            }
-          : conn
-      )
-    );
-    setAlertInfo({
-      show: true,
-      type: 'error',
-      message: error.response?.data?.message || 'Failed to send connection request',
-    });
-  }
-};
+  };
 
   const handleCancelRequest = async (id) => {
     const token = localStorage.getItem("token");
@@ -424,6 +411,7 @@ const Alert = ({ type, message, onClose }) => {
     }
   };
 
+
   const handleReject = async (id) => {
     const token = localStorage.getItem("token");
 
@@ -458,11 +446,22 @@ const Alert = ({ type, message, onClose }) => {
       </Case>
     );
   }
+  
 
   return (
     <Case>
       <div className="p-4 sm:p-6 bg-gray-100 min-h-screen">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
+         <div className="fixed top-5 right-5 z-50">
+            <Alert
+              type={alertInfo.type}
+              message={alertInfo.message}
+              onClose={() => setAlertInfo({ ...alertInfo, show: false })}
+              isVisible={alertInfo.show}
+              autoClose={true}
+              duration={5000}
+            />
+          </div>
           {/* Left side - People suggestions */}
           <div className="lg:col-span-3 space-y-4 bg-white rounded-xl shadow p-4 sm:p-6">
             <div className="flex items-center border-b pb-4">
@@ -503,7 +502,7 @@ const Alert = ({ type, message, onClose }) => {
             </div>
 
             {activeTab === "people" ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {connections.map((person) => (
                   <div
                     key={person.id}
@@ -742,15 +741,6 @@ const Alert = ({ type, message, onClose }) => {
         onConfirm={() => selectedUser && handleCancelRequest(selectedUser.id)}
         userName={selectedUser?.name || ""}
       />
-      <div className="fixed top-5 right-5 z-50">
-  {alertInfo.show && (
-    <Alert
-      type={alertInfo.type}
-      message={alertInfo.message}
-      onClose={() => setAlertInfo({ ...alertInfo, show: false })}
-    />
-  )}
-</div>
     </Case>
   );
 }

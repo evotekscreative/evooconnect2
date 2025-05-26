@@ -4,7 +4,6 @@ import blogImage from "../../assets/img/blog1.jpg";
 const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
 const BlogCard = ({ article }) => {
-  // Pastikan foto profil user absolut
   let userPhoto = "";
   if (article.user?.photo) {
     userPhoto = article.user.photo.startsWith("http")
@@ -12,16 +11,20 @@ const BlogCard = ({ article }) => {
       : `${apiUrl}/${article.user.photo.replace(/^\/+/, "")}`;
   }
 
-  // Format tanggal dengan fallback
-  let formattedDate = "Unknown Date";
-
-  if (!isNaN(Date.parse(article.date))) {
-    formattedDate = new Date(article.date).toLocaleDateString("id-ID", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  } 
+  let formattedDate = "Unknown date";
+  
+  try {
+    const dateObj = new Date(article.created_at);
+    if (!isNaN(dateObj.getTime())) {
+      formattedDate = dateObj.toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+    }
+  } catch (e) {
+    console.warn("Error parsing date:", e);
+  }
 
   return (
     <Link to={`/blog-detail/${article.slug}`} className="block h-full">
