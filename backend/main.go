@@ -3,6 +3,7 @@ package main
 import (
 	"evoconnect/backend/app"
 	"evoconnect/backend/controller"
+	"evoconnect/backend/db/seeder"
 	"evoconnect/backend/helper"
 	"evoconnect/backend/middleware"
 	"evoconnect/backend/repository"
@@ -42,7 +43,7 @@ func main() {
 
 	// Post repository
 	postRepository := repository.NewPostRepository()
-	
+
 	// Comment repository
 	commentRepository := repository.NewCommentRepository()
 
@@ -57,10 +58,10 @@ func main() {
 
 	// Chat repository
 	chatRepository := repository.NewChatRepository()
-	
+
 	// Report repository
 	reportRepository := repository.NewReportRepository(db)
-	
+
 	// Notification repository
 	notificationRepository := repository.NewNotificationRepository()
 
@@ -72,10 +73,12 @@ func main() {
 		validate,
 	)
 
+	adminRepository := repository.NewAdminRepository()
+
 	// ===== Services =====
 	// User-related services
 	profileViewService := service.NewProfileViewService(db, profileViewRepository, userRepository, notificationService)
-	connectionService := service.NewConnectionService(connectionRepository, userRepository,notificationService, db, validate)
+	connectionService := service.NewConnectionService(connectionRepository, userRepository, notificationService, db, validate)
 	userService := service.NewUserService(userRepository, connectionRepository, profileViewService, db, validate)
 	authService := service.NewAuthService(userRepository, db, validate, jwtSecret)
 
@@ -86,7 +89,7 @@ func main() {
 		connectionRepository,
 		notificationService,
 	)
-	
+
 	commentBlogService := service.NewCommentBlogService(
 		commentBlogRepository,
 		blogRepository,
@@ -108,7 +111,7 @@ func main() {
 		db,
 		validate,
 	)
-	
+
 	// Comment service
 	commentService := service.NewCommentService(
 		commentRepository,
@@ -148,17 +151,17 @@ func main() {
 		db,
 	)
 
-	    // Search service
-    searchService := service.NewSearchService(
-    db,
-    userRepository,
-    postRepository,
-    blogRepository,
-    groupRepository,
-    connectionRepository,
-)
+	// Search service
+	searchService := service.NewSearchService(
+		db,
+		userRepository,
+		postRepository,
+		blogRepository,
+		groupRepository,
+		connectionRepository,
+	)
 
-
+	adminAuthService := service.NewAdminAuthService(adminRepository, db, validate)
 
 	// ===== Controllers =====
 	// User-related controllers
@@ -186,7 +189,6 @@ func main() {
 	// Chat controller
 	chatController := controller.NewChatController(chatService)
 
-
 	// ✅ Inject all controllers into router including reportController
 	// Report controller
 	reportController := controller.NewReportController(reportService)
@@ -198,8 +200,9 @@ func main() {
 	notificationController := controller.NewNotificationController(notificationService)
 
 	// Search controller
-    searchController := controller.NewSearchController(searchService)
+	searchController := controller.NewSearchController(searchService)
 
+	adminAuthController := controller.NewAdminAuthController(adminAuthService)
 
 	// ===== Router and Middleware =====
 	// Initialize router with all controllers
@@ -219,12 +222,16 @@ func main() {
 		profileViewController,
 		notificationController,
 		searchController,
+		adminAuthController,
 	)
+
+	seeder.SeedAdmin(db)
 
 	// Create middleware chain
 	var handler http.Handler = router
 	handler = middleware.NewAuthMiddleware(handler, jwtSecret)
 	handler = middleware.CORSMiddleware(handler)
+	handler = middleware.NewAdminAuthMiddleware(handler)
 
 	addres := helper.GetEnv("APP_SERVER", "localhost:3000")
 

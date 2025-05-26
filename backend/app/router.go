@@ -6,7 +6,6 @@ import (
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/web"
 	"net/http"
-	
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -25,8 +24,9 @@ func NewRouter(
 	groupController controller.GroupController,
 	chatController controller.ChatController,
 	profileViewController controller.ProfileViewController,
-	notificationController controller.NotificationController, 
-	searchController controller.SearchController, 
+	notificationController controller.NotificationController,
+	searchController controller.SearchController,
+	adminAuthController controller.AdminAuthController,
 ) *httprouter.Router {
 	router := httprouter.New()
 
@@ -60,10 +60,10 @@ func NewRouter(
 	router.POST("/api/blog-comments/:blogId", commentBlogController.Create)
 	router.GET("/api/blog-comments/:blogId", commentBlogController.GetByBlogId)
 	// Ubah path berikut agar tidak konflik
-	router.GET("/api/blog/comments/:commentId", commentBlogController.GetById)  // <-- path ini diubah
-	router.PUT("/api/blog/comments/:commentId", commentBlogController.Update)   // <-- path ini diubah
-	router.DELETE("/api/blog/comments/:commentId", commentBlogController.Delete) // <-- path ini diubah
-	router.POST("/api/blog/comments/:commentId/replies", commentBlogController.Reply) // <-- path ini diubah
+	router.GET("/api/blog/comments/:commentId", commentBlogController.GetById)            // <-- path ini diubah
+	router.PUT("/api/blog/comments/:commentId", commentBlogController.Update)             // <-- path ini diubah
+	router.DELETE("/api/blog/comments/:commentId", commentBlogController.Delete)          // <-- path ini diubah
+	router.POST("/api/blog/comments/:commentId/replies", commentBlogController.Reply)     // <-- path ini diubah
 	router.GET("/api/blog/comments/:commentId/replies", commentBlogController.GetReplies) // <-- path ini diubah
 	// Post routes - static paths first
 	// router.POST("/api/posts", postController.Create)
@@ -80,7 +80,6 @@ func NewRouter(
 
 	// Education routes
 	router.POST("/api/education", educationController.Create)
-
 
 	// Education routes with parameters
 	router.PUT("/api/education/:educationId", educationController.Update)
@@ -112,7 +111,6 @@ func NewRouter(
 	// Routes report
 	// Tambahkan di bawah route lain:
 	router.POST("/api/reports/:userId/:targetType/:targetId", reportController.CreateReportHandler())
-
 
 	// NotFound handler
 	router.GET("/api/connections/requests", connectionController.GetConnectionRequests)
@@ -164,7 +162,7 @@ func NewRouter(
 	router.GET("/api/user/profile/views/this-week", profileViewController.GetViewsThisWeek)
 	router.GET("/api/user/profile/views/last-week", profileViewController.GetViewsLastWeek)
 
-	// notifikasi	
+	// notifikasi
 	router.GET("/api/notifications", notificationController.GetNotifications)
 	router.POST("/api/notifications/mark-read", notificationController.MarkAsRead)
 	router.POST("/api/notifications/mark-all-read", notificationController.MarkAllAsRead)
@@ -173,7 +171,11 @@ func NewRouter(
 
 	// search
 	router.GET("/api/search", searchController.Search)
-	
+
+	// Admin auth routes
+	router.POST("/api/admin/auth/login", adminAuthController.Login)
+	router.POST("/api/admin/auth/register", adminAuthController.Register)
+
 	uploadFS := http.FileServer(http.Dir("uploads"))
 	publicFS := http.FileServer(http.Dir("public")) // Add this line
 
