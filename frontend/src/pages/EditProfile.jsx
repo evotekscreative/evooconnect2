@@ -27,7 +27,7 @@ import {
   Building,
   AlignLeft,
 } from "lucide-react";
-import { Toaster, toast } from "sonner";
+import Alert from "@/components/Auth/alert";
 import axios from "axios";
 
 const base_url =
@@ -89,6 +89,24 @@ export default function ProfileEdit() {
   const fileInputRef = useRef(null);
   const [socialLinks, setSocialLinks] = useState({});
   const [activePlatforms, setActivePlatforms] = useState([]);
+  
+  // Alert states
+  const [alert, setAlert] = useState({
+    show: false,
+    type: 'success',
+    message: '',
+  });
+
+  const showAlert = (type, message) => {
+    setAlert({
+      show: true,
+      type,
+      message,
+    });
+    setTimeout(() => {
+      setAlert(prev => ({ ...prev, show: false }));
+    }, 5000);
+  };
 
   const updateProfile = async () => {
     const token = localStorage.getItem("token");
@@ -129,11 +147,11 @@ export default function ProfileEdit() {
         }
       );
 
-      toast.success("Profile updated successfully!");
+      showAlert('success', "Profile updated successfully!");
       return response.data;
     } catch (error) {
       console.error("Error updating profile:", error);
-      toast.error(error.response?.data?.message || "Failed to update profile");
+      showAlert('error', error.response?.data?.message || "Failed to update profile");
       throw error;
     }
   };
@@ -142,7 +160,7 @@ export default function ProfileEdit() {
     const token = localStorage.getItem("token");
 
     if (!token) {
-      toast.error("Token not found, please login again.");
+      showAlert('error', "Token not found, please login again.");
       setIsLoading(false);
       return;
     }
@@ -190,9 +208,7 @@ export default function ProfileEdit() {
       setUsername(data.username || "");
     } catch (error) {
       console.error("Failed to fetch profile:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to load profile data"
-      );
+      showAlert('error', error.response?.data?.message || "Failed to load profile data");
     } finally {
       setIsLoading(false);
     }
@@ -208,7 +224,7 @@ export default function ProfileEdit() {
       setSkills(updatedSkills);
       setNewSkill("");
       setShowInput(false);
-      toast.success("Skill added successfully");
+      showAlert('success', "Skill added successfully");
     }
   };
 
@@ -216,7 +232,7 @@ export default function ProfileEdit() {
     const updated = [...skills];
     updated.splice(index, 1);
     setSkills(updated);
-    toast.info("Skill removed");
+    showAlert('info', "Skill removed");
   };
 
   const handleImageUpload = async (e) => {
@@ -225,19 +241,19 @@ export default function ProfileEdit() {
 
     // Check if the file is an image
     if (!file.type.match("image.*")) {
-      toast.error("Please select an image file");
+      showAlert('error', "Please select an image file");
       return;
     }
 
     // Check file size (e.g., limit to 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image size should be less than 5MB");
+      showAlert('error', "Image size should be less than 5MB");
       return;
     }
 
     const token = localStorage.getItem("token");
     if (!token) {
-      toast.error("You need to login first");
+      showAlert('error', "You need to login first");
       return;
     }
 
@@ -258,12 +274,10 @@ export default function ProfileEdit() {
 
       // Update the profile image in state
       setProfileImage(response.data?.data?.photo || URL.createObjectURL(file));
-      toast.success("Profile image uploaded successfully");
+      showAlert('success', "Profile image uploaded successfully");
     } catch (error) {
       console.error("Error uploading photo:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to upload profile photo"
-      );
+      showAlert('error', error.response?.data?.message || "Failed to upload profile photo");
 
       // Fallback to client-side preview if API fails
       const reader = new FileReader();
@@ -277,7 +291,7 @@ export default function ProfileEdit() {
   const handleRemoveImage = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
-      toast.error("You need to login first");
+      showAlert('error', "You need to login first");
       return;
     }
 
@@ -290,24 +304,22 @@ export default function ProfileEdit() {
 
       setProfileImage(null);
       if (fileInputRef.current) fileInputRef.current.value = null;
-      toast.success("Profile image removed successfully");
+      showAlert('success', "Profile image removed successfully");
     } catch (error) {
       console.error("Error removing profile photo:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to remove profile photo"
-      );
+      showAlert('error', error.response?.data?.message || "Failed to remove profile photo");
 
       // Fallback to client-side removal if API fails
       setProfileImage(null);
       if (fileInputRef.current) fileInputRef.current.value = null;
-      toast.info("Profile image removed locally");
+      showAlert('info', "Profile image removed locally");
     }
   };
 
   const handleSaveProfile = async () => {
     try {
       await updateProfile();
-      toast.success("Your profile information saved successfully!");
+      showAlert('success', "Your profile information saved successfully!");
     } catch (error) {
       console.error("Error saving profile:", error);
     }
@@ -316,7 +328,7 @@ export default function ProfileEdit() {
   const handleSaveAbout = async () => {
     try {
       await updateProfile();
-      toast.success("About section saved successfully");
+      showAlert('success', "About section saved successfully");
     } catch (error) {
       console.error("Error saving about:", error);
     }
@@ -325,7 +337,7 @@ export default function ProfileEdit() {
   const handleSaveSkills = async () => {
     try {
       await updateProfile();
-      toast.success("Skills and social media saved successfully");
+      showAlert('success', "Skills and social media saved successfully");
     } catch (error) {
       console.error("Error saving skills:", error);
     }
@@ -335,7 +347,7 @@ export default function ProfileEdit() {
     if (!activePlatforms.includes(platform)) {
       setActivePlatforms([...activePlatforms, platform]);
       setSocialLinks({ ...socialLinks, [platform]: "" });
-      toast.info(
+      showAlert('info', 
         `${socialPlatforms.find((p) => p.platform === platform)?.name} added`
       );
     }
@@ -350,7 +362,7 @@ export default function ProfileEdit() {
     const updatedLinks = { ...socialLinks };
     delete updatedLinks[platform];
     setSocialLinks(updatedLinks);
-    toast.info(
+    showAlert('info', 
       `${socialPlatforms.find((p) => p.platform === platform)?.name} removed`
     );
   };
@@ -366,8 +378,18 @@ export default function ProfileEdit() {
   return (
     <Case>
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-10 px-4">
-        <Toaster position="top-right" richColors />
+        {/* Alert component */}
+        <div className="fixed top-4 right-4 z-50">
+          <Alert 
+            type={alert.type}
+            message={alert.message}
+            isVisible={alert.show}
+            onClose={() => setAlert(prev => ({ ...prev, show: false }))}
+          />
+        </div>
+        
         <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-8">
+          {/* Left Column - About and Skills */}
           <div className="lg:w-2/5 space-y-6">
             <Card className="shadow-lg border-0 overflow-hidden">
               <CardHeader className="bg-white border-b border-gray-100">

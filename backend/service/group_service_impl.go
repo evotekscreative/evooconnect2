@@ -101,55 +101,91 @@ func (service *GroupServiceImpl) Create(ctx context.Context, userId uuid.UUID, r
 	return helper.ToGroupResponse(group)
 }
 
-func (service *GroupServiceImpl) Update(ctx context.Context, groupId, userId uuid.UUID, request web.UpdateGroupRequest) web.GroupResponse {
-	err := service.Validate.Struct(request)
-	helper.PanicIfError(err)
+func (service *GroupServiceImpl) Update(ctx context.Context, groupId, userId uuid.UUID, request web.UpdateGroupRequest, file *multipart.FileHeader) web.GroupResponse {
+    err := service.Validate.Struct(request)
+    helper.PanicIfError(err)
 
-	tx, err := service.DB.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
+    tx, err := service.DB.Begin()
+    helper.PanicIfError(err)
+    defer helper.CommitOrRollback(tx)
 
-	// Get existing group
-	group, err := service.GroupRepository.FindById(ctx, tx, groupId)
-	if err != nil {
-		panic(exception.NewNotFoundError("group not found"))
-	}
+    // Get existing group
+    group, err := service.GroupRepository.FindById(ctx, tx, groupId)
+    if err != nil {
+        panic(exception.NewNotFoundError("group not found"))
+    }
 
-	// Check if user is group admin
-	if !service.isGroupAdmin(ctx, tx, groupId, userId) {
-		panic(exception.NewForbiddenError("only group admin can update group"))
-	}
+    // Check if user is group admin
+    if !service.isGroupAdmin(ctx, tx, groupId, userId) {
+        panic(exception.NewForbiddenError("only group admin can update group"))
+    }
 
-	// Update group fields
-	group.Name = request.Name
-	group.Description = request.Description
-	group.Rule = request.Rule
-	group.PrivacyLevel = request.PrivacyLevel
-	group.InvitePolicy = request.InvitePolicy
-	group.UpdatedAt = time.Now()
+    // Update group fields
+    if request.Name != "" {
+        group.Name = request.Name
+    }
+    if request.Description != "" {
+        group.Description = request.Description
+    }
+    if request.Rule != "" {
+        group.Rule = request.Rule
+    }
+    if request.PrivacyLevel != "" {
+        group.PrivacyLevel = request.PrivacyLevel
+    }
+    if request.InvitePolicy != "" {
+        group.InvitePolicy = request.InvitePolicy
+    }
+    group.UpdatedAt = time.Now()
 
-	// Update image if provided
-	if request.Image != "" {
-		group.Image = &request.Image
-	}
+    // Handle image update based on what was provided
+    if file != nil {
+        // Case 1: Image file was uploaded - process the upload
+        image, err := file.Open()
+        helper.PanicIfError(err)
+        defer image.Close()
 
-	group = service.GroupRepository.Update(ctx, tx, group)
+        // Upload new image
+        uploadResult, err := helper.UploadImage(image, file, helper.DirGroups, userId.String(), "images")
+        helper.PanicIfError(err)
 
-	// Get creator information
-	creator, err := service.UserRepository.FindById(ctx, tx, group.CreatorId)
-	if err != nil {
-		creator = domain.User{Id: group.CreatorId}
-	}
+        // Delete old image if it exists
+        if group.Image != nil && *group.Image != "" {
+            err = helper.DeleteFile(*group.Image)
+            if err != nil {
+                // Just log the error but don't stop the process
+                fmt.Printf("Failed to delete old image: %v\n", err)
+            }
+        }
 
-	// Get members
-	members := service.MemberRepository.FindByGroupId(ctx, tx, groupId)
+        if uploadResult != nil {
+            relativePath := uploadResult.RelativePath
+            group.Image = &relativePath
+        }
+    } else if request.Image != "" {
+        // Case 2: Image string/URL was provided - use directly
+        group.Image = &request.Image
+    }
+    // If neither file nor image string was provided, keep existing image
 
-	// Build response
-	response := helper.ToGroupResponse(group)
-	response.Creator = helper.ToUserBriefResponse(creator)
-	response.MembersCount = len(members)
+    // Update group in database
+    group = service.GroupRepository.Update(ctx, tx, group)
 
-	return response
+    // Get creator information
+    creator, err := service.UserRepository.FindById(ctx, tx, group.CreatorId)
+    if err != nil {
+        creator = domain.User{Id: group.CreatorId}
+    }
+
+    // Get members count
+    members := service.MemberRepository.FindByGroupId(ctx, tx, groupId)
+
+    // Build response
+    response := helper.ToGroupResponse(group)
+    response.Creator = helper.ToUserBriefResponse(creator)
+    response.MembersCount = len(members)
+
+    return response
 }
 
 func (service *GroupServiceImpl) Delete(ctx context.Context, groupId, userId uuid.UUID) {

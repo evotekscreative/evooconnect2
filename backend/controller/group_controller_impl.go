@@ -60,20 +60,32 @@ func (controller *GroupControllerImpl) Create(writer http.ResponseWriter, reques
 }
 
 func (controller *GroupControllerImpl) Update(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	// Parse request body
-	updateRequest := web.UpdateGroupRequest{}
-	helper.ReadFromRequestBody(request, &updateRequest)
+	err := helper.ParseMultipartForm(request, 10) // 10 MB limit
+	helper.PanicIfError(err)
 
 	// Get user ID from token
 	userId, err := helper.GetUserIdFromToken(request)
 	helper.PanicIfError(err)
+
+	// Parse request body
+	updateRequest := web.UpdateGroupRequest{}
+	helper.ReadFromMultipartForm(request, &updateRequest)
+
+	var file *multipart.FileHeader = nil
+
+	form := request.MultipartForm
+	// Use "photo" for consistency with the Create function for the uploaded file.
+	files := form.File["image"]
+	if len(files) > 0 {
+		file = files[0]
+	}
 
 	// Parse group ID from URL
 	groupId, err := uuid.Parse(params.ByName("groupId"))
 	helper.PanicIfError(err)
 
 	// Update group
-	groupResponse := controller.GroupService.Update(request.Context(), groupId, userId, updateRequest)
+	groupResponse := controller.GroupService.Update(request.Context(), groupId, userId, updateRequest, file)
 
 	// Send response
 	webResponse := web.WebResponse{

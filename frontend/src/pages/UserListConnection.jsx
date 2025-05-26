@@ -10,6 +10,8 @@ import Case from "../components/Case.jsx";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import Profile from "../assets/img/logo-evo-2.png";
+import NetworkManager from "../components/NetworkManager";
+import Alert from "../components/Auth/alert";
 
 // Avatar component for displaying profile photo or initials
 function Avatar({ src, name, size = 64 }) {
@@ -64,8 +66,18 @@ export default function ConnectionList() {
   const [user, setUser] = useState(null);
   const [connectionsCount, setConnectionsCount] = useState(0);
   const [filteredConnections, setFilteredConnections] = useState([]);
-    const [conversationCache, setConversationCache] = useState({});
+  const [conversationCache, setConversationCache] = useState({});
+  const [currentUser, setCurrentUser] = useState(null);
+  const [alert, setAlert] = useState({
+    show: false,
+    type: "success",
+    message: "",
+  });
 
+  const showAlert = (type, message) => {
+    setAlert({ show: true, type, message });
+    setTimeout(() => setAlert({ ...alert, show: false }), 5000);
+  };
 
   const handleMessageClick = async (connection) => {
     const token = localStorage.getItem("token");
@@ -85,10 +97,9 @@ export default function ConnectionList() {
         },
       });
 
-
       // Find a conversation with this connection
-      const existingConversation = checkResponse.data.data.conversations.find((conv) =>
-        conv.participants.some((p) => p.user_id == userId)
+      const existingConversation = checkResponse.data.data.conversations.find(
+        (conv) => conv.participants.some((p) => p.user_id == userId)
       );
 
       // return existingConversation;
@@ -130,9 +141,8 @@ export default function ConnectionList() {
         navigate(`/messages/${newConversationId}`);
       }
     } catch (err) {
-      console.error("Error handling message action:", err);
-      // Fallback to direct navigation if API calls fail
-      // navigate(`/messages/${connection.username || connection.id}`);
+     console.error("Error handling message action:", err);
+      showAlert('error', 'Failed to start conversation. Please try again.');
     }
   };
 
@@ -155,8 +165,15 @@ export default function ConnectionList() {
       );
       const connectionsData = response.data.data.connections || [];
       setConnections(connectionsData);
+      // Filter out connections with the same user ID as the current user
+      const filteredData = connectionsData.filter(
+        (connection) => connection.user.id !== currentUser.id
+      );
+      setConnections(filteredData);
+
+      // Apply search filtering
       setFilteredConnections(
-        connectionsData.filter(
+        filteredData.filter(
           (connection) =>
             connection.user.name
               .toLowerCase()
@@ -189,9 +206,10 @@ export default function ConnectionList() {
       );
       // Refresh connections after successful connection
       fetchConnections();
+    showAlert('success', 'Connection request sent successfully');
     } catch (error) {
       console.error("Failed to connect:", error);
-      alert("Failed to connect. Please try again.");
+      showAlert('error', 'You have already sent a connection request to this user');
     }
   };
 
@@ -261,6 +279,11 @@ export default function ConnectionList() {
     fetchConnections();
   }, [user]);
 
+  useEffect(() => {
+    const userData = JSON.parse(localStorage.getItem("user"));
+    setCurrentUser(userData);
+  }, []);
+
   const openDisconnectModal = (connection) => {
     setSelectedConnection(connection);
     setShowModal(true);
@@ -286,18 +309,31 @@ export default function ConnectionList() {
         }
       );
 
-      setConnections(
-        connections.filter(
-          (connection) => connection.id !== selectedConnection.id
+      // Update connections list by setting is_connected to false for the disconnected user
+      setConnections(prevConnections => 
+        prevConnections.map(conn => 
+          conn.user.id === selectedConnection.id 
+        ? { ...conn, user: { ...conn.user, is_connected: false } } 
+        : conn
+        )
+      );
+      
+      // Also update the filtered connections
+      setFilteredConnections(prevFiltered => 
+        prevFiltered.map(conn => 
+          conn.user.id === selectedConnection.id 
+        ? { ...conn, user: { ...conn.user, is_connected: false } } 
+        : conn
         )
       );
       closeModal();
+      showAlert('success', 'Disconnected successfully');
     } catch (err) {
       console.error("Failed to disconnect:", err);
-      alert("Failed to disconnect. Please try again.");
+      showAlert('error', 'You are not connected to this user');
       closeModal();
     }
-  }; 
+  };
 
   if (loading) {
     return (
@@ -324,16 +360,25 @@ export default function ConnectionList() {
   return (
     <Case>
       <div className="p-4 sm:p-6 bg-gray-100 min-h-screen">
+        {alert.show && (
+        <div className="fixed top-4 right-4 z-50 w-full max-w-sm">
+          <Alert 
+            type={alert.type} 
+            message={alert.message} 
+            onClose={() => setAlert({ ...alert, show: false })}
+          />
+        </div>
+      )}
         {/* Confirmation Modal */}
         {showModal && selectedConnection && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
               <h3 className="text-lg font-medium text-blue-600 mb-4">
-                Disconnect from {selectedConnection.user.name}?
+                Disconnect from {selectedConnection.name}?
               </h3>
               <p className="text-gray-600 mb-6">
                 Are you sure you want to disconnect from{" "}
-                {selectedConnection.user.name}? This action cannot be undone.
+                {selectedConnection.name}? This action cannot be undone.
               </p>
               <div className="flex justify-end space-x-3">
                 <button
@@ -424,7 +469,7 @@ export default function ConnectionList() {
                             Message
                           </button>
                           <button
-                            onClick={() => openDisconnectModal(connection)}
+                            onClick={() => openDisconnectModal(connection.user)}
                             className="px-4 py-1.5 rounded-full text-sm font-medium text-white border bg-red-600 hover:bg-red-700 transition"
                           >
                             Disconnect
@@ -465,34 +510,7 @@ export default function ConnectionList() {
 
           {/* Right side - Manage network */}
           <div className="space-y-4">
-            <div className="bg-white rounded-xl shadow p-4">
-              <h3 className="font-medium mb-2 border-b pb-3 text-sm sm:text-base">
-                Manage my network
-              </h3>
-              <ul className="text-xs sm:text-sm text-gray-700 space-y-1">
-                <li className="border-b pb-3">
-                  <Link to="/list-connection" className="flex justify-between">
-                    <span>Connections</span>
-                    <span>{connections.length}</span>
-                  </Link>
-                </li>
-                <li className="border-b pb-3">
-                  <Link to="/messages" className="flex justify-between">
-                    <span>Contacts</span> <span>869</span>
-                  </Link>
-                </li>
-                <li className="border-b pb-3">
-                  <Link to="/groups" className="flex justify-between">
-                    <span>Groups</span> <span>0</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/hashtags" className="flex justify-between">
-                    <span>Hashtag</span> <span>8</span>
-                  </Link>
-                </li>
-              </ul>
-            </div>
+            <NetworkManager />
 
             <div className="bg-white rounded-xl shadow p-4 text-center">
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-2 overflow-hidden">

@@ -10,7 +10,7 @@ import (
 	"evoconnect/backend/repository"
 	"fmt"
 	"time"
-	"evoconnect/backend/utils"
+	// "evoconnect/backend/utils"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
@@ -339,7 +339,7 @@ func (service *ConnectionServiceImpl) RejectConnectionRequest(ctx context.Contex
 		},
 	}
 }
-func (service *ConnectionServiceImpl) GetConnections(ctx context.Context, userId uuid.UUID, limit, offset int) web.ConnectionListResponse {
+func (service *ConnectionServiceImpl) GetConnections(ctx context.Context, userId, currentUserId uuid.UUID, limit, offset int) web.ConnectionListResponse {
     tx, err := service.DB.Begin()
     helper.PanicIfError(err)
     defer helper.CommitOrRollback(tx)
@@ -364,9 +364,9 @@ func (service *ConnectionServiceImpl) GetConnections(ctx context.Context, userId
             continue
         }
 
-        isConnected := service.ConnectionRepository.CheckConnectionExists(ctx, tx, userId, otherUser.Id)
+        isConnected := service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, otherUser.Id)
         
-		fmt.Println("Is connected:", isConnected)
+		fmt.Println("Is connected: from", currentUserId, "to", otherUser.Id, "->", isConnected)
 		
         userShort := web.UserShort{
             Id:          otherUser.Id,

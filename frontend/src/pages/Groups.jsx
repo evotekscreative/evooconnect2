@@ -8,6 +8,7 @@ import GroupsTabs from "../components/Group/GroupsTabs";
 import GroupsContent from "../components/Group/GroupsContent";
 import GroupsSidebar from "../components/Group/GroupsSidebar";
 import CreateGroupModal from "../components/Group/CreateGroupModal";
+import Alert from "../components/Auth/alert";
 
 const base_url =  import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
@@ -34,6 +35,17 @@ export default function Groups() {
   const [loadingInvitations, setLoadingInvitations] = useState(false);
   const [suggestedGroups, setSuggestedGroups] = useState([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+   const [alert, setAlert] = useState({
+    show: false,
+    type: 'success',
+    message: '',
+  });
+
+  const showAlert = (type, message) => {
+    setAlert({ show: true, type, message });
+    setTimeout(() => setAlert({ ...alert, show: false }), 5000);
+  };
+
 
   // Fetch data functions
   const fetchGroupsData = async () => {
@@ -183,15 +195,10 @@ export default function Groups() {
         image: null,
       });
       setShowModal(false);
+    showAlert('success', 'Group created successfully.');
     } catch (error) {
-      console.error("Failed to create group:", error);
-      if (error.response?.data?.message) {
-        setError(error.response.data.message);
-        toast.error(error.response.data.message);
-      } else {
-        setError("Failed to create group. Please try again.");
-        toast.error("Failed to create group. Please try again.");
-      }
+      console.error("Failed to connect:", error);
+      showAlert('error', 'Failed to create group.');
     } finally {
       setIsLoading(false);
     }
@@ -250,11 +257,11 @@ export default function Groups() {
           headers: { Authorization: `Bearer ${token}` }
         });
         setAdminGroups(adminGroups.filter(group => group.id !== groupId));
-        toast.success("Group deleted successfully");
-      } catch (error) {
-        console.error("Failed to delete group:", error);
-        toast.error(error.response?.data?.message || "Failed to delete group");
-      }
+        showAlert('success', 'Group deleted successfully.');
+    } catch (error) {
+      console.error("Failed to connect:", error);
+      showAlert('error', 'Failed to delete group.');
+    }
     }
   };
 
@@ -299,11 +306,12 @@ export default function Groups() {
 
         setJoinedGroups(prev => [groupWithJoinedDate, ...prev]);
         setSuggestedGroups(prev => prev.filter(group => group.id !== groupId));
-        toast.success("Successfully joined the group!");
+        
       }
+    showAlert('success', 'You have joined the group successfully.');
     } catch (error) {
-      console.error("Error joining group:", error);
-      toast.error(error.response?.data?.message || "Failed to join group");
+      console.error("Failed to connect:", error);
+      showAlert('error', 'Failed to join group.');
     }
   };
 
@@ -320,6 +328,15 @@ export default function Groups() {
     <Case>
       <div className="p-4 sm:p-6 bg-gray-100 min-h-screen">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
+          {alert.show && (
+        <div className="fixed top-4 right-4 z-50 w-full max-w-sm">
+          <Alert 
+            type={alert.type} 
+            message={alert.message} 
+            onClose={() => setAlert({ ...alert, show: false })}
+          />
+        </div>
+      )}
           {/* Main Content */}
           <div className="lg:col-span-3 space-y-4 bg-white rounded-xl shadow p-4 sm:p-6">
             <GroupsHeader 
