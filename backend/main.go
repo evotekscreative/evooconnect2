@@ -33,7 +33,7 @@ func main() {
 	// ===== Repositories =====
 	// User-related repositories
 	userRepository := repository.NewUserRepository()
-	connectionRepository := repository.NewConnectionRepository()
+	connectionRepository := repository.NewConnectionRepository(db)
 	profileViewRepository := repository.NewProfileViewRepository()
 
 	// Content-related repositories
@@ -130,6 +130,7 @@ func main() {
 		groupMemberRepository,
 		groupInvitationRepository,
 		userRepository,
+		connectionRepository,
 		notificationService,
 		validate,
 	)

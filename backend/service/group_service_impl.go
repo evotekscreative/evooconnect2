@@ -18,33 +18,36 @@ import (
 )
 
 type GroupServiceImpl struct {
-	DB                   *sql.DB
-	GroupRepository      repository.GroupRepository
-	MemberRepository     repository.GroupMemberRepository
-	InvitationRepository repository.GroupInvitationRepository
-	UserRepository       repository.UserRepository
-	NotificationService  NotificationService
-	Validate             *validator.Validate
+    DB                   *sql.DB
+    GroupRepository      repository.GroupRepository
+    MemberRepository     repository.GroupMemberRepository
+    InvitationRepository repository.GroupInvitationRepository
+    UserRepository       repository.UserRepository
+    ConnectionRepository repository.ConnectionRepository // Tambahkan ini
+    NotificationService  NotificationService
+    Validate             *validator.Validate
+}
+func NewGroupService(
+    db *sql.DB,
+    groupRepository repository.GroupRepository,
+    memberRepository repository.GroupMemberRepository,
+    invitationRepository repository.GroupInvitationRepository,
+    userRepository repository.UserRepository,
+    connectionRepository repository.ConnectionRepository, // Tambahkan ini
+    notificationService NotificationService,
+    validate *validator.Validate) GroupService {
+    return &GroupServiceImpl{
+        DB:                   db,
+        GroupRepository:      groupRepository,
+        MemberRepository:     memberRepository,
+        InvitationRepository: invitationRepository,
+        UserRepository:       userRepository,
+        ConnectionRepository: connectionRepository, // Tambahkan ini
+        NotificationService:  notificationService,
+        Validate:             validate,
+    }
 }
 
-func NewGroupService(
-	db *sql.DB,
-	groupRepository repository.GroupRepository,
-	memberRepository repository.GroupMemberRepository,
-	invitationRepository repository.GroupInvitationRepository,
-	userRepository repository.UserRepository,
-	notificationService NotificationService,
-	validate *validator.Validate) GroupService {
-	return &GroupServiceImpl{
-		DB:                   db,
-		GroupRepository:      groupRepository,
-		MemberRepository:     memberRepository,
-		InvitationRepository: invitationRepository,
-		UserRepository:       userRepository,
-		NotificationService:  notificationService,
-		Validate:             validate,
-	}
-}
 
 func (service *GroupServiceImpl) Create(ctx context.Context, userId uuid.UUID, request web.CreateGroupRequest, file *multipart.FileHeader) web.GroupResponse {
 	err := service.Validate.Struct(request)
@@ -473,28 +476,41 @@ func (service *GroupServiceImpl) UpdateMemberRole(ctx context.Context, groupId, 
 }
 
 func (service *GroupServiceImpl) GetMembers(ctx context.Context, groupId uuid.UUID) []web.GroupMemberResponse {
-	tx, err := service.DB.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
+    tx, err := service.DB.Begin()
+    helper.PanicIfError(err)
+    defer helper.CommitOrRollback(tx)
 
-	_, err = service.GroupRepository.FindById(ctx, tx, groupId)
-	if err != nil {
-		panic(exception.NewNotFoundError("group not found"))
-	}
+    _, err = service.GroupRepository.FindById(ctx, tx, groupId)
+    if err != nil {
+        panic(exception.NewNotFoundError("group not found"))
+    }
 
-	members := service.MemberRepository.FindByGroupId(ctx, tx, groupId)
+    members := service.MemberRepository.FindByGroupId(ctx, tx, groupId)
 
-	var responses []web.GroupMemberResponse
-	for _, member := range members {
-		user, err := service.UserRepository.FindById(ctx, tx, member.UserId)
-		if err == nil {
-			response := helper.ToGroupMemberResponse(member)
-			response.User = helper.ToUserBriefResponse(user)
-			responses = append(responses, response)
-		}
-	}
+    // Ambil ID user yang sedang login dari context
+    currentUserIdStr, ok := ctx.Value("user_id").(string)
+    var currentUserId uuid.UUID
+    if ok {
+        currentUserId, _ = uuid.Parse(currentUserIdStr)
+    }
 
-	return responses
+    var responses []web.GroupMemberResponse
+    for _, member := range members {
+        user, err := service.UserRepository.FindById(ctx, tx, member.UserId)
+        if err == nil {
+            // Periksa apakah current user terhubung dengan anggota grup
+            isConnected := false
+            if currentUserId != uuid.Nil && member.UserId != currentUserId {
+                isConnected = service.ConnectionRepository.IsConnected(ctx, tx, currentUserId, member.UserId)
+            }
+
+            response := helper.ToGroupMemberResponse(member)
+            response.User = helper.ToUserBriefResponse(user, isConnected) // Gunakan parameter isConnected
+            responses = append(responses, response)
+        }
+    }
+
+    return responses
 }
 
 func (service *GroupServiceImpl) CreateInvitation(ctx context.Context, groupId, userId, inviteeId uuid.UUID) web.GroupInvitationResponse {
