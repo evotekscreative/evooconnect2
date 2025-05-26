@@ -110,12 +110,24 @@ func (s *BlogServiceImpl) Create(ctx context.Context, req web.BlogCreateRequest,
         return web.BlogResponse{}, fmt.Errorf("gagal mengambil data user: %w", err)
     }
 
+    // Ambil ID user yang sedang login dari context
+    currentUserIdStr, ok := ctx.Value("user_id").(string)
+    var currentUserId uuid.UUID
+    if ok {
+        currentUserId, _ = uuid.Parse(currentUserIdStr)
+    }
+
+    // Periksa apakah current user terhubung dengan penulis blog
+    isConnected := false
+    if currentUserId != uuid.Nil && userUUID != currentUserId {
+        isConnected = s.ConnectionRepository.IsConnected(ctx, nil, currentUserId, userUUID)
+    }
+
     // Kirim notifikasi ke koneksi pengguna dengan penanganan error yang lebih baik
     go s.sendBlogNotifications(ctx, blog, user)
 
-    return buildBlogResponse(blog, user), nil
+    return buildBlogResponse(blog, user, isConnected), nil
 }
-
 // Fungsi helper untuk mengirim notifikasi blog
 func (s *BlogServiceImpl) sendBlogNotifications(ctx context.Context, blog domain.Blog, user domain.User) {
     // Cek apakah service tersedia
@@ -163,37 +175,55 @@ func (s *BlogServiceImpl) sendBlogNotifications(ctx context.Context, blog domain
 }
 
 func (s *BlogServiceImpl) FindAll(ctx context.Context) ([]web.BlogResponse, error) {
-	blogs, err := s.Repo.FindAll(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("gagal mengambil semua blog: %w", err)
-	}
+    blogs, err := s.Repo.FindAll(ctx)
+    if err != nil {
+        return nil, fmt.Errorf("gagal mengambil semua blog: %w", err)
+    }
 
-	var result []web.BlogResponse
-	for _, blog := range blogs {
-		userID, err := uuid.Parse(blog.UserID)
-		if err != nil {
-			result = append(result, buildBlogResponse(blog, domain.User{
-				Id:       uuid.Nil,
-				Name:     "Anonymous",
-				Username: "Unknown",
-				Photo:    "default-profile.png",
-			}))
-			continue
-		}
+    // Ambil ID user yang sedang login dari context
+    currentUserIdStr, ok := ctx.Value("user_id").(string)
+    fmt.Printf("DEBUG: currentUserIdStr from context: %s, ok: %v\n", currentUserIdStr, ok)
+    
+    var currentUserId uuid.UUID
+    if ok {
+        currentUserId, _ = uuid.Parse(currentUserIdStr)
+        fmt.Printf("DEBUG: currentUserId parsed: %s\n", currentUserId)
+    }
 
-		user, err := s.Repo.FindUserByID(ctx, userID)
-		if err != nil {
-			user = domain.User{
-				Id:       userID,
-				Name:     "Anonymous",
-				Username: "Unknown",
-				Photo:    "default-profile.png",
-			}
-		}
+    var result []web.BlogResponse
+    for _, blog := range blogs {
+        userID, err := uuid.Parse(blog.UserID)
+        if err != nil {
+            result = append(result, helper.ToBlogResponseWithUser(blog, domain.User{
+                Id:       uuid.Nil,
+                Name:     "Anonymous",
+                Username: "Unknown",
+                Photo:    "default-profile.png",
+            }, false))
+            continue
+        }
 
-		result = append(result, buildBlogResponse(blog, user))
-	}
-	return result, nil
+        user, err := s.Repo.FindUserByID(ctx, userID)
+        if err != nil {
+            user = domain.User{
+                Id:       userID,
+                Name:     "Anonymous",
+                Username: "Unknown",
+                Photo:    "default-profile.png",
+            }
+        }
+
+        // Periksa apakah current user terhubung dengan penulis blog
+        isConnected := false
+        if currentUserId != uuid.Nil && userID != currentUserId {
+            fmt.Printf("DEBUG: Checking connection between %s and %s\n", currentUserId, userID)
+            isConnected = s.ConnectionRepository.IsConnected(ctx, nil, currentUserId, userID)
+            fmt.Printf("DEBUG: Connection result: %v\n", isConnected)
+        }
+
+        result = append(result, helper.ToBlogResponseWithUser(blog, user, isConnected))
+    }
+    return result, nil
 }
 
 func (s *BlogServiceImpl) Delete(ctx context.Context, blogID string) error {
@@ -205,22 +235,36 @@ func (s *BlogServiceImpl) Delete(ctx context.Context, blogID string) error {
 }
 
 func (s *BlogServiceImpl) FindBySlug(ctx context.Context, slug string) (web.BlogResponse, error) {
-	blog, err := s.Repo.FindBySlug(ctx, slug)
-	if err != nil {
-		return web.BlogResponse{}, fmt.Errorf("blog dengan slug %s tidak ditemukan: %w", slug, err)
-	}
+    blog, err := s.Repo.FindBySlug(ctx, slug)
+    if err != nil {
+        return web.BlogResponse{}, fmt.Errorf("blog dengan slug %s tidak ditemukan: %w", slug, err)
+    }
 
-	userUUID, err := uuid.Parse(blog.UserID)
-	if err != nil {
-		return web.BlogResponse{}, fmt.Errorf("user ID tidak valid: %w", err)
-	}
-	user, err := s.Repo.FindUserByID(ctx, userUUID)
-	if err != nil {
-		return web.BlogResponse{}, fmt.Errorf("gagal mengambil data user: %w", err)
-	}
+    userUUID, err := uuid.Parse(blog.UserID)
+    if err != nil {
+        return web.BlogResponse{}, fmt.Errorf("user ID tidak valid: %w", err)
+    }
+    user, err := s.Repo.FindUserByID(ctx, userUUID)
+    if err != nil {
+        return web.BlogResponse{}, fmt.Errorf("gagal mengambil data user: %w", err)
+    }
 
-	return buildBlogResponse(blog, user), nil
+    // Ambil ID user yang sedang login dari context
+    currentUserIdStr, ok := ctx.Value("user_id").(string)
+    var currentUserId uuid.UUID
+    if ok {
+        currentUserId, _ = uuid.Parse(currentUserIdStr)
+    }
+
+    // Periksa apakah current user terhubung dengan penulis blog
+    isConnected := false
+    if currentUserId != uuid.Nil && userUUID != currentUserId {
+        isConnected = s.ConnectionRepository.IsConnected(ctx, nil, currentUserId, userUUID)
+    }
+
+    return buildBlogResponse(blog, user, isConnected), nil
 }
+
 
 func (s *BlogServiceImpl) UpdateWithImagePath(ctx context.Context, blogID string, request web.BlogCreateRequest, userID string, imagePath string) (web.BlogResponse, error) {
     // Validasi panjang konten
@@ -279,7 +323,20 @@ func (s *BlogServiceImpl) UpdateWithImagePath(ctx context.Context, blogID string
         }
     }
 
-    return buildBlogResponse(existingBlog, user), nil
+    // Ambil ID user yang sedang login dari context
+    currentUserIdStr, ok := ctx.Value("user_id").(string)
+    var currentUserId uuid.UUID
+    if ok {
+        currentUserId, _ = uuid.Parse(currentUserIdStr)
+    }
+
+    // Periksa apakah current user terhubung dengan penulis blog
+    isConnected := false
+    if currentUserId != uuid.Nil && userUUID != currentUserId {
+        isConnected = s.ConnectionRepository.IsConnected(ctx, nil, currentUserId, userUUID)
+    }
+
+    return buildBlogResponse(existingBlog, user, isConnected), nil
 }
 
 func (s *BlogServiceImpl) UploadPhoto(ctx context.Context, blogId string, userId string, file multipart.File, fileHeader *multipart.FileHeader) (string, error) {
@@ -315,31 +372,44 @@ func (s *BlogServiceImpl) UploadPhoto(ctx context.Context, blogId string, userId
 }
 
 func (s *BlogServiceImpl) GetRandomBlogs(ctx context.Context, limit int) ([]web.BlogResponse, error) {
-	blogs, err := s.Repo.GetRandomBlogs(ctx, limit)
-	if err != nil {
-		return nil, fmt.Errorf("gagal mengambil blog random: %w", err)
-	}
+    blogs, err := s.Repo.GetRandomBlogs(ctx, limit)
+    if err != nil {
+        return nil, fmt.Errorf("gagal mengambil blog random: %w", err)
+    }
 
-	var blogResponses []web.BlogResponse
-	for _, blog := range blogs {
-		userID, err := uuid.Parse(blog.UserID)
-		if err != nil {
-			return nil, fmt.Errorf("gagal mengonversi user_id: %w", err)
-		}
+    // Ambil ID user yang sedang login dari context
+    currentUserIdStr, ok := ctx.Value("user_id").(string)
+    var currentUserId uuid.UUID
+    if ok {
+        currentUserId, _ = uuid.Parse(currentUserIdStr)
+    }
 
-		user, err := s.Repo.FindUserByID(ctx, userID)
-		if err != nil {
-			user = domain.User{
-				Id:       userID,
-				Name:     "Anonymous",
-				Username: "Unknown",
-				Photo:    "default-profile.png",
-			}
-		}
+    var blogResponses []web.BlogResponse
+    for _, blog := range blogs {
+        userID, err := uuid.Parse(blog.UserID)
+        if err != nil {
+            return nil, fmt.Errorf("gagal mengonversi user_id: %w", err)
+        }
 
-		blogResponses = append(blogResponses, buildBlogResponse(blog, user))
-	}
-	return blogResponses, nil
+        user, err := s.Repo.FindUserByID(ctx, userID)
+        if err != nil {
+            user = domain.User{
+                Id:       userID,
+                Name:     "Anonymous",
+                Username: "Unknown",
+                Photo:    "default-profile.png",
+            }
+        }
+
+        // Periksa apakah current user terhubung dengan penulis blog
+        isConnected := false
+        if currentUserId != uuid.Nil && userID != currentUserId {
+            isConnected = s.ConnectionRepository.IsConnected(ctx, nil, currentUserId, userID)
+        }
+
+        blogResponses = append(blogResponses, buildBlogResponse(blog, user, isConnected))
+    }
+    return blogResponses, nil
 }
 
 func (service *BlogServiceImpl) CreateWithImagePath(ctx context.Context, req web.BlogCreateRequest, userID string, imagePath string) (web.BlogResponse, error) {
@@ -363,7 +433,7 @@ func (service *BlogServiceImpl) CreateWithImagePath(ctx context.Context, req web
         Slug:      slug,
         Content:   req.Content,
         Category:  req.Category,
-        ImagePath: imagePath, // Gunakan imagePath yang diberikan, bukan req.Image
+        ImagePath: imagePath,
         UserID:    userID,
         CreatedAt: nowISO8601(),
         UpdatedAt: nowISO8601(),
@@ -384,10 +454,23 @@ func (service *BlogServiceImpl) CreateWithImagePath(ctx context.Context, req web
         return web.BlogResponse{}, fmt.Errorf("gagal mengambil data user: %w", err)
     }
 
-    // Kirim notifikasi ke koneksi pengguna dengan penanganan error yang lebih baik
+    // Ambil ID user yang sedang login dari context
+    currentUserIdStr, ok := ctx.Value("user_id").(string)
+    var currentUserId uuid.UUID
+    if ok {
+        currentUserId, _ = uuid.Parse(currentUserIdStr)
+    }
+
+    // Periksa apakah current user terhubung dengan penulis blog
+    isConnected := false
+    if currentUserId != uuid.Nil && userUUID != currentUserId {
+        isConnected = service.ConnectionRepository.IsConnected(ctx, nil, currentUserId, userUUID)
+    }
+
+    // Kirim notifikasi ke koneksi pengguna
     go service.sendBlogNotifications(ctx, blog, user)
 
-    return buildBlogResponse(blog, user), nil
+    return buildBlogResponse(blog, user, isConnected), nil
 }
 
 func (s *BlogServiceImpl) FindById(ctx context.Context, blogID string) (web.BlogResponse, error) {
@@ -410,10 +493,21 @@ func (s *BlogServiceImpl) FindById(ctx context.Context, blogID string) (web.Blog
         }
     }
 
-    return buildBlogResponse(blog, user), nil
-}
+    // Ambil ID user yang sedang login dari context
+    currentUserIdStr, ok := ctx.Value("user_id").(string)
+    var currentUserId uuid.UUID
+    if ok {
+        currentUserId, _ = uuid.Parse(currentUserIdStr)
+    }
 
-// Utility
+    // Periksa apakah current user terhubung dengan penulis blog
+    isConnected := false
+    if currentUserId != uuid.Nil && userUUID != currentUserId {
+        isConnected = s.ConnectionRepository.IsConnected(ctx, nil, currentUserId, userUUID)
+    }
+
+    return buildBlogResponse(blog, user, isConnected), nil
+}
 
 func generateSlug(title string) string {
     // Ubah ke lowercase
@@ -444,22 +538,28 @@ func nowISO8601() string {
 	return time.Now().Format(time.RFC3339)
 }
 
-func buildBlogResponse(blog domain.Blog, user domain.User) web.BlogResponse {
-	return web.BlogResponse{
-		ID:        blog.ID,
-		Title:     blog.Title,
-		Slug:      blog.Slug,
-		Category:  blog.Category,
-		Content:   blog.Content,
-		Photo:     blog.ImagePath,
-		UserID:    blog.UserID,
-		CreatedAt: blog.CreatedAt,
-		UpdatedAt: blog.UpdatedAt,
-		User: web.BlogUserResponse{
-			ID:       user.Id.String(),
-			Name:     user.Name,
-			Username: user.Username,
-			Photo:    user.Photo,
-		},
-	}
+func buildBlogResponse(blog domain.Blog, user domain.User, isConnected ...bool) web.BlogResponse {
+    connected := false
+    if len(isConnected) > 0 {
+        connected = isConnected[0]
+    }
+    
+    return web.BlogResponse{
+        ID:        blog.ID,
+        Title:     blog.Title,
+        Slug:      blog.Slug,
+        Category:  blog.Category,
+        Content:   blog.Content,
+        Photo:     blog.ImagePath,
+        UserID:    blog.UserID,
+        CreatedAt: blog.CreatedAt,
+        UpdatedAt: blog.UpdatedAt,
+        User: web.BlogUserResponse{
+            ID:       user.Id.String(),
+            Name:     user.Name,
+            Username: user.Username,
+            Photo:    user.Photo,
+            IsConnected: connected, // Gunakan nilai dari parameter
+        },
+    }
 }

@@ -26,6 +26,29 @@ func ToBlogResponse(blog domain.Blog) web.BlogResponse {
     }
 }
 
+// Fungsi baru yang menerima user dan isConnected sebagai parameter terpisah
+func ToBlogResponseWithUser(blog domain.Blog, user domain.User, isConnected bool) web.BlogResponse {
+    blogResponse := web.BlogResponse{
+        ID:        blog.ID,
+        Title:     blog.Title,
+        Slug:      blog.Slug,
+        Category:  blog.Category,
+        Content:   blog.Content,
+        Photo:     blog.ImagePath,
+        UserID:    blog.UserID,
+        CreatedAt: blog.CreatedAt,
+        UpdatedAt: blog.UpdatedAt,
+        User: web.BlogUserResponse{
+            ID:          user.Id.String(),
+            Name:        user.Name,
+            Username:    user.Username,
+            Photo:       user.Photo,
+            IsConnected: isConnected,
+        },
+    }
+    return blogResponse
+}
+
 func ValidateBlogInput(title, content, category string) error {
     if title == "" {
         return errors.New("title is required")
@@ -102,21 +125,3 @@ func DeleteBlogImage(filePath string) error {
     // Hapus file
     return os.Remove(filePath)
 }
-
-// DeleteFileIfExists menghapus file jika ada
-// func DeleteFileIfExists(filePath string) error {
-//     if filePath == "" {
-//         return nil // Tidak ada file untuk dihapus
-//     }
-
-//     // Periksa apakah file ada
-//     if _, err := os.Stat(filePath); os.IsNotExist(err) {
-//         return nil // File sudah tidak ada, tidak perlu error
-//     }
-
-//     // Hapus file
-//     return os.Remove(filePath)
-// }
-
-
-
