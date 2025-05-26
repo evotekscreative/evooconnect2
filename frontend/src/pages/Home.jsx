@@ -31,6 +31,9 @@ import {
   Share2,
   RefreshCw,
   UserPlus,
+  TrendingUp,
+  TrendingDown,
+  TriangleAlert,
 } from "lucide-react";
 import {
   Chart as ChartJS,
@@ -502,7 +505,7 @@ export default function SocialNetworkFeed() {
         type: "error",
         message:
           error.response?.data?.message ||
-          "Failed to send connection request. Please try again.",
+          "You've already sent a connection request to this user",
       });
     } finally {
       setLoadingSuggested(false); // Reset loading state
@@ -729,13 +732,13 @@ export default function SocialNetworkFeed() {
       setAlertInfo({
         show: true,
         type: "success",
-        message: "Post berhasil dibuat!",
+        message: "Successfully created post!",
       });
     } catch (error) {
       setAlertInfo({
         show: true,
         type: "error",
-        message: "Gagal menambahkan post!",
+        message: "Failed to create post",
       });
       setError(
         error.response?.data?.message ||
@@ -1145,9 +1148,17 @@ export default function SocialNetworkFeed() {
         setPostContent("");
         setArticleImages([]);
       }
+      setAlertInfo({
+        show: true,
+        type: "success",
+        message: "Deleted post successfully!",
+      });
     } catch (error) {
-      console.error("Failed to delete post:", error);
-      setError("Failed to delete post. Please try again.");
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: "Failed to delete post",
+      });
     }
   };
 
@@ -1348,10 +1359,20 @@ export default function SocialNetworkFeed() {
       </div>
     );
   };
-  const handleReportClick = (userId, type, id) => {
+  const handleReportClick = (userId, targetType, id) => {
+    if (userId === currentUserId) {
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: "You cannot report your own content",
+      });
+      return;
+    }
+
     setSelectedPostId(id);
     setShowReportModal(true);
     setShowPostOptions(false);
+    setShowCommentOptions(false);
   };
 
   const renderPhotoGrid = (images) => {
@@ -1459,11 +1480,36 @@ export default function SocialNetworkFeed() {
     setSharePostId(null);
   };
 
-  const copyToClipboard = () => {
-    const urlToCopy = `${clientUrl}/post/${sharePostId}`;
-    navigator.clipboard.writeText(urlToCopy);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copyToClipboard = async () => {
+    try {
+      const urlToCopy = `${clientUrl}/post/${sharePostId}`;
+
+      // Fallback untuk browser yang tidak support Clipboard API
+      if (!navigator.clipboard) {
+        const textArea = document.createElement("textarea");
+        textArea.value = urlToCopy;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      } else {
+        await navigator.clipboard.writeText(urlToCopy);
+      }
+
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+      // Fallback manual
+      const input = document.createElement("input");
+      input.value = `${clientUrl}/post/${sharePostId}`;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      document.body.removeChild(input);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const shareToWhatsApp = () => {
@@ -1490,11 +1536,61 @@ export default function SocialNetworkFeed() {
     setShowMobileMenu(!showMobileMenu);
   };
 
+  const handleReportComment = async (userId, targetType, targetId, reason) => {
+    // Validasi tambahan
+    if (userId === currentUserId) {
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: "You cannot report your own content",
+      });
+      return;
+    }
+
+    try {
+      const userToken = localStorage.getItem("token");
+      const response = await axios.post(
+        `${apiUrl}/api/reports/${userId}/${targetType}/${targetId}`,
+        { reason },
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data.success) {
+        setAlertInfo({
+          show: true,
+          type: "success",
+          message: "Report submitted successfully!",
+        });
+      } else {
+        setAlertInfo({
+          show: true,
+          type: "error",
+          message: response.data.message || "Failed to submit report",
+        });
+      }
+    } catch (error) {
+      console.error("Failed to submit report:", error);
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: error.response?.data?.message || "Failed to submit report",
+      });
+    } finally {
+      setShowReportModal(false);
+      setSelectedReason("");
+      setCustomReason("");
+    }
+  };
+
   const renderCommentOptionsModal = () => {
     if (!showCommentOptions || !selectedComment) return null;
 
-    const isCurrentUserComment =
-      selectedComment.user && selectedComment.user.id === currentUserId;
+    const isCurrentUserComment = selectedComment?.user?.id === currentUserId;
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1502,54 +1598,56 @@ export default function SocialNetworkFeed() {
           <div className="p-4">
             <h3 className="font-medium text-lg mb-3">Comment Options</h3>
 
-            <>
-              <button
-                className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
-                onClick={() => {
-                  setEditingCommentId(selectedComment.id);
-                  setCommentText(selectedComment.content);
-                  setShowCommentOptions(false);
-                }}
-              >
-                <SquarePen size={16} className="mr-2" />
-                Edit Comment
-              </button>
-
+            {isCurrentUserComment ? (
+              <>
+                <button
+                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
+                  onClick={() => {
+                    setEditingCommentId(selectedComment.id);
+                    setCommentText(selectedComment.content);
+                    setShowCommentOptions(false);
+                  }}
+                >
+                  <SquarePen size={16} className="mr-2" />
+                  Edit Comment
+                </button>
+                <button
+                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
+                  onClick={() => handleDeleteComment(selectedComment.id)}
+                >
+                  <X size={16} className="mr-2" />
+                  Delete Comment
+                </button>
+              </>
+            ) : (
               <button
                 className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
                 onClick={() => {
-                  handleDeleteComment(selectedComment.id);
+                  handleReportClick(
+                    selectedComment.user?.id,
+                    "comment",
+                    selectedComment.id
+                  );
                   setShowCommentOptions(false);
                 }}
               >
-                <X size={16} className="mr-2" />
-                Delete Comment
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+                Report Comment
               </button>
-            </>
-
-            <button
-              className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
-              onClick={() => {
-                handleReportClick(comment.user?.id, "comment", comment.id);
-                setShowCommentOptions(false);
-              }}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
-              Report Comment
-            </button>
+            )}
           </div>
 
           <div className="border-t p-3">
@@ -1564,6 +1662,110 @@ export default function SocialNetworkFeed() {
       </div>
     );
   };
+
+  const ReportModal = ({
+    showReportModal,
+    setShowReportModal,
+    selectedReason,
+    setSelectedReason,
+    customReason,
+    setCustomReason,
+    handleReportComment,
+    currentUserId,
+    selectedPostId,
+  }) => {
+    return (
+      <div
+        className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] ${
+          showReportModal ? "block" : "hidden"
+        }`}
+      >
+        <div className="bg-white rounded-lg w-full max-w-md mx-4 p-5">
+          <h3 className="text-lg font-semibold mb-4">Report this content</h3>
+          <p className="mb-3 text-sm text-gray-600">
+            Please select a reason for reporting
+          </p>
+
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            {[
+              "Harassment",
+              "Fraud",
+              "Spam",
+              "Misinformation",
+              "Hate speech",
+              "Threats or violence",
+              "Self-harm",
+              "Graphic content",
+              "Extremist organizations",
+              "Sexual content",
+              "Fake account",
+              "Child exploitation",
+              "Illegal products",
+              "Violation",
+              "Other",
+            ].map((reason) => (
+              <button
+                key={reason}
+                className={`py-2 px-3 text-sm border rounded-full ${
+                  selectedReason === reason
+                    ? "bg-blue-100 border-blue-500 text-blue-700"
+                    : "bg-white hover:bg-gray-100"
+                }`}
+                onClick={() => setSelectedReason(reason)}
+              >
+                {reason}
+              </button>
+            ))}
+          </div>
+
+          {selectedReason === "Other" && (
+            <textarea
+              className="w-full p-2 border rounded mb-3 text-sm"
+              rows={3}
+              placeholder="Please describe the reason for your report"
+              value={customReason}
+              onChange={(e) => setCustomReason(e.target.value)}
+            />
+          )}
+
+          <div className="flex justify-end gap-2">
+            <button
+              className="text-gray-500 hover:text-gray-700"
+              onClick={() => {
+                setShowReportModal(false);
+                setSelectedReason("");
+                setCustomReason("");
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              className={`px-4 py-2 rounded text-white ${
+                selectedReason
+                  ? "bg-blue-600 hover:bg-blue-700"
+                  : "bg-gray-300 cursor-not-allowed"
+              }`}
+              disabled={!selectedReason}
+              onClick={() => {
+                const reasonText =
+                  selectedReason === "Other" ? customReason : selectedReason;
+
+                handleReportComment(
+                  currentUserId,
+                  "comment", // targetType
+                  selectedPostId, // targetId (comment id)
+                  reasonText
+                );
+              }}
+            >
+              Report
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const handleDeleteComment = async (commentId) => {
     try {
       const userToken = localStorage.getItem("token");
@@ -1803,7 +2005,6 @@ export default function SocialNetworkFeed() {
 
   return (
     <div className="flex flex-col md:flex-row bg-gray-50 px-4 md:px-6 lg:px-12 xl:px-32 py-4 md:py-6">
-      {renderCommentOptionsModal()}
       {renderShowcase()}
       <div className="fixed top-5 right-5 z-50">
         {alertInfo.show && (
@@ -1896,14 +2097,19 @@ export default function SocialNetworkFeed() {
             </div>
             <div className="text-center">
               <div
-                className={`text-xl font-semibold ${
+                className={`text-xl font-semibold flex items-center justify-center ${
                   profileViews.percentageChange >= 0
                     ? "text-green-500"
                     : "text-red-500"
                 }`}
               >
+                {profileViews.percentageChange >= 0 ? (
+                  <TrendingUp size={16} className="mr-1" />
+                ) : (
+                  <TrendingDown size={16} className="mr-1" />
+                )}
                 {profileViews.percentageChange > 0 ? "+" : ""}
-                {profileViews.percentageChange}%
+                {Math.abs(profileViews.percentageChange)}%
               </div>
               <div className="text-gray-500 text-xs">Since last week</div>
             </div>
@@ -1999,7 +2205,7 @@ export default function SocialNetworkFeed() {
                   {[
                     ["public", <Globe size={14} />],
                     ["private", <LockKeyhole size={14} />],
-                    ["connection", <Users size={14} />],
+                    ["connections", <Users size={14} />],
                   ].map(([type, icon]) => (
                     <Tooltip
                       title={type.charAt(0).toUpperCase() + type.slice(1)}
@@ -2108,7 +2314,7 @@ export default function SocialNetworkFeed() {
                   {[
                     ["public", <Globe size={14} />],
                     ["private", <LockKeyhole size={14} />],
-                    ["connection", <Users size={14} />],
+                    ["connections", <Users size={14} />],
                   ].map(([type, icon]) => (
                     <Tooltip
                       title={type.charAt(0).toUpperCase() + type.slice(1)}
@@ -2179,7 +2385,7 @@ export default function SocialNetworkFeed() {
                             <div className="absolute -left-1 -top-1 z-0">
                               {post.group?.image ? (
                                 <img
-                                  className="object-cover w-full h-full"
+                                  className="object-cover w-10 h-10"
                                   src={
                                     post.group.image.startsWith("http")
                                       ? post.group.image
@@ -2274,7 +2480,7 @@ export default function SocialNetworkFeed() {
                         {post.visibility === "private" && (
                           <LockKeyhole size={14} />
                         )}
-                        {post.visibility === "connection" && (
+                        {post.visibility === "connections" && (
                           <Users size={14} />
                         )}
                       </button>
@@ -2431,87 +2637,6 @@ export default function SocialNetworkFeed() {
         </div>
       )}
 
-      {showReportModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-md mx-4 p-5">
-            <h3 className="text-lg font-semibold mb-4">Laporkan posting ini</h3>
-            <p className="mb-3 text-sm text-gray-600">
-              Pilih kebijakan kami yang berlaku
-            </p>
-
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              {[
-                "Pelecehan",
-                "Penipuan",
-                "Spam",
-                "Misinformasi",
-                "Ujaran kebencian",
-                "Ancaman atau kekerasan",
-                "Menyakiti diri sendiri",
-                "Konten sadis",
-                "Organisasi berbahaya atau ekstremis",
-                "Konten seksual",
-                "Akun palsu",
-                "Eksploitasi anak",
-                "Produk dan layanan ilegal",
-                "Pelanggaran",
-                "Lainnya",
-              ].map((reason) => (
-                <button
-                  key={reason}
-                  className={`py-2 px-3 text-sm border rounded-full ${
-                    selectedReason === reason
-                      ? "bg-blue-100 border-blue-500 text-blue-700"
-                      : "bg-white hover:bg-gray-100"
-                  }`}
-                  onClick={() => setSelectedReason(reason)}
-                >
-                  {reason}
-                </button>
-              ))}
-            </div>
-
-            {selectedReason === "Lainnya" && (
-              <textarea
-                className="w-full p-2 border rounded mb-3 text-sm"
-                rows={3}
-                placeholder="Jelaskan alasan Anda melaporkan postingan ini"
-                value={customReason}
-                onChange={(e) => setCustomReason(e.target.value)}
-              />
-            )}
-
-            <div className="flex justify-end gap-2">
-              <button
-                className="text-gray-500 hover:text-gray-700"
-                onClick={() => {
-                  setShowReportModal(false);
-                  setSelectedReason("");
-                  setCustomReason("");
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                className={`px-4 py-2 rounded text-white ${
-                  selectedReason
-                    ? "bg-blue-600 hover:bg-blue-700"
-                    : "bg-gray-300 cursor-not-allowed"
-                }`}
-                disabled={!selectedReason}
-                onClick={() => {
-                  setShowReportModal(false);
-                  setSelectedReason("");
-                  setCustomReason("");
-                }}
-              >
-                Report
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showEditModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg w-full max-w-md p-6">
@@ -2597,7 +2722,7 @@ export default function SocialNetworkFeed() {
                 {[
                   ["public", <Globe size={14} />, "Public"],
                   ["private", <LockKeyhole size={14} />, "Private"],
-                  ["connection", <Users size={14} />, "Connections"],
+                  ["connections", <Users size={14} />, "Connections"],
                 ].map(([type, icon, label]) => (
                   <button
                     key={type}
@@ -2727,9 +2852,11 @@ export default function SocialNetworkFeed() {
 
                   {/* User Info */}
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors duration-200">
-                      {person.name}
-                    </h4>
+                    <Link to={`/user-profile/${person.username}`}>
+                      <h4 className="font-semibold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors duration-200">
+                        {person.name}
+                      </h4>
+                    </Link>
                     <p className="text-gray-600 text-xs truncate mt-0.5">
                       {person.headline}
                     </p>
@@ -3024,18 +3151,35 @@ export default function SocialNetworkFeed() {
         </div>
       )}
 
+      {showReportModal && (
+        <ReportModal
+          showReportModal={showReportModal}
+          setShowReportModal={setShowReportModal}
+          selectedReason={selectedReason}
+          setSelectedReason={setSelectedReason}
+          customReason={customReason}
+          setCustomReason={setCustomReason}
+          handleReportComment={handleReportComment}
+          currentUserId={currentUserId}
+          selectedPostId={selectedPostId || selectedComment?.id}
+        />
+      )}
+
       {/* Comment Modal */}
       {showCommentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-          {renderCommentOptionsModal()}
           {renderShowcase()}
-          <div className="bg-white rounded-lg w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
+          <div
+            className="bg-white rounded-lg w-full max-w-md mx-4 max-h-[90vh] flex flex-col"
+            style={{ zIndex: showReportModal ? 40 : 50 }}
+          >
             <div className="p-3 md:p-4 border-b flex justify-between items-center">
               <h3 className="text-base md:text-lg font-semibold">Comments</h3>
               <button onClick={closeCommentModal}>
                 <X size={20} />
               </button>
             </div>
+
 
             <div className="p-3 md:p-4 overflow-y-auto flex-1">
               {loadingComments[currentPostId] ? (
@@ -3149,16 +3293,34 @@ export default function SocialNetworkFeed() {
                                   Reply
                                 </button>
 
-                                <button
-                                  className="text-xs text-gray-500 hover:text-gray-700 flex items-center"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedComment(comment);
-                                    setShowCommentOptions(!showCommentOptions);
-                                  }}
-                                >
-                                  <MoreHorizontal size={14} />
-                                </button>
+                                {comment.user?.id === currentUserId && (
+                                  <button
+                                    className="text-gray-500 hover:text-gray-700 ml-2"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedComment(comment);
+                                      setShowCommentOptions(true);
+                                    }}
+                                  >
+                                    <MoreHorizontal size={14} />
+                                  </button>
+                                )}
+
+                                {comment.user?.id !== currentUserId && (
+                                  <button
+                                    className="text-red-500 hover:text-red-700"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleReportClick(
+                                        comment.user?.id,
+                                        "comment",
+                                        comment.id
+                                      );
+                                    }}
+                                  >
+                                    <TriangleAlert size={14} />
+                                  </button>
+                                )}
 
                                 {/* Di dalam map comments */}
                                 {(comment.repliesCount > 0 ||
@@ -3172,28 +3334,7 @@ export default function SocialNetworkFeed() {
                                       : `Show replies (${comment.repliesCount})`}
                                   </button>
                                 )}
-
-                                
                               </div>
-
-                              {/* Dropdown menu */}
-                              {showCommentOptions && (
-                                <div className="absolute top-8 right-0 bg-white shadow-lg rounded-md border border-gray-200 w-36 py-1 z-10">
-                                  <button
-                                    className="w-full text-left py-2 px-3 text-sm hover:bg-gray-100 flex items-center"
-                                    onClick={() => {
-                                      if (selectedComment) {
-                                        handleOpenShowcase(selectedComment.id);
-                                        setShowCommentOptions(false);
-                                      }
-                                    }}
-                                  >
-                                    <MessageCircle size={12} className="mr-2" />
-                                    See Thread
-                                  </button>
-                                  {/* You can add more dropdown options here */}
-                                </div>
-                              )}
                             </div>
 
                             {replyingTo === comment.id && (
@@ -3215,7 +3356,7 @@ export default function SocialNetworkFeed() {
                                 </button>
                               </div>
                             )}
-                            
+
                             {expandedReplies[comment.id] && (
                               <div className="mt-2 ml-4 md:ml-6 pl-2 md:pl-4 border-l-2 border-gray-200">
                                 {loadingComments[comment.id] ? (
@@ -3297,16 +3438,25 @@ export default function SocialNetworkFeed() {
                                                     reply.created_at
                                                   )}
                                                 </div>
-                                                <button
-                                                  className="opacity-0 group-hover:opacity-100 text-xxs text-gray-500 hover:text-gray-700"
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setSelectedComment(reply);
-                                                    setShowCommentOptions(true);
-                                                  }}
-                                                >
-                                                  <Ellipsis size={12} />
-                                                </button>
+                                                {reply.user?.id !==
+                                                  currentUserId && (
+                                                  <button
+                                                    className="text-xxs text-red-500 hover:text-red-700"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      handleReportClick(
+                                                        reply.user?.id,
+                                                        "comment",
+                                                        reply.id
+                                                      );
+                                                    }}
+                                                  >
+                                                    <TriangleAlert
+                                                      size={16}
+                                                      className="mr-1"
+                                                    />
+                                                  </button>
+                                                )}
                                               </div>
                                               <button
                                                 className="text-xxs text-blue-500 mt-1 md:text-xs"
@@ -3333,6 +3483,8 @@ export default function SocialNetworkFeed() {
                   })
               )}
             </div>
+
+             {renderCommentOptionsModal()}
 
             <div className="p-3 md:p-4 border-t">
               <div className="flex items-center mb-2">

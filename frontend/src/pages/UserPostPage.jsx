@@ -39,7 +39,7 @@ const PostPage = () => {
   const [connections, setConnections] = useState([]);
   const [connectionsCount, setConnectionsCount] = useState(0);
   const [suggestedConnections, setSuggestedConnections] = useState([]);
-const [loadingSuggested, setLoadingSuggested] = useState(false);
+  const [loadingSuggested, setLoadingSuggested] = useState(false);
 
   const [user, setUser] = useState({
     id: "",
@@ -79,44 +79,44 @@ const [loadingSuggested, setLoadingSuggested] = useState(false);
   ];
 
   const fetchSuggestedConnections = async () => {
-  try {
-    setLoadingSuggested(true);
-    const userToken = localStorage.getItem("token");
-    const response = await axios.get(apiUrl + "/api/user-peoples", {
-      headers: { Authorization: `Bearer ${userToken}` },
-    });
+    try {
+      setLoadingSuggested(true);
+      const userToken = localStorage.getItem("token");
+      const response = await axios.get(apiUrl + "/api/user-peoples", {
+        headers: { Authorization: `Bearer ${userToken}` },
+      });
 
-    if (response.data?.data) {
-      // Filter out people you're already connected with
-      const connectedIds = connections.map(conn => conn.id);
-      const filtered = response.data.data.filter(
-        person => !connectedIds.includes(person.id)
-      );
+      if (response.data?.data) {
+        // Filter out people you're already connected with
+        const connectedIds = connections.map((conn) => conn.id);
+        const filtered = response.data.data.filter(
+          (person) => !connectedIds.includes(person.id)
+        );
 
-      // Get 3 random suggestions
-      const shuffled = [...filtered].sort(() => 0.5 - Math.random());
-      const suggestions = shuffled.slice(0, 3).map(person => ({
-        id: person.id,
-        name: person.name || "Unknown User",
-        username: person.username || "unknown",
-        initials: person.name
-          ? person.name
-              .split(" ")
-              .map(n => n[0])
-              .join("")
-          : "UU",
-        photo: person.photo || null,
-        headline : person.headline || "No headline specified",
-      }));
+        // Get 3 random suggestions
+        const shuffled = [...filtered].sort(() => 0.5 - Math.random());
+        const suggestions = shuffled.slice(0, 3).map((person) => ({
+          id: person.id,
+          name: person.name || "Unknown User",
+          username: person.username || "unknown",
+          initials: person.name
+            ? person.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+            : "UU",
+          photo: person.photo || null,
+          headline: person.headline || "No headline specified",
+        }));
 
-      setSuggestedConnections(suggestions);
+        setSuggestedConnections(suggestions);
+      }
+    } catch (error) {
+      console.error("Failed to fetch suggested connections:", error);
+    } finally {
+      setLoadingSuggested(false);
     }
-  } catch (error) {
-    console.error("Failed to fetch suggested connections:", error);
-  } finally {
-    setLoadingSuggested(false);
-  }
-};
+  };
 
   const fetchConnections = async () => {
     const token = localStorage.getItem("token");
@@ -140,7 +140,6 @@ const [loadingSuggested, setLoadingSuggested] = useState(false);
       setIsLoading(false);
     }
   };
-
 
   const fetchUserPosts = async () => {
     const token = localStorage.getItem("token");
@@ -438,105 +437,117 @@ const [loadingSuggested, setLoadingSuggested] = useState(false);
           {/* Right Sidebar - Narrower */}
           <div className="w-full md:w-1/4 lg:w-1/5 space-y-4">
             {/* People You Might Know */}
-<div className="bg-white rounded-xl shadow-sm border p-4 mb-6 transition-all duration-300">
-  {/* Header */}
-  <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-100">
-    <h3 className="font-semibold text-gray-800 text-base flex items-center gap-2">
-      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-      People you might know
-    </h3>
-    <button
-      onClick={fetchSuggestedConnections}
-      disabled={loadingSuggested}
-      className="flex items-center gap-1 text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors duration-200 disabled:opacity-50"
-    >
-      <RefreshCw className={`w-4 h-4 ${loadingSuggested ? 'animate-spin' : ''}`} />
-    </button>
-  </div>
+            <div className="bg-white rounded-xl shadow-sm border p-4 mb-6 transition-all duration-300">
+              {/* Header */}
+              <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-100">
+                <h3 className="font-semibold text-gray-800 text-base flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  People you might know
+                </h3>
+                <button
+                  onClick={fetchSuggestedConnections}
+                  disabled={loadingSuggested}
+                  className="flex items-center gap-1 text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors duration-200 disabled:opacity-50"
+                >
+                  <RefreshCw
+                    className={`w-4 h-4 ${
+                      loadingSuggested ? "animate-spin" : ""
+                    }`}
+                  />
+                </button>
+              </div>
 
-  {/* Content */}
-  {loadingSuggested ? (
-    <div className="flex items-center justify-center py-8">
-      <div className="flex items-center gap-2 text-gray-500">
-        <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-        <span className="text-sm">Finding suggestions...</span>
-      </div>
-    </div>
-  ) : suggestedConnections.length === 0 ? (
-    <div className="text-center py-8">
-      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-        <UserPlus className="w-6 h-6 text-gray-400" />
-      </div>
-      <p className="text-gray-500 text-sm">No suggestions available at the moment</p>
-      <p className="text-gray-400 text-xs mt-1">Check back later for new connections</p>
-    </div>
-  ) : (
-    <div className="space-y-3">
-      {suggestedConnections.map((person, index) => (
-        <div 
-          key={person.id} 
-          className="group flex items-center p-3 rounded-lg hover:bg-gray-50 transition-all duration-200 border border-transparent hover:border-gray-200"
-          style={{
-            animationDelay: `${index * 100}ms`,
-            animation: 'fadeInUp 0.5s ease-out forwards'
-          }}
-        >
-          {/* Profile Picture */}
-          <div className="relative mr-3 flex-shrink-0">
-            <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden ring-2 ring-white shadow-md">
-              {person.photo ? (
-                <img
-                  src={
-                    person.photo.startsWith("http")
-                      ? person.photo
-                      : `${apiUrl}/${person.photo}`
-                  }
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = "";
-                  }}
-                />
+              {/* Content */}
+              {loadingSuggested ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="flex items-center gap-2 text-gray-500">
+                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-sm">Finding suggestions...</span>
+                  </div>
+                </div>
+              ) : suggestedConnections.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <UserPlus className="w-6 h-6 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 text-sm">
+                    No suggestions available at the moment
+                  </p>
+                  <p className="text-gray-400 text-xs mt-1">
+                    Check back later for new connections
+                  </p>
+                </div>
               ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <span className="text-sm font-semibold text-gray-500">
-                    {person.initials}
-                  </span>
+                <div className="space-y-3">
+                  {suggestedConnections.map((person, index) => (
+                    <div
+                      key={person.id}
+                      className="group flex items-center p-3 rounded-lg hover:bg-gray-50 transition-all duration-200 border border-transparent hover:border-gray-200"
+                      style={{
+                        animationDelay: `${index * 100}ms`,
+                        animation: "fadeInUp 0.5s ease-out forwards",
+                      }}
+                    >
+                      {/* Profile Picture */}
+                      <div className="relative mr-3 flex-shrink-0">
+                        <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden ring-2 ring-white shadow-md">
+                          {person.photo ? (
+                            <img
+                              src={
+                                person.photo.startsWith("http")
+                                  ? person.photo
+                                  : `${apiUrl}/${person.photo}`
+                              }
+                              alt="Profile"
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = "";
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <span className="text-sm font-semibold text-gray-500">
+                                {person.initials}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* User Info */}
+                      <div className="flex-1 min-w-0">
+                        <Link to={`/user-profile/${person.username}`}>
+                          <h4 className="font-semibold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors duration-200">
+                            {person.name}
+                          </h4>
+                        </Link>
+                        <p className="text-gray-600 text-xs truncate mt-0.5">
+                          {person.headline}
+                        </p>
+                      </div>
+
+                      {/* Connect Button */}
+                      <button
+                        className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 hover:scale-110 transition-all duration-200 group-hover:shadow-md"
+                        onClick={() => handleConnectWithUser(person.id)}
+                        disabled={
+                          connections.some((conn) => conn.id === person.id) ||
+                          loadingSuggested
+                        }
+                        title={`Connect with ${person.name}`}
+                      >
+                        {connections.some((conn) => conn.id === person.id) ? (
+                          <Check size={16} className="text-green-500" />
+                        ) : (
+                          <UserPlus size={16} />
+                        )}
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
-      
-          </div>
-
-          {/* User Info */}
-          <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors duration-200">
-              {person.name}
-            </h4>
-            <p className="text-gray-600 text-xs truncate mt-0.5">
-              {person.headline}
-            </p>
-          </div>
-
-          {/* Connect Button */}
-          <button
-            className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 hover:scale-110 transition-all duration-200 group-hover:shadow-md"
-            onClick={() => handleConnectWithUser(person.id)}
-            disabled={connections.some(conn => conn.id === person.id) || loadingSuggested}
-            title={`Connect with ${person.name}`}
-          >
-            {connections.some(conn => conn.id === person.id) ? (
-              <Check size={16} className="text-green-500" />
-            ) : (
-              <UserPlus size={16} />
-            )}
-          </button>
-        </div>
-      ))}
-    </div>
-  )}
-</div>
 
             {/* Premium Banner */}
             <div className="bg-white rounded-lg shadow p-4">

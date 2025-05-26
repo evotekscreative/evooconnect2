@@ -11,7 +11,8 @@ import {
 } from "lucide-react";
 import Case from "../components/Case";
 
-const base_url = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000" ; 
+const base_url =
+  import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
 export default function SearchResults() {
   const [searchParams] = useSearchParams();
@@ -64,8 +65,7 @@ export default function SearchResults() {
           blogs: data.blogs || [],
         });
 
-
-        // console.log("Search Results:", data); 
+        // console.log("Search Results:", data);
         // console.log(results);
       } catch (error) {
         console.error("Error fetching search results:", error);
@@ -581,7 +581,7 @@ export default function SearchResults() {
                                       </p>
                                     </div>
                                   </Link>
-                                    
+
                                   {group.is_member ? (
                                     <button className="ml-4 px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-500  text-white rounded-lg font-semibold border-2 border-gray-200">
                                       Joined
@@ -693,8 +693,17 @@ export default function SearchResults() {
                                       <h3 className="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors mb-2">
                                         {blog.title}
                                       </h3>
-                                      <p className="text-gray-600 line-clamp-3 mb-3 leading-relaxed">
-                                        {blog.content}
+                                      <p className="text-gray-600 line-clamp-3 mb-3 leading-relaxed ">
+                                        {blog.content
+                                          ? blog.content.length > 100
+                                            ? blog.content
+                                                .substring(0, 100)
+                                                .replace(/<[^>]*>/g, "") + "..."
+                                            : blog.content.replace(
+                                                /<[^>]*>/g,
+                                                ""
+                                              )
+                                          : "No content"}
                                       </p>
                                       <div className="flex items-center text-sm text-gray-500 space-x-4">
                                         <span className="flex items-center">
@@ -747,7 +756,16 @@ export default function SearchResults() {
                                         {post.title || "Post"}
                                       </h3>
                                       <p className="text-gray-600 line-clamp-3 mb-3 leading-relaxed">
-                                        {post.content || "No content"}
+                                        {post.content
+                                          ? post.content.length > 100
+                                            ? post.content
+                                                .substring(0, 100)
+                                                .replace(/<[^>]*>/g, "") + "..."
+                                            : post.content.replace(
+                                                /<[^>]*>/g,
+                                                ""
+                                              )
+                                          : "No content"}
                                       </p>
                                       <div className="flex items-center text-sm text-gray-500 space-x-4">
                                         <span className="flex items-center">

@@ -153,6 +153,9 @@ func (controller *ConnectionControllerImpl) GetConnections(writer http.ResponseW
 		panic(exception.NewBadRequestError("Invalid user ID format"))
 	}
 
+	currentUserId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+
 	// Parse pagination parameters
 	limitStr := request.URL.Query().Get("limit")
 	offsetStr := request.URL.Query().Get("offset")
@@ -174,7 +177,7 @@ func (controller *ConnectionControllerImpl) GetConnections(writer http.ResponseW
 	}
 
 	// Call service to get connections
-	connectionsResponse := controller.ConnectionService.GetConnections(request.Context(), userId, limit, offset)
+	connectionsResponse := controller.ConnectionService.GetConnections(request.Context(), userId, currentUserId, limit, offset)
 
 	// Create web response
 	webResponse := web.WebResponse{

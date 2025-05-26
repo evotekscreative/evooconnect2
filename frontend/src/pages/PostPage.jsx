@@ -35,7 +35,6 @@ const PostPage = () => {
 
   const [userPosts, setUserPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [profileImage, setProfileImage] = useState(null);
   const [suggestedConnections, setSuggestedConnections] = useState([]);
   const [loadingSuggested, setLoadingSuggested] = useState(false);
   const [connections, setConnections] = useState([]);
@@ -325,12 +324,22 @@ const PostPage = () => {
           {/* Left Sidebar - Narrower */}
           <div className="w-full md:w-1/4 lg:w-1/5 space-y-4">
             <div className="bg-white rounded-lg shadow-md p-4 text-center">
+              {/* Di komponen gambar profil */}
               <div className="relative w-28 h-28 mx-auto bg-gray-200 rounded-full overflow-hidden flex items-center justify-center">
-                {profileImage ? (
+                {user.photo ? (
                   <img
-                    src={apiUrl + "/" + profileImage}
+                    src={
+                      user.photo.startsWith("http")
+                        ? user.photo
+                        : `${apiUrl}/${user.photo}`
+                    }
                     alt="Profile"
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "";
+                      e.target.parentElement.classList.add("bg-gray-300");
+                    }}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gray-300">
@@ -445,11 +454,32 @@ const PostPage = () => {
                   >
                     {/* Header */}
                     <div className="flex items-start gap-3">
-                      {profileImage ? (
+                      {/* Di bagian post */}
+                      {user.photo ? (
                         <img
-                          src={user.photo}
+                          src={
+                            user.photo.startsWith("http")
+                              ? user.photo
+                              : `${apiUrl}/${user.photo}`
+                          }
                           alt="profile"
                           className="rounded-full w-12 h-12 object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "";
+                            e.target.className =
+                              "rounded-full w-12 h-12 bg-gray-200 flex items-center justify-center";
+                            e.target.outerHTML = `
+        <div class="rounded-full w-12 h-12 bg-gray-200 flex items-center justify-center">
+          <span class="text-lg font-bold">
+            ${user.name
+              .split(" ")
+              .map((n) => n[0])
+              .join("")}
+          </span>
+        </div>
+      `;
+                          }}
                         />
                       ) : (
                         <div className="rounded-full w-12 h-12 bg-gray-200 flex items-center justify-center">
@@ -484,9 +514,9 @@ const PostPage = () => {
                       <p className="text-gray-700">
                         {post.content || "No content"}
                       </p>
-                      {post.images && post.images.length > 0 && (
+                      {post.photo && post.photo.length > 0 && (
                         <img
-                          src={apiUrl + "/" + post.images[0]}
+                          src={apiUrl + "/" + post.photo[0]}
                           alt={`Post ${post.id}`}
                           className="mt-2 w-full rounded-lg border object-cover"
                         />
@@ -494,17 +524,55 @@ const PostPage = () => {
                     </div>
 
                     {/* Footer */}
-                    <div className="flex items-center gap-4 text-gray-600 text-sm mt-3">
-                      <button className="flex items-center gap-1 hover:text-blue-600">
-                        <ThumbsUp size={16} /> {post.likes_count || 0} Suka
-                      </button>
-                      <button className="flex items-center gap-1 hover:text-blue-600">
-                        <MessageCircle size={16} /> {post.comments_count || 0}{" "}
-                        Komentar
-                      </button>
-                      <button className="flex items-center gap-1 hover:text-blue-600">
-                        <Share2 size={16} /> Bagikan
-                      </button>
+                    <div>
+                      {/* Likes & Comments Info */}
+                      <div className="flex items-center space-x-4 px-4 py-1 text-xs text-gray-500 justify-between">
+                        <div className="flex items-center space-x-1 pt-1">
+                          <span className="text-black flex">
+                            <ThumbsUp size={14} className="mr-1" />{" "}
+                            {post.likes_count || 0}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-1 cursor-pointer">
+                          <span
+                            className="text-black"
+                            onClick={() => openCommentModal(post.id)}
+                          >
+                            {post.comments_count || 0} Comment
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Post Actions */}
+                      <div className="border-t border-gray-200 px-4 py-2 flex justify-between">
+                        <button
+                          className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${
+                            post.isLiked
+                              ? "text-blue-600 bg-blue-50"
+                              : "text-black hover:bg-gray-100"
+                          }`}
+                          onClick={() => handleLikePost(post.id, post.isLiked)}
+                        >
+                          <ThumbsUp size={14} className="mr-2" />
+                          Like
+                        </button>
+
+                        <button
+                          className="flex items-center justify-center w-1/3 py-2 rounded-lg text-black hover:bg-gray-100"
+                          onClick={() => openCommentModal(post.id)}
+                        >
+                          <MessageCircle size={14} className="mr-2" />
+                          Comment
+                        </button>
+
+                        <button
+                          className="flex items-center justify-center w-1/3 py-2 rounded-lg text-black hover:bg-gray-100"
+                          onClick={() => handleOpenShareModal(post.id)}
+                        >
+                          <Share2 size={14} className="mr-2" />
+                          Share
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))
@@ -595,14 +663,15 @@ const PostPage = () => {
                             </div>
                           )}
                         </div>
-                       
                       </div>
 
                       {/* User Info */}
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors duration-200">
-                          {person.name}
-                        </h4>
+                        <Link to={`/user-profile/${person.username}`}>
+                          <h4 className="font-semibold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors duration-200">
+                            {person.name}
+                          </h4>
+                        </Link>
                         <p className="text-gray-600 text-xs truncate mt-0.5">
                           {person.headline}
                         </p>

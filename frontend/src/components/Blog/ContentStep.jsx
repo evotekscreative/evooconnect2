@@ -79,7 +79,9 @@ function ContentStep({ content, images, onContentChange, onImagesChange, onNext,
             data={content}
             onChange={handleContentChange}
             config={{
-              toolbar: ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', '|', 'undo', 'redo'],
+              toolbar: [
+                'heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', '|', 'undo', 'redo'
+              ],
             }}
           />
         </div>

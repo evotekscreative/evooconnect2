@@ -72,13 +72,13 @@ export default function UserProfile() {
   const { username } = useParams(); // Get username from URL
   const [userData, setUserData] = useState(null);
   const [connections, setConnections] = useState([]);
-const [connectionsCount, setConnectionsCount] = useState(0);
-const [profileViews, setProfileViews] = useState({
-  thisWeek: 0,
-  lastWeek: 0,
-  percentageChange: 0,
-  dailyViews: [],
-});
+  const [connectionsCount, setConnectionsCount] = useState(0);
+  const [profileViews, setProfileViews] = useState({
+    thisWeek: 0,
+    lastWeek: 0,
+    percentageChange: 0,
+    dailyViews: [],
+  });
   const navigate = useNavigate();
 
   const [user, setUser] = useState({
@@ -140,6 +140,73 @@ const [profileViews, setProfileViews] = useState({
     "November",
     "December",
   ];
+
+  const [isConnected, setIsConnected] = useState(false);
+
+  // Add this useEffect to check connection status when user data loads
+  useEffect(() => {
+    const checkConnectionStatus = async () => {
+      const token = localStorage.getItem("token");
+      try {
+        const response = await axios.get(
+          `${apiUrl}/api/users/${user.id}/connection-status`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setIsConnected(response.data.isConnected);
+      } catch (error) {
+        console.error("Failed to check connection status:", error);
+      }
+    };
+
+    if (user.id) {
+      checkConnectionStatus();
+    }
+  }, [user.id]);
+
+  const handleConnect = async () => {
+    const token = localStorage.getItem("token");
+    setIsLoading(true);
+
+    try {
+      if (isConnected) {
+        // Already connected, do nothing
+        return;
+      }
+
+      const response = await axios.post(
+        `${apiUrl}/api/users/${user.id}/connect`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data.success) {
+        setIsConnected(true);
+        toast.success("Connection request sent successfully!");
+      }
+    } catch (error) {
+      console.error("Failed to connect:", error);
+
+      // Handle case when users are already connected
+      if (error.response?.data?.data === "Users are already connected") {
+        setIsConnected(true);
+        return;
+      }
+
+      toast.error(
+        error.response?.data?.message || "Failed to send connection request"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const years = [
     "Year",
@@ -771,7 +838,78 @@ const [profileViews, setProfileViews] = useState({
                   </span>
                   <span className="font-bold text-lg">{connectionsCount}</span>
                 </Link>
-    
+              </div>
+
+              <div className="mt-2">
+                <button
+                  onClick={handleConnect()}
+                  disabled={isLoading || isConnected}
+                  className={`w-full py-2 rounded-md transition-all duration-200 ${
+                    isConnected
+                      ? "bg-gray-100 text-gray-600 cursor-default"
+                      : "bg-white text-blue-500 border-2 border-blue-400 hover:bg-blue-50 hover:border-blue-500"
+                  } ${isLoading ? "opacity-70 cursor-not-allowed" : ""}`}
+                >
+                  {isLoading ? (
+                    <div className="flex items-center justify-center">
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-500"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Processing
+                    </div>
+                  ) : isConnected ? (
+                    <div className="flex items-center justify-center">
+                      <svg
+                        className="w-4 h-4 mr-1"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                      </svg>
+                      Connected
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center">
+                      <svg
+                        className="w-4 h-4 mr-1"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="8.5" cy="7" r="4"></circle>
+                        <line x1="20" y1="8" x2="20" y2="14"></line>
+                        <line x1="23" y1="11" x2="17" y2="11"></line>
+                      </svg>
+                      Connect
+                    </div>
+                  )}
+                </button>
               </div>
             </div>
 

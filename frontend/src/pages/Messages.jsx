@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import Pusher from "pusher-js";
 import EmojiPicker from "emoji-picker-react";
@@ -1332,10 +1332,10 @@ export const Messages = () => {
                   .filter((p) => p.user_id !== getUserIdFromToken(token))
                   .slice(0, 1)
                   .map((participant) => (
-                    <div
+                    <Link to={`/user-profile/${participant.user.username}`} 
                       key={participant.user_id}
                       className="flex items-center gap-3"
-                    >
+                    > 
                       <div className="flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-300 rounded-full">
                         {participant.user.photo ? (
                           <img
@@ -1361,7 +1361,7 @@ export const Messages = () => {
                             : "Online"}
                         </p>
                       </div>
-                    </div>
+                    </Link>
                   ))}
               </div>
 
