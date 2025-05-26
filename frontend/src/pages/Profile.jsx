@@ -21,6 +21,12 @@ import {
   ThumbsUp,
   MessageCircle,
   Share2,
+  Mail,
+  Phone,
+  MapPin,
+  Building,
+  Link2,
+  X,
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import axios from "axios";
@@ -50,6 +56,10 @@ const socialPlatforms = [
 ];
 
 export default function ProfilePage() {
+  const apiUrl =
+    import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
+  const [showContactModal, setShowContactModal] = useState(false);
   const [showEditEducationModal, setEditShowEducationModal] = useState(false);
   const [editingEducation, setEditingEducation] = useState(null);
   const [showExperienceModal, setShowExperienceModal] = useState(false);
@@ -60,8 +70,9 @@ export default function ProfilePage() {
   const [editingExperience, setEditingExperience] = useState(null);
   const [userPosts, setUserPosts] = useState([]);
   const [profileImage, setProfileImage] = useState(null);
+  const [connectionCount, setConnectionCount] = useState(0);
+  const [viewCount, setViewCount] = useState(0);
 
-  // Initialize user state with empty values
   const [user, setUser] = useState({
     id: "",
     name: "",
@@ -70,6 +81,13 @@ export default function ProfilePage() {
     skills: [],
     socials: {},
     photo: null,
+    email: "",
+    phone: "",
+    location: "",
+    organization: "",
+    website: "",
+    birthdate: "",
+    gender: ""
   });
 
   // Education Form State
@@ -120,6 +138,47 @@ export default function ProfilePage() {
     ...Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i),
   ];
 
+  const fetchConnectionCount = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const userId = user.id;
+      const response = await axios.get(
+        `${base_url}/api/users/${userId}/connections?limit=10&offset=0`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setConnectionCount(response.data.data.total || 0);
+    } catch (error) {
+      console.error("Failed to fetch connection count:", error);
+    }
+  };
+
+  const fetchViewCount = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        `${base_url}/api/user/profile/views/this-week`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setViewCount(response.data.data.views || 0);
+    } catch (error) {
+      console.error("Failed to fetch view count:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchConnectionCount();
+    fetchViewCount();
+  }, []);
+
+
   const fetchUserPosts = async () => {
     const token = localStorage.getItem("token");
     setIsLoading(true);
@@ -128,7 +187,7 @@ export default function ProfilePage() {
     const userId = user.id;
     try {
       const response = await axios.get(
-        `http://localhost:3000/api/users/${userId}/posts?limit=10&offset=0`,
+        `${apiUrl}/api/users/${userId}/posts?limit=10&offset=0`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -145,61 +204,89 @@ export default function ProfilePage() {
     }
   };
 
-  // Fetch user profile data
-  const fetchProfile = async () => {
-    const token = localStorage.getItem("token");
-    setIsLoading(true);
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const token = localStorage.getItem("token");
+      setIsLoading(true);
 
-    try {
-      const response = await axios.get(
-        "http://localhost:3000/api/user/profile",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      try {
+        const response = await axios.get(
+          apiUrl + "/api/user/profile",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = response.data.data;
+
+        // Convert socials array to object
+        const socialsObject = {};
+        if (data.socials && Array.isArray(data.socials)) {
+          data.socials.forEach((social) => {
+            socialsObject[social.platform] = social.username;
+          });
         }
-      );
 
-      // Convert socials array to object
-      const socialsObject = {};
-      if (
-        response.data.data.socials &&
-        Array.isArray(response.data.data.socials)
-      ) {
-        response.data.data.socials.forEach((social) => {
-          socialsObject[social.platform] = social.username;
+        // Handle skills data
+        let userSkills = [];
+        if (data.skills && data.skills.Valid) {
+          userSkills = Array.isArray(data.skills.String)
+            ? data.skills.String
+            : data.skills.String
+              ? [data.skills.String]
+              : [];
+        }
+
+        setUser({
+          id: data.id || "",
+          name: data.name || "",
+          headline: data.headline || "",
+          about: data.about || "",
+          skills: userSkills,
+          socials: socialsObject,
+          photo: data.photo || null,
+          email: data.email || "",
+          phone: data.phone || "",
+          location: data.location || "",
+          organization: data.organization || "",
+          website: data.website || "",
+          birthdate: data.birthdate || "",
+          gender: data.gender || ""
         });
+
+        setProfileImage(data.photo || null);
+
+        // Record view when profile is loaded
+        await recordProfileView();
+      } catch (error) {
+        console.error("Failed to fetch profile:", error);
+        toast.error("Failed to load profile data");
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-      // Handle skills data
-      let userSkills = [];
-      if (response.data.data.skills && response.data.data.skills.Valid) {
-        userSkills = Array.isArray(response.data.data.skills.String)
-          ? response.data.data.skills.String
-          : response.data.data.skills.String
-          ? [response.data.data.skills.String]
-          : [];
+    const recordProfileView = async () => {
+      const token = localStorage.getItem("token");
+      try {
+        await axios.post(
+          `${apiUrl}/api/user/profile/views`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+      } catch (error) {
+        console.error("Failed to record profile view:", error);
       }
+    };
 
-      setUser({
-        id: response.data.data.id || "",
-        name: response.data.data.name || "",
-        headline: response.data.data.headline || "",
-        about: response.data.data.about || "",
-        skills: userSkills,
-        socials: socialsObject,
-        photo: response.data.data.photo || null,
-      });
-
-      // Set profile image separately if needed
-      setProfileImage(response.data.data.photo || null);
-    } catch (error) {
-      console.error("Failed to fetch profile:", error);
-      toast.error("Failed to load profile data");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    fetchProfile();
+  }, []);
 
   const fetchEducations = async () => {
     const token = localStorage.getItem("token");
@@ -207,7 +294,7 @@ export default function ProfilePage() {
 
     try {
       const response = await axios.get(
-        `http://localhost:3000/api/users/${user.id}/education`,
+        `${apiUrl}/api/users/${user.id}/education`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -230,7 +317,7 @@ export default function ProfilePage() {
 
     try {
       const response = await axios.get(
-        `http://localhost:3000/api/users/${user.id}/experience?limit=10&offset=0`,
+        `${apiUrl}/api/users/${user.id}/experience?limit=10&offset=0`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -250,10 +337,6 @@ export default function ProfilePage() {
       setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchProfile();
-  }, []);
 
   useEffect(() => {
     if (user.id) {
@@ -290,7 +373,7 @@ export default function ProfilePage() {
       // If editing, make PUT request
       if (editingExperience) {
         const response = await axios.put(
-          `http://localhost:3000/api/experience/${editingExperience.id}`,
+          `${apiUrl}/api/experience/${editingExperience.id}`,
           formData,
           {
             headers: {
@@ -310,7 +393,7 @@ export default function ProfilePage() {
       } else {
         // If adding new, make POST request
         const response = await axios.post(
-          "http://localhost:3000/api/experience",
+          apiUrl + "/api/experience",
           formData,
           {
             headers: {
@@ -340,8 +423,7 @@ export default function ProfilePage() {
     } catch (error) {
       console.error("Failed to add/update experience:", error);
       toast.error(
-        `Failed to ${
-          editingExperience ? "update" : "add"
+        `Failed to ${editingExperience ? "update" : "add"
         } experience. Please try again.`
       );
     } finally {
@@ -373,7 +455,7 @@ export default function ProfilePage() {
       if (editingEducation) {
         // Edit existing education
         const response = await axios.put(
-          `http://localhost:3000/api/education/${editingEducation.id}`,
+          `${apiUrl}/api/education/${editingEducation.id}`,
           formData,
           {
             headers: {
@@ -392,16 +474,12 @@ export default function ProfilePage() {
         setEditingEducation(null);
       } else {
         // Add new education
-        const response = await axios.post(
-          "http://localhost:3000/api/education",
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await axios.post(apiUrl + "/api/education", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         setEducation((prev) => [...prev, response.data.data]);
         toast.success("Education added successfully!");
@@ -422,8 +500,7 @@ export default function ProfilePage() {
     } catch (error) {
       console.error("Failed to add/update education:", error);
       toast.error(
-        `Failed to ${
-          editingEducation ? "update" : "add"
+        `Failed to ${editingEducation ? "update" : "add"
         } education. Please try again.`
       );
     } finally {
@@ -474,7 +551,7 @@ export default function ProfilePage() {
     setIsLoading(true);
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:3000/api/education/${educationId}`, {
+      await axios.delete(`${apiUrl}/api/education/${educationId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -585,14 +662,11 @@ export default function ProfilePage() {
     setIsLoading(true);
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(
-        `http://localhost:3000/api/experience/${experienceId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await axios.delete(`${apiUrl}/api/experience/${experienceId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       setExperiences((prev) =>
         Array.isArray(prev) ? prev.filter((exp) => exp.id !== experienceId) : []
@@ -624,10 +698,11 @@ export default function ProfilePage() {
           {/* Left Sidebar */}
           <div className="w-full md:w-1/3 space-y-4">
             <div className="bg-white rounded-lg shadow-md p-6 text-center">
+              {/* Profile image and basic info */}
               <div className="relative w-28 h-28 mx-auto bg-gray-200 rounded-full overflow-hidden flex items-center justify-center">
                 {profileImage ? (
                   <img
-                    src={"http://localhost:3000/" + profileImage}
+                    src={apiUrl + "/" + profileImage}
                     alt="Profile"
                     className="w-full h-full object-cover"
                   />
@@ -646,6 +721,14 @@ export default function ProfilePage() {
               <p className="text-base text-gray-500">
                 {user.headline || "No headline yet"}
               </p>
+              <div className="mt-2">
+                <button
+                  onClick={() => setShowContactModal(true)}
+                  className="text-blue-600 hover:underline text-sm"
+                >
+                  Contact Information
+                </button>
+              </div>
               <div className="mt-5 space-y-2 text-left">
                 <Link
                   to="/list-connection"
@@ -654,15 +737,14 @@ export default function ProfilePage() {
                   <span className="flex items-center gap-2 text-base">
                     <Users size={18} /> Connections
                   </span>
-                  <span className="font-bold text-lg">358</span>
+                  <span className="font-bold text-lg">{connectionCount}</span>
                 </Link>
                 <div className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md">
                   <span className="flex items-center gap-2 text-base">
                     <Eye size={18} /> Views
                   </span>
-                  <span className="font-bold text-lg">85</span>
+                  <span className="font-bold text-lg">{viewCount}</span>
                 </div>
-                {/* </Link> */}
                 <Link
                   to="/job-saved"
                   className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md"
@@ -782,7 +864,7 @@ export default function ProfilePage() {
                       <div className="flex gap-4">
                         {exp.photo ? (
                           <img
-                            src={"http://localhost:3000/" + exp.photo}
+                            src={apiUrl + "/" + exp.photo}
                             alt="Company logo"
                             className="w-12 h-12 rounded-md object-cover"
                           />
@@ -807,7 +889,7 @@ export default function ProfilePage() {
                           <p className="text-gray-500 text-sm">
                             {formatDate(exp.start_month, exp.start_year)} -{" "}
                             {exp.end_month === "Month" ||
-                            exp.end_year === "Year"
+                              exp.end_year === "Year"
                               ? "Present"
                               : formatDate(exp.end_month, exp.end_year)}
                           </p>
@@ -861,7 +943,7 @@ export default function ProfilePage() {
                       <div className="flex gap-4">
                         {edu.photo ? (
                           <img
-                            src={"http://localhost:3000/" + edu.photo}
+                            src={apiUrl + "/" + edu.photo}
                             alt="School logo"
                             className="w-12 h-12 rounded-md object-cover"
                           />
@@ -884,7 +966,7 @@ export default function ProfilePage() {
                           <p className="text-gray-500 text-sm">
                             {formatDate(edu.start_month, edu.start_year)} -{" "}
                             {edu.end_month === "Month" ||
-                            edu.end_year === "Year"
+                              edu.end_year === "Year"
                               ? "Present"
                               : formatDate(edu.end_month, edu.end_year)}
                           </p>
@@ -956,7 +1038,7 @@ export default function ProfilePage() {
                           <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
                             {profileImage ? (
                               <img
-                                src={"http://localhost:3000/" + profileImage}
+                                src={apiUrl + "/" + profileImage}
                                 alt="Profile"
                                 className="w-full h-full object-cover"
                               />
@@ -991,24 +1073,32 @@ export default function ProfilePage() {
                           </div>
                         </div>
                       </div>
-
-                      {/* Post content */}
                       <div className="p-4">
-                        <p className="text-sm text-gray-700 mb-3">
-                          {post.content || "No content"}
-                        </p>
+                        <Link
+                          to={`/post/${post.id}`}
+                          className="text-sm text-gray-700 mb-3"
+                        >
+                          <p className="mb-3">
+                            {post.content
+                              ? post.content.length > 100
+                                ? post.content
+                                  .substring(0, 100)
+                                  .replace(/<[^>]*>/g, "") + "..."
+                                : post.content.replace(/<[^>]*>/g, "")
+                              : "No content"}
+                          </p>
 
-                        {/* Only show image if exists */}
-                        {post.images && post.images.length > 0 && (
-                          <div className="mb-3">
-                            <img
-                              src={"http://localhost:3000/" + post.images[0]}
-                              alt={`Post ${post.id}`}
-                              className="w-full rounded-md"
-                            />
-                          </div>
-                        )}
-
+                          {/* Only show image if exists */}
+                          {post.images && post.images.length > 0 && (
+                            <div className="mb-3">
+                              <img
+                                src={apiUrl + "/" + post.images[0]}
+                                alt={`Post ${post.id}`}
+                                className="w-full rounded-md"
+                              />
+                            </div>
+                          )}
+                        </Link>
                         {/* Post footer */}
                         <div className="flex justify-between items-center text-xs text-gray-500">
                           <div className="flex items-center gap-1">
@@ -1195,7 +1285,7 @@ export default function ProfilePage() {
                       <div className="mt-2">
                         <p className="text-sm text-gray-500">Current logo:</p>
                         <img
-                          src={"http://localhost:3000/" + experienceForm.photo}
+                          src={apiUrl + "/" + experienceForm.photo}
                           alt="Company logo"
                           className="w-20 h-20 object-contain mt-1"
                         />
@@ -1260,8 +1350,8 @@ export default function ProfilePage() {
                     {isLoading
                       ? "Saving..."
                       : editingExperience
-                      ? "Update"
-                      : "Save"}
+                        ? "Update"
+                        : "Save"}
                   </button>
                 </div>
               </div>
@@ -1456,8 +1546,8 @@ export default function ProfilePage() {
                     {isLoading
                       ? "Saving..."
                       : editingEducation
-                      ? "Update"
-                      : "Save"}
+                        ? "Update"
+                        : "Save"}
                   </button>
                 </div>
               </div>
@@ -1596,7 +1686,7 @@ export default function ProfilePage() {
                     <div className="mt-2">
                       <p className="text-sm text-gray-500">Current logo:</p>
                       <img
-                        src={"http://localhost:3000/" + editingEducation.photo}
+                        src={apiUrl + "/" + editingEducation.photo}
                         alt="Current school logo"
                         className="h-12 mt-1"
                       />
@@ -1646,6 +1736,116 @@ export default function ProfilePage() {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {showContactModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-2xl transform rounded-2xl bg-white p-8 shadow-2xl transition-all duration-300 ease-in-out scale-100">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-gray-200 pb-5">
+              <h2 className="text-2xl font-semibold text-gray-800">Contact Information</h2>
+              <button
+                onClick={() => setShowContactModal(false)}
+                className="rounded-md p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-8 text-base text-gray-700">
+              {/* Contact Details */}
+              <section>
+                <h3 className="mb-4 flex items-center gap-2 text-lg font-medium text-gray-600">
+                  <Mail size={18} className="text-blue-600" />
+                  Contact Details
+                </h3>
+                <div className="space-y-3 pl-6">
+                  {user.email ? (
+                    <div className="flex items-center gap-2">
+                      <Mail size={16} className="text-gray-400" />
+                      <a href={`mailto:${user.email}`} className="text-blue-600 hover:underline">
+                        {user.email}
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-gray-400">No email provided</p>
+                  )}
+
+                  {user.phone ? (
+                    <div className="flex items-center gap-2">
+                      <Phone size={16} className="text-gray-400" />
+                      <a
+                        href={`tel:${user.phone.replace(/[^0-9]/g, '')}`}
+                        className="text-blue-600 hover:underline"
+                      >
+                        {user.phone}
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-gray-400">No phone number provided</p>
+                  )}
+
+                  {user.location ? (
+                    <div className="flex items-center gap-2">
+                      <MapPin size={16} className="text-gray-400" />
+                      <span>{user.location}</span>
+                    </div>
+                  ) : (
+                    <p className="text-gray-400">No location provided</p>
+                  )}
+                </div>
+              </section>
+
+              {/* Professional Details */}
+              <section>
+                <h3 className="mb-4 flex items-center gap-2 text-lg font-medium text-gray-600">
+                  <Building size={18} className="text-blue-600" />
+                  Professional Details
+                </h3>
+                <div className="space-y-3 pl-6">
+                  {user.organization ? (
+                    <div className="flex items-center gap-2">
+                      <Building size={16} className="text-gray-400" />
+                      <span>{user.organization}</span>
+                    </div>
+                  ) : (
+                    <p className="text-gray-400">No organization provided</p>
+                  )}
+
+                  {user.website ? (
+                    <div className="flex items-start gap-2">
+                      <Link2 size={16} className="text-gray-400 mt-1 flex-shrink-0" />
+                      <a
+                        href={
+                          user.website.startsWith('http')
+                            ? user.website
+                            : `https://${user.website}`
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline break-all"
+                      >
+                        {user.website.replace(/^https?:\/\//, '')}
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-gray-400">No website provided</p>
+                  )}
+                </div>
+              </section>
+            </div>
+
+            {/* Footer */}
+            <div className="mt-8 flex justify-end">
+              <button
+                onClick={() => setShowContactModal(false)}
+                className="rounded-md bg-blue-600 px-5 py-2.5 text-base font-medium text-white transition hover:bg-blue-700"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

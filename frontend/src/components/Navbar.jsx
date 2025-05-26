@@ -29,6 +29,7 @@ const Navbar = () => {
   const [pusher, setPusher] = useState(null);
   const [channels, setChannels] = useState({});
   const [userName, setUserName] = useState("User");
+  const [user, setUser] = useState({ name: "", photo: null });
 
   // Add notifications state with sample data
   const [notifications, setNotifications] = useState([
@@ -85,7 +86,6 @@ const Navbar = () => {
   const bellRef = useRef(null);
   const dropdownRef = useRef(null);
   const mobileMenuRef = useRef(null);
-  const [notifications, setNotifications] = useState([]);
 
   // Fungsi untuk menandai notifikasi sebagai read dan redirect
   // Fungsi untuk menandai notifikasi sebagai read dan redirect
@@ -106,10 +106,10 @@ const Navbar = () => {
 
         // Update status read di local state
         setNotifications(prev =>
-  prev.map(n => 
-    n.id === notif.id ? { ...n, status: "read" } : n
-  )
-);
+          prev.map(n =>
+            n.id === notif.id ? { ...n, status: "read" } : n
+          )
+        );
       }
 
       // Redirect to notification page with appropriate tab
@@ -127,25 +127,6 @@ const Navbar = () => {
       navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
       // Tidak perlu reset searchQuery di sini agar tetap ada di input field
     }
-  };
-
-  // Format time function
-  const formatTime = (timestamp) => {
-    if (!timestamp) return "";
-
-    const messageDate = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now - messageDate;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins} min ago`;
-    if (diffHours < 24) return `${diffHours} hr ago`;
-    if (diffDays < 7) return `${diffDays} day ago`;
-
-    return messageDate.toLocaleDateString();
   };
 
   // Initialize Pusher and fetch initial conversations
@@ -208,23 +189,23 @@ const Navbar = () => {
         const data = await res.json();
         const notifData = Array.isArray(data.data.notifications)
           ? data.data.notifications.map((n) => ({
-              id: n.id,
-              type: n.category,
-              title: n.title,
-              desc: n.message,
-              time: new Date(n.created_at).toLocaleString(),
-              icon:
-                n.category === "connection" ? (
-                  <User className="text-sky-500" />
-                ) : n.category === "job" ? (
-                  <Briefcase className="text-green-500" />
-                ) : n.category === "sosmed" ? (
-                  <Bell className="text-pink-500" />
-                ) : (
-                  <Heart className="text-gray-400" />
-                ),
-              status: n.status, // tambahkan ini
-            }))
+            id: n.id,
+            type: n.category,
+            title: n.title,
+            desc: n.message,
+            time: new Date(n.created_at).toLocaleString(),
+            icon:
+              n.category === "connection" ? (
+                <User className="text-sky-500" />
+              ) : n.category === "job" ? (
+                <Briefcase className="text-green-500" />
+              ) : n.category === "sosmed" ? (
+                <Bell className="text-pink-500" />
+              ) : (
+                <Heart className="text-gray-400" />
+              ),
+            status: n.status, // tambahkan ini
+          }))
           : [];
         setNotifications(notifData);
       } catch (error) {
@@ -519,13 +500,13 @@ const Navbar = () => {
                   </span>
                 </div>
                 <ul className="overflow-y-auto text-black divide-y divide-gray-100 max-h-96 scrollbar-hide">
-                  
-                  
+
+
                   {notifications.length === 0 ? (
-        <li className="px-4 py-8 text-center text-gray-400">
-          No notifications
-        </li>
-      ) :notifications.map((n) => (
+                    <li className="px-4 py-8 text-center text-gray-400">
+                      No notifications
+                    </li>
+                  ) : notifications.map((n) => (
                     <li
                       key={notification.id}
                       className={`px-4 py-3 hover:bg-gray-50 cursor-pointer ${!notification.read ? "bg-blue-50" : ""
@@ -541,7 +522,7 @@ const Navbar = () => {
                               }`}
                           >
                             {n.title}
-                          </h3>
+                          </p>
                           <p className="text-xs text-gray-600">{n.desc}</p>
                           <div className="flex gap-2 mt-1 text-xs text-gray-500">
                             <span>{formatDate(n.time)}</span>
@@ -549,8 +530,8 @@ const Navbar = () => {
                           </div>
                         </div>
                         {n.status === "unread" && (
-  <div className="w-2 h-2 mt-2 bg-blue-500 rounded-full"></div>
-)}
+                          <div className="w-2 h-2 mt-2 bg-blue-500 rounded-full"></div>
+                        )}
                       </div>
                     </li>
                   ))}

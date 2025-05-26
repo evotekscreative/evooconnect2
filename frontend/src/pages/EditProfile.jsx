@@ -7,7 +7,7 @@ import { Facebook, Twitter, Linkedin, Github, Instagram, X, User, Bookmark, Link
 import { Toaster, toast } from "sonner";
 import axios from "axios";
 
-const base_url = "http://localhost:3000";
+const base_url = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
 const socialPlatforms = [
   { name: "Facebook", platform: "facebook", icon: <Facebook />, color: "text-blue-600" },
@@ -18,6 +18,8 @@ const socialPlatforms = [
 ];
 
 export default function ProfileEdit() {
+            const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
   const [isLoading, setIsLoading] = useState(true);
   const [skills, setSkills] = useState([]);
   const [newSkill, setNewSkill] = useState("");
@@ -201,9 +203,10 @@ export default function ProfileEdit() {
           },
         }
       );
+
   
       // Update the profile image in state
-      setProfileImage(response.data.photoUrl || URL.createObjectURL(file));
+      setProfileImage(response.data?.data?.photo || URL.createObjectURL(file));
       toast.success("Profile image uploaded successfully");
     } catch (error) {
       console.error("Error uploading photo:", error);
@@ -319,7 +322,7 @@ export default function ProfileEdit() {
                 <div className="flex flex-col items-center">
                   <div className="relative w-36 h-36 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center border-4 border-white shadow-md hover:shadow-lg transition-shadow">
                     {profileImage ? (
-                      <img src={'http://localhost:3000/' + profileImage} alt="Profile" className="w-full h-full object-cover" />
+                      <img src={apiUrl + '/' + profileImage} alt="Profile" className="w-full h-full object-cover" />
                     ) : (
                       <div className="bg-gray-200 w-full h-full flex items-center justify-center">
                         <span className="text-4xl font-bold text-gray-500">
