@@ -44,11 +44,12 @@ func NewRouter(
 	router.PUT("/api/user/profile", userController.UpdateProfile)
 	router.GET("/api/user-profile/:username", userController.GetByUsername)
 	router.POST("/api/user/photo", userController.UploadPhotoProfile)
+	router.DELETE("/api/user/photo", userController.DeletePhotoProfile)
 	router.GET("/api/user-peoples", userController.GetPeoples)
 
 	// Blog routes
 	router.POST("/api/blogs", blogController.Create)
-	// router.POST("/api/blogs-with-image", blogController.CreateWithImage)
+	router.POST("/api/blogs-with-image", blogController.CreateWithImage)
 	router.GET("/api/blogs", blogController.FindAll)
 	router.GET("/api/blogs/random", blogController.GetRandomBlogs)
 	router.GET("/api/blogs/slug/:slug", blogController.GetBySlug)
@@ -65,9 +66,7 @@ func NewRouter(
 	router.DELETE("/api/blog/comments/:commentId", commentBlogController.Delete) // <-- path ini diubah
 	router.POST("/api/blog/comments/:commentId/replies", commentBlogController.Reply) // <-- path ini diubah
 	router.GET("/api/blog/comments/:commentId/replies", commentBlogController.GetReplies) // <-- path ini diubah
-	// Post routes - static paths first
-	 router.POST("/api/posts", postController.Create)
-	 router.GET("/api/posts", postController.FindAll)
+
 
 	// Post comment routes
 	router.POST("/api/post-comments/:postId", commentController.Create)
@@ -94,17 +93,10 @@ func NewRouter(
 	router.DELETE("/api/experience/:experienceId", experienceController.Delete)
 	router.GET("/api/experience/:experienceId", experienceController.GetById)
 	router.GET("/api/users/:userId/experience", experienceController.GetByUserId)
- 
-	// Post like routes - carefully ordered to avoid conflicts
-	router.POST("/api/post-actions/:postId/like", postController.LikePost)
 
-	// Post comment routes - carefully ordered to avoid conflicts
-	router.POST("/api/post-comments/:postId", commentController.Create)
-	router.GET("/api/post-comments/:postId", commentController.GetByPostId)
-
-	// User post routes
-	router.GET("/api/users/:userId/posts", postController.FindByUserId)
- 
+	// Post routes
+	router.POST("/api/posts", postController.Create)
+	router.GET("/api/posts", postController.FindAll)
 	router.GET("/api/posts/:postId", postController.FindById)
 	router.PUT("/api/posts/:postId", postController.Update)
 	router.DELETE("/api/posts/:postId", postController.Delete)
