@@ -722,10 +722,10 @@ const PostPage = () => {
 
                     {/* Body */}
                     <div className="mt-3 text-sm">
-                      <div
-                        className="prose max-w-none text-gray-700"
-                        dangerouslySetInnerHTML={{ __html: post.content }}
-                      />
+                                       <div
+  className="prose max-w-none text-gray-700 ck-content custom-post-content"
+  dangerouslySetInnerHTML={{ __html: post.content }}
+/>
                       {post.images && post.images.length > 0 && (
                         <img
                           src={apiUrl + "/" + post.images[0]}

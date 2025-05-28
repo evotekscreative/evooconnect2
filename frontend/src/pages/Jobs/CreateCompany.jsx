@@ -1,7 +1,7 @@
 import { useState } from "react";
-import Case from "../components/Case.jsx";
-import CompanyForm from "../components/CreateCompany/CompanyForm.jsx";
-import CompanyPreview from "../components/CreateCompany/CompanyPreview.jsx";
+import Case from "../../components/Case.jsx";
+import CompanyForm from "../../components/CreateCompany/CompanyForm.jsx";
+import CompanyPreview from "../../components/CreateCompany/CompanyPreview.jsx";
 
 export default function CreateCompany() {
     const [form, setForm] = useState({

@@ -7,9 +7,9 @@ import Connections from "./pages/Connections.jsx";
 import PrivacyPolicy from "./pages/PrivacyPolicy.jsx";
 import TermsCondition from "./pages/TermsCondition.jsx";
 import Jobs from "./pages/Jobs/index.jsx";
-import JobProfile from "./pages/Profile/job-profile.jsx";
+import JobProfile from "./pages/company-profile/JobProfile.jsx";
 import Faq from "./pages/Faq/index.jsx";
-import CompanyProfile from "./pages/Profile/company-profile.jsx";
+import CompanyProfile from "./pages/company-profile/CompanyProfile.jsx";
 import Groups from "./pages/Groups.jsx";
 import CreateBlog from "./pages/Blog/CreateBlog.jsx";
 import BlogDetail from "./pages/Blog/BlogDetail.jsx";
@@ -20,18 +20,18 @@ import Blog from "./pages/Blog/Blog.jsx";
 import Notification from "./pages/Notification.jsx";
 import PostPage from "./pages/PostPage.jsx";
 import JobDashboard from "./pages/JobSaved.jsx";
-import ProfilePage from "./pages/Profile.jsx";
-import ProfileEdit from "./pages/EditProfile.jsx";
+import Profile from "./pages/Profile/Profile.jsx";
+import EditProfile from "./pages/Profile/EditProfile.jsx";
 import ProtectedRoute from "./components/Auth/ProtectedRoute.jsx";
 import VerifyEmail from "./pages/Auth/VerifyEmail.jsx";
 import ResetPassword from "./pages/Auth/ResetPassword.jsx";
 import IsGuest from "./components/Auth/IsGuest.jsx";
 import SinglePost from "./pages/SinglePost.jsx";
-import UserProfile from "./pages/userProfile.jsx";
+import UserProfile from "./pages/Profile/UserProfile.jsx";
 import UserPostPage from "./pages/UserPostPage.jsx";
 import MemberList from "./pages/MemberList.jsx";
 import SearchResults from "./pages/SearchResults.jsx";
-import CreateCompany from "./pages/CreateCompany.jsx";
+import CreateCompany from "./pages/Jobs/CreateCompany.jsx";
 import UserListConnection from "./pages/UserListConnection.jsx";
 import LoginAdmin from "./pages/Admin/AuthAdmin/LoginAdmin.jsx";
 import Dashboard from "./pages/Admin/Admin1/Dashboard.jsx";
@@ -126,7 +126,7 @@ const router = createBrowserRouter([
     path: "/profile",
     element: (
       <ProtectedRoute>
-        <ProfilePage />
+        <Profile />
       </ProtectedRoute>
     ),
   },
@@ -135,7 +135,7 @@ const router = createBrowserRouter([
     path: "/edit-profile",
     element: (
       <ProtectedRoute>
-        <ProfileEdit />
+        <EditProfile />
       </ProtectedRoute>
     ),
   },

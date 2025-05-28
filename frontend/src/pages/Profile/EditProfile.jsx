@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import Case from "../components/Case";
+import Case from "../../components/Case";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "../components/ui/card";
+} from "../../components/ui/card";
 import {
   Facebook,
   Twitter,
@@ -66,7 +66,7 @@ const socialPlatforms = [
   },
 ];
 
-export default function ProfileEdit() {
+export default function EditProfile() {
   const apiUrl =
     import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
