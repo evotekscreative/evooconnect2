@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"evoconnect/backend/model/domain"
 	"evoconnect/backend/model/web"
+	"fmt"
 	// "evoconnect/backend/repository"
 )
 
@@ -57,42 +58,56 @@ func ToUserProfileResponse(user domain.User, isConnected ...bool) web.UserProfil
 		birthdate = user.Birthdate.Format("2006-01-02")
 	}
 
-	connected := false
-	if len(isConnected) > 0 {
-		connected = isConnected[0]
-	}
-
-	return web.UserProfileResponse{
-		ID:           user.Id,
-		Name:         user.Name,
-		Email:        user.Email,
-		Username:     user.Username,
-		Birthdate:    birthdate,
-		Gender:       user.Gender,
-		Location:     user.Location,
-		Organization: user.Organization,
-		Website:      user.Website,
-		Phone:        user.Phone,
-		Headline:     user.Headline,
-		About:        user.About,
-		Skills:       skillsInterface,
-		Socials:      socialsInterface,
-		Photo:        user.Photo,
-		IsVerified:   user.IsVerified,
-		IsConnected:  connected,
-		CreatedAt:    user.CreatedAt.Format("2006-01-02T15:04:05Z"),
-		UpdatedAt:    user.UpdatedAt.Format("2006-01-02T15:04:05Z"),
-	}
+	 connected := false
+    var connectedRequest string = ""
+    
+    if len(isConnected) > 0 {
+        connected = isConnected[0]
+    }
+    
+    // Buat response dengan field baru
+    return web.UserProfileResponse{
+        ID:                user.Id,
+        Name:              user.Name,
+        Email:             user.Email,
+        Username:          user.Username,
+        Birthdate:         birthdate,
+        Gender:            user.Gender,
+        Location:          user.Location,
+        Organization:      user.Organization,
+        Website:           user.Website,
+        Phone:             user.Phone,
+        Headline:          user.Headline,
+        About:             user.About,
+        Skills:            skillsInterface,
+        Socials:           socialsInterface,
+        Photo:             user.Photo,
+        IsVerified:        user.IsVerified,
+        IsConnected:       connected,
+        IsConnectedRequest: connectedRequest,
+        CreatedAt:         user.CreatedAt.Format("2006-01-02T15:04:05Z"),
+        UpdatedAt:         user.UpdatedAt.Format("2006-01-02T15:04:05Z"),
+    }
 }
 
-func ToUserShortResponse(user domain.User, isConnected bool) web.UserShort {
+func ToUserShortResponse(user domain.User, isConnected bool, isConnectedRequest string) web.UserShort {
+    // Tambahkan log untuk debugging
+    fmt.Printf("ToUserShortResponse: user=%s, isConnected=%v, isConnectedRequest=%s\n", 
+               user.Name, isConnected, isConnectedRequest)
+    
+    // Jika isConnectedRequest kosong, berikan nilai default "none"
+    if isConnectedRequest == "" {
+        isConnectedRequest = "none"
+    }
+    
     return web.UserShort{
-        Id:          user.Id,
-        Name:        user.Name,
-        Username:    user.Username,
-        Photo:       &user.Photo,
-        Headline:    &user.Headline,
-        IsConnected: isConnected,
+        Id:                 user.Id,
+        Name:               user.Name,
+        Username:           user.Username,
+        Photo:              &user.Photo,
+        Headline:           &user.Headline,
+        IsConnected:        isConnected,
+        IsConnectedRequest: isConnectedRequest,
     }
 }
 
@@ -116,12 +131,13 @@ func ToPostResponse(post domain.Post) web.PostResponse {
 
     if post.User != nil {
         postResponse.User = web.UserShort{
-            Id:          post.User.Id,
-            Name:        post.User.Name,
-            Username:    post.User.Username,
-            Photo:       &post.User.Photo,
-            Headline:    &post.User.Headline,
-            IsConnected: post.User.IsConnected,
+            Id:                 post.User.Id,
+            Name:               post.User.Name,
+            Username:           post.User.Username,
+            Photo:              &post.User.Photo,
+            Headline:           &post.User.Headline,
+            IsConnected:        post.User.IsConnected,
+            IsConnectedRequest: "", // Tambahkan field ini
         }
     }
 
@@ -132,6 +148,7 @@ func ToPostResponse(post domain.Post) web.PostResponse {
 
     return postResponse
 }
+
 
 
 

@@ -175,23 +175,26 @@ func (s *BlogServiceImpl) sendBlogNotifications(ctx context.Context, blog domain
 }
 
 func (s *BlogServiceImpl) FindAll(ctx context.Context) ([]web.BlogResponse, error) {
+    // Ambil ID user yang sedang login dari context
+    currentUserIdStr, ok := ctx.Value("user_id").(string)
+    var currentUserId uuid.UUID
+    if ok {
+        currentUserId, _ = uuid.Parse(currentUserIdStr)
+    }
+
+    // Ambil semua blog
     blogs, err := s.Repo.FindAll(ctx)
     if err != nil {
         return nil, fmt.Errorf("gagal mengambil semua blog: %w", err)
     }
 
-    // Ambil ID user yang sedang login dari context
-    currentUserIdStr, ok := ctx.Value("user_id").(string)
-    fmt.Printf("DEBUG: currentUserIdStr from context: %s, ok: %v\n", currentUserIdStr, ok)
-    
-    var currentUserId uuid.UUID
-    if ok {
-        currentUserId, _ = uuid.Parse(currentUserIdStr)
-        fmt.Printf("DEBUG: currentUserId parsed: %s\n", currentUserId)
-    }
-
     var result []web.BlogResponse
     for _, blog := range blogs {
+        // Skip blog yang di-take down kecuali untuk pemiliknya
+        if blog.Status == "taken_down" && blog.UserID != currentUserIdStr {
+            continue
+        }
+
         userID, err := uuid.Parse(blog.UserID)
         if err != nil {
             result = append(result, helper.ToBlogResponseWithUser(blog, domain.User{
@@ -216,15 +219,21 @@ func (s *BlogServiceImpl) FindAll(ctx context.Context) ([]web.BlogResponse, erro
         // Periksa apakah current user terhubung dengan penulis blog
         isConnected := false
         if currentUserId != uuid.Nil && userID != currentUserId {
-            fmt.Printf("DEBUG: Checking connection between %s and %s\n", currentUserId, userID)
             isConnected = s.ConnectionRepository.IsConnected(ctx, nil, currentUserId, userID)
-            fmt.Printf("DEBUG: Connection result: %v\n", isConnected)
         }
 
-        result = append(result, helper.ToBlogResponseWithUser(blog, user, isConnected))
+        blogResponse := helper.ToBlogResponseWithUser(blog, user, isConnected)
+        
+        // Tambahkan peringatan jika blog di-take down dan user adalah pemiliknya
+        if blog.Status == "taken_down" && blog.UserID == currentUserIdStr {
+            blogResponse.Warning = "This blog has been removed for violating our community guidelines. Only you can view this content."
+        }
+        
+        result = append(result, blogResponse)
     }
     return result, nil
 }
+
 
 func (s *BlogServiceImpl) Delete(ctx context.Context, blogID string) error {
 	err := s.Repo.Delete(ctx, blogID)
@@ -238,6 +247,24 @@ func (s *BlogServiceImpl) FindBySlug(ctx context.Context, slug string) (web.Blog
     blog, err := s.Repo.FindBySlug(ctx, slug)
     if err != nil {
         return web.BlogResponse{}, fmt.Errorf("blog dengan slug %s tidak ditemukan: %w", slug, err)
+    }
+    
+    // Debug untuk melihat nilai status
+    fmt.Printf("DEBUG: Blog status: '%s'\n", blog.Status)
+    
+    // Cek status blog terlebih dahulu
+    if blog.Status == "taken_down" {
+        // Ambil ID user yang sedang login dari context
+        currentUserIdStr, ok := ctx.Value("user_id").(string)
+        fmt.Printf("DEBUG: Current user ID: '%s', ok: %v\n", currentUserIdStr, ok)
+        
+        // Jika tidak ada user yang login atau user bukan pemilik blog, kembalikan error not found
+        if !ok || currentUserIdStr != blog.UserID {
+            return web.BlogResponse{}, errors.New("Blog Not Found")
+        }
+        
+        // Jika sampai di sini, berarti user adalah pemilik blog
+        fmt.Printf("DEBUG: User is owner, showing blog with warning\n")
     }
 
     userUUID, err := uuid.Parse(blog.UserID)
@@ -262,9 +289,17 @@ func (s *BlogServiceImpl) FindBySlug(ctx context.Context, slug string) (web.Blog
         isConnected = s.ConnectionRepository.IsConnected(ctx, nil, currentUserId, userUUID)
     }
 
-    return buildBlogResponse(blog, user, isConnected), nil
+    // Buat response
+    response := buildBlogResponse(blog, user, isConnected)
+    
+    // Tambahkan warning jika blog di-take down dan user adalah pemiliknya
+    if blog.Status == "taken_down" && currentUserIdStr == blog.UserID {
+        response.Warning = "This blog has been removed for violating our community guidelines. Only you can view this content."
+        fmt.Printf("DEBUG: Added warning to response\n")
+    }
+    
+    return response, nil
 }
-
 
 func (s *BlogServiceImpl) UpdateWithImagePath(ctx context.Context, blogID string, request web.BlogCreateRequest, userID string, imagePath string) (web.BlogResponse, error) {
     // Validasi panjang konten
@@ -552,14 +587,15 @@ func buildBlogResponse(blog domain.Blog, user domain.User, isConnected ...bool) 
         Content:   blog.Content,
         Photo:     blog.ImagePath,
         UserID:    blog.UserID,
+        Warning:   "", // Default kosong, akan diisi di fungsi yang memanggil
         CreatedAt: blog.CreatedAt,
         UpdatedAt: blog.UpdatedAt,
         User: web.BlogUserResponse{
-            ID:       user.Id.String(),
-            Name:     user.Name,
-            Username: user.Username,
-            Photo:    user.Photo,
-            IsConnected: connected, // Gunakan nilai dari parameter
+            ID:          user.Id.String(),
+            Name:        user.Name,
+            Username:    user.Username,
+            Photo:       user.Photo,
+            IsConnected: connected,
         },
     }
 }

@@ -205,6 +205,9 @@ func main() {
 
 	adminAuthController := controller.NewAdminAuthController(adminAuthService)
 
+	// admin report 
+	adminReportController := controller.NewAdminReportController(reportService)
+
 	// ===== Router and Middleware =====
 	// Initialize router with all controllers
 	router := app.NewRouter(
@@ -224,15 +227,16 @@ func main() {
 		notificationController,
 		searchController,
 		adminAuthController,
+		adminReportController,
 	)
 
 	seeder.SeedAdmin(db)
 
 	// Create middleware chain
 	var handler http.Handler = router
+	handler = middleware.NewAdminAuthMiddleware(handler)
 	handler = middleware.NewAuthMiddleware(handler, jwtSecret)
 	handler = middleware.CORSMiddleware(handler)
-	handler = middleware.NewAdminAuthMiddleware(handler)
 
 	addres := helper.GetEnv("APP_SERVER", "localhost:3000")
 

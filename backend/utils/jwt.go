@@ -16,7 +16,7 @@ type JWTClaim struct {
 	jwt.RegisteredClaims
 }
 
-var jwtKey = []byte("your_secret_key") // Gunakan environment variable untuk production
+var jwtKey = []byte("cfeba9c7b48aa3a16814aaf49732b64eaf35b32412925c84e67e7da477e980ed") // Gunakan environment variable untuk production
 
 func GenerateToken(id string, email string, role string, duration time.Duration) (string, error) {
 	expirationTime := time.Now().Add(duration)

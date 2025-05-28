@@ -38,6 +38,14 @@ type CommentResponse struct {
     Replies     []CommentResponse `json:"replies,omitempty"`
     RepliesCount int              `json:"replies_count"`
     ParentId    *uuid.UUID        `json:"parent_id,omitempty"` // Jika ini adalah balasan
+    ReplyTo     *ReplyToInfo      `json:"reply_to,omitempty"`  // Informasi tentang komentar yang dibalas
+}
+
+type ReplyToInfo struct {
+    Id          uuid.UUID `json:"reply_to_id"`
+    Content     string    `json:"content"`
+    Username    string    `json:"username"`
+    ProfilePhoto string    `json:"profile_photo"`
 }
 
 type CommentUserInfo struct {

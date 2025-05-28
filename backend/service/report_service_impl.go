@@ -18,7 +18,7 @@ var validReasons = []string{
 	"Harassment", "Fraud", "Spam", "Missinformation", "Hate Speech",
 	"Threats or violence", "self-harm", "Graphic or violent content",
 	"Dangerous or extremist organizations", "Sexual Content", "Fake Account",
-	"Child Exploitation", "Illegal products and services", "Infringement","Other",
+	"Child Exploitation", "Illegal products and services", "Infringement", "Other",
 }
 
 type reportServiceImpl struct {
@@ -131,7 +131,7 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 			}
 			return ""
 		}(),
-		Status:     result.Status,
+		Status: result.Status,
 	}, nil
 }
 
@@ -143,3 +143,453 @@ func isValidReason(reason string) bool {
 	}
 	return false
 }
+
+func (s *reportServiceImpl) FindAll(ctx context.Context, page, limit int, targetType string) ([]web.ReportResponse, int, error) {
+	// Validasi parameter
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+
+	// Panggil repository untuk mendapatkan data
+	reports, totalCount, err := s.reportRepository.FindAll(ctx, page, limit, targetType)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Konversi domain ke response
+	var reportResponses []web.ReportResponse
+	for _, report := range reports {
+		// Ambil informasi tambahan untuk setiap report
+		reportResponse, err := s.enrichReportResponse(ctx, report)
+		if err != nil {
+			// Log error tapi tetap lanjutkan
+			fmt.Printf("Error enriching report data: %v\n", err)
+
+			// Tambahkan response dasar jika gagal mendapatkan info tambahan
+			reportResponse = web.ReportResponse{
+				ID:         report.ID,
+				ReporterID: report.ReporterID,
+				TargetType: report.TargetType,
+				TargetID:   report.TargetID,
+				Reason:     report.Reason,
+				Description: func() string {
+					if strings.EqualFold(report.Reason, "Other") {
+						return report.OtherReason
+					}
+					return ""
+				}(),
+				Status: report.Status,
+			}
+		}
+
+		reportResponses = append(reportResponses, reportResponse)
+	}
+
+	return reportResponses, totalCount, nil
+}
+
+// Fungsi helper untuk memperkaya data report dengan informasi tambahan
+func (s *reportServiceImpl) enrichReportResponse(ctx context.Context, report domain.Report) (web.ReportResponse, error) {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return web.ReportResponse{}, err
+	}
+	defer tx.Rollback()
+
+	// Ambil data reporter
+	var reporterName string
+	reporterUUID, err := uuid.Parse(report.ReporterID)
+	if err == nil {
+		reporter, err := s.userRepository.FindById(ctx, tx, reporterUUID)
+		if err == nil {
+			reporterName = reporter.Name
+		}
+	}
+
+	// Buat response dasar
+	response := web.ReportResponse{
+		ID:           report.ID,
+		ReporterID:   report.ReporterID,
+		ReporterName: reporterName,
+		TargetType:   report.TargetType,
+		TargetID:     report.TargetID,
+		Reason:       report.Reason,
+		Description: func() string {
+			if strings.EqualFold(report.Reason, "Other") {
+				return report.OtherReason
+			}
+			return ""
+		}(),
+		Status: report.Status,
+	}
+
+	// Tambahkan informasi tambahan berdasarkan tipe target
+	switch report.TargetType {
+	case "user":
+		targetUUID, err := uuid.Parse(report.TargetID)
+		if err == nil {
+			user, err := s.userRepository.FindById(ctx, tx, targetUUID)
+			if err == nil {
+				response.TargetTitle = user.Name
+				response.TargetUsername = user.Username
+				response.TargetPhoto = user.Photo
+			}
+		}
+	case "post":
+		targetUUID, err := uuid.Parse(report.TargetID)
+		if err == nil {
+			post, err := s.postRepository.FindById(ctx, tx, targetUUID)
+			if err == nil {
+				// Ambil data user pemilik post
+				user, _ := s.userRepository.FindById(ctx, tx, post.UserId)
+
+				response.TargetContent = truncateText(post.Content, 100)
+				response.TargetAuthorName = user.Name
+
+				// Periksa apakah post memiliki gambar
+				// Karena Images adalah array, kita perlu memeriksa panjangnya
+				if len(post.Images) > 0 {
+					response.TargetPhoto = post.Images[0] // Ambil gambar pertama
+				}
+			}
+		}
+	case "blog":
+		blog, err := s.blogRepository.FindByID(ctx, report.TargetID)
+		if err == nil {
+			// Ambil data user pemilik blog
+			userUUID, err := uuid.Parse(blog.UserID)
+			if err == nil {
+				user, err := s.userRepository.FindById(ctx, tx, userUUID)
+				if err == nil {
+					response.TargetAuthorName = user.Name
+				}
+			}
+
+			response.TargetTitle = blog.Title
+			response.TargetContent = truncateText(blog.Content, 100)
+			response.TargetPhoto = blog.ImagePath
+		}
+	case "comment":
+		targetUUID, err := uuid.Parse(report.TargetID)
+		if err == nil {
+			comment, err := s.commentRepository.FindById(ctx, tx, targetUUID)
+			if err == nil {
+				// Ambil data user pemilik komentar
+				user, _ := s.userRepository.FindById(ctx, tx, comment.UserId)
+
+				response.TargetContent = truncateText(comment.Content, 100)
+				response.TargetAuthorName = user.Name
+			}
+		}
+	case "comment_blog":
+		targetUUID, err := uuid.Parse(report.TargetID)
+		if err == nil {
+			comment, err := s.commentBlogRepository.FindById(ctx, tx, targetUUID)
+			if err == nil {
+				// Ambil data user pemilik komentar
+				// Karena comment.UserId sudah bertipe uuid.UUID, tidak perlu di-parse lagi
+				user, err := s.userRepository.FindById(ctx, tx, comment.UserId)
+				if err == nil {
+					response.TargetAuthorName = user.Name
+				}
+
+				response.TargetContent = truncateText(comment.Content, 100)
+			}
+		}
+	}
+
+	return response, nil
+}
+
+// Helper function untuk memotong teks yang terlalu panjang
+func truncateText(text string, maxLength int) string {
+	if len(text) <= maxLength {
+		return text
+	}
+	return text[:maxLength] + "..."
+}
+
+func (s *reportServiceImpl) FindById(ctx context.Context, id string) (web.DetailReportResponse, error) {
+	// Ambil report dari repository
+	report, err := s.reportRepository.FindById(ctx, id)
+	if err != nil {
+		return web.DetailReportResponse{}, err
+	}
+
+	// Mulai transaksi untuk operasi database lainnya
+	tx, err := s.db.Begin()
+	if err != nil {
+		return web.DetailReportResponse{}, err
+	}
+	defer tx.Rollback()
+
+	// Ambil data reporter
+	var reporterName string
+	reporterUUID, err := uuid.Parse(report.ReporterID)
+	if err == nil {
+		reporter, err := s.userRepository.FindById(ctx, tx, reporterUUID)
+		if err == nil {
+			reporterName = reporter.Name
+		}
+	}
+
+	// Ambil detail target berdasarkan tipe
+	var targetDetail interface{}
+
+	switch report.TargetType {
+	case "user":
+		targetUUID, err := uuid.Parse(report.TargetID)
+		if err == nil {
+			user, err := s.userRepository.FindById(ctx, tx, targetUUID)
+			if err == nil {
+				targetDetail = map[string]interface{}{
+					"id":       user.Id,
+					"name":     user.Name,
+					"username": user.Username,
+					"email":    user.Email,
+					"about":    user.About,
+					"photo":    user.Photo,
+				}
+			}
+		}
+	case "post":
+		targetUUID, err := uuid.Parse(report.TargetID)
+		if err == nil {
+			post, err := s.postRepository.FindById(ctx, tx, targetUUID)
+			if err == nil {
+				// Ambil data user pemilik post
+				user, _ := s.userRepository.FindById(ctx, tx, post.UserId)
+				var userName string
+				if user.Name != "" {
+					userName = user.Name
+				}
+
+				targetDetail = map[string]interface{}{
+					"id":         post.Id,
+					"user_id":    post.UserId,
+					"user_name":  userName,
+					"content":    post.Content,
+					"created_at": post.CreatedAt,
+				}
+			}
+		}
+	case "blog":
+		blog, err := s.blogRepository.FindByID(ctx, report.TargetID)
+		if err == nil {
+			targetDetail = map[string]interface{}{
+				"id":      blog.ID,
+				"title":   blog.Title,
+				"content": blog.Content,
+			}
+		}
+	case "comment":
+		targetUUID, err := uuid.Parse(report.TargetID)
+		if err == nil {
+			comment, err := s.commentRepository.FindById(ctx, tx, targetUUID)
+			if err == nil {
+				// Ambil data user pemilik komentar
+				user, _ := s.userRepository.FindById(ctx, tx, comment.UserId)
+				var userName string
+				if user.Name != "" {
+					userName = user.Name
+				}
+
+				targetDetail = map[string]interface{}{
+					"id":         comment.Id,
+					"post_id":    comment.PostId,
+					"user_id":    comment.UserId,
+					"user_name":  userName,
+					"content":    comment.Content,
+					"created_at": comment.CreatedAt,
+				}
+			}
+		}
+	case "comment_blog":
+		targetUUID, err := uuid.Parse(report.TargetID)
+		if err == nil {
+			comment, err := s.commentBlogRepository.FindById(ctx, tx, targetUUID)
+			if err == nil {
+				targetDetail = map[string]interface{}{
+					"id":         comment.Id,
+					"blog_id":    comment.BlogId,
+					"user_id":    comment.UserId,
+					"content":    comment.Content,
+					"created_at": comment.CreatedAt,
+				}
+			}
+		}
+	}
+
+	// Buat response
+	description := report.OtherReason
+	if strings.ToLower(report.Reason) != "other" {
+		description = ""
+	}
+
+	return web.DetailReportResponse{
+		ID:           report.ID,
+		ReporterID:   report.ReporterID,
+		ReporterName: reporterName,
+		TargetType:   report.TargetType,
+		TargetID:     report.TargetID,
+		TargetDetail: targetDetail,
+		Reason:       report.Reason,
+		Description:  description,
+		Status:       report.Status,
+		CreatedAt:    report.CreatedAt,
+	}, nil
+}
+
+func (s *reportServiceImpl) TakeAction(ctx context.Context, id string, request web.AdminActionRequest) (web.AdminActionResponse, error) {
+	// Validasi request
+	if request.Status != "accepted" && request.Status != "rejected" {
+		return web.AdminActionResponse{}, errors.New("invalid status value")
+	}
+
+	if request.Status == "accepted" {
+		if request.Action == "" {
+			return web.AdminActionResponse{}, errors.New("action is required when status is accepted")
+		}
+
+		if request.Action == "suspend" && request.Duration <= 0 {
+			return web.AdminActionResponse{}, errors.New("suspension duration must be greater than 0")
+		}
+	} else if request.Status == "rejected" {
+		// Untuk rejected, action harus kosong
+		request.Action = ""
+	}
+
+	// Ambil report dari repository
+	report, err := s.reportRepository.FindById(ctx, id)
+	if err != nil {
+		return web.AdminActionResponse{}, err
+	}
+
+	// Mulai transaksi
+	tx, err := s.db.Begin()
+	if err != nil {
+		return web.AdminActionResponse{}, err
+	}
+	defer tx.Rollback()
+
+	// Update status report
+	report, err = s.reportRepository.UpdateStatus(ctx, id, request.Status)
+	if err != nil {
+		return web.AdminActionResponse{}, err
+	}
+
+	var suspendedUntil *time.Time
+
+	// Jika status accepted, lakukan aksi berdasarkan tipe target dan aksi yang diminta
+	if request.Status == "accepted" {
+		switch report.TargetType {
+		case "user":
+			targetUUID, err := uuid.Parse(report.TargetID)
+			if err != nil {
+				return web.AdminActionResponse{}, err
+			}
+
+			switch request.Action {
+			case "suspend":
+				// Suspend user
+				suspendUntil := time.Now().AddDate(0, 0, request.Duration)
+				suspendedUntil = &suspendUntil
+
+				query := "UPDATE users SET status = 'suspended', suspended_until = $1 WHERE id = $2"
+				_, err = tx.ExecContext(ctx, query, suspendUntil, targetUUID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
+			case "ban":
+				// Ban user permanen
+				query := "UPDATE users SET status = 'banned' WHERE id = $1"
+				_, err = tx.ExecContext(ctx, query, targetUUID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+			}
+
+		case "post":
+			if request.Action == "take_down" {
+				targetUUID, err := uuid.Parse(report.TargetID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
+				// Take down post
+				query := "UPDATE posts SET status = 'taken_down' WHERE id = $1"
+				_, err = tx.ExecContext(ctx, query, targetUUID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+			}
+
+		case "blog":
+			if request.Action == "take_down" {
+				// Take down blog
+				query := "UPDATE tb_blog SET status = 'taken_down' WHERE id = $1"
+				_, err = tx.ExecContext(ctx, query, report.TargetID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+			}
+
+		case "comment":
+			if request.Action == "take_down" {
+				targetUUID, err := uuid.Parse(report.TargetID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
+				// Take down comment
+				query := "UPDATE comments SET status = 'taken_down' WHERE id = $1"
+				_, err = tx.ExecContext(ctx, query, targetUUID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+			}
+
+		case "comment_blog":
+			if request.Action == "take_down" {
+				targetUUID, err := uuid.Parse(report.TargetID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
+				// Take down comment blog
+				query := "UPDATE comment_blog SET status = 'taken_down' WHERE id = $1"
+				_, err = tx.ExecContext(ctx, query, targetUUID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+			}
+		}
+	}
+
+	// Commit transaksi
+	if err := tx.Commit(); err != nil {
+		return web.AdminActionResponse{}, err
+	}
+
+	// Buat response
+	return web.AdminActionResponse{
+		ReportID:       report.ID,
+		Status:         report.Status,
+		Action:         request.Action,
+		TargetType:     report.TargetType,
+		TargetID:       report.TargetID,
+		Reason:         request.Reason,
+		ExecutedAt:     time.Now(),
+		SuspendedUntil: suspendedUntil,
+	}, nil
+}
+
+// Helper function untuk mengirim notifikasi - dinonaktifkan karena tidak ada implementasi yang sesuai
+// func (s *reportServiceImpl) sendNotification(ctx context.Context, tx *sql.Tx, userId, title, content string) error {
+//     // Implementasi notifikasi akan ditambahkan nanti
+//     return nil
+// }
