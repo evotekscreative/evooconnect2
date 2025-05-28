@@ -212,7 +212,259 @@
         }
       ],
       "description": "Daftar variabel yang digunakan dalam collection ini"
+    },
+    {
+  "name": "Admin Reports",
+  "item": [
+    {
+      "name": "Get All Reports",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": {
+            "token": "{{admin_token}}"
+          }
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/admin/reports?page=1&limit=10&target_type=",
+          "host": ["{{base_url}}"],
+          "path": ["api", "admin", "reports"],
+          "query": [
+            {
+              "key": "page",
+              "value": "1",
+              "description": "Halaman yang ingin ditampilkan"
+            },
+            {
+              "key": "limit",
+              "value": "10",
+              "description": "Jumlah item per halaman"
+            },
+            {
+              "key": "target_type",
+              "value": "",
+              "description": "Filter berdasarkan jenis target (user, post, comment, blog, comment_blog)"
+            }
+          ]
+        },
+        "description": "Mendapatkan daftar semua laporan dengan pagination dan filter berdasarkan jenis target"
+      },
+      "response": [
+        {
+          "name": "Get All Reports Success",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/reports?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "reports"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"reports\": [\n            {\n                \"id\": \"1331358f-169a-41ee-94c4-0403608752ac\",\n                \"reporter_id\": \"20ebddf2-33b5-4f58-b60c-1d54eb613780\",\n                \"target_type\": \"blog\",\n                \"target_id\": \"67e75527-34c8-4308-8dad-d03e9a3e43d2\",\n                \"reason\": \"spam\",\n                \"status\": \"pending\"\n            }\n        ],\n        \"total_count\": 1,\n        \"current_page\": 1,\n        \"total_pages\": 1\n    }\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get Report Detail",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": {
+            "token": "{{admin_token}}"
+          }
+        },
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/api/admin/reports/{{reportId}}",
+        "description": "Mendapatkan detail laporan termasuk konten yang dilaporkan"
+      },
+      "response": [
+        {
+          "name": "Get Report Detail Success",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/admin/reports/1331358f-169a-41ee-94c4-0403608752ac"
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"1331358f-169a-41ee-94c4-0403608752ac\",\n        \"reporter_id\": \"20ebddf2-33b5-4f58-b60c-1d54eb613780\",\n        \"reporter_name\": \"John Doe\",\n        \"target_type\": \"blog\",\n        \"target_id\": \"67e75527-34c8-4308-8dad-d03e9a3e43d2\",\n        \"target_detail\": {\n            \"id\": \"67e75527-34c8-4308-8dad-d03e9a3e43d2\",\n            \"title\": \"Cara Membuat Website dengan Go\",\n            \"content\": \"Dalam artikel ini, kita akan membahas cara membuat website menggunakan bahasa pemrograman Go...\"\n        },\n        \"reason\": \"spam\",\n        \"status\": \"pending\",\n        \"created_at\": \"2025-05-26T15:30:45.123456Z\"\n    }\n}"
+        }
+      ]
+    },
+    {
+      "name": "Take Action on Report",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": {
+            "token": "{{admin_token}}"
+          }
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"action\": \"take_down\",\n    \"reason\": \"Konten ini melanggar kebijakan kami tentang spam\"\n}"
+        },
+        "url": "{{base_url}}/api/admin/reports/{{reportId}}/action",
+        "description": "Mengambil tindakan terhadap laporan (take_down, suspend, ban, reject)"
+      },
+      "response": [
+        {
+          "name": "Take Down Content Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"action\": \"take_down\",\n    \"reason\": \"Konten ini melanggar kebijakan kami tentang spam\"\n}"
+            },
+            "url": "{{base_url}}/api/admin/reports/1331358f-169a-41ee-94c4-0403608752ac/action"
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"report_id\": \"1331358f-169a-41ee-94c4-0403608752ac\",\n        \"action\": \"take_down\",\n        \"target_type\": \"blog\",\n        \"target_id\": \"67e75527-34c8-4308-8dad-d03e9a3e43d2\",\n        \"reason\": \"Konten ini melanggar kebijakan kami tentang spam\",\n        \"status\": \"accepted\",\n        \"executed_at\": \"2025-05-27T10:15:30.123456Z\"\n    }\n}"
+        },
+        {
+          "name": "Suspend User Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"action\": \"suspend\",\n    \"reason\": \"Pelanggaran berulang terhadap kebijakan komunitas\",\n    \"duration\": 7\n}"
+            },
+            "url": "{{base_url}}/api/admin/reports/2331358f-169a-41ee-94c4-0403608752ad/action"
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"report_id\": \"2331358f-169a-41ee-94c4-0403608752ad\",\n        \"action\": \"suspend\",\n        \"target_type\": \"user\",\n        \"target_id\": \"30ebddf2-33b5-4f58-b60c-1d54eb613781\",\n        \"reason\": \"Pelanggaran berulang terhadap kebijakan komunitas\",\n        \"status\": \"accepted\",\n        \"executed_at\": \"2025-05-27T10:20:45.123456Z\",\n        \"suspended_until\": \"2025-06-03T10:20:45.123456Z\"\n    }\n}"
+        },
+        {
+          "name": "Ban User Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"action\": \"ban\",\n    \"reason\": \"Pelanggaran berat terhadap kebijakan komunitas\"\n}"
+            },
+            "url": "{{base_url}}/api/admin/reports/3331358f-169a-41ee-94c4-0403608752ae/action"
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"report_id\": \"3331358f-169a-41ee-94c4-0403608752ae\",\n        \"action\": \"ban\",\n        \"target_type\": \"user\",\n        \"target_id\": \"40ebddf2-33b5-4f58-b60c-1d54eb613782\",\n        \"reason\": \"Pelanggaran berat terhadap kebijakan komunitas\",\n        \"status\": \"accepted\",\n        \"executed_at\": \"2025-05-27T10:25:15.123456Z\"\n    }\n}"
+        },
+        {
+          "name": "Reject Report Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"action\": \"reject\",\n    \"reason\": \"Laporan tidak valid\"\n}"
+            },
+            "url": "{{base_url}}/api/admin/reports/4331358f-169a-41ee-94c4-0403608752af/action"
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"report_id\": \"4331358f-169a-41ee-94c4-0403608752af\",\n        \"action\": \"reject\",\n        \"target_type\": \"post\",\n        \"target_id\": \"50ebddf2-33b5-4f58-b60c-1d54eb613783\",\n        \"reason\": \"Laporan tidak valid\",\n        \"status\": \"rejected\",\n        \"executed_at\": \"2025-05-27T10:30:00.123456Z\"\n    }\n}"
+        }
+      ]
     }
+  ],
+  "description": "Endpoints untuk admin mengelola laporan dari user"
+}
+
   ],
   "variable": [
     {

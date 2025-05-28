@@ -9,6 +9,8 @@ type Blog struct {
 	Content   string
 	ImagePath string `json:"image_path"` // Ubah dari Image ke ImagePath
 	UserID    string
+	Warning   string `json:"warning,omitempty"` // Tambahkan field Warning
+	Status    string
 	CreatedAt string
 	UpdatedAt string
 }

@@ -21,6 +21,7 @@ type UserSearchResult struct {
     Photo       string  `json:"photo"`
     Headline    *string `json:"headline,omitempty"`
     IsConnected bool    `json:"is_connected"`
+    IsConnectedRequest string  `json:"is_connected_request,omitempty"`
     Highlight   string  `json:"highlight,omitempty"`
 }
 

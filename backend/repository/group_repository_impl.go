@@ -4,11 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"time"
-	"fmt"
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/domain"
+	"fmt"
 	"github.com/google/uuid"
+	"time"
 )
 
 type GroupRepositoryImpl struct {
@@ -98,9 +98,9 @@ func (repository *GroupRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx,
 	SQL := `SELECT id, name, description, rule, creator_id, privacy_level, invite_policy, image, created_at, updated_at 
 			FROM groups 
 			WHERE id = $1`
-	
+
 	fmt.Printf("DEBUG SQL: %s with param: %s\n", SQL, groupId)
-	
+
 	rows, err := tx.QueryContext(ctx, SQL, groupId)
 	if err != nil {
 		return domain.Group{}, err
@@ -396,11 +396,12 @@ func (repository *GroupRepositoryImpl) FindInvitationsByGroup(ctx context.Contex
 	return invitations
 }
 
-
 func (repository *GroupRepositoryImpl) Search(ctx context.Context, tx *sql.Tx, query string, limit int, offset int) []domain.Group {
+    // Hanya mengembalikan grup publik
     SQL := `SELECT id, name, description, rule, creator_id, image, privacy_level, invite_policy, created_at, updated_at
             FROM groups
-            WHERE LOWER(name) LIKE LOWER($1) OR LOWER(description) LIKE LOWER($1)
+            WHERE (LOWER(name) LIKE LOWER($1) OR LOWER(description) LIKE LOWER($1))
+            AND privacy_level = 'public'
             ORDER BY name
             LIMIT $2 OFFSET $3`
    
@@ -434,24 +435,73 @@ func (repository *GroupRepositoryImpl) Search(ctx context.Context, tx *sql.Tx, q
             continue
         }
         groups = append(groups, group)
-        fmt.Printf("Found group: %s\n", group.Name)
     }
    
     return groups
 }
 
+// Fungsi baru yang menerima parameter currentUserId
+func (repository *GroupRepositoryImpl) SearchWithPrivacy(ctx context.Context, tx *sql.Tx, query string, limit int, offset int, currentUserId uuid.UUID) []domain.Group {
+    // Query untuk mencari grup yang:
+    // 1. Cocok dengan kata kunci pencarian
+    // 2. Dan (grup bersifat publik ATAU pengguna adalah anggota grup privat)
+    SQL := `SELECT g.id, g.name, g.description, g.rule, g.creator_id, g.image, g.privacy_level, g.invite_policy, g.created_at, g.updated_at
+            FROM groups g
+            WHERE (LOWER(g.name) LIKE LOWER($1) OR LOWER(g.description) LIKE LOWER($1))
+            AND (g.privacy_level = 'public' OR 
+                (g.privacy_level = 'private' AND EXISTS (
+                    SELECT 1 FROM group_members gm 
+                    WHERE gm.group_id = g.id AND gm.user_id = $4 AND gm.is_active = true
+                ))
+            )
+            ORDER BY g.name
+            LIMIT $2 OFFSET $3`
 
-func (repository *GroupRepositoryImpl) CountMembers(ctx context.Context, tx *sql.Tx, groupId uuid.UUID) int {
-    SQL := `SELECT COUNT(*) FROM group_members WHERE group_id = $1 AND is_active = true`
-   
-    var count int
-    err := tx.QueryRowContext(ctx, SQL, groupId).Scan(&count)
+    searchPattern := "%" + query + "%"
+    fmt.Printf("Executing group search SQL with pattern: %s\n", searchPattern)
+
+    rows, err := tx.QueryContext(ctx, SQL, searchPattern, limit, offset, currentUserId)
     if err != nil {
-        fmt.Printf("Error counting members: %v\n", err)
-        return 0
+        fmt.Printf("Error executing group search: %v\n", err)
+        return []domain.Group{}
     }
-   
-    return count
+    defer rows.Close()
+
+    var groups []domain.Group
+    for rows.Next() {
+        group := domain.Group{}
+        err := rows.Scan(
+            &group.Id,
+            &group.Name,
+            &group.Description,
+            &group.Rule,
+            &group.CreatorId,
+            &group.Image,
+            &group.PrivacyLevel,
+            &group.InvitePolicy,
+            &group.CreatedAt,
+            &group.UpdatedAt,
+        )
+        if err != nil {
+            fmt.Printf("Error scanning group: %v\n", err)
+            continue
+        }
+        groups = append(groups, group)
+        fmt.Printf("Found group: %s (privacy: %s)\n", group.Name, group.PrivacyLevel)
+    }
+
+    return groups
 }
 
+func (repository *GroupRepositoryImpl) CountMembers(ctx context.Context, tx *sql.Tx, groupId uuid.UUID) int {
+	SQL := `SELECT COUNT(*) FROM group_members WHERE group_id = $1 AND is_active = true`
 
+	var count int
+	err := tx.QueryRowContext(ctx, SQL, groupId).Scan(&count)
+	if err != nil {
+		fmt.Printf("Error counting members: %v\n", err)
+		return 0
+	}
+
+	return count
+}

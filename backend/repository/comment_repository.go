@@ -17,4 +17,5 @@ type CommentRepository interface {
 	FindRepliesByParentId(ctx context.Context, tx *sql.Tx, parentId uuid.UUID) []domain.Comment
 	FindRepliesByParentIdSafe(ctx context.Context, tx *sql.Tx, parentId uuid.UUID) ([]domain.Comment, error)
 	CountRepliesByParentId(ctx context.Context, tx *sql.Tx, parentId uuid.UUID) (int, error)
+	
 }

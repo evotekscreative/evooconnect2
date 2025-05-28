@@ -6,7 +6,7 @@ CREATE TABLE reports (
     target_type TEXT NOT NULL CHECK (
         target_type IN ('user', 'post', 'comment', 'blog', 'comment_blog')
     ),
-    target_id UUID NOT NULL,
+    target_id TEXT NOT NULL,  -- Diubah dari UUID menjadi TEXT agar bisa menerima semua format ID
     reason TEXT NOT NULL,
     other_reason TEXT,
     status TEXT NOT NULL DEFAULT 'pending' CHECK (

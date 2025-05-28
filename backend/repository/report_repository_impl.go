@@ -40,3 +40,114 @@ func (r *reportRepositoryImpl) Create(ctx context.Context, report domain.Report)
 	)
 	return report, err
 }
+
+
+func (r *reportRepositoryImpl) FindAll(ctx context.Context, page, limit int, targetType string) ([]domain.Report, int, error) {
+	offset := (page - 1) * limit
+	
+	// Query dasar
+	baseQuery := "SELECT id, reporter_id, target_type, target_id, reason, other_reason, status, created_at FROM reports"
+	countQuery := "SELECT COUNT(*) FROM reports"
+	
+	// Tambahkan filter jika targetType tidak kosong
+	var params []interface{}
+	var whereClause string
+	
+	if targetType != "" {
+		whereClause = " WHERE target_type = $1"
+		params = append(params, targetType)
+	}
+	
+	// Hitung total records
+	var totalCount int
+	err := r.db.QueryRowContext(ctx, countQuery+whereClause, params...).Scan(&totalCount)
+	if err != nil {
+		return nil, 0, err
+	}
+	
+	// Query untuk mendapatkan reports dengan pagination
+	query := baseQuery + whereClause + " ORDER BY created_at DESC LIMIT $" + fmt.Sprintf("%d", len(params)+1) + " OFFSET $" + fmt.Sprintf("%d", len(params)+2)
+	
+	// Tambahkan parameter untuk LIMIT dan OFFSET
+	params = append(params, limit, offset)
+	
+	rows, err := r.db.QueryContext(ctx, query, params...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+	
+	var reports []domain.Report
+	for rows.Next() {
+		var report domain.Report
+		err := rows.Scan(
+			&report.ID,
+			&report.ReporterID,
+			&report.TargetType,
+			&report.TargetID,
+			&report.Reason,
+			&report.OtherReason,
+			&report.Status,
+			&report.CreatedAt,
+		)
+		if err != nil {
+			return nil, 0, err
+		}
+		reports = append(reports, report)
+	}
+	
+	return reports, totalCount, nil
+}
+
+func (r *reportRepositoryImpl) FindById(ctx context.Context, id string) (domain.Report, error) {
+	query := `
+		SELECT id, reporter_id, target_type, target_id, reason, other_reason, status, created_at
+		FROM reports
+		WHERE id = $1
+	`
+	
+	var report domain.Report
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
+		&report.ID,
+		&report.ReporterID,
+		&report.TargetType,
+		&report.TargetID,
+		&report.Reason,
+		&report.OtherReason,
+		&report.Status,
+		&report.CreatedAt,
+	)
+	
+	if err != nil {
+		return domain.Report{}, err
+	}
+	
+	return report, nil
+}
+
+func (r *reportRepositoryImpl) UpdateStatus(ctx context.Context, id string, status string) (domain.Report, error) {
+	query := `
+		UPDATE reports
+		SET status = $1
+		WHERE id = $2
+		RETURNING id, reporter_id, target_type, target_id, reason, other_reason, status, created_at
+	`
+	
+	var report domain.Report
+	err := r.db.QueryRowContext(ctx, query, status, id).Scan(
+		&report.ID,
+		&report.ReporterID,
+		&report.TargetType,
+		&report.TargetID,
+		&report.Reason,
+		&report.OtherReason,
+		&report.Status,
+		&report.CreatedAt,
+	)
+	
+	if err != nil {
+		return domain.Report{}, err
+	}
+	
+	return report, nil
+}

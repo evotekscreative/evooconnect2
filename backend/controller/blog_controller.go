@@ -196,30 +196,28 @@ func (c *BlogControllerImpl) Delete(writer http.ResponseWriter, request *http.Re
 	helper.WriteToResponseBody(writer, webResponse)
 }
 
-func (c *BlogControllerImpl) GetBySlug(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	// Ambil slug dari parameter URL
-	slug := params.ByName("slug")
-
-	// Panggil service untuk mendapatkan blog berdasarkan slug
-	blog, err := c.BlogService.FindBySlug(request.Context(), slug)
-	if err != nil {
-		// Jika terjadi error, tangani sesuai jenis error
-		webResponse := web.WebResponse{
-			Code:   http.StatusNotFound,
-			Status: "NOT FOUND",
-			Data:   err.Error(),
-		}
-		helper.WriteToResponseBody(writer, webResponse)
-		return
-	}
-
-	// Jika berhasil, kembalikan response dengan data blog
-	webResponse := web.WebResponse{
-		Code:   http.StatusOK,
-		Status: "OK",
-		Data:   blog,
-	}
-	helper.WriteToResponseBody(writer, webResponse)
+func (c *BlogControllerImpl) GetBySlug(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+    slug := ps.ByName("slug")
+    fmt.Printf("DEBUG: Getting blog by slug: %s\n", slug)
+    
+    blog, err := c.BlogService.FindBySlug(r.Context(), slug)
+    if err != nil {
+        fmt.Printf("DEBUG: Error getting blog: %v\n", err)
+        helper.WriteJSON(w, http.StatusNotFound, web.APIResponse{
+            Code:   http.StatusNotFound,
+            Status: "NOT_FOUND",
+            Error:  "Blog Not Found",
+        })
+        return
+    }
+    
+    fmt.Printf("DEBUG: Blog found, warning: '%s'\n", blog.Warning)
+    
+    helper.WriteJSON(w, http.StatusOK, web.APIResponse{
+        Code:   http.StatusOK,
+        Status: "OK",
+        Data:   blog,
+    })
 }
 
 func (c *BlogControllerImpl) Update(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
@@ -298,7 +296,7 @@ func (c *BlogControllerImpl) Update(writer http.ResponseWriter, request *http.Re
 		webResponse := web.WebResponse{
 			Code:   http.StatusNotFound,
 			Status: "NOT FOUND",
-			Data:   "Blog tidak ditemukan",
+			Data:   "Blog Not Found",
 		}
 		helper.WriteToResponseBody(writer, webResponse)
 		return

@@ -91,7 +91,7 @@ func (service *AdminAuthServiceImpl) Register(ctx context.Context, request web.A
 	admin = service.AdminRepository.Save(ctx, tx, admin)
 
 	// Generate token
-	token, err := utils.GenerateToken(admin.Id.String(), admin.Email, "admin", 24*time.Hour)
+	token, err := utils.GenerateToken(admin.Id.String(), admin.Email, admin.Role, 24*time.Hour)
 	helper.PanicIfError(err)
 
 	return web.AdminResponse{
