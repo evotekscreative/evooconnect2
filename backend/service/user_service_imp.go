@@ -141,27 +141,45 @@ func (service *UserServiceImpl) GetByUsername(ctx context.Context, username stri
 	// Cek apakah user saat ini sedang melihat profil orang lain
 	currentUserIdStr, ok := ctx.Value("user_id").(string)
 	var isConnected bool
+	var isConnectedRequest string = "none"
 
 	if ok {
-		// User sedang login, cek status koneksi
-		currentUserId, err := uuid.Parse(currentUserIdStr)
-		if err == nil && currentUserId != user.Id {
-			// Record this profile view asynchronously
-			go func(ctx context.Context, profileId, viewerId uuid.UUID) {
-				// Use a new context since the original will be canceled
-				newCtx := context.Background()
-				service.ProfileViewService.RecordView(newCtx, profileId, viewerId) // Use the service from the struct
-			}(ctx, user.Id, currentUserId)
+        // User sedang login, cek status koneksi
+        currentUserId, err := uuid.Parse(currentUserIdStr)
+        if err == nil && currentUserId != user.Id {
+            // Rekam view secara langsung
+            service.ProfileViewService.RecordView(ctx, user.Id, currentUserId)
 
-			// Hanya cek koneksi jika bukan profil sendiri
-			isConnected = service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, user.Id)
-		}
-	}
+            // Hanya cek koneksi jika bukan profil sendiri
+            isConnected = service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, user.Id)
+            
+            // Cek status permintaan koneksi jika belum terhubung
+            if !isConnected {
+                // Cek apakah ada permintaan koneksi dari current user ke user ini
+                request, err := service.ConnectionRepository.FindConnectionRequestBySenderIdAndReceiverId(ctx, tx, currentUserId, user.Id)
+                if err == nil {
+                    // Request ditemukan, set status
+                    isConnectedRequest = string(request.Status)
+                } else {
+                    // Cek apakah ada permintaan dari user ini ke current user
+                    request, err = service.ConnectionRepository.FindConnectionRequestBySenderIdAndReceiverId(ctx, tx, user.Id, currentUserId)
+                    if err == nil {
+                        isConnectedRequest = string(request.Status)
+                    }
+                    // Jika tidak ada request, tetap gunakan nilai default "none"
+                }
+            } else {
+                // Jika sudah terhubung, set nilai ke "connected"
+                isConnectedRequest = "connected"
+            }
+        }
+    }
 
-	userResponse := helper.ToUserProfileResponse(user)
-	userResponse.IsConnected = isConnected
+    userResponse := helper.ToUserProfileResponse(user)
+    userResponse.IsConnected = isConnected
+    userResponse.IsConnectedRequest = isConnectedRequest // Nilai tidak akan pernah kosong
 
-	return userResponse
+    return userResponse
 }
 
 func (service *UserServiceImpl) UploadPhotoProfile(ctx context.Context, userId uuid.UUID, file *multipart.FileHeader) web.UserProfileResponse {
@@ -242,13 +260,27 @@ func (service *UserServiceImpl) GetPeoples(ctx context.Context, limit int, offse
 	// Convert to response objects
 	var userResponses []web.UserShort
 	for _, user := range users {
-		// Check if user is already connected or has pending request
+		// Check if user is already connected
 		isConnected := service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, user.Id)
-		// hasPendingRequest := service.ConnectionRepository.CheckPendingRequest(ctx, tx, currentUserId, user.Id)
 
-		userResponse := helper.ToUserShortResponse(user, isConnected)
-		// userResponse.HasPendingRequest = hasPendingRequest
+		// Check for connection request status
+		var isConnectedRequest string = ""
+		if !isConnected {
+			// Cek apakah ada permintaan koneksi dari current user ke user ini
+			request, err := service.ConnectionRepository.FindConnectionRequestBySenderIdAndReceiverId(ctx, tx, currentUserId, user.Id)
+			if err == nil {
+				// Request ditemukan, set status
+				isConnectedRequest = string(request.Status)
+			} else {
+				// Cek apakah ada permintaan dari user ini ke current user
+				request, err = service.ConnectionRepository.FindConnectionRequestBySenderIdAndReceiverId(ctx, tx, user.Id, currentUserId)
+				if err == nil {
+					isConnectedRequest = string(request.Status)
+				}
+			}
+		}
 
+		userResponse := helper.ToUserShortResponse(user, isConnected, isConnectedRequest)
 		userResponses = append(userResponses, userResponse)
 	}
 

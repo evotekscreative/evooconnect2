@@ -27,6 +27,7 @@ func NewRouter(
 	notificationController controller.NotificationController,
 	searchController controller.SearchController,
 	adminAuthController controller.AdminAuthController,
+	adminReportController controller.AdminReportController,
 ) *httprouter.Router {
 	router := httprouter.New()
 
@@ -179,6 +180,11 @@ func NewRouter(
 
 	uploadFS := http.FileServer(http.Dir("uploads"))
 	publicFS := http.FileServer(http.Dir("public")) // Add this line
+
+	// Admin report routes
+	router.GET("/api/admin/reports", adminReportController.GetAllReports)
+	router.GET("/api/admin/reports/:reportId", adminReportController.GetReportDetail)
+	router.POST("/api/admin/reports/:reportId/action", adminReportController.TakeAction)
 
 	// Add custom file server handler to serve static files
 	router.GET("/uploads/*filepath", func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
