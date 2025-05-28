@@ -26,8 +26,8 @@ export default function CardTable({ color }) {
   const darkHeader =
     "bg-sky-800 text-sky-200 border-sky-700";
 
-  const textColor = isLight ? "text-gray-800" : "text-white";
-  const bgColor = isLight ? "bg-white" : "bg-sky-900 text-white";
+  const textColor = isLight ? "text-gray-800" : "text-gray-800";
+  // const bgColor = isLight ? "bg-white" : "bg-sky-900 text-white";
   const borderColor = isLight ? "border-gray-200" : "border-sky-700";
   const badgeColors = {
     pending: "text-orange-500",
@@ -37,11 +37,11 @@ export default function CardTable({ color }) {
   };
 
   return (
-    <div className={`relative flex flex-col w-full mb-6 shadow-lg rounded ${bgColor}`}>
-      <div className="rounded-t mb-0 px-4 py-3 border-b border-gray-200 ">
+    <div className={`relative flex flex-col w-full mb-6 shadow-lg rounded`}>
+      <div className="rounded-t mb-0 px-4 py-3 border-b border-sky-700 bg-sky-800">
         <div className="flex flex-wrap items-center">
           <div className="w-full px-4 max-w-full flex-grow flex-1">
-            <h3 className={`font-semibold text-lg ${textColor}`}>
+            <h3 className="font-semibold text-lg text-white">
               Card Tables
             </h3>
           </div>

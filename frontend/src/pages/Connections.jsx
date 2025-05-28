@@ -12,8 +12,44 @@ import {
   Clock,
   ArrowLeft,
   UserCheck,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
+
+// Komponen Avatar: Menampilkan foto jika ada, jika tidak tampilkan inisial
+function Avatar({ src, name, size = 64 }) {
+  const initials = name
+    ? name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+    : "?";
+  if (src && !src.includes("undefined") && !src.includes("null") && src !== Profile) {
+    return (
+      <img
+        src={src}
+        alt={name}
+        className="object-cover rounded-full w-full h-full"
+        style={{ width: size, height: size }}
+        onError={(e) => {
+          e.target.onerror = null;
+          e.target.src = "";
+        }}
+      />
+    );
+  }
+  return (
+    <div
+      className="flex items-center justify-center rounded font-semibold"
+      style={{ width: size, height: size, fontSize: size / 3 }}
+    >
+      {initials}
+    </div>
+  );
+}
+
+const apiUrl =
+  import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
 const LoadingSpinner = ({ size = 16 }) => (
   <div className="animate-spin">
@@ -43,11 +79,13 @@ const CancelRequestModal = ({ isOpen, onClose, onConfirm, userName }) => {
           <AlertCircle className="mr-2" size={24} />
           <h3 className="text-lg font-medium">Cancel Connection Request</h3>
         </div>
-        
+
         <p className="mb-6 text-gray-600">
-          Are you sure you want to cancel your connection request to <span className="font-medium">{userName}</span>? This action cannot be undone.
+          Are you sure you want to cancel your connection request to{" "}
+          <span className="font-medium">{userName}</span>? This action cannot be
+          undone.
         </p>
-        
+
         <div className="flex justify-end space-x-3">
           <button
             onClick={onClose}
@@ -77,6 +115,7 @@ export default function Connection() {
   const [connectedUsers, setConnectedUsers] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [connectionCount, setConnectionCount] = useState(0);
 
   const fetchInvitations = async () => {
     const token = localStorage.getItem("token");
@@ -84,7 +123,7 @@ export default function Connection() {
 
     try {
       const response = await axios.get(
-        "http://localhost:3000/api/connections/requests?limit=10&offset=0",
+        apiUrl + "/api/connections/requests?limit=10&offset=0",
         {
           headers: {
             Authorization: "Bearer " + token,
@@ -92,27 +131,26 @@ export default function Connection() {
         }
       );
 
-      // Tambahkan pengecekan data
       if (!response.data?.data?.requests) {
         setInvitations([]);
         return;
       }
 
       const mappedInvitations = response.data.data.requests
-        .filter((request) => request && request.sender) // Filter null/undefined
+        .filter((request) => request && request.sender)
         .map((invitation) => ({
           id: invitation.id,
           name: invitation.sender?.name || "Unknown",
           headline: invitation.headline || "No headline",
           status: "pending",
-          profile: invitation.photo || Profile,
+          profile: invitation.photo || "",
           username: invitation.sender?.username || "",
         }));
 
       setInvitations(mappedInvitations);
     } catch (error) {
       console.error("Gagal mengambil data undangan:", error);
-      setInvitations([]); // Set ke array kosong jika error
+      setInvitations([]);
     } finally {
       setInvitationsLoading(false);
     }
@@ -120,20 +158,20 @@ export default function Connection() {
 
   useEffect(() => {
     const fetchConnections = async () => {
+      fetchConnectionCount();
+      fetchInvitation();
       const token = localStorage.getItem("token");
       const currentUserId = parseInt(localStorage.getItem("userId"));
       try {
-        const response = await axios.get(
-          "http://localhost:3000/api/user-peoples",
-          {
-            headers: {
-              Authorization: "Bearer " + token,
-            },
-          }
-        );
-  
-        const pendingIds = JSON.parse(localStorage.getItem("pendingConnections")) || [];
-  
+        const response = await axios.get(apiUrl + "/api/user-peoples", {
+          headers: {
+            Authorization: "Bearer " + token,
+          },
+        });
+
+        const pendingIds =
+          JSON.parse(localStorage.getItem("pendingConnections")) || [];
+
         const mappedConnections = response.data.data
           .filter((person) => person.id !== currentUserId)
           .map((person) => ({
@@ -145,14 +183,17 @@ export default function Connection() {
               : pendingIds.includes(person.id)
               ? "pending"
               : "connect",
-            profile: person.photo || Profile,
+            profile: person.photo || "",
             username: person.username || "",
+            verified: person.verified,
           }));
-  
+
         setConnections(mappedConnections);
-        
+
         // Set connected users
-        const connected = mappedConnections.filter(conn => conn.status === "connected");
+        const connected = mappedConnections.filter(
+          (conn) => conn.status === "connected"
+        );
         setConnectedUsers(connected);
       } catch (error) {
         console.error("Gagal mengambil data user-peoples:", error);
@@ -160,17 +201,17 @@ export default function Connection() {
         setLoading(false);
       }
     };
-  
+
     fetchConnections();
     fetchInvitations();
   }, []);
 
   const handleConnect = async (id) => {
     const token = localStorage.getItem("token");
-    const pendingIds = JSON.parse(localStorage.getItem("pendingConnections")) || [];
-    
-    // If status is pending, show the modal instead of directly handling
-    const person = connections.find(conn => conn.id === id);
+    const pendingIds =
+      JSON.parse(localStorage.getItem("pendingConnections")) || [];
+
+    const person = connections.find((conn) => conn.id === id);
     if (person && person.status === "pending") {
       setSelectedUser(person);
       setModalOpen(true);
@@ -183,15 +224,13 @@ export default function Connection() {
           conn.id === id ? { ...conn, status: "processing" } : conn
         )
       );
-  
-      // This is for new connection requests
+
       const response = await axios.post(
-        `http://localhost:3000/api/users/${id}/connect`,
+        `${apiUrl}/api/users/${id}/connect`,
         {},
         { headers: { Authorization: "Bearer " + token } }
       );
 
-      // Jika langsung terhubung (tanpa perlu approval)
       if (response.data?.connected) {
         const connectedUser = connections.find((conn) => conn.id === id);
         if (connectedUser) {
@@ -219,7 +258,6 @@ export default function Connection() {
         )
       );
 
-      // Jika butuh approval, tambahkan ke invitations
       if (!response.data?.connected) {
         const newConnection = connections.find((conn) => conn.id === id);
         if (newConnection) {
@@ -238,7 +276,6 @@ export default function Connection() {
       }
     } catch (error) {
       console.error("Connection action failed:", error);
-      // Kembalikan ke status sebelumnya jika gagal
       setConnections(
         connections.map((conn) =>
           conn.id === id
@@ -251,45 +288,41 @@ export default function Connection() {
       );
     }
   };
-  
+
   const handleCancelRequest = async (id) => {
     const token = localStorage.getItem("token");
-    const pendingIds = JSON.parse(localStorage.getItem("pendingConnections")) || [];
-  
+    const pendingIds =
+      JSON.parse(localStorage.getItem("pendingConnections")) || [];
+
     try {
       setConnections(
         connections.map((conn) =>
           conn.id === id ? { ...conn, status: "processing" } : conn
         )
       );
-  
-      // Batalkan permintaan di backend - use the id parameter instead of toUserId
-      await axios.delete(
-        `http://localhost:3000/api/connections/requests/${id}`,
-        { headers: { Authorization: "Bearer " + token } }
-      );
-  
-      // Update frontend state
+
+      await axios.delete(`${apiUrl}/api/connections/requests/${id}`, {
+        headers: { Authorization: "Bearer " + token },
+      });
+
       const updatedPending = pendingIds.filter((pid) => pid !== id);
       localStorage.setItem(
         "pendingConnections",
         JSON.stringify(updatedPending)
       );
-  
+
       setConnections(
         connections.map((conn) =>
           conn.id === id ? { ...conn, status: "connect" } : conn
         )
       );
-  
+
       setInvitations((prev) => prev.filter((inv) => inv.id !== id));
-      
-      // Close modal
+
       setModalOpen(false);
       setSelectedUser(null);
     } catch (error) {
       console.error("Cancel request failed:", error);
-      // Kembalikan ke status sebelumnya jika gagal
       setConnections(
         connections.map((conn) =>
           conn.id === id
@@ -304,7 +337,7 @@ export default function Connection() {
       setSelectedUser(null);
     }
   };
-  
+
   const handleAccept = async (id) => {
     const token = localStorage.getItem("token");
 
@@ -316,21 +349,18 @@ export default function Connection() {
       );
 
       await axios.put(
-        `http://localhost:3000/api/connections/requests/${id}/accept`,
+        `${apiUrl}/api/connections/requests/${id}/accept`,
         {},
         { headers: { Authorization: "Bearer " + token } }
       );
 
-      // Cari user yang baru diterima
       const acceptedUser = invitations.find((inv) => inv.id === id);
       if (acceptedUser) {
-        // Tambahkan ke daftar connectedUsers
         setConnectedUsers((prev) => [
           ...prev,
           { ...acceptedUser, status: "connected" },
         ]);
 
-        // Update juga di daftar connections jika ada
         setConnections((prev) =>
           prev.map((conn) =>
             conn.id === id ? { ...conn, status: "connected" } : conn
@@ -338,14 +368,10 @@ export default function Connection() {
         );
       }
 
-      // Hapus dari daftar invitations
       setInvitations((prev) => prev.filter((inv) => inv.id !== id));
-
-      // Refresh daftar invitations
       await fetchInvitations();
     } catch (error) {
       console.error("Gagal menerima undangan:", error);
-      // Kembalikan status jika gagal
       setInvitations(
         invitations.map((inv) =>
           inv.id === id ? { ...inv, status: "pending" } : inv
@@ -353,13 +379,13 @@ export default function Connection() {
       );
     }
   };
-  
+
   const handleReject = async (id) => {
     const token = localStorage.getItem("token");
 
     try {
       await axios.put(
-        `http://localhost:3000/api/connections/requests/${id}/reject`,
+        `${apiUrl}/api/connections/requests/${id}/reject`,
         {},
         { headers: { Authorization: "Bearer " + token } }
       );
@@ -369,7 +395,21 @@ export default function Connection() {
       console.error("Gagal menolak undangan:", error);
     }
   };
-  
+
+  const fetchConnectionCount = async () => {
+  const token = localStorage.getItem("token");
+  try {
+    const response = await axios.get(`${apiUrl}/api/user/connections/count`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    setConnectionCount(response.data.data.count || 0);
+  } catch (error) {
+    console.error("Failed to fetch connection count:", error);
+  }
+};
+
   if (loading) {
     return (
       <Case>
@@ -432,14 +472,17 @@ export default function Connection() {
                   >
                     <div className="relative">
                       <div className="bg-gray-200 h-16"></div>
-
                       <div className="absolute left-1/2 top-8 transform -translate-x-1/2">
                         <div className="w-16 h-16 bg-white rounded-full p-1">
                           <div className="w-full h-full rounded-full overflow-hidden border-2 border-gray-200">
-                            <img
-                              src={person.profile}
-                              alt={`${person.name}'s profile`}
-                              className="w-full h-full object-cover"
+                            <Avatar
+                              src={
+                                person.profile
+                                  ? apiUrl + "/" + person.profile
+                                  : ""
+                              }
+                              name={person.name}
+                              size={56}
                             />
                           </div>
                         </div>
@@ -448,9 +491,11 @@ export default function Connection() {
 
                     <div className="pt-8 pb-4 px-4 text-center">
                       <div className="flex items-center justify-center mb-1">
-                        <h3 className="font-semibold text-gray-800 truncate">
-                          {person.name}
-                        </h3>
+                        <Link to={`/user-profile/${person.username}`}>
+                          <h3 className="font-semibold text-gray-800 truncate">
+                            {person.name}
+                          </h3>
+                        </Link>
                         {person.verified && (
                           <span className="ml-1 text-blue-500">
                             <UserCheck size={16} />
@@ -472,7 +517,10 @@ export default function Connection() {
                             ? "bg-gray-100 border border-gray-200 text-gray-500"
                             : "border border-blue-500 text-blue-500"
                         }`}
-                        disabled={person.status === "connected" || person.status === "processing"} 
+                        disabled={
+                          person.status === "connected" ||
+                          person.status === "processing"
+                        }
                       >
                         {person.status === "connected" ? (
                           <>
@@ -527,19 +575,22 @@ export default function Connection() {
                     >
                       <div className="flex items-center gap-3 sm:gap-4 mb-2 sm:mb-0">
                         <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden border-2 border-gray-300 shadow">
-                          <img
-                            src={invitation.profile}
-                            alt="Profile"
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.src = Profile;
-                            }}
+                          <Avatar
+                            src={
+                              invitation.profile
+                                ? apiUrl + "/" + invitation.profile
+                                : ""
+                            }
+                            name={invitation.name}
+                            size={64}
                           />
                         </div>
                         <div>
-                          <h3 className="font-medium text-blue-500 text-sm sm:text-base">
-                            {invitation.name}
-                          </h3>
+                          <Link to={`/user-profile/${invitation.username}`}>
+                            <h3 className="font-medium text-blue-500 text-sm sm:text-base">
+                              {invitation.name}
+                            </h3>
+                          </Link>
                           <p className="text-gray-600 text-xs sm:text-sm">
                             {invitation.headline}
                           </p>
@@ -588,15 +639,18 @@ export default function Connection() {
 
           {/* Right side - Manage network */}
           <div className="space-y-4">
-            <div className="bg-white rounded-xl shadow p-4">
-              <h3 className="font-medium mb-2 border-b pb-3 text-sm sm:text-base">
+            <div className="bg-white rounded-xl shadow p-5">
+              <h3 className="font-semibold mb-4 border-b pb-3 text-base sm:text-lg">
                 Manage my network
               </h3>
-              <ul className="text-xs sm:text-sm text-gray-700 space-y-1">
+              <ul className="text-sm sm:text-base text-gray-800 space-y-2">
                 <li className="border-b pb-3">
-                  <Link to="/list-connection" className="flex justify-between">
-                    <span>Connections</span>
-                    <span>
+                  <Link
+                    to="/list-connection"
+                    className="flex justify-between items-center hover:text-blue-600 transition"
+                  >
+                    <span className="font-medium">Connections</span>
+                    <span className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm">
                       {
                         [...connections, ...invitations].filter(
                           (c) => c.status === "connected"
@@ -606,23 +660,41 @@ export default function Connection() {
                   </Link>
                 </li>
                 <li className="border-b pb-3">
-                  <Link to="/messages" className="flex justify-between">
-                    <span>Contacts</span> <span>869</span>
+                  <Link
+                    to="/messages"
+                    className="flex justify-between items-center hover:text-blue-600 transition"
+                  >
+                    <span className="font-medium">Contacts</span>
+                    <span className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm">
+                      869
+                    </span>
                   </Link>
                 </li>
                 <li className="border-b pb-3">
-                  <Link to="/groups" className="flex justify-between">
-                    <span>Groups</span> <span>0</span>
+                  <Link
+                    to="/groups"
+                    className="flex justify-between items-center hover:text-blue-600 transition"
+                  >
+                    <span className="font-medium">Groups</span>
+                    <span className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm">
+                      0
+                    </span>
                   </Link>
                 </li>
                 <li>
-                  <Link to="/hashtags" className="flex justify-between">
-                    <span>Hashtag</span> <span>8</span>
+                  <Link
+                    to="/hashtags"
+                    className="flex justify-between items-center hover:text-blue-600 transition"
+                  >
+                    <span className="font-medium">Hashtag</span>
+                    <span className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm">
+                      8
+                    </span>
                   </Link>
                 </li>
               </ul>
             </div>
-           
+
             <div className="bg-white rounded-xl shadow p-4">
               <h3 className="font-medium mb-3 border-b pb-3">
                 Recently Connected
@@ -631,17 +703,20 @@ export default function Connection() {
                 {connectedUsers.slice(0, 3).map((user) => (
                   <div key={user.id} className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200">
-                      <img
-                        src={user.profile}
-                        alt={user.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.target.src = Profile;
-                        }}
+                      <Avatar
+                        src={
+                          user.profile
+                            ? apiUrl + "/" + user.profile
+                            : ""
+                        }
+                        name={user.name}
+                        size={40}
                       />
                     </div>
                     <div>
-                      <h4 className="text-sm font-medium">{user.name}</h4>
+                      <Link to={`/user-profile/${user.username}`}>
+                        <h4 className="text-sm font-medium">{user.name}</h4>
+                      </Link>
                       <p className="text-xs text-gray-500">{user.headline}</p>
                     </div>
                   </div>
@@ -662,11 +737,9 @@ export default function Connection() {
               </div>
             </div>
             <div className="bg-white rounded-xl shadow p-4 text-center">
-              <img
-                src={Profile}
-                alt="Profile"
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-2 object-cover"
-              />
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-2 overflow-hidden">
+                <Avatar src={Profile} name="Gurdeep" size={80} />
+              </div>
               <p className="text-xs sm:text-sm font-medium mb-1">
                 Gurdeep, grow your career by following{" "}
                 <span className="text-blue-600">Askbootsrap</span>
@@ -681,9 +754,8 @@ export default function Connection() {
           </div>
         </div>
       </div>
-      
-      {/* Confirmation Modal */}
-      <CancelRequestModal 
+
+      <CancelRequestModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         onConfirm={() => selectedUser && handleCancelRequest(selectedUser.id)}

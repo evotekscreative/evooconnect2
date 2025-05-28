@@ -6,7 +6,7 @@ import { Tooltip as ChartTooltip } from "chart.js";
 import { Button } from "../components/Button";
 import Tooltip from "@mui/material/Tooltip";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import Alert from "../components/Auth/Alert";
 import { Line } from "react-chartjs-2";
 import {
@@ -93,22 +93,111 @@ export default function SocialNetworkFeed() {
   const [allRepliesLoaded, setAllRepliesLoaded] = useState({});
   const [showcaseReplies, setShowcaseReplies] = useState([]);
   const [showShowcase, setShowShowcase] = useState(false);
+  const navigate = useNavigate();
+  const [profileImage, setProfileImage] = useState(null);
+  const [user, setUser] = useState({
+    name: "",
+    username: "",
+    initials: "UU",
+    photo: null,
+  }); // Tambahkan nilai default
   const [allReplies, setAllReplies] = useState({});
   const [alertInfo, setAlertInfo] = useState({
     show: false,
-    type: '',
-    message: ''
+    type: "",
+    message: "",
+  });
+  const [profileViews, setProfileViews] = useState({
+    thisWeek: 0,
+    lastWeek: 0,
+    percentageChange: 0,
+    dailyViews: [],
   });
 
+  const fetchProfileViews = async () => {
+    try {
+      const userToken = localStorage.getItem("token");
+
+      // Fetch data minggu ini dan minggu lalu secara paralel
+      const [thisWeekResponse, lastWeekResponse] = await Promise.all([
+        axios.get("http://localhost:3000/api/user/profile/views/this-week", {
+          headers: { Authorization: `Bearer ${userToken}` },
+        }),
+        axios.get("http://localhost:3000/api/user/profile/views/last-week", {
+          headers: { Authorization: `Bearer ${userToken}` },
+        }),
+      ]);
+
+      const thisWeekData = thisWeekResponse.data.data || {};
+      const lastWeekData = lastWeekResponse.data.data || {};
+
+      // Format data harian untuk chart
+      const days = [];
+      const dailyCounts = [];
+
+      // Siapkan 7 hari terakhir
+      for (let i = 6; i >= 0; i--) {
+        const date = dayjs().subtract(i, "day").format("YYYY-MM-DD");
+        days.push(date);
+
+        // Hitung views per hari
+        const dailyViews =
+          thisWeekData.viewers?.filter(
+            (viewer) => dayjs(viewer.viewed_at).format("YYYY-MM-DD") === date
+          ) || [];
+
+        dailyCounts.push(dailyViews.length);
+      }
+
+      // Hitung total views
+      const thisWeekTotal = thisWeekData.count || 0;
+      const lastWeekTotal = lastWeekData.count || 0;
+
+      // Hitung persentase perubahan
+      let percentageChange = 0;
+      if (lastWeekTotal > 0) {
+        percentageChange =
+          ((thisWeekTotal - lastWeekTotal) / lastWeekTotal) * 100;
+      } else if (thisWeekTotal > 0) {
+        percentageChange = 100;
+      }
+
+      setProfileViews({
+        thisWeek: thisWeekTotal,
+        lastWeek: lastWeekTotal,
+        percentageChange: Math.round(percentageChange),
+        dailyViews: thisWeekData.viewers || [],
+        chartData: {
+          labels: days.map((date) => dayjs(date).format("ddd")),
+          data: dailyCounts,
+        },
+      });
+    } catch (error) {
+      console.error("Failed to fetch profile views:", error);
+      // Fallback ke data lokal jika ada
+      const cachedViews = localStorage.getItem("profileViewsData");
+      if (cachedViews) {
+        setProfileViews(JSON.parse(cachedViews));
+      }
+    }
+  };
+
   useEffect(() => {
-    const userData = localStorage.getItem("userData");
+    fetchProfileViews();
+    setUser(JSON.parse(localStorage.getItem("user")));
+    // Simpan data ke cache saat komponen unmount
+    return () => {
+      localStorage.setItem("profileViewsData", JSON.stringify(profileViews));
+    };
+  }, []);
+
+  useEffect(() => {
+    const userData = localStorage.getItem("user");
     if (userData) {
       const parsedUser = JSON.parse(userData);
       setCurrentUserId(parsedUser.id);
-      
     }
   }, []);
-
   const handleOpenPostOptions = (postId) => {
     setSelectedPostId(postId);
     setShowPostOptions(true);
@@ -120,6 +209,26 @@ export default function SocialNetworkFeed() {
   };
 
   const getLast7DaysData = () => {
+    // Jika data dari API tersedia
+    if (profileViews.dailyViews && profileViews.dailyViews.length > 0) {
+      const days = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = dayjs().subtract(i, "day").format("YYYY-MM-DD");
+        days.push(date);
+      }
+
+      const dailyCounts = days.map((date) => {
+        const count = profileViews.dailyViews.filter(
+          (viewer) => dayjs(viewer.viewed_at).format("YYYY-MM-DD") === date
+        ).length;
+        return count;
+      });
+
+      const labels = days.map((date) => dayjs(date).format("ddd"));
+      return { labels, data: dailyCounts };
+    }
+
+    // Fallback ke data lokal (mungkin tidak ada)
     const views = JSON.parse(localStorage.getItem("profileViews")) || {};
     const labels = [];
     const data = [];
@@ -127,22 +236,30 @@ export default function SocialNetworkFeed() {
     for (let i = 6; i >= 0; i--) {
       const date = dayjs().subtract(i, "day").format("YYYY-MM-DD");
       labels.push(dayjs(date).format("ddd"));
-      data.push(views[date] || 0);
+      data.push(views[date] || 0); // Jika tidak ada data, nilai default 0
     }
 
     return { labels, data };
   };
-
   const { labels, data } = getLast7DaysData();
 
   const chartData = {
-    labels,
+    labels: profileViews.chartData?.labels || [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat",
+      "Sun",
+    ],
     datasets: [
       {
         label: "Profile Views",
-        data,
+        data: profileViews.chartData?.data || [0, 0, 0, 0, 0, 0, 0],
         fill: false,
         borderColor: "#06b6d4",
+        backgroundColor: "#06b6d4",
         tension: 0.4,
       },
     ],
@@ -151,10 +268,24 @@ export default function SocialNetworkFeed() {
   const chartOptions = {
     responsive: true,
     plugins: {
-      legend: { display: false },
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        callbacks: {
+          label: function (context) {
+            return `${context.dataset.label}: ${context.raw}`;
+          },
+        },
+      },
     },
     scales: {
-      y: { beginAtZero: true },
+      y: {
+        beginAtZero: true,
+        ticks: {
+          precision: 0,
+        },
+      },
     },
   };
 
@@ -195,27 +326,54 @@ export default function SocialNetworkFeed() {
       try {
         setLoadingPosts(true);
         const userToken = localStorage.getItem("token");
-        const response = await axios.get("http://localhost:3000/api/posts", {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-          },
-        });
 
-        if (response.data && Array.isArray(response.data.data)) {
-          setPosts(
-            response.data.data.map((post) => ({
-              ...post,
-              comments_count: post.comments_count || 0, // Berikan nilai default jika undefined
-            }))
-          );
-        } else {
-          setPosts([]);
+        // Cek cache terlebih dahulu untuk UX yang lebih cepat
+        const cachedPosts = localStorage.getItem("cachedPosts");
+        if (cachedPosts) {
+          setPosts(JSON.parse(cachedPosts));
         }
-        setError(null);
+
+        // Lalu fetch data terbaru dari API
+        const response = await axios.get("http://localhost:3000/api/posts", {
+          headers: { Authorization: `Bearer ${userToken}` },
+        });
+ 
+        if (response.data?.data) {
+          // Tambahkan transformasi data setelah fetch:
+          const formattedPosts = response.data.data.map((post) => ({
+            id: post.id,
+            content: post.content,
+            images:
+              post.images?.map((img) =>
+                img.startsWith("http") ? img : `http://localhost:3000/${img}`
+              ) || [],
+            user: post.user || {
+              id: post.user_id,
+              name: "Unknown User",
+              initials: "UU",
+              username: "unknown",
+            },
+            group: post.group || null,
+            likes_count: post.likes_count || 0,
+            comments_count: post.comments_count || 0,
+            createdAt: post.createdAt || new Date().toISOString(),
+            visibility: post.visibility || "public",
+            isLiked: post.is_liked || false,
+          }));
+
+          const gtw = response.data.data.filter(
+            (post) => post.is_liked === true 
+          );
+
+          setPosts(formattedPosts);
+          localStorage.setItem("cachedPosts", JSON.stringify(formattedPosts));
+        }
       } catch (err) {
         console.error("Failed to fetch posts:", err);
-        setError("Failed to load posts. Please try again later.");
-        setPosts([]);
+        // Jangan set error jika ada cache
+        if (!localStorage.getItem("cachedPosts")) {
+          setError("Failed to load posts. Please try again later.");
+        }
       } finally {
         setLoadingPosts(false);
       }
@@ -223,12 +381,6 @@ export default function SocialNetworkFeed() {
 
     fetchPosts();
   }, []);
-
-  useEffect(() => {
-    if (posts.length > 0) {
-      localStorage.setItem("cachedPosts", JSON.stringify(posts));
-    }
-  }, [posts]);
 
   useEffect(() => {
     const cachedPosts = localStorage.getItem("cachedPosts");
@@ -262,14 +414,14 @@ export default function SocialNetworkFeed() {
   };
 
   const openImageModal = (post, index) => {
-    // Pastikan post.images adalah array URL lengkap
-    const images = post.images.map(img => 
-      img.startsWith('http') ? img : `http://localhost:3000/${img}`
+    // Pastikan semua gambar memiliki URL lengkap
+    const images = post.images.map((img) =>
+      img.startsWith("http") ? img : `http://localhost:3000/${img}`
     );
-    
+
     setSelectedPost({
       ...post,
-      images: images
+      images: images,
     });
     setSelectedImageIndex(index);
     setShowImageModal(true);
@@ -348,13 +500,13 @@ export default function SocialNetworkFeed() {
       formData.append("content", content);
       formData.append("visibility", postVisibility);
 
-      // Tambahkan semua gambar ke FormData
+      // Tambah semua gambar ke FormData
       articleImages.forEach((img) => {
         if (img.file) {
-          // Jika ini file baru yang diupload
+          // file baru yang diupload
           formData.append("images", img.file);
         } else if (typeof img === "string") {
-          // Jika ini URL gambar yang sudah ada
+          // URL gambar yang sudah ada
           formData.append("existingImages", img);
         }
       });
@@ -374,14 +526,13 @@ export default function SocialNetworkFeed() {
         throw new Error("Invalid response from server");
       }
 
-      // Pastikan response.data.data.images adalah array URL gambar
+      // response.data.data.images adalah array URL gambar
       const images = response.data.data.images || [];
 
       const newPost = {
         id: response.data.data.id,
         content: response.data.data.content || content,
         images: images.map((img) => {
-          // Pastikan URL gambar lengkap jika backend hanya mengembalikan nama file
           return img.startsWith("http") ? img : `http://localhost:3000/${img}`;
         }),
         visibility: response.data.data.visibility || postVisibility,
@@ -756,34 +907,14 @@ export default function SocialNetworkFeed() {
     try {
       const userToken = localStorage.getItem("token");
 
-      if (isCurrentlyLiked) {
-        await axios.delete(
-          `http://localhost:3000/api/post-actions/${postId}/like`,
-          {
-            headers: {
-              Authorization: `Bearer ${userToken}`,
-            },
-          }
-        );
-      } else {
-        await axios.post(
-          `http://localhost:3000/api/post-actions/${postId}/like`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${userToken}`,
-            },
-          }
-        );
-      }
-
+      // Optimistic UI update
       setPosts((prevPosts) =>
         prevPosts.map((post) => {
           if (post.id === postId) {
             return {
               ...post,
               likes_count: isCurrentlyLiked
-                ? post.likes_count - 1
+                ? Math.max(post.likes_count - 1, 0) // Pastikan tidak negatif
                 : post.likes_count + 1,
               isLiked: !isCurrentlyLiked,
             };
@@ -791,8 +922,57 @@ export default function SocialNetworkFeed() {
           return post;
         })
       );
+
+      // Update cache
+      const cachedPosts = JSON.parse(
+        localStorage.getItem("cachedPosts") || "[]"
+      );
+      const updatedCache = cachedPosts.map((post) => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            likes_count: isCurrentlyLiked
+              ? Math.max(post.likes_count - 1, 0) // Pastikan tidak negatif
+              : post.likes_count + 1,
+            isLiked: !isCurrentlyLiked,
+          };
+        }
+        return post;
+      });
+      localStorage.setItem("cachedPosts", JSON.stringify(updatedCache));
+
+      // Send request to backend
+      if (isCurrentlyLiked) {
+        await axios.delete(
+          `http://localhost:3000/api/post-actions/${postId}/like`,
+          { headers: { Authorization: `Bearer ${userToken}` } }
+        );
+      } else {
+        await axios.post(
+          `http://localhost:3000/api/post-actions/${postId}/like`,
+          {},
+          { headers: { Authorization: `Bearer ${userToken}` } }
+        );
+      }
     } catch (error) {
       console.error("Failed to like post:", error);
+
+      // Rollback on error
+      setPosts((prevPosts) =>
+        prevPosts.map((post) => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              likes_count: isCurrentlyLiked
+                ? post.likes_count + 1
+                : Math.max(post.likes_count - 1, 0), // Pastikan tidak negatif
+              isLiked: isCurrentlyLiked,
+            };
+          }
+          return post;
+        })
+      );
+
       setError("Failed to like post. Please try again.");
     }
   };
@@ -912,10 +1092,11 @@ export default function SocialNetworkFeed() {
 
   const renderLikeButton = (post) => (
     <button
-      className={`px-2 md:px-3 py-1 rounded text-xs md:text-sm flex items-center ${post.isLiked
+      className={`px-2 md:px-3 py-1 rounded text-xs md:text-sm flex items-center ${
+        post.isLiked
           ? "bg-blue-100 text-blue-600"
           : "bg-sky-100 hover:bg-sky-200 text-blue-500"
-        }`}
+      }`}
       onClick={() => handleLikePost(post.id, post.isLiked)}
     >
       <ThumbsUp size={12} className="mr-1" />
@@ -924,97 +1105,108 @@ export default function SocialNetworkFeed() {
   );
 
   const renderPostOptionsModal = () => {
-    if (!showPostOptions || !selectedPostId) return null;
-
+    // Cari post yang dipilih
     const post = posts.find((p) => p.id === selectedPostId);
-    const isCurrentUserPost = post?.user?.id === currentUserId;
 
+    // Jika post tidak ditemukan, jangan render apa-apa
+    if (!post) return null;
+
+    const isCurrentUserPost =
+      (post.user?.id ?? post.user_id) == currentUserId;
+
+
+    // Cek apakah post ini milik user yang sedang login
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg w-full max-w-xs mx-4">
           <div className="p-4">
             <h3 className="font-medium text-lg mb-3">Post Options</h3>
 
-            {isCurrentUserPost && (
-              <button
-                className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
-                onClick={() => handleEditPost(post)}
-              >
-                <SquarePen size={16} className="mr-2" />
-                Edit Post
-              </button>
-            )}
-
-            {isCurrentUserPost && (
-              <button
-                className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
-                onClick={() => handleDeletePost(post.id)}
-              >
-                <X size={16} className="mr-2" />
-                Delete Post
-              </button>
-            )}
-
-            <button
-              className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
-              onClick={() => console.log("Report post")}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
-              Report Post
-            </button>
-
-            {!isCurrentUserPost && (
-              <button
-                className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-blue-500"
-                onClick={() => console.log("Connect with user")}
-              >
-                <Users size={16} className="mr-2" />
-                Connect with User
-              </button>
+            {/* Opsi untuk post milik user sendiri */}
+            {isCurrentUserPost ? (
+              <>
+                <button
+                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
+                  onClick={() => {
+                    handleEditPost(post);
+                    handleClosePostOptions();
+                  }}
+                >
+                  <SquarePen size={16} className="mr-2" />
+                  Edit Post
+                </button>
+                <button
+                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
+                  onClick={() => handleDeletePost(post.id)}
+                >
+                  <X size={16} className="mr-2" />
+                  Delete Post
+                </button>
+              </>
+            ) : (
+              <>
+                {/* Opsi untuk post user lain */}
+                <button
+                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
+                  onClick={() => {
+                    setShowReportModal(true);
+                    handleClosePostOptions();
+                  }}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                  Report Post
+                </button>
+                <button
+                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-blue-500"
+                  onClick={() => {
+                    handlePostAction("connect");
+                    handleClosePostOptions();
+                  }}
+                >
+                  <Users size={16} className="mr-2" />
+                  Connect with User
+                </button>
+              </>
             )}
           </div>
-
           <div className="border-t p-3">
             <button
               className="w-full py-2 text-gray-500 hover:text-gray-700"
               onClick={handleClosePostOptions}
             >
-              Cancel
+              Close
             </button>
           </div>
         </div>
       </div>
     );
   };
+  const handleReportClick = (userId, type, id) => {
+    setSelectedPostId(id);
+    setShowReportModal(true);
+    setShowPostOptions(false);
+  };
 
   const renderPhotoGrid = (images) => {
     if (!images || images.length === 0) return null;
 
-    // Pastikan images adalah array URL yang valid
-    const validImages = images.map((img) => {
-      // Jika img sudah berupa URL lengkap, gunakan langsung
-      if (
-        typeof img === "string" &&
-        (img.startsWith("http") || img.startsWith("/"))
-      ) {
-        return img;
-      }
-      // Jika backend mengembalikan path relatif, tambahkan base URL
-      return `http://localhost:3000/${img}`;
-    });
+    // Pastikan semua gambar memiliki URL lengkap
+    const validImages = images.map((img) =>
+      img.startsWith("http") ? img : `http://localhost:3000/${img}`
+    );
 
     if (validImages.length === 1) {
       return (
@@ -1027,72 +1219,72 @@ export default function SocialNetworkFeed() {
           />
         </div>
       );
-    } else if (images.length === 2) {
+    } else if (validImages.length === 2) {
       return (
         <div className="mb-3 rounded-lg overflow-hidden border">
           <div className="grid grid-cols-2 gap-1">
-            {images.map((photo, index) => (
+            {validImages.map((photo, index) => (
               <div key={index} className="relative aspect-square">
                 <img
-                  src={"http://localhost:3000/" + photo}
+                  src={photo}
                   className="w-full h-full object-cover cursor-pointer"
                   alt={`Post ${index + 1}`}
-                  onClick={() => openImageModal({ images }, index)}
+                  onClick={() => openImageModal({ images: validImages }, index)}
                 />
               </div>
             ))}
           </div>
         </div>
       );
-    } else if (images.length === 3) {
+    } else if (validImages.length === 3) {
       return (
         <div className="mb-3 rounded-lg overflow-hidden border">
           <div className="grid grid-cols-2 gap-1">
             <div className="relative aspect-square row-span-2">
               <img
-                src={"http://localhost:3000/" + images[0]}
+                src={validImages[0]}
                 className="w-full h-full object-cover cursor-pointer"
                 alt="Post 1"
-                onClick={() => openImageModal({ images }, 0)}
+                onClick={() => openImageModal({ images: validImages }, 0)}
               />
             </div>
             <div className="relative aspect-square">
               <img
-                src={"http://localhost:3000/" + images[1]}
+                src={validImages[1]}
                 className="w-full h-full object-cover cursor-pointer"
                 alt="Post 2"
-                onClick={() => openImageModal({ images }, 1)}
+                onClick={() => openImageModal({ images: validImages }, 1)}
               />
             </div>
             <div className="relative aspect-square">
               <img
-                src={"http://localhost:3000/" + images[2]}
+                src={validImages[2]}
                 className="w-full h-full object-cover cursor-pointer"
                 alt="Post 3"
-                onClick={() => openImageModal({ images }, 2)}
+                onClick={() => openImageModal({ images: validImages }, 2)}
               />
             </div>
           </div>
         </div>
       );
-    } else if (images.length >= 4) {
+    } else if (validImages.length >= 4) {
       return (
         <div className="mb-3 rounded-lg overflow-hidden border">
           <div className="grid grid-cols-2 gap-1">
-            {images.slice(0, 4).map((photo, index) => (
+            {validImages.slice(0, 4).map((photo, index) => (
               <div key={index} className="relative aspect-square">
                 <img
-                  src={"http://localhost:3000/" + photo}
+                  src={photo}
                   className="w-full h-full object-cover cursor-pointer"
                   alt={`Post ${index + 1}`}
-                  onClick={() => openImageModal({ images }, index)}
+                  onClick={() => openImageModal({ images: validImages }, index)}
                 />
-                {index === 3 && images.length > 4 && (
+                {index === 3 && validImages.length > 4 && (
                   <div
                     className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center text-white font-bold text-lg cursor-pointer"
-                    onClick={() => openImageModal({ images }, 3)}
+                    onClick={() => openImageModal({ images: validImages }, 3)}
                   >
-                    +{images.length - 4}
+                    +{validImages.length - 4}
                   </div>
                 )}
               </div>
@@ -1101,7 +1293,6 @@ export default function SocialNetworkFeed() {
         </div>
       );
     }
-    return null;
   };
 
   const handleOpenShareModal = (postId) => {
@@ -1228,8 +1419,6 @@ export default function SocialNetworkFeed() {
         throw new Error("No authentication token found");
       }
 
-      console.log("Deleting comment with ID:", commentId);
-
       // Gunakan endpoint yang sesuai dengan backend
       const response = await axios.delete(
         `http://localhost:3000/api/comments/${commentId}`,
@@ -1240,8 +1429,6 @@ export default function SocialNetworkFeed() {
           },
         }
       );
-
-      console.log("Delete response:", response);
 
       if (response.status >= 200 && response.status < 300) {
         // Update state komentar
@@ -1418,25 +1605,57 @@ export default function SocialNetworkFeed() {
     );
   };
 
+  // useEffect(() => {
+  //   const fetchUserData = async () => {
+  //     try {
+  //       const userToken = localStorage.getItem("token");
+  //       const response = await axios.get(
+  //         "http://localhost:3000/api/user/profile",
+  //         {
+  //           headers: { Authorization: `Bearer ${userToken}` },
+  //         }
+  //       );
+
+  //       const userData = response.data.data;
+  //       setUser({
+  //         name: userData.name,
+  //         username: userData.username,
+  //         initials: userData.name
+  //           .split(" ")
+  //           .map((n) => n[0])
+  //           .join(""),
+  //         photo: userData.photo,
+  //       });
+  //       setProfileImage(userData.photo);
+  //     } catch (error) {
+  //       console.error("Failed to fetch user data:", error);
+  //     }
+  //   };
+
+  //   fetchUserData();
+  // }, []);
+
+  const fetchUserProfile = (username) => {
+    try {
+      if (!username) {
+        console.error("No username provided");
+        return;
+      }
+      navigate(`/user-profile/${username}`);
+    } catch (error) {
+      console.error("Failed to navigate to user profile:", error);
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: "Failed to navigate to user profile",
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col md:flex-row bg-gray-50 px-4 md:px-6 lg:px-12 xl:px-32 py-4 md:py-6">
       {renderCommentOptionsModal()}
       {renderShowcase()}
-      {/* Mobile Menu Button */}
-      <div className="md:hidden flex justify-between items-center mb-4 bg-white p-3 rounded-lg shadow">
-        <div className="flex items-center">
-          <div className="rounded-full bg-gray-200 w-10 h-10 flex items-center justify-center text-lg text-gray-600 mr-3">
-            PE
-          </div>
-          <h2 className="font-bold">PPLG EVOTEKS</h2>
-        </div>
-        <button
-          onClick={toggleMobileMenu}
-          className="p-2 rounded-md hover:bg-gray-100"
-        >
-          <Menu size={24} />
-        </button>
-      </div>
 
       {/* Notification Alert */}
       {showNotification && (
@@ -1446,19 +1665,40 @@ export default function SocialNetworkFeed() {
       )}
 
       {/* Left Sidebar - Profile Section */}
-      <div
-        className={`${
-          showMobileMenu ? "block" : "hidden"
-        } md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pr-2 lg:pr-4`}
-      >
+      <div className="block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pr-2 lg:pr-4">
         <div className="bg-white rounded-lg shadow mb-4 p-4 text-center">
           <div className="flex justify-center mb-3">
-            <div className="rounded-full bg-gray-200 w-16 md:w-20 h-16 md:h-20 flex items-center justify-center text-2xl md:text-3xl text-gray-600">
-              PE
+            <div className="relative w-28 h-28 mx-auto bg-gray-200 rounded-full overflow-hidden flex items-center justify-center">
+              {user.photo ? (
+                <img
+                  src={
+                    user.photo.startsWith("http")
+                      ? user.photo
+                      : `http://localhost:3000/${user.photo}`
+                  }
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = ""; // Fallback ke initials jika gambar error
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gray-300">
+                  <span className="text-lg font-bold text-gray-600">
+                    {user.initials}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
-          <h2 className="text-lg font-bold mb-4">PPLG EVOTEKS</h2>
+          <h2
+            className="font-bold mb-0 text-sm cursor-pointer hover:underline"
+            onClick={() => user.username && fetchUserProfile(user.username)}
+          >
+            {user.name || "Unknown User"}
+          </h2>
 
           <div className="flex border-t pt-3">
             <div className="flex-1 text-center border-r">
@@ -1485,12 +1725,21 @@ export default function SocialNetworkFeed() {
           <div className="flex justify-between mb-2">
             <div className="text-center">
               <div className="text-xl font-semibold text-cyan-400">
-                {data.reduce((a, b) => a + b, 0)}
+                {profileViews.thisWeek.toLocaleString()}
               </div>
               <div className="text-gray-500 text-xs">last 7 days</div>
             </div>
             <div className="text-center">
-              <div className="text-xl font-semibold text-green-500">+43%</div>
+              <div
+                className={`text-xl font-semibold ${
+                  profileViews.percentageChange >= 0
+                    ? "text-green-500"
+                    : "text-red-500"
+                }`}
+              >
+                {profileViews.percentageChange > 0 ? "+" : ""}
+                {profileViews.percentageChange}%
+              </div>
               <div className="text-gray-500 text-xs">Since last week</div>
             </div>
           </div>
@@ -1514,10 +1763,11 @@ export default function SocialNetworkFeed() {
           {/* Tabs */}
           <div className="flex border-b pb-2 space-x-1">
             <button
-              className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${activeTab === "update"
+              className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${
+                activeTab === "update"
                   ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
                   : "text-gray-500 hover:text-blue-500"
-                }`}
+              }`}
               onClick={() => setActiveTab("update")}
             >
               <SquarePen size={16} className="mr-2" />
@@ -1525,10 +1775,11 @@ export default function SocialNetworkFeed() {
               <span className="sm:hidden">Update</span>
             </button>
             <button
-              className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${activeTab === "article"
+              className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${
+                activeTab === "article"
                   ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
                   : "text-gray-500 hover:text-blue-500"
-                }`}
+              }`}
               onClick={() => setActiveTab("article")}
             >
               <NotebookPen size={16} className="mr-2" />
@@ -1543,7 +1794,27 @@ export default function SocialNetworkFeed() {
               {/* Input */}
               <div className="flex items-start space-x-3">
                 <div className="w-9 h-9 bg-gray-200 text-xs rounded-full flex items-center justify-center font-semibold text-gray-600">
-                  PE
+                  {user.photo ? (
+                    <img
+                      src={
+                        user.photo.startsWith("http")
+                          ? user.photo
+                          : `http://localhost:3000/${user.photo}`
+                      }
+                      alt="Profile"
+                      className="w-full h-full object-cover rounded-full"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = ""; // Fallback ke initials jika gambar error
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-300">
+                      <span className="text-lg font-bold text-gray-600">
+                        {user.initials}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <input
                   type="text"
@@ -1571,10 +1842,11 @@ export default function SocialNetworkFeed() {
                     >
                       <span
                         onClick={() => handleVisibilityChange(type)}
-                        className={`p-1 rounded-full cursor-pointer transition ${postVisibility === type
+                        className={`p-1 rounded-full cursor-pointer transition ${
+                          postVisibility === type
                             ? "bg-blue-600"
                             : "bg-gray-400"
-                          } text-white`}
+                        } text-white`}
                       >
                         {icon}
                       </span>
@@ -1587,10 +1859,11 @@ export default function SocialNetworkFeed() {
                   </button>
                 </Tooltip>
                 <Button
-                  className={`px-4 py-2 text-sm transition-colors duration-300 ease-in-out ${isLoading
+                  className={`px-4 py-2 text-sm transition-colors duration-300 ease-in-out ${
+                    isLoading
                       ? "bg-gray-400 text-white cursor-not-allowed"
                       : "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700"
-                    }`}
+                  }`}
                   onClick={handlePostSubmit}
                   disabled={isLoading}
                 >
@@ -1606,7 +1879,6 @@ export default function SocialNetworkFeed() {
                   )}
                 </Button>
               </div>
-              
             </>
           ) : (
             <>
@@ -1678,10 +1950,11 @@ export default function SocialNetworkFeed() {
                     >
                       <span
                         onClick={() => handleVisibilityChange(type)}
-                        className={`p-1 rounded-full cursor-pointer transition ${postVisibility === type
+                        className={`p-1 rounded-full cursor-pointer transition ${
+                          postVisibility === type
                             ? "bg-blue-600"
                             : "bg-gray-400"
-                          } text-white`}
+                        } text-white`}
                       >
                         {icon}
                       </span>
@@ -1725,87 +1998,181 @@ export default function SocialNetworkFeed() {
             posts.map((post) => (
               <div
                 key={post.id}
-                className="bg-white rounded-lg shadow mb-4 border-b p-3"
+                className="bg-white rounded-lg shadow-md mb-6 p-4 space-y-4"
               >
-                {/* Post Header */}
-                <div className="border-b pb-3 flex items-center mb-3">
-                  {post.user?.photo ? (
-                    <img
-                      src={post.user.photo}
-                      className="rounded-full mr-2 w-8 md:w-10 h-8 md:h-10"
-                      alt={post.user?.name || "User"}
-                    />
-                  ) : (
-                    <div className="rounded-full bg-gray-200 w-8 md:w-10 h-8 md:h-10 flex items-center justify-center text-xs md:text-sm mr-2">
-                      {post.user?.initial || "UU"}
+                <div className="bg-white rounded-lg shadow mb-4 border-b border-gray-200 p-3">
+                  {/* Modified header with overlapping images */}
+                  <div className="border-b border-gray-200 pb-3 mb-3 relative">
+                    {/* Group info - now as a background element */}
+
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-start">
+                        {/* Group logo as background with user photo overlaid */}
+                        <div className="relative">
+                          {post.group && (
+                            <Link to={`/groups/${post.group.id}`}>
+                              <div className="absolute -left-1 -top-1 z-0">
+                                {post.group.image ? (
+                                  <img
+                                    className="object-cover w-full h-full"
+                                    src={
+                                      post.group.image
+                                        ? `http://localhost:3000/${post.group.image}`
+                                        : "/default-group.png"
+                                    }
+                                    alt="Group"
+                                    onError={(e) => {
+                                      e.target.onerror = null;
+                                      e.target.src = "";
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="rounded-full border-2 border-white ml-3 mt-2 w-10 h-10 relative z-10 bg-gray-300 flex items-center justify-center">
+                                    <span className="text-xs font-bold text-gray-600">
+                                      {post.group.name.charAt(0)}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </Link>
+                          )}
+
+                          {post.user?.photo ? (
+                            <Link to={`/user-profile/${post.user.username}`}>
+                              <img
+                                className="rounded-full border-2 border-white ml-3 mt-2 w-10 h-10 relative z-10"
+                                src={
+                                  post.user.photo.startsWith("http")
+                                    ? post.user.photo
+                                    : `http://localhost:3000/${post.user.photo}`
+                                }
+                                alt="Profile"
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.src = ""; // Fallback ke initials jika gambar error
+                                }}
+                              />
+                            </Link>
+                          ) : (
+                            <div className="w-10 h-10 flex items-center justify-center bg-gray-300 rounded-full border-2 border-white ml-3 mt-2 relative z-10">
+                              <span className="text-lg font-bold text-gray-600">
+                                {post.user?.initials || "UU"}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="ml-3 mt-2">
+                          <h6
+                            className="font-bold mb-0 text-sm cursor-pointer hover:underline"
+                            onClick={() => fetchUserProfile(post.user.username)}
+                          >
+                            {post.user?.name || "Unknown User"}
+                          </h6>
+                          <div className="flex items-center">
+                            <small className="text-gray-500 text-xs">
+                              {formatPostTime(
+                                post.createdAt || new Date().toISOString()
+                              )}
+                            </small>
+                            <span className="text-gray-400 mx-1 text-xs">
+                              •
+                            </span>
+                            {post.group && (
+                              <small className="text-gray-500 text-xs">
+                                <div className="flex items-center text-xs text-gray-500">
+                                  <a
+                                    href="#"
+                                    className="hover:underline text-blue-500"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      navigate(`/groups/${post.group.id}`);
+                                    }}
+                                  >
+                                    Posted in {post.group.name}
+                                  </a>
+                                </div>
+                              </small>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="ml-auto relative group">
+                        <button
+                          className="bg-gray-100 hover:bg-gray-200 rounded-full p-1 mr-2"
+                          onClick={() => handleOpenPostOptions(post.id)}
+                        >
+                          <Ellipsis size={14} />
+                        </button>
+                        <button className="bg-gray-100 hover:bg-gray-200 rounded-full p-1">
+                          {post.visibility === "public" && <Globe size={14} />}
+                          {post.visibility === "private" && (
+                            <LockKeyhole size={14} />
+                          )}
+                          {post.visibility === "connection" && (
+                            <Users size={14} />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Post Content */}
+                  {post.content && (
+                    <div className="mb-3 text-sm text-gray-800">
+                      {post.content}
                     </div>
                   )}
-                  <div>
-                    <h6 className="font-bold mb-0 text-sm md:text-base">
-                      {post.user?.name || "Unknown User"}
-                    </h6>
-                    <small className="text-gray-500 text-xs">
-                      {formatPostTime(
-                        post.createdAt || new Date().toISOString()
-                      )}
-                    </small>
+
+                  {renderPhotoGrid(post.images)}
+
+                  {/* Likes & Comments Info */}
+                  <div className="flex items-center space-x-4 px-4 py-1 text-xs text-gray-500 justify-between">
+                    <div className="flex items-center space-x-1">
+                      <span className="text-blue-500">
+                        {post.likes_count || 0} Like
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-1 cursor-pointer">
+                      <span
+                        className="text-blue-500"
+                        onClick={() => openCommentModal(post.id)}
+                      >
+                        {post.comments_count || 0} Comment
+                      </span>
+                    </div>
                   </div>
-                  <div className="ml-auto relative group">
+
+                  {/* Post Actions */}
+                  <div className="border-t border-gray-200 px-4 py-2 flex justify-between">
                     <button
-                      className="bg-gray-100 hover:bg-gray-200 rounded-full p-1 mr-2"
-                      onClick={() => handleOpenPostOptions(post.id)}
+                      className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${
+                        post.isLiked
+                          ? "text-blue-600 bg-blue-50"
+                          : "text-blue-600 hover:bg-blue-50"
+                      }`}
+                      onClick={() => handleLikePost(post.id, post.isLiked)}
                     >
-                      <Ellipsis size={14} />
+                      <ThumbsUp size={14} className="mr-2" />
+                      Like
                     </button>
-                    <button className="bg-gray-100 hover:bg-gray-200 rounded-full p-1">
-                      {post.visibility === "public" && <Globe size={14} />}
-                      {post.visibility === "private" && (
-                        <LockKeyhole size={14} />
-                      )}
-                      {post.visibility === "connection" && <Users size={14} />}
+
+                    <button
+                      className="flex items-center justify-center w-1/3 py-2 rounded-lg text-blue-600 hover:bg-blue-50"
+                      onClick={() => openCommentModal(post.id)}
+                    >
+                      <MessageCircle size={14} className="mr-2" />
+                      Comment
+                    </button>
+
+                    <button
+                      className="flex items-center justify-center w-1/3 py-2 rounded-lg text-blue-600 hover:bg-blue-50"
+                      onClick={() => handleOpenShareModal(post.id)}
+                    >
+                      <Share size={14} className="mr-2" />
+                      Share
                     </button>
                   </div>
-                </div>
-
-                {/* Post Content */}
-                {post.content && (
-                  <div
-                    className="mb-3 text-sm md:text-base ck-editor-content"
-                    dangerouslySetInnerHTML={{ __html: post.content }}
-                  />
-                )}
-
-                {/* Post Images */}
-                {post.images && renderPhotoGrid(post.images)}
-
-                {/* Post Actions */}
-                <div className="border-t px-4 py-2 flex justify-between">
-                  <button
-                    className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${post.isLiked
-                        ? "text-blue-600 bg-blue-50"
-                        : "text-blue-600 hover:bg-blue-100"
-                      }`}
-                    onClick={() => handleLikePost(post.id, post.isLiked)}
-                  >
-                    <ThumbsUp size={14} className="mr-2" />
-                    Like ({post.likes_count || 0})
-                  </button>
-
-                  <button
-                    className="flex items-center justify-center w-1/3 py-2 rounded-lg text-blue-600 hover:bg-blue-50"
-                    onClick={() => openCommentModal(post.id)}
-                  >
-                    <MessageCircle size={14} className="mr-2" />
-                    Comment ({post.comments_count || 0})
-                  </button>
-
-                  <button
-                    className="flex items-center justify-center w-1/3 py-2 rounded-lg text-blue-600 hover:bg-blue-50"
-                    onClick={() => handleOpenShareModal(post.id)}
-                  >
-                    <Share size={14} className="mr-2" />
-                    Share
-                  </button>
                 </div>
               </div>
             ))
@@ -1892,69 +2259,7 @@ export default function SocialNetworkFeed() {
       {/* Post Options Modal */}
       {showPostOptions && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-xs mx-4">
-            <div className="p-4">
-              <h3 className="font-medium text-lg mb-3">Post Options</h3>
-
-              {/* Edit Option (only show if post belongs to current user) */}
-              <button
-                className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
-                onClick={() => handlePostAction("edit")}
-              >
-                <SquarePen size={16} className="mr-2" />
-                Edit Post
-              </button>
-
-              {/* Delete Option (only show if post belongs to current user) */}
-              <button
-                className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
-                onClick={() => handlePostAction("delete")}
-              >
-                <X size={16} className="mr-2" />
-                Delete Post
-              </button>
-
-              {/* Report Option */}
-              <button
-                className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
-                onClick={() => handleReportClick(post.user?.id, "post", post.id)}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
-                Report Post
-              </button>
-
-              {/* Connect Option (only show if post doesn't belong to current user) */}
-              <button
-                className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-blue-500"
-                onClick={() => handlePostAction("connect")}
-              >
-                <Users size={16} className="mr-2" />
-                Connect with User
-              </button>
-            </div>
-
-            <div className="border-t p-3">
-              <button
-                className="w-full py-2 text-gray-500 hover:text-gray-700"
-                onClick={handleClosePostOptions}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
+          {renderPostOptionsModal()}
         </div>
       )}
 
@@ -1962,29 +2267,41 @@ export default function SocialNetworkFeed() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg w-full max-w-md mx-4 p-5">
             <h3 className="text-lg font-semibold mb-4">Laporkan posting ini</h3>
-            <p className="mb-3 text-sm text-gray-600">Pilih kebijakan kami yang berlaku</p>
+            <p className="mb-3 text-sm text-gray-600">
+              Pilih kebijakan kami yang berlaku
+            </p>
 
             <div className="grid grid-cols-2 gap-2 mb-4">
               {[
-                "Pelecehan", "Penipuan", "Spam", "Misinformasi", "Ujaran kebencian",
-                "Ancaman atau kekerasan", "Menyakiti diri sendiri", "Konten sadis",
-                "Organisasi berbahaya atau ekstremis", "Konten seksual", "Akun palsu",
-                "Eksploitasi anak", "Produk dan layanan ilegal", "Pelanggaran", "Lainnya"
+                "Pelecehan",
+                "Penipuan",
+                "Spam",
+                "Misinformasi",
+                "Ujaran kebencian",
+                "Ancaman atau kekerasan",
+                "Menyakiti diri sendiri",
+                "Konten sadis",
+                "Organisasi berbahaya atau ekstremis",
+                "Konten seksual",
+                "Akun palsu",
+                "Eksploitasi anak",
+                "Produk dan layanan ilegal",
+                "Pelanggaran",
+                "Lainnya",
               ].map((reason) => (
                 <button
                   key={reason}
-                  className={`py-2 px-3 text-sm border rounded-full ${selectedReason === reason
+                  className={`py-2 px-3 text-sm border rounded-full ${
+                    selectedReason === reason
                       ? "bg-blue-100 border-blue-500 text-blue-700"
                       : "bg-white hover:bg-gray-100"
-                    }`}
+                  }`}
                   onClick={() => setSelectedReason(reason)}
                 >
                   {reason}
                 </button>
               ))}
             </div>
-
-
 
             {selectedReason === "Lainnya" && (
               <textarea
@@ -2015,8 +2332,6 @@ export default function SocialNetworkFeed() {
                 }`}
                 disabled={!selectedReason}
                 onClick={() => {
-                  // Lakukan POST report ke backend atau tampilkan alert dulu
-                  console.log("Report submitted:", selectedReason === "Lainnya" ? customReason : selectedReason);
                   setShowReportModal(false);
                   setSelectedReason("");
                   setCustomReason("");
@@ -2119,10 +2434,11 @@ export default function SocialNetworkFeed() {
                   <button
                     key={type}
                     onClick={() => setPostVisibility(type)}
-                    className={`flex items-center px-3 py-2 rounded-md text-sm ${postVisibility === type
+                    className={`flex items-center px-3 py-2 rounded-md text-sm ${
+                      postVisibility === type
                         ? "bg-blue-100 text-blue-700"
                         : "bg-gray-100 text-gray-700"
-                      }`}
+                    }`}
                   >
                     {icon}
                     <span className="ml-2">{label}</span>
@@ -2400,9 +2716,7 @@ export default function SocialNetworkFeed() {
 
             <div className="relative">
               <img
-                src={
-                  selectedPost.images[selectedImageIndex]
-                }
+                src={selectedPost.images[selectedImageIndex]}
                 className="w-full max-h-[80vh] object-contain"
                 alt={`Post ${selectedImageIndex + 1}`}
               />
@@ -2492,15 +2806,27 @@ export default function SocialNetworkFeed() {
                 comments[currentPostId].map((comment) => (
                   <div key={comment.id} className="mb-4">
                     <div className="flex items-start mb-2">
-                      {comment.user.photo ? (
-                        <img
-                          src={comment.user.photo}
-                          className="rounded-full mr-2 w-6 md:w-8 h-6 md:h-8"
-                          alt="User"
-                        />
+                      {comment.user?.profile_photo ? (
+                        <Link to={`/user-profile/${comment.user.username}`}>
+                          <img
+                            className="rounded-full border-2 border-white ml-3 mt-2 w-10 h-10 relative z-10"
+                            src={
+                              comment.user.profile_photo.startsWith("http")
+                                ? comment.user.profile_photo
+                                : `http://localhost:3000/${comment.user.profile_photo}`
+                            }
+                            alt="Profile"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = ""; // Fallback ke initials jika gambar error
+                            }}
+                          />
+                        </Link>
                       ) : (
-                        <div className="rounded-full bg-gray-200 w-6 md:w-8 h-6 md:h-8 flex items-center justify-center text-xs mr-2">
-                          {comment.user.initials || "UU"}
+                        <div className="w-10 h-10 flex items-center justify-center bg-gray-300 rounded-full border-2 border-white ml-3 mt-2 relative z-10">
+                          <span className="text-lg font-bold text-gray-600">
+                            {comment.user?.initials || "Z"}
+                          </span>
                         </div>
                       )}
                       <div className="flex-1">
@@ -2636,15 +2962,31 @@ export default function SocialNetworkFeed() {
                                     className="mb-3 group relative"
                                   >
                                     <div className="flex items-start">
-                                      {reply.user?.photo ? (
-                                        <img
-                                          src={reply.user.photo}
-                                          className="rounded-full mr-2 w-5 md:w-6 h-5 md:h-6"
-                                          alt="User"
-                                        />
+                                      {reply.user?.profile_photo ? (
+                                        <Link
+                                          to={`/user-profile/${comment.user.username}`}
+                                        >
+                                          <img
+                                            className="rounded-full border-2 border-white ml-3 mt-2 w-10 h-10 relative z-10"
+                                            src={
+                                              reply.user.profile_photo.startsWith(
+                                                "http"
+                                              )
+                                                ? reply.user.profile_photo
+                                                : `http://localhost:3000/${reply.user.profile_photo}`
+                                            }
+                                            alt="Profile"
+                                            onError={(e) => {
+                                              e.target.onerror = null;
+                                              e.target.src = ""; // Fallback ke initials jika gambar error
+                                            }}
+                                          />
+                                        </Link>
                                       ) : (
-                                        <div className="rounded-full bg-gray-200 w-5 md:w-6 h-5 md:h-6 flex items-center justify-center text-xxs md:text-xs mr-2">
-                                          {reply.user?.initials || "UU"}
+                                        <div className="w-10 h-10 flex items-center justify-center bg-gray-300 rounded-full border-2 border-white ml-3 mt-2 relative z-10">
+                                          <span className="text-lg font-bold text-gray-600">
+                                            {reply.user?.initials || "Z"}
+                                          </span>
                                         </div>
                                       )}
                                       <div className="flex-1">
@@ -2753,3 +3095,5 @@ export default function SocialNetworkFeed() {
     </div>
   );
 }
+
+

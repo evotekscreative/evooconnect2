@@ -32,6 +32,12 @@ import LoginAdmin from "./pages/Admin/AuthAdmin/LoginAdmin.jsx";
 import Dashboard from "./pages/Admin/Admin1/Dashboard.jsx";
 import Settings from "./pages/Admin/Admin1/Settings.jsx";
 import Tables from "./pages/Admin/Admin1/Tables.jsx";
+import SearchResults from "./pages/SearchResults";
+import ProtectedAdminRoute from "./components/Auth/ProtectedAdminRoute.jsx";
+import ReportPage from "./pages/Admin/Admin1/Index.jsx";
+import ReportUser from "./pages/Admin/Report/ReportUser.jsx";
+import CreateCompany from "./pages/CreateCompany.jsx";
+import ListCompany from "./pages/Admin/Admin1/ListCompany.jsx";
 
 const router = createBrowserRouter([
   {
@@ -44,16 +50,30 @@ const router = createBrowserRouter([
   },
   {
     path: "/login",
-    element: <IsGuest><Login /></IsGuest>,
+    element: (
+      <IsGuest>
+        <Login />
+      </IsGuest>
+    ),
   },
   {
     path: "/register",
-    element: <IsGuest><Register /></IsGuest>,
+    element: (
+      <IsGuest>
+        <Register />
+      </IsGuest>
+    ),
   },
   {
     path: "/forgot-password",
     element: <ForgotPassword />,
   },
+
+  {
+    path: "/search",
+    element: <SearchResults />,
+  },
+  
   {
     path: "/terms",
     element: <TermsCondition />,
@@ -166,7 +186,15 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/groups/:groupId",
+    path: "/messages/:conversationId",
+    element: (
+      <ProtectedRoute>
+        <Messages />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/group-page",
     element: (
       <ProtectedRoute>
         <GroupPage />
@@ -216,7 +244,7 @@ const router = createBrowserRouter([
   {
     path: "/reset-password",
     element: (
-        <ResetPassword />
+      <ResetPassword />
     )
   },
 {
@@ -224,35 +252,46 @@ const router = createBrowserRouter([
    element : <SinglePost />
 },
 
-// Admin
 {
-  path: "/login-admin",
-  element: <LoginAdmin />,
-},
-{
-  path: "/dashboard",
-  element: (
-    // <ProtectedRoute>
-      <Dashboard />
-    // </ProtectedRoute>
-  ),
-},
-{
-  path: "/settings",
-  element: (
-    // <ProtectedRoute>
-      <Settings />
-    // </ProtectedRoute>
-  ),
-},
-{
-  path: "/tables",
-  element: (
-    // <ProtectedRoute>
-      <Tables />
-    // </ProtectedRoute>
-  ),
-},
+    path: "/login-admin",
+    element: <LoginAdmin />,
+  },
+  {
+    path: "/admin",
+    element: <ProtectedAdminRoute />,
+    children: [
+      {
+        path: "dashboard",
+        element: <Dashboard />,
+      },
+      {
+        path: "settings",
+        element: <Settings />,
+      },
+      {
+        path: "tables",
+        element: <Tables />,
+      },
+      {
+        path: "report",
+        element: <ReportPage />,
+      },
+      {
+        path: "report-user",
+        element: <ReportUser />,
+      },
+      {
+        path: "list-company",
+        element: <ListCompany />,
+      },
+      {
+        path: "create-company",
+        element: <CreateCompany />,
+      }
+      
+    ],
+  },
+
 ]);
 
 export default router;

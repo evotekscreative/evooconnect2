@@ -156,6 +156,28 @@ export default function Sidebar() {
                   Tables
                 </Link>
               </li>
+
+              <li className="items-center">
+                <Link
+                  className={
+                    "text-xs uppercase py-3 font-bold block " +
+                    (window.location.href.indexOf("/list-company") !== -1
+                      ? "text-sky-500 hover:text-sky-600"
+                      : "text-gray-700 hover:text-gray-500")
+                  }
+                  to="/list-company"
+                >
+                  <i
+                    className={
+                      "fas fa-table mr-2 text-sm " +
+                      (window.location.href.indexOf("/list-company") !== -1
+                        ? "opacity-75"
+                        : "text-gray-300")
+                    }
+                  ></i>{" "}
+                  List Company
+                </Link>
+              </li>
             </ul>
 
             {/* Divider */}

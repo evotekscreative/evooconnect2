@@ -29,4 +29,6 @@ type GroupRepository interface {
 	FindInvitationById(ctx context.Context, tx *sql.Tx, invitationId uuid.UUID) (domain.GroupInvitation, error)
 	FindInvitationsByUser(ctx context.Context, tx *sql.Tx, userId uuid.UUID) []domain.GroupInvitation
 	FindInvitationsByGroup(ctx context.Context, tx *sql.Tx, groupId uuid.UUID) []domain.GroupInvitation
+	Search(ctx context.Context, tx *sql.Tx, query string, limit int, offset int) []domain.Group
+    CountMembers(ctx context.Context, tx *sql.Tx, groupId uuid.UUID) int
 }

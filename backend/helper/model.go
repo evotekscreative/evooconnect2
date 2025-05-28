@@ -86,36 +86,57 @@ func ToUserProfileResponse(user domain.User, isConnected ...bool) web.UserProfil
 }
 
 func ToUserShortResponse(user domain.User, isConnected bool) web.UserShort {
+	var connectedStatus bool
+	if user.IsConnected {
+		connectedStatus = user.IsConnected
+	} else {
+		connectedStatus = isConnected
+	}
+
 	return web.UserShort{
 		Id:          user.Id,
 		Name:        user.Name,
 		Username:    user.Username,
 		Photo:       &user.Photo,
 		Headline:    &user.Headline,
-		IsConnected: isConnected,
+		IsConnected: connectedStatus,
 	}
 }
 
 func ToPostResponse(post domain.Post) web.PostResponse {
-	return web.PostResponse{
-		Id:         post.Id,
-		UserId:     post.UserId,
-		Content:    post.Content,
-		Images:     post.Images,
-		LikesCount: post.LikesCount,
-		Visibility: post.Visibility,
-		IsLiked:    post.IsLiked,
-		User: web.UserShort{
-			Id:          post.User.Id,
-			Name:        post.User.Name,
-			Username:    post.User.Username,
-			Photo:       &post.User.Photo,
-			Headline:    &post.User.Headline,
-			IsConnected: post.User.IsConnected,
-		},
-		CreatedAt: post.CreatedAt,
-		UpdatedAt: post.UpdatedAt,
+	postResponse := web.PostResponse{
+		Id:            post.Id,
+		UserId:        post.UserId,
+		Content:       post.Content,
+		Images:        post.Images,
+		Visibility:    post.Visibility,
+		CreatedAt:     post.CreatedAt,
+		UpdatedAt:     post.UpdatedAt,
+		IsLiked:       post.IsLiked,
+		LikesCount:    post.LikesCount,
+		CommentsCount: post.CommentsCount,
+		GroupId:       post.GroupId,
 	}
+
+	if post.User != nil {
+		postResponse.User = ToUserShortResponse(*post.User, false)
+	}
+
+	if post.Group != nil {
+		group := ToGroupResponse(*post.Group)
+		postResponse.Group = &group
+	}
+
+	return postResponse
+}
+
+func ToPostResponses(posts []domain.Post) []web.PostResponse {
+	postResponses := make([]web.PostResponse, 0)
+	for _, post := range posts {
+		postResponse := ToPostResponse(post)
+		postResponses = append(postResponses, postResponse)
+	}
+	return postResponses
 }
 
 // Fungsi untuk mengkonversi comment domain ke comment response
@@ -214,7 +235,7 @@ func ToExperienceResponses(experiences []domain.UserExperience) []web.Experience
 
 // Add this to helper/converter.go or wherever your helper functions are
 func ToGroupResponse(group domain.Group) web.GroupResponse {
-	return web.GroupResponse{
+	groupResponse := web.GroupResponse{
 		Id:           group.Id,
 		Name:         group.Name,
 		Description:  group.Description,
@@ -226,6 +247,12 @@ func ToGroupResponse(group domain.Group) web.GroupResponse {
 		CreatedAt:    group.CreatedAt,
 		UpdatedAt:    group.UpdatedAt,
 	}
+
+	if group.Creator != nil {
+		groupResponse.Creator = ToUserBriefResponse(*group.Creator)
+	}
+
+	return groupResponse
 }
 
 func ToUserBriefResponse(user domain.User) web.UserBriefResponse {

@@ -1,4 +1,3 @@
-// components/Blog/DeleteComment.jsx
 import React, { useState } from "react";
 import { toast } from "sonner";
 import { MoreVertical, Pencil, Reply, Trash2 } from "lucide-react";

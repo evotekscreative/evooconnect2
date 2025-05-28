@@ -18,7 +18,7 @@ var validReasons = []string{
 	"Harassment", "Fraud", "Spam", "Missinformation", "Hate Speech",
 	"Threats or violence", "self-harm", "Graphic or violent content",
 	"Dangerous or extremist organizations", "Sexual Content", "Fake Account",
-	"Child Exploitation", "Illegal products and services", "Infringement","Other",
+	"Child Exploitation", "Illegal products and services", "Infringement", "Other",
 }
 
 type reportServiceImpl struct {
@@ -56,10 +56,9 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 		return web.ReportResponse{}, errors.New("invalid report reason")
 	}
 
-	if strings.ToLower(request.Reason) == "other" && strings.TrimSpace(request.OtherReason) == "" {
-		return web.ReportResponse{}, errors.New("other reason must be provided")
+	if strings.ToLower(request.Reason) == "Other" && strings.TrimSpace(request.OtherReason) == "" {
+		return web.ReportResponse{}, errors.New("other reason must be filled")
 	}
-
 	ctx := context.Background()
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -87,11 +86,11 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 	case "user":
 		_, err = s.userRepository.FindById(ctx, tx, targetUUID)
 	default:
-		return web.ReportResponse{}, errors.New("unrecognized content type")
+		return web.ReportResponse{}, errors.New("unknown content type")
 	}
 
 	if err != nil {
-		return web.ReportResponse{}, fmt.Errorf("%s The reported content was not found", request.TargetType)
+		return web.ReportResponse{}, fmt.Errorf("%s that was reported was not found", request.TargetType)
 	}
 
 	reported, err := s.reportRepository.HasReported(ctx, request.ReporterID, request.TargetType, request.TargetID)
@@ -126,6 +125,12 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 		TargetType: result.TargetType,
 		TargetID:   result.TargetID,
 		Reason:     result.Reason,
+		Description: func() string {
+			if strings.EqualFold(result.Reason, "Other") {
+				return result.OtherReason
+			}
+			return ""
+		}(),
 		Status:     result.Status,
 	}, nil
 }

@@ -9,12 +9,13 @@ type CreateReportRequest struct {
 }
 
 type ReportResponse struct {
-	ID         string `json:"id"`
-	ReporterID string `json:"reporter_id"`
-	TargetType string `json:"target_type"`
-	TargetID   string `json:"target_id"`
-	Reason     string `json:"reason"`
-	Status     string `json:"status"`
+    ID          string `json:"id"`
+    ReporterID  string `json:"reporter_id"`
+    TargetType  string `json:"target_type"`
+    TargetID    string `json:"target_id"`
+    Reason      string `json:"reason"`
+    Description string `json:"description,omitempty"` // Tambahkan field ini
+    Status      string `json:"status"`
 }
 
 type APIResponse struct {
