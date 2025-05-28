@@ -273,76 +273,104 @@ func (service *PostServiceImpl) Delete(ctx context.Context, postId uuid.UUID, us
 }
 
 func (service *PostServiceImpl) FindById(ctx context.Context, postId uuid.UUID, currentUserId uuid.UUID) web.PostResponse {
-	tx, err := service.DB.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
+    tx, err := service.DB.Begin()
+    helper.PanicIfError(err)
+    defer helper.CommitOrRollback(tx)
 
-	post, err := service.PostRepository.FindById(ctx, tx, postId)
-	if err != nil {
-		panic(exception.NewNotFoundError("Post not found"))
-	}
+    post, err := service.PostRepository.FindById(ctx, tx, postId)
+    if err != nil {
+        panic(exception.NewNotFoundError("Post not found"))
+    }
 
-	// Check if the current user has liked this post
-	post.IsLiked = service.PostRepository.IsLiked(ctx, tx, postId, currentUserId)
-	post.CommentsCount, _ = service.CommentRepository.CountByPostId(ctx, tx, postId)
-	post.LikesCount = service.PostRepository.GetLikesCount(ctx, tx, postId)
-	post.User.IsConnected = service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, post.UserId)
+    // Check if the current user has liked this post
+    post.IsLiked = service.PostRepository.IsLiked(ctx, tx, postId, currentUserId)
+    post.CommentsCount, _ = service.CommentRepository.CountByPostId(ctx, tx, postId)
+    post.LikesCount = service.PostRepository.GetLikesCount(ctx, tx, postId)
+    
+    // Perbaikan: Gunakan IsConnected alih-alih CheckConnectionExists
+    // dan pastikan parameter diberikan dengan benar
+    if post.User != nil && post.UserId != currentUserId {
+        post.User.IsConnected = service.ConnectionRepository.IsConnected(ctx, tx, currentUserId, post.UserId)
+    } else if post.User != nil && post.UserId == currentUserId {
+        // Jika post dibuat oleh user yang sedang login, set IsConnected ke false
+        post.User.IsConnected = false
+    }
 
-	return helper.ToPostResponse(post)
+    return helper.ToPostResponse(post)
 }
 
+
 func (service *PostServiceImpl) FindAll(ctx context.Context, limit, offset int, currentUserId uuid.UUID) []web.PostResponse {
-	tx, err := service.DB.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
+    tx, err := service.DB.Begin()
+    helper.PanicIfError(err)
+    defer helper.CommitOrRollback(tx)
 
-	// Error 1: Fungsi FindAll hanya mengembalikan 1 nilai, bukan 2
-	posts := service.PostRepository.FindAll(ctx, tx, currentUserId, limit, offset)
+    // Ambil semua post
+    posts := service.PostRepository.FindAll(ctx, tx, currentUserId, limit, offset)
 
-	// Ambil ID user yang sedang login
-	currentUserIdStr, ok := ctx.Value("user_id").(string)
-	if ok {
-		currentUserId, _ = uuid.Parse(currentUserIdStr)
-	}
-	
-	// Check which posts the current user has liked
-	var postResponses []web.PostResponse
-	for _, post := range posts {
-		post.IsLiked = service.PostRepository.IsLiked(ctx, tx, post.Id, currentUserId)
-		post.CommentsCount, _ = service.CommentRepository.CountByPostId(ctx, tx, post.Id)
-		post.LikesCount = service.PostRepository.GetLikesCount(ctx, tx, post.Id)
-		post.User.IsConnected = service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, post.UserId)
-		if post.GroupId != nil {
-			group, err := service.GroupRepository.FindById(ctx, tx, *post.GroupId)
-			if err == nil {
-				post.Group = &group
-			}
-		}
-		postResponses = append(postResponses, helper.ToPostResponse(post))
-	}
+    // Ambil ID user yang sedang login
+    currentUserIdStr, ok := ctx.Value("user_id").(string)
+    if ok {
+        currentUserId, _ = uuid.Parse(currentUserIdStr)
+    }
+    
+    // Check which posts the current user has liked and set connection status
+    var postResponses []web.PostResponse
+    for _, post := range posts {
+        post.IsLiked = service.PostRepository.IsLiked(ctx, tx, post.Id, currentUserId)
+        post.CommentsCount, _ = service.CommentRepository.CountByPostId(ctx, tx, post.Id)
+        post.LikesCount = service.PostRepository.GetLikesCount(ctx, tx, post.Id)
+        
+        // Perbaikan: Gunakan IsConnected alih-alih CheckConnectionExists
+        // dan pastikan parameter diberikan dengan benar
+        if post.User != nil && post.UserId != currentUserId {
+            post.User.IsConnected = service.ConnectionRepository.IsConnected(ctx, tx, currentUserId, post.UserId)
+        } else if post.User != nil && post.UserId == currentUserId {
+            // Jika post dibuat oleh user yang sedang login, set IsConnected ke false
+            post.User.IsConnected = false
+        }
+        
+        if post.GroupId != nil {
+            group, err := service.GroupRepository.FindById(ctx, tx, *post.GroupId)
+            if err == nil {
+                post.Group = &group
+            }
+        }
+        postResponses = append(postResponses, helper.ToPostResponse(post))
+    }
 
-	return postResponses
+    return postResponses
 }
 
 func (service *PostServiceImpl) FindByUserId(ctx context.Context, targetUserId uuid.UUID, limit, offset int, currentUserId uuid.UUID) []web.PostResponse {
-	tx, err := service.DB.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
+    tx, err := service.DB.Begin()
+    helper.PanicIfError(err)
+    defer helper.CommitOrRollback(tx)
 
-	posts := service.PostRepository.FindByUserId(ctx, tx, targetUserId, currentUserId, limit, offset)
+    posts := service.PostRepository.FindByUserId(ctx, tx, targetUserId, currentUserId, limit, offset)
 
-	// Check which posts the current user has liked
-	var postResponses []web.PostResponse
-	for _, post := range posts {
-		post.IsLiked = service.PostRepository.IsLiked(ctx, tx, post.Id, currentUserId)
-		post.CommentsCount, _ = service.CommentRepository.CountByPostId(ctx, tx, post.Id)
-		post.LikesCount = service.PostRepository.GetLikesCount(ctx, tx, post.Id)
-		post.User.IsConnected = service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, post.UserId)
-		postResponses = append(postResponses, helper.ToPostResponse(post))
-	}
+    // Check which posts the current user has liked
+    var postResponses []web.PostResponse
+    for _, post := range posts {
+        post.IsLiked = service.PostRepository.IsLiked(ctx, tx, post.Id, currentUserId)
+        post.CommentsCount, _ = service.CommentRepository.CountByPostId(ctx, tx, post.Id)
+        post.LikesCount = service.PostRepository.GetLikesCount(ctx, tx, post.Id)
+        
+        // Perbaikan: Gunakan IsConnected alih-alih CheckConnectionExists
+        // dan pastikan parameter diberikan dengan benar
+        if post.User != nil && post.UserId != currentUserId {
+            post.User.IsConnected = service.ConnectionRepository.IsConnected(ctx, tx, currentUserId, post.UserId)
+        } else if post.User != nil && post.UserId == currentUserId {
+            // Jika post dibuat oleh user yang sedang login, set IsConnected ke false
+            post.User.IsConnected = false
+        }
+        
+        postResponses = append(postResponses, helper.ToPostResponse(post))
+    }
 
-	return postResponses
+    return postResponses
 }
+
 
 func (service *PostServiceImpl) LikePost(ctx context.Context, postId uuid.UUID, userId uuid.UUID) web.PostResponse {
 	tx, err := service.DB.Begin()

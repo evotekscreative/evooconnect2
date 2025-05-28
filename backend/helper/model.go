@@ -86,49 +86,56 @@ func ToUserProfileResponse(user domain.User, isConnected ...bool) web.UserProfil
 }
 
 func ToUserShortResponse(user domain.User, isConnected bool) web.UserShort {
-	var connectedStatus bool
-	if user.IsConnected {
-		connectedStatus = user.IsConnected
-	} else {
-		connectedStatus = isConnected
-	}
-
-	return web.UserShort{
-		Id:          user.Id,
-		Name:        user.Name,
-		Username:    user.Username,
-		Photo:       &user.Photo,
-		Headline:    &user.Headline,
-		IsConnected: connectedStatus,
-	}
+    return web.UserShort{
+        Id:          user.Id,
+        Name:        user.Name,
+        Username:    user.Username,
+        Photo:       &user.Photo,
+        Headline:    &user.Headline,
+        IsConnected: isConnected,
+    }
 }
+
+
+
 
 func ToPostResponse(post domain.Post) web.PostResponse {
-	postResponse := web.PostResponse{
-		Id:            post.Id,
-		UserId:        post.UserId,
-		Content:       post.Content,
-		Images:        post.Images,
-		Visibility:    post.Visibility,
-		CreatedAt:     post.CreatedAt,
-		UpdatedAt:     post.UpdatedAt,
-		IsLiked:       post.IsLiked,
-		LikesCount:    post.LikesCount,
-		CommentsCount: post.CommentsCount,
-		GroupId:       post.GroupId,
-	}
+    postResponse := web.PostResponse{
+        Id:            post.Id,
+        UserId:        post.UserId,
+        Content:       post.Content,
+        Images:        post.Images,
+        Visibility:    post.Visibility,
+        CreatedAt:     post.CreatedAt,
+        UpdatedAt:     post.UpdatedAt,
+        IsLiked:       post.IsLiked,
+        LikesCount:    post.LikesCount,
+        CommentsCount: post.CommentsCount,
+        GroupId:       post.GroupId,
+    }
 
-	if post.User != nil {
-		postResponse.User = ToUserShortResponse(*post.User, false)
-	}
+    if post.User != nil {
+        postResponse.User = web.UserShort{
+            Id:          post.User.Id,
+            Name:        post.User.Name,
+            Username:    post.User.Username,
+            Photo:       &post.User.Photo,
+            Headline:    &post.User.Headline,
+            IsConnected: post.User.IsConnected,
+        }
+    }
 
-	if post.Group != nil {
-		group := ToGroupResponse(*post.Group)
-		postResponse.Group = &group
-	}
+    if post.Group != nil {
+        group := ToGroupResponse(*post.Group)
+        postResponse.Group = &group
+    }
 
-	return postResponse
+    return postResponse
 }
+
+
+
+
 
 func ToPostResponses(posts []domain.Post) []web.PostResponse {
 	postResponses := make([]web.PostResponse, 0)
@@ -255,19 +262,24 @@ func ToGroupResponse(group domain.Group) web.GroupResponse {
 	return groupResponse
 }
 
-func ToUserBriefResponse(user domain.User) web.UserBriefResponse {
-	return web.UserBriefResponse{
-		Id:          user.Id,
-		Name:        user.Name,
-		Username:    user.Username,
-		Photo:       user.Photo,
-		IsVerified:  user.IsVerified,
-		Email:       user.Email,
-		Headline:    user.Headline,
-		IsConnected: false,
-		CreatedAt:   user.CreatedAt.Format("2006-01-02T15:04:05Z"),
-		UpdatedAt:   user.UpdatedAt.Format("2006-01-02T15:04:05Z"),
-	}
+func ToUserBriefResponse(user domain.User, isConnected ...bool) web.UserBriefResponse {
+    connected := false
+    if len(isConnected) > 0 {
+        connected = isConnected[0]
+    }
+    
+    return web.UserBriefResponse{
+        Id:          user.Id,
+        Name:        user.Name,
+        Username:    user.Username,
+        Photo:       user.Photo,
+        IsVerified:  user.IsVerified,
+        Email:       user.Email,
+        Headline:    user.Headline,
+        IsConnected: connected, // Gunakan nilai dari parameter
+        CreatedAt:   user.CreatedAt.Format("2006-01-02T15:04:05Z"),
+        UpdatedAt:   user.UpdatedAt.Format("2006-01-02T15:04:05Z"),
+    }
 }
 
 func ToGroupMemberBriefs(members []domain.GroupMember) []web.GroupMemberBrief {

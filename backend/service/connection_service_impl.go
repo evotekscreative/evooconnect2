@@ -9,10 +9,9 @@ import (
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
 	"fmt"
-	"time"
-	// "evoconnect/backend/utils"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
+	"time"
 )
 
 // Helper function to convert string to *string
@@ -128,7 +127,7 @@ func (service *ConnectionServiceImpl) SendConnectionRequest(ctx context.Context,
 			&senderId,
 		)
 	}()
-	
+
 	// Prepare response
 	return web.ConnectionRequestResponse{
 		Id:        createdRequest.Id,
@@ -339,57 +338,58 @@ func (service *ConnectionServiceImpl) RejectConnectionRequest(ctx context.Contex
 		},
 	}
 }
+
 func (service *ConnectionServiceImpl) GetConnections(ctx context.Context, userId, currentUserId uuid.UUID, limit, offset int) web.ConnectionListResponse {
-    tx, err := service.DB.Begin()
-    helper.PanicIfError(err)
-    defer helper.CommitOrRollback(tx)
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
 
-    // Check if user exists
-    _, err = service.UserRepository.FindById(ctx, tx, userId)
-    if err != nil {
-        panic(exception.NewNotFoundError("User not found"))
-    }
+	// Check if user exists
+	_, err = service.UserRepository.FindById(ctx, tx, userId)
+	if err != nil {
+		panic(exception.NewNotFoundError("User not found"))
+	}
 
-    // Get connections for user
-    connections, count := service.ConnectionRepository.FindConnectionsByUserId(ctx, tx, userId, limit, offset)
+	// Get connections for user
+	connections, count := service.ConnectionRepository.FindConnectionsByUserId(ctx, tx, userId, limit, offset)
 
-    var connectionResponses []web.ConnectionResponse
-    for _, connection := range connections {
-        var otherUser *domain.User
-        if connection.UserId1 == userId && connection.User2 != nil {
-            otherUser = connection.User2
-        } else if connection.UserId2 == userId && connection.User1 != nil {
-            otherUser = connection.User1
-        } else {
-            continue
-        }
+	var connectionResponses []web.ConnectionResponse
+	for _, connection := range connections {
+		var otherUser *domain.User
+		if connection.UserId1 == userId && connection.User2 != nil {
+			otherUser = connection.User2
+		} else if connection.UserId2 == userId && connection.User1 != nil {
+			otherUser = connection.User1
+		} else {
+			continue
+		}
 
-        isConnected := service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, otherUser.Id)
-        
-		fmt.Println("Is connected: from", currentUserId, "to", otherUser.Id, "->", isConnected)
-		
-        userShort := web.UserShort{
-            Id:          otherUser.Id,
-            Name:        otherUser.Name,
-            Username:    otherUser.Username,
-            Headline:    optionalStringPtr(otherUser.Headline),
-            Photo:       optionalStringPtr(otherUser.Photo),
-            IsConnected: isConnected,
-        }
+		isConnected := service.ConnectionRepository.CheckConnectionExists(ctx, tx, userId, otherUser.Id)
 
-        connectionResponse := web.ConnectionResponse{
-            Id:        connection.Id,
-            CreatedAt: connection.CreatedAt.Format("2006-01-02T15:04:05Z"),
-            User:      &userShort,
-        }
+		fmt.Println("Is connected:", isConnected)
 
-        connectionResponses = append(connectionResponses, connectionResponse)
-    }
+		userShort := web.UserShort{
+			Id:          otherUser.Id,
+			Name:        otherUser.Name,
+			Username:    otherUser.Username,
+			Headline:    optionalStringPtr(otherUser.Headline),
+			Photo:       optionalStringPtr(otherUser.Photo),
+			IsConnected: isConnected,
+		}
 
-    return web.ConnectionListResponse{
-        Connections: connectionResponses,
-        Total:      count,
-    }
+		connectionResponse := web.ConnectionResponse{
+			Id:        connection.Id,
+			CreatedAt: connection.CreatedAt.Format("2006-01-02T15:04:05Z"),
+			User:      &userShort,
+		}
+
+		connectionResponses = append(connectionResponses, connectionResponse)
+	}
+
+	return web.ConnectionListResponse{
+		Connections: connectionResponses,
+		Total:       count,
+	}
 }
 
 func (service *ConnectionServiceImpl) Disconnect(ctx context.Context, userId, targetUserId uuid.UUID) web.DisconnectResponse {

@@ -22,7 +22,6 @@ type CommentBlogResponse struct {
     Replies      []CommentBlogResponse `json:"replies,omitempty"`
     RepliesCount int                   `json:"replies_count"` // Tambahkan field ini
 }
-
 type CommentBlogUserInfo struct {
 	Id       uuid.UUID `json:"id"`
 	Name     string    `json:"name"`

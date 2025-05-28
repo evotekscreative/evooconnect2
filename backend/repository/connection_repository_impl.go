@@ -8,15 +8,17 @@ import (
 	"evoconnect/backend/model/domain"
 	"sort"
 	"time"
-
 	"github.com/google/uuid"
 )
 
 type ConnectionRepositoryImpl struct {
+	Db *sql.DB
 }
 
-func NewConnectionRepository() ConnectionRepository {
-	return &ConnectionRepositoryImpl{}
+func NewConnectionRepository(db *sql.DB) ConnectionRepository {
+    return &ConnectionRepositoryImpl{
+        Db: db,
+    }
 }
 
 func (repository *ConnectionRepositoryImpl) SaveConnectionRequest(ctx context.Context, tx *sql.Tx, request domain.ConnectionRequest) domain.ConnectionRequest {
@@ -349,22 +351,60 @@ func (repository *ConnectionRepositoryImpl) FindConnectionsByUserId(ctx context.
 }
 
 func (repository *ConnectionRepositoryImpl) IsConnected(ctx context.Context, tx *sql.Tx, currentUserId, userId uuid.UUID) bool {
-	// Ensure user IDs are consistently ordered for uniqueness
-	userIds := []uuid.UUID{currentUserId, userId}
-	sort.Slice(userIds, func(i, j int) bool {
-		return userIds[i].String() < userIds[j].String()
-	})
+    // Jika kedua ID sama, user tidak bisa terhubung dengan dirinya sendiri
+    if currentUserId == userId {
+        return false
+    }
 
-	SQL := `SELECT EXISTS (
-				SELECT 1 FROM connections 
-				WHERE (user_id_1 = $1 AND user_id_2 = $2)
-			)`
+    // Jika tx nil dan kita memiliki akses ke DB, buat transaksi baru
+    var err error
+    var localTx *sql.Tx
+    var needsCommit bool
 
-	var exists bool
-	err := tx.QueryRowContext(ctx, SQL, userIds[0], userIds[1]).Scan(&exists)
-	helper.PanicIfError(err)
+    if tx == nil {
+        if repository.Db == nil {
+            return false
+        }
+        localTx, err = repository.Db.BeginTx(ctx, nil)
+        if err != nil {
+            return false
+        }
+        tx = localTx
+        needsCommit = true
+        defer func() {
+            if needsCommit {
+                localTx.Rollback()
+            }
+        }()
+    }
 
-	return exists
+    // Pastikan ID pengguna diurutkan secara konsisten untuk keunikan
+    userIds := []uuid.UUID{currentUserId, userId}
+    sort.Slice(userIds, func(i, j int) bool {
+        return userIds[i].String() < userIds[j].String()
+    })
+
+    SQL := `SELECT EXISTS (
+            SELECT 1 FROM connections 
+            WHERE (user_id_1 = $1 AND user_id_2 = $2) OR
+                (user_id_1 = $2 AND user_id_2 = $1)
+        )`
+
+    var exists bool
+    err = tx.QueryRowContext(ctx, SQL, userIds[0], userIds[1]).Scan(&exists)
+    if err != nil {
+        return false
+    }
+
+    if needsCommit {
+        err = localTx.Commit()
+        if err != nil {
+            // Log error
+        }
+        needsCommit = false
+    }
+
+    return exists
 }
 
 func (repository *ConnectionRepositoryImpl) UpdateRequest(ctx context.Context, tx *sql.Tx, request domain.ConnectionRequest) domain.ConnectionRequest {

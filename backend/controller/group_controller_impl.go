@@ -6,12 +6,12 @@ import (
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/service"
-	"mime/multipart"
-	"net/http"
-	"strconv"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
+	"mime/multipart"
+	"net/http"
+	"strconv"
 )
 
 type GroupControllerImpl struct {
@@ -74,7 +74,6 @@ func (controller *GroupControllerImpl) Update(writer http.ResponseWriter, reques
 	var file *multipart.FileHeader = nil
 
 	form := request.MultipartForm
-	// Use "photo" for consistency with the Create function for the uploaded file.
 	files := form.File["image"]
 	if len(files) > 0 {
 		file = files[0]
@@ -95,7 +94,6 @@ func (controller *GroupControllerImpl) Update(writer http.ResponseWriter, reques
 	}
 	helper.WriteToResponseBody(writer, webResponse)
 }
-
 func (controller *GroupControllerImpl) Delete(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Get user ID from token
 	userId, err := helper.GetUserIdFromToken(request)
@@ -375,38 +373,38 @@ func (controller *GroupControllerImpl) LeaveGroup(writer http.ResponseWriter, re
 }
 
 func (controller *GroupControllerImpl) JoinGroup(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-    // Get user ID from context (set by JWT middleware)
-    userIdString, ok := request.Context().Value("user_id").(string)
-    if !ok {
-        panic(exception.NewUnauthorizedError("unauthorized access"))
-    }
+	// Get user ID from context (set by JWT middleware)
+	userIdString, ok := request.Context().Value("user_id").(string)
+	if !ok {
+		panic(exception.NewUnauthorizedError("unauthorized access"))
+	}
 
-    // Parse user ID
-    userId, err := uuid.Parse(userIdString)
-    if err != nil {
-        panic(exception.NewBadRequestError("invalid user ID format"))
-    }
+	// Parse user ID
+	userId, err := uuid.Parse(userIdString)
+	if err != nil {
+		panic(exception.NewBadRequestError("invalid user ID format"))
+	}
 
-    // Parse group ID from URL params
-    groupId, err := uuid.Parse(params.ByName("groupId"))
-    if err != nil {
-        panic(exception.NewBadRequestError("invalid group ID format"))
-    }
+	// Parse group ID from URL params
+	groupId, err := uuid.Parse(params.ByName("groupId"))
+	if err != nil {
+		panic(exception.NewBadRequestError("invalid group ID format"))
+	}
 
-    fmt.Printf("DEBUG Controller: Joining group %s with user %s\n", groupId, userId)
-    
-    // Perbaiki urutan parameter: userId dulu, baru groupId
-    response := controller.GroupService.JoinPublicGroup(request.Context(), userId, groupId)
+	fmt.Printf("DEBUG Controller: Joining group %s with user %s\n", groupId, userId)
 
-    // Create web response
-    webResponse := web.WebResponse{
-        Code:   200,
-        Status: "OK",
-        Data:   response,
-    }
+	// Perbaiki urutan parameter: userId dulu, baru groupId
+	response := controller.GroupService.JoinPublicGroup(request.Context(), userId, groupId)
 
-    // Write response
-    helper.WriteToResponseBody(writer, webResponse)
+	// Create web response
+	webResponse := web.WebResponse{
+		Code:   200,
+		Status: "OK",
+		Data:   response,
+	}
+
+	// Write response
+	helper.WriteToResponseBody(writer, webResponse)
 }
 
 func (controller *GroupControllerImpl) CreateInvitation(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
