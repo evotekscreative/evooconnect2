@@ -28,7 +28,7 @@ import {
   Link2,
   X,
 } from "lucide-react";
-import { Toaster, toast } from "sonner";
+import Alert from "../components/Auth/alert";
 import axios from "axios";
 
 const socialPlatforms = [
@@ -78,6 +78,26 @@ export default function ProfilePage() {
     percentageChange: 0,
     dailyViews: [],
   });
+  const [alert, setAlert] = useState({
+  show: false,
+  type: 'success',
+  message: '',
+});
+const showAlert = (type, message) => {
+  setAlert({
+    show: true,
+    type,
+    message,
+  });
+  // Auto-hide after 5 seconds
+  setTimeout(() => {
+    setAlert(prev => ({ ...prev, show: false }));
+  }, 5000);
+};
+
+const hideAlert = () => {
+  setAlert(prev => ({ ...prev, show: false }));
+};
   const [user, setUser] = useState({
     id: "",
     name: "",
@@ -159,9 +179,9 @@ export default function ProfilePage() {
       setConnections(connectionsData);
       setConnectionsCount(response.data.data.total || 0);
     } catch (error) {
-      console.error("Failed to fetch connections:", error);
-      toast.error("Failed to load connections");
-    } finally {
+  console.error("Failed to fetch connections:", error);
+  showAlert('error', "Failed to load connections");
+} finally {
       setIsLoading(false);
     }
   };
@@ -218,9 +238,9 @@ export default function ProfilePage() {
         dailyViews: thisWeekData.viewers || [],
       });
     } catch (error) {
-      console.error("Failed to fetch profile views:", error);
-      toast.error("Failed to load profile views");
-    }
+  console.error("Failed to fetch profile views:", error);
+  showAlert('error', "Failed to load profile views");
+}
   };
 
   const fetchUserPosts = async () => {
@@ -241,9 +261,9 @@ export default function ProfilePage() {
 
       setUserPosts(response.data.data);
     } catch (error) {
-      console.error("Failed to fetch user posts:", error);
-      toast.error("Failed to load posts");
-    } finally {
+  console.error("Failed to fetch user posts:", error);
+  showAlert('error', "Failed to load posts");
+} finally {
       setIsLoading(false);
     }
   };
@@ -272,12 +292,12 @@ export default function ProfilePage() {
 
         // Handle skills data
         let userSkills = [];
-        if (data.skills && data.skills.Valid) {
-          userSkills = Array.isArray(data.skills.String)
-            ? data.skills.String
-            : data.skills.String
-            ? [data.skills.String]
-            : [];
+        if (data.skills) {
+          if (Array.isArray(data.skills)) {
+            userSkills = data.skills;
+          } else if (data.skills.String) {
+            userSkills = [data.skills.String];
+          }
         }
 
         setUser({
@@ -302,9 +322,9 @@ export default function ProfilePage() {
         // Record view when profile is loaded
         await recordProfileView();
       } catch (error) {
-        console.error("Failed to fetch profile:", error);
-        toast.error("Failed to load profile data");
-      } finally {
+  console.error("Failed to fetch profile:", error);
+  showAlert('error', "Failed to load profile data");
+} finally {
         setIsLoading(false);
       }
     };
@@ -345,9 +365,9 @@ export default function ProfilePage() {
 
       setEducation(response.data.data.educations);
     } catch (error) {
-      console.error("Failed to fetch education:", error);
-      toast.error("Failed to load education data");
-    } finally {
+  console.error("Failed to fetch education:", error);
+  showAlert('error', "Failed to load education data");
+} finally {
       setIsLoading(false);
     }
   };
@@ -372,9 +392,9 @@ export default function ProfilePage() {
           : []
       );
     } catch (error) {
-      console.error("Failed to fetch experience:", error);
-      toast.error("Failed to load experience data");
-    } finally {
+  console.error("Failed to fetch experience:", error);
+  showAlert('error', "Failed to load experience data");
+} finally {
       setIsLoading(false);
     }
   };
@@ -446,7 +466,7 @@ export default function ProfilePage() {
         );
 
         setExperiences((prev) => [...prev, response.data.data]);
-        toast.success("Experience added successfully!");
+        showAlert('success', "Experience added successfully!");
       }
 
       // Reset form and close modal
@@ -464,11 +484,7 @@ export default function ProfilePage() {
       });
     } catch (error) {
       console.error("Failed to add/update experience:", error);
-      toast.error(
-        `Failed to ${
-          editingExperience ? "update" : "add"
-        } experience. Please try again.`
-      );
+      showAlert('error', `Failed to ${editingExperience ? "update" : "add"} experience. Please try again.`);
     } finally {
       setIsLoading(false);
     }
@@ -513,7 +529,7 @@ export default function ProfilePage() {
             edu.id === editingEducation.id ? response.data.data : edu
           )
         );
-        toast.success("Education updated successfully!");
+        showAlert('success', "Education updated successfully!");
         setEditingEducation(null);
       } else {
         // Add new education
@@ -525,7 +541,7 @@ export default function ProfilePage() {
         });
 
         setEducation((prev) => [...prev, response.data.data]);
-        toast.success("Education added successfully!");
+        showAlert('success', "Education added successfully!");
       }
 
       setShowEducationModal(false);
@@ -542,11 +558,7 @@ export default function ProfilePage() {
       });
     } catch (error) {
       console.error("Failed to add/update education:", error);
-      toast.error(
-        `Failed to ${
-          editingEducation ? "update" : "add"
-        } education. Please try again.`
-      );
+      showAlert('error', `Failed to ${editingEducation ? "update" : "add"} education. Please try again.`);
     } finally {
       setIsLoading(false);
     }
@@ -604,10 +616,10 @@ export default function ProfilePage() {
       setEducation((prev) =>
         Array.isArray(prev) ? prev.filter((edu) => edu.id !== educationId) : []
       );
-      toast.success("Education deleted successfully!");
+     showAlert('success', "Education deleted successfully!");
     } catch (error) {
       console.error("Failed to delete education:", error);
-      toast.error("Failed to delete education. Please try again.");
+      showAlert('error', "Failed to delete education. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -715,10 +727,11 @@ export default function ProfilePage() {
       setExperiences((prev) =>
         Array.isArray(prev) ? prev.filter((exp) => exp.id !== experienceId) : []
       );
-      toast.success("Experience deleted successfully!");
+     
+showAlert('success', "Experience deleted successfully!");
     } catch (error) {
       console.error("Failed to delete experience:", error);
-      toast.error("Failed to delete experience. Please try again.");
+     showAlert('error', "Failed to delete experience. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -734,11 +747,19 @@ export default function ProfilePage() {
 
   return (
     <div className="bg-[#EDF3F7] min-h-screen">
-      <Toaster position="top-right" richColors />
       <Case />
 
       <div className="w-full mx-auto py-6 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-6 justify-center">
+          {alert.show && (
+    <div className="fixed top-4 right-4 z-50">
+      <Alert 
+        type={alert.type} 
+        message={alert.message} 
+        onClose={hideAlert}
+      />
+    </div>
+  )}
           {/* Left Sidebar */}
           <div className="w-full md:w-1/3 space-y-4">
             <div className="bg-white rounded-lg shadow-md p-6 text-center">
@@ -838,7 +859,7 @@ export default function ProfilePage() {
                     return (
                       <div
                         key={platform}
-                        className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-md"
+                        className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-md "
                       >
                         {platformInfo && (
                           <div
@@ -847,7 +868,9 @@ export default function ProfilePage() {
                             {platformInfo.icon}
                           </div>
                         )}
-                        <span className="text-base">@{username}</span>
+                        <span className="text-base truncate max-w-[200px] overflow-hidden whitespace-nowrap">
+                          @{username}
+                        </span>
                       </div>
                     );
                   })}
@@ -1158,17 +1181,19 @@ export default function ProfilePage() {
                         </div>
 
                         {/* Action buttons */}
-                        <div className="flex border-t mt-3 pt-2">
-                          <button className="flex-1 flex items-center justify-center gap-1 py-1 hover:bg-gray-50 rounded text-gray-600 text-sm">
-                            <ThumbsUp size={16} /> Like
-                          </button>
-                          <button className="flex-1 flex items-center justify-center gap-1 py-1 hover:bg-gray-50 rounded text-gray-600 text-sm">
-                            <MessageCircle size={16} /> Comment
-                          </button>
-                          <button className="flex-1 flex items-center justify-center gap-1 py-1 hover:bg-gray-50 rounded text-gray-600 text-sm">
-                            <Share2 size={16} /> Share
-                          </button>
-                        </div>
+                        <Link to="/post-page">
+                          <div className="flex border-t mt-3 pt-2">
+                            <button className="flex-1 flex items-center justify-center gap-1 py-1 hover:bg-gray-50 rounded text-gray-600 text-sm">
+                              <ThumbsUp size={16} /> Like
+                            </button>
+                            <button className="flex-1 flex items-center justify-center gap-1 py-1 hover:bg-gray-50 rounded text-gray-600 text-sm">
+                              <MessageCircle size={16} /> Comment
+                            </button>
+                            <button className="flex-1 flex items-center justify-center gap-1 py-1 hover:bg-gray-50 rounded text-gray-600 text-sm">
+                              <Share2 size={16} /> Share
+                            </button>
+                          </div>
+                        </Link>
                       </div>
                     </div>
                   ))

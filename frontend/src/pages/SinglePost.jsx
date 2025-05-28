@@ -262,7 +262,7 @@ export default function SocialNetworkFeed() {
   useEffect(() => {
     if (currentUserId) {
       fetchConnections();
-      fetchProfileViews();
+  
       fetchSuggestedConnections();
     }
   }, [currentUserId]);
@@ -808,7 +808,7 @@ export default function SocialNetworkFeed() {
                     >
                       <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z" />
                     </svg>
-                    Reply
+                    Replying to{" "}
                   </span>
                 )}
               </div>
@@ -819,7 +819,7 @@ export default function SocialNetworkFeed() {
             <p className="text-xs mt-1">{reply.content}</p>
           </div>
           <div className="flex justify-between items-center mt-1">
-            <button
+            {/* <button
               className="text-blue-500 text-xxs hover:underline"
               onClick={() => {
                 setReplyingTo(reply.parentCommentId);
@@ -827,7 +827,7 @@ export default function SocialNetworkFeed() {
               }}
             >
               Reply
-            </button>
+            </button> */}
             <button
               className="opacity-0 group-hover:opacity-100 text-gray-500 text-xxs"
               onClick={(e) => {
@@ -1378,9 +1378,9 @@ export default function SocialNetworkFeed() {
               {posts[0]?.user?.name || "Unknown User"}
             </h2>
 
-            <Link to={`/profile/${posts[0]?.user?.id}`}>
+            <Link to={`/profile/${posts[0]?.user?.username}`}>
               <button className="mt-3 text-blue-500 text-sm font-medium">
-                View my profile
+                View profile
               </button>
             </Link>
           </div>

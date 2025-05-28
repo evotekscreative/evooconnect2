@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback, use } from "react";
+import { Link, useParams } from "react-router-dom";
 import Case from "../components/Case";
 import {
   Briefcase,
@@ -26,8 +26,10 @@ import {
   Building,
   Link2,
   X,
+  UserPlus,
+  Check,
 } from "lucide-react";
-import { Toaster, toast } from "sonner";
+import Alert from "../components/Auth/alert";
 import axios from "axios";
 
 const socialPlatforms = [
@@ -79,7 +81,9 @@ export default function UserProfile() {
     percentageChange: 0,
     dailyViews: [],
   });
-  const navigate = useNavigate();
+  const [isConnected, setIsConnected] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState(null);
+  const [loadingConnection, setLoadingConnection] = useState(false);
 
   const [user, setUser] = useState({
     id: "",
@@ -141,71 +145,21 @@ export default function UserProfile() {
     "December",
   ];
 
-  const [isConnected, setIsConnected] = useState(false);
+  const [alert, setAlert] = useState({
+    show: false,
+    type: "success",
+    message: "",
+  });
 
-  // Add this useEffect to check connection status when user data loads
-  useEffect(() => {
-    const checkConnectionStatus = async () => {
-      const token = localStorage.getItem("token");
-      try {
-        const response = await axios.get(
-          `${apiUrl}/api/users/${user.id}/connection-status`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        setIsConnected(response.data.isConnected);
-      } catch (error) {
-        console.error("Failed to check connection status:", error);
-      }
-    };
-
-    if (user.id) {
-      checkConnectionStatus();
-    }
-  }, [user.id]);
-
-  const handleConnect = async () => {
-    const token = localStorage.getItem("token");
-    setIsLoading(true);
-
-    try {
-      if (isConnected) {
-        // Already connected, do nothing
-        return;
-      }
-
-      const response = await axios.post(
-        `${apiUrl}/api/users/${user.id}/connect`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.data.success) {
-        setIsConnected(true);
-        toast.success("Connection request sent successfully!");
-      }
-    } catch (error) {
-      console.error("Failed to connect:", error);
-
-      // Handle case when users are already connected
-      if (error.response?.data?.data === "Users are already connected") {
-        setIsConnected(true);
-        return;
-      }
-
-      toast.error(
-        error.response?.data?.message || "Failed to send connection request"
-      );
-    } finally {
-      setIsLoading(false);
-    }
+  const showAlert = (type, message) => {
+    setAlert({
+      show: true,
+      type,
+      message,
+    });
+    setTimeout(() => {
+      setAlert({ ...alert, show: false });
+    }, 5000); // Auto-hide after 5 seconds
   };
 
   const years = [
@@ -213,29 +167,69 @@ export default function UserProfile() {
     ...Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i),
   ];
 
-  // Fetch connection
-  const fetchConnections = async () => {
+  const handleConnectWithUser = async () => {
+    if (!user.id) return;
+
+    setLoadingConnection(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.post(
+        `${apiUrl}/api/users/${user.id}/connect`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Periksa response untuk menentukan status baru
+      const newStatus = response.data.data?.status || "connected";
+      // setIsConnected(newStatus === "connected");
+      setConnectionStatus(newStatus);
+
+      // Refresh data koneksi
+      await fetchConnections();
+
+      showAlert(
+        "success",
+        newStatus === "connected"
+          ? "Connected successfully!"
+          : "Connection request sent!"
+      );
+    } catch (error) {
+      console.error("Failed to connect:", error);
+      setIsConnected(false);
+      setConnectionStatus(null);
+      showAlert(
+        "error",
+        error.response?.data?.data || "Users are already connected"
+      );
+    } finally {
+      setLoadingConnection(false);
+    }
+  };
+
+  const fetchConnections = useCallback(async () => {
+    if (!user.id) return;
+
     const token = localStorage.getItem("token");
-    setIsLoading(true);
     try {
       const response = await axios.get(
         `${apiUrl}/api/users/${user.id}/connections`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
+
       const connectionsData = response.data.data.connections || [];
       setConnections(connectionsData);
       setConnectionsCount(response.data.data.total || 0);
+
+      // Periksa status koneksi yang lebih akurat
+      const connectionStatus = response.data.data.connection_status;
+      // setIsConnected(connectionStatus === "connected");
+      setConnectionStatus(connectionStatus);
     } catch (error) {
       console.error("Failed to fetch connections:", error);
-      toast.error("Failed to load connections");
-    } finally {
-      setIsLoading(false);
+      setIsConnected(false);
+      setConnectionStatus(null);
     }
-  };
+  }, [user.id, apiUrl]);
 
   const fetchProfileViews = async () => {
     try {
@@ -290,7 +284,7 @@ export default function UserProfile() {
       });
     } catch (error) {
       console.error("Failed to fetch profile views:", error);
-      toast.error("Failed to load profile views");
+      showAlert("error", "Failed to load profile data");
     }
   };
 
@@ -313,7 +307,7 @@ export default function UserProfile() {
       setUserPosts(response.data.data || []);
     } catch (error) {
       console.error("Failed to fetch user posts:", error);
-      toast.error("Failed to load posts");
+      showAlert("error", "Failed to load posts");
       setUserPosts([]); // Set to empty array on error
     } finally {
       setIsLoading(false);
@@ -347,12 +341,12 @@ export default function UserProfile() {
 
         // Handle skills data
         let userSkills = [];
-        if (data.skills && data.skills.Valid) {
-          userSkills = Array.isArray(data.skills.String)
-            ? data.skills.String
-            : data.skills.String
-            ? [data.skills.String]
-            : [];
+        if (data.skills) {
+          if (Array.isArray(data.skills)) {
+            userSkills = data.skills;
+          } else if (data.skills.String) {
+            userSkills = [data.skills.String];
+          }
         }
 
         setUser({
@@ -373,9 +367,11 @@ export default function UserProfile() {
         });
 
         setProfileImage(data.photo || null);
+
+        setIsConnected(data.is_connected);
       } catch (error) {
         console.error("Failed to fetch profile:", error);
-        toast.error("Failed to load profile data");
+        showAlert("error", "Failed to load profile views");
       } finally {
         setIsLoading(false);
       }
@@ -401,7 +397,7 @@ export default function UserProfile() {
       setEducation(response.data.data.educations);
     } catch (error) {
       console.error("Failed to fetch education:", error);
-      toast.error("Failed to load education data");
+      showAlert("error", "Failed to load education data");
     } finally {
       setIsLoading(false);
     }
@@ -428,7 +424,7 @@ export default function UserProfile() {
       );
     } catch (error) {
       console.error("Failed to fetch experience:", error);
-      toast.error("Failed to load experience data");
+      showAlert("error", "Failed to load experience data");
     } finally {
       setIsLoading(false);
     }
@@ -437,245 +433,11 @@ export default function UserProfile() {
   useEffect(() => {
     if (user.id) {
       fetchConnections();
-      fetchProfileViews();
+      fetchUserPosts();
       fetchEducations();
       fetchExperiences();
-      fetchUserPosts();
     }
   }, [user.id]);
-
-  // Handle Education Form Submission
-  // Handle Experience Form Submission
-  const handleExperienceSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      const token = localStorage.getItem("token");
-
-      // Create FormData to handle file upload
-      const formData = new FormData();
-      formData.append("job_title", experienceForm.job_title);
-      formData.append("company_name", experienceForm.company_name);
-      formData.append("location", experienceForm.location);
-      formData.append("start_month", experienceForm.start_month);
-      formData.append("start_year", experienceForm.start_year);
-      formData.append("end_month", experienceForm.end_month);
-      formData.append("end_year", experienceForm.end_year);
-      formData.append("caption", experienceForm.caption);
-
-      if (experienceForm.photo instanceof File) {
-        formData.append("photo", experienceForm.photo);
-      }
-
-      // If editing, make PUT request
-      if (editingExperience) {
-        const response = await axios.put(
-          `${apiUrl}/api/experience/${editingExperience.id}`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        setExperiences((prev) =>
-          prev.map((exp) =>
-            exp.id === editingExperience.id ? response.data.data : exp
-          )
-        );
-        toast.success("Experience updated successfully!");
-        setEditingExperience(null);
-      } else {
-        // If adding new, make POST request
-        const response = await axios.post(
-          apiUrl + "/api/experience",
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        setExperiences((prev) => [...prev, response.data.data]);
-        toast.success("Experience added successfully!");
-      }
-
-      // Reset form and close modal
-      setShowExperienceModal(false);
-      setExperienceForm({
-        job_title: "",
-        company_name: "",
-        location: "",
-        start_month: "Month",
-        start_year: "Year",
-        end_month: "Month",
-        end_year: "Year",
-        caption: "",
-        photo: null,
-      });
-    } catch (error) {
-      console.error("Failed to add/update experience:", error);
-      toast.error(
-        `Failed to ${
-          editingExperience ? "update" : "add"
-        } experience. Please try again.`
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handle Education Form Submission
-  const handleEducationSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      const token = localStorage.getItem("token");
-      const formData = new FormData();
-      formData.append("major", educationForm.major);
-      formData.append("institute_name", educationForm.institute_name);
-      formData.append("location", educationForm.location);
-      formData.append("start_month", educationForm.start_month);
-      formData.append("start_year", educationForm.start_year);
-      formData.append("end_month", educationForm.end_month);
-      formData.append("end_year", educationForm.end_year);
-      formData.append("caption", educationForm.caption);
-
-      if (educationForm.schoolLogo instanceof File) {
-        formData.append("photo", educationForm.schoolLogo);
-      }
-
-      if (editingEducation) {
-        // Edit existing education
-        const response = await axios.put(
-          `${apiUrl}/api/education/${editingEducation.id}`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        setEducation((prev) =>
-          prev.map((edu) =>
-            edu.id === editingEducation.id ? response.data.data : edu
-          )
-        );
-        toast.success("Education updated successfully!");
-        setEditingEducation(null);
-      } else {
-        // Add new education
-        const response = await axios.post(apiUrl + "/api/education", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        setEducation((prev) => [...prev, response.data.data]);
-        toast.success("Education added successfully!");
-      }
-
-      setShowEducationModal(false);
-      setEducationForm({
-        major: "",
-        institute_name: "",
-        location: "",
-        start_month: "Month",
-        start_year: "Year",
-        end_month: "Month",
-        end_year: "Year",
-        caption: "",
-        schoolLogo: null,
-      });
-    } catch (error) {
-      console.error("Failed to add/update education:", error);
-      toast.error(
-        `Failed to ${
-          editingEducation ? "update" : "add"
-        } education. Please try again.`
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  const handleEditEducation = (education) => {
-    setEditingEducation(education);
-
-    // Parse start date
-    let startMonth = "Month";
-    let startYear = "Year";
-    if (education.start_date) {
-      const startParts = education.start_date.split(" ");
-      if (startParts.length === 2) {
-        startMonth = startParts[0];
-        startYear = startParts[1];
-      }
-    }
-
-    // Parse end date
-    let endMonth = "Month";
-    let endYear = "Year";
-    if (education.end_date && education.end_date !== "Present") {
-      const endParts = education.end_date.split(" ");
-      if (endParts.length === 2) {
-        endMonth = endParts[0];
-        endYear = endParts[1];
-      }
-    }
-
-    setEducationForm({
-      major: education.major || "",
-      institute_name: education.institute_name || "",
-      location: education.location || "",
-      start_month: startMonth,
-      start_year: startYear,
-      end_month: endMonth,
-      end_year: endYear,
-      caption: education.caption || "",
-      schoolLogo: education.photo || null,
-    });
-
-    setShowEducationModal(true);
-  };
-
-  const deleteEducation = async (educationId) => {
-    setIsLoading(true);
-    try {
-      const token = localStorage.getItem("token");
-      await axios.delete(`${apiUrl}/api/education/${educationId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      setEducation((prev) =>
-        Array.isArray(prev) ? prev.filter((edu) => edu.id !== educationId) : []
-      );
-      toast.success("Education deleted successfully!");
-    } catch (error) {
-      console.error("Failed to delete education:", error);
-      toast.error("Failed to delete education. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  // Handle Form Changes
-  const handleExperienceChange = (e) => {
-    const { name, value } = e.target;
-    setExperienceForm({
-      ...experienceForm,
-      [name]: value,
-    });
-  };
 
   const handleEducationChange = (e) => {
     const { name, value } = e.target;
@@ -718,46 +480,6 @@ export default function UserProfile() {
       .scrollBy({ left: 300, behavior: "smooth" });
   };
 
-  const handleEditExperience = (experience) => {
-    setEditingExperience(experience);
-
-    // Parse start date
-    let startMonth = "Month";
-    let startYear = "Year";
-    if (experience.start_date) {
-      const startParts = experience.start_date.split(" ");
-      if (startParts.length === 2) {
-        startMonth = startParts[0];
-        startYear = startParts[1];
-      }
-    }
-
-    // // Parse end date
-    let endMonth = "Month";
-    let endYear = "Year";
-    if (experience.end_date && experience.end_date !== "Present") {
-      const endParts = experience.end_date.split(" ");
-      if (endParts.length === 2) {
-        endMonth = endParts[0];
-        endYear = endParts[1];
-      }
-    }
-
-    setExperienceForm({
-      job_title: experience.job_title || "",
-      company_name: experience.company_name || "",
-      location: experience.location || "",
-      start_month: startMonth,
-      start_year: startYear,
-      end_month: endMonth,
-      end_year: endYear,
-      caption: experience.caption || "",
-      photo: experience.photo || null,
-    });
-
-    setShowExperienceModal(true);
-  };
-
   const deleteExperience = async (experienceId) => {
     setIsLoading(true);
     try {
@@ -771,10 +493,10 @@ export default function UserProfile() {
       setExperiences((prev) =>
         Array.isArray(prev) ? prev.filter((exp) => exp.id !== experienceId) : []
       );
-      toast.success("Experience deleted successfully!");
+      showAlert("success", "Experience deleted successfully!");
     } catch (error) {
       console.error("Failed to delete experience:", error);
-      toast.error("Failed to delete experience. Please try again.");
+      showAlert("error", "Failed to delete experience. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -782,7 +504,7 @@ export default function UserProfile() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="flex items-center justify-center h-screen">
         Loading...
       </div>
     );
@@ -790,23 +512,30 @@ export default function UserProfile() {
 
   return (
     <div className="bg-[#EDF3F7] min-h-screen">
-      <Toaster position="top-right" richColors />
       <Case />
 
-      <div className="w-full mx-auto py-6 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-6 justify-center">
+      <div className="w-full px-4 py-6 mx-auto sm:px-6">
+        <div className="flex flex-col justify-center max-w-6xl gap-6 mx-auto md:flex-row">
+          <div className="fixed top-4 right-4 z-50">
+            <Alert
+              type={alert.type}
+              message={alert.message}
+              isVisible={alert.show}
+              onClose={() => setAlert({ ...alert, show: false })}
+            />
+          </div>
           {/* Left Sidebar */}
-          <div className="w-full md:w-1/3 space-y-4">
-            <div className="bg-white rounded-lg shadow-md p-6 text-center">
-              <div className="relative w-28 h-28 mx-auto bg-gray-200 rounded-full overflow-hidden flex items-center justify-center">
+          <div className="w-full space-y-4 md:w-1/3">
+            <div className="p-6 text-center bg-white rounded-lg shadow-md">
+              <div className="relative flex items-center justify-center mx-auto overflow-hidden bg-gray-200 rounded-full w-28 h-28">
                 {profileImage ? (
                   <img
                     src={apiUrl + "/" + profileImage}
                     alt="Profile"
-                    className="w-full h-full object-cover"
+                    className="object-cover w-full h-full"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-300">
+                  <div className="flex items-center justify-center w-full h-full bg-gray-300">
                     <span className="text-lg font-bold text-gray-600">
                       {user.name
                         .split(" ")
@@ -816,14 +545,14 @@ export default function UserProfile() {
                   </div>
                 )}
               </div>
-              <h2 className="font-bold text-xl mt-4">{user.name}</h2>
+              <h2 className="mt-4 text-xl font-bold">{user.name}</h2>
               <p className="text-base text-gray-500">
                 {user.headline || "No headline yet"}
               </p>
               <div className="mt-2">
                 <button
                   onClick={() => setShowContactModal(true)}
-                  className="text-blue-600 hover:underline text-sm"
+                  className="text-sm text-blue-600 hover:underline"
                 >
                   Contact Information
                 </button>
@@ -831,91 +560,55 @@ export default function UserProfile() {
               <div className="mt-5 space-y-2 text-left">
                 <Link
                   to={`/list-connection/${username}`}
-                  className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md"
+                  className="flex items-center justify-between p-2 rounded-md hover:bg-gray-50"
                 >
                   <span className="flex items-center gap-2 text-base">
                     <Users size={18} /> Connections
                   </span>
-                  <span className="font-bold text-lg">{connectionsCount}</span>
+                  <span className="text-lg font-bold">{connectionsCount}</span>
                 </Link>
               </div>
 
+              {/* Replace the existing button with this one */}
               <div className="mt-2">
                 <button
-                  onClick={handleConnect()}
-                  disabled={isLoading || isConnected}
-                  className={`w-full py-2 rounded-md transition-all duration-200 ${
+                  onClick={handleConnectWithUser}
+                  disabled={
+                    isConnected ||
+                    connectionStatus === "pending" ||
+                    loadingConnection
+                  }
+                  className={`w-full py-2 rounded-md text-sm font-medium transition-colors ${
                     isConnected
-                      ? "bg-gray-100 text-gray-600 cursor-default"
-                      : "bg-white text-blue-500 border-2 border-blue-400 hover:bg-blue-50 hover:border-blue-500"
-                  } ${isLoading ? "opacity-70 cursor-not-allowed" : ""}`}
+                      ? "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 text-white"
+                      : connectionStatus === "pending"
+                      ? "bg-blue-100 text-blue-800 cursor-default"
+                      : "border border-blue-500 text-blue-500 <hover:bg-sky-5></hover:bg-sky-5>00"
+                  } flex items-center justify-center`}
                 >
-                  {isLoading ? (
-                    <div className="flex items-center justify-center">
-                      <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-500"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Processing
-                    </div>
+                  {loadingConnection ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" />
+                      Processing...
+                    </>
                   ) : isConnected ? (
-                    <div className="flex items-center justify-center">
-                      <svg
-                        className="w-4 h-4 mr-1"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                      </svg>
-                      Connected
-                    </div>
+                    <>
+                      <Check className="w-4 h-4 mr-1" /> Connected
+                    </>
+                  ) : connectionStatus === "pending" ? (
+                    "Request Sent"
                   ) : (
-                    <div className="flex items-center justify-center">
-                      <svg
-                        className="w-4 h-4 mr-1"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="8.5" cy="7" r="4"></circle>
-                        <line x1="20" y1="8" x2="20" y2="14"></line>
-                        <line x1="23" y1="11" x2="17" y2="11"></line>
-                      </svg>
-                      Connect
-                    </div>
+                    <>
+                      <UserPlus className="w-4 h-4 mr-1" /> Connect
+                    </>
                   )}
                 </button>
               </div>
             </div>
 
             {/* Skills Section */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="font-semibold text-lg">Skills</h3>
+            <div className="p-6 bg-white rounded-lg shadow-md">
+              <h3 className="text-lg font-semibold">Skills</h3>
               {user.skills && user.skills.length > 0 ? (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {user.skills.map((skill, index) => (
@@ -935,8 +628,8 @@ export default function UserProfile() {
             </div>
 
             {/* Social Media Section */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="font-semibold text-lg mb-2">Social Media</h3>
+            <div className="p-6 bg-white rounded-lg shadow-md">
+              <h3 className="mb-2 text-lg font-semibold">Social Media</h3>
               {Object.keys(user.socials).length > 0 ? (
                 <div className="space-y-2">
                   {Object.entries(user.socials).map(([platform, username]) => {
@@ -946,7 +639,7 @@ export default function UserProfile() {
                     return (
                       <div
                         key={platform}
-                        className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-md"
+                        className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-50"
                       >
                         {platformInfo && (
                           <div
@@ -955,7 +648,7 @@ export default function UserProfile() {
                             {platformInfo.icon}
                           </div>
                         )}
-                        <span className="text-base">@{username}</span>
+                        <span className="text-base truncate">@{username}</span>
                       </div>
                     );
                   })}
@@ -969,21 +662,21 @@ export default function UserProfile() {
           </div>
 
           {/* Right Main Section */}
-          <div className="w-full md:w-2/3 space-y-4">
+          <div className="w-full space-y-4 md:w-2/3">
             {/* About Section */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="font-semibold text-lg">About You</h3>
-              <p className="text-base text-gray-600 mt-3">
+            <div className="p-6 bg-white rounded-lg shadow-md">
+              <h3 className="text-lg font-semibold">About You</h3>
+              <p className="mt-3 text-base text-gray-600">
                 {user.about || "No information provided yet."}
               </p>
             </div>
 
             {/* Experience Section */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex justify-between items-center mb-4">
+            <div className="p-6 bg-white rounded-lg shadow-md">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Briefcase size={20} className="text-[#00AEEF]" />
-                  <h3 className="font-semibold text-lg">Experience</h3>
+                  <h3 className="text-lg font-semibold">Experience</h3>
                 </div>
               </div>
 
@@ -992,28 +685,28 @@ export default function UserProfile() {
                   {experiences.map((exp) => (
                     <div
                       key={exp.id}
-                      className="border-b pb-6 last:border-b-0 last:pb-0"
+                      className="pb-6 border-b last:border-b-0 last:pb-0"
                     >
                       <div className="flex gap-4">
                         {exp.photo ? (
                           <img
                             src={apiUrl + "/" + exp.photo}
                             alt="Company logo"
-                            className="w-12 h-12 rounded-md object-cover"
+                            className="object-cover w-12 h-12 rounded-md"
                           />
                         ) : (
-                          <div className="w-12 h-12 rounded-md bg-gray-100 flex items-center justify-center">
+                          <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-md">
                             <Briefcase className="text-gray-400" />
                           </div>
                         )}
                         <div className="flex-1">
                           <h4 className="font-semibold">{exp.jobTitle}</h4>
                           <p className="text-gray-600">{exp.companyName}</p>
-                          <div className="flex justify-between items-start">
+                          <div className="flex items-start justify-between">
                             <h4 className="font-semibold">{exp.job_title}</h4>
                           </div>
                           <p className="text-gray-600">{exp.company_name}</p>
-                          <p className="text-gray-500 text-sm">
+                          <p className="text-sm text-gray-500">
                             {formatDate(exp.start_month, exp.start_year)} -{" "}
                             {exp.end_month === "Month" ||
                             exp.end_year === "Year"
@@ -1021,12 +714,12 @@ export default function UserProfile() {
                               : formatDate(exp.end_month, exp.end_year)}
                           </p>
                           {exp.location && (
-                            <p className="text-gray-500 text-sm">
+                            <p className="text-sm text-gray-500">
                               {exp.location}
                             </p>
                           )}
                           {exp.caption && (
-                            <p className="text-gray-600 mt-2">{exp.caption}</p>
+                            <p className="mt-2 text-gray-600">{exp.caption}</p>
                           )}
                         </div>
                       </div>
@@ -1034,8 +727,8 @@ export default function UserProfile() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 bg-gray-50 rounded-md border border-dashed border-gray-300 mt-4">
-                  <Briefcase size={40} className="mx-auto text-gray-300 mb-3" />
+                <div className="py-8 mt-4 text-center border border-gray-300 border-dashed rounded-md bg-gray-50">
+                  <Briefcase size={40} className="mx-auto mb-3 text-gray-300" />
                   <p className="text-base text-gray-500">
                     No experience added yet.
                   </p>
@@ -1044,11 +737,11 @@ export default function UserProfile() {
             </div>
 
             {/* Education Section */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex justify-between items-center mb-4">
+            <div className="p-6 bg-white rounded-lg shadow-md">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <GraduationCap size={20} className="text-[#00AEEF]" />
-                  <h3 className="font-semibold text-lg">Education</h3>
+                  <h3 className="text-lg font-semibold">Education</h3>
                 </div>
                 <div className="flex items-center gap-3"></div>
               </div>
@@ -1058,26 +751,26 @@ export default function UserProfile() {
                   {educations.map((edu) => (
                     <div
                       key={edu.id}
-                      className="border-b pb-6 last:border-b-0 last:pb-0"
+                      className="pb-6 border-b last:border-b-0 last:pb-0"
                     >
                       <div className="flex gap-4">
                         {edu.photo ? (
                           <img
                             src={apiUrl + "/" + edu.photo}
                             alt="School logo"
-                            className="w-12 h-12 rounded-md object-cover"
+                            className="object-cover w-12 h-12 rounded-md"
                           />
                         ) : (
-                          <div className="w-12 h-12 rounded-md bg-gray-100 flex items-center justify-center">
+                          <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-md">
                             <GraduationCap className="text-gray-400" />
                           </div>
                         )}
                         <div className="flex-1">
-                          <div className="flex justify-between items-start">
+                          <div className="flex items-start justify-between">
                             <h4 className="font-semibold">{edu.major}</h4>
                           </div>
                           <p className="text-gray-600">{edu.institute_name}</p>
-                          <p className="text-gray-500 text-sm">
+                          <p className="text-sm text-gray-500">
                             {formatDate(edu.start_month, edu.start_year)} -{" "}
                             {edu.end_month === "Month" ||
                             edu.end_year === "Year"
@@ -1085,12 +778,12 @@ export default function UserProfile() {
                               : formatDate(edu.end_month, edu.end_year)}
                           </p>
                           {edu.location && (
-                            <p className="text-gray-500 text-sm">
+                            <p className="text-sm text-gray-500">
                               {edu.location}
                             </p>
                           )}
                           {edu.caption && (
-                            <p className="text-gray-600 mt-2">{edu.caption}</p>
+                            <p className="mt-2 text-gray-600">{edu.caption}</p>
                           )}
                         </div>
                       </div>
@@ -1098,10 +791,10 @@ export default function UserProfile() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 bg-gray-50 rounded-md border border-dashed border-gray-300 mt-4">
+                <div className="py-8 mt-4 text-center border border-gray-300 border-dashed rounded-md bg-gray-50">
                   <GraduationCap
                     size={40}
-                    className="mx-auto text-gray-300 mb-3"
+                    className="mx-auto mb-3 text-gray-300"
                   />
                   <p className="text-base text-gray-500">
                     No education added yet.
@@ -1111,23 +804,23 @@ export default function UserProfile() {
             </div>
 
             {/* post Section */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex justify-between items-center mb-4">
+            <div className="p-6 bg-white rounded-lg shadow-md">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Clock size={20} className="text-[#00AEEF]" />
-                  <h3 className="font-semibold text-lg">POST</h3>
+                  <h3 className="text-lg font-semibold">POST</h3>
                 </div>
                 <div className="flex space-x-2">
                   <button
                     onClick={scrollLeft}
-                    className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 transition"
+                    className="p-1 transition bg-gray-100 rounded-full hover:bg-gray-200"
                     aria-label="Scroll left"
                   >
                     <ChevronLeft size={20} />
                   </button>
                   <button
                     onClick={scrollRight}
-                    className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 transition"
+                    className="p-1 transition bg-gray-100 rounded-full hover:bg-gray-200"
                     aria-label="Scroll right"
                   >
                     <ChevronRight size={20} />
@@ -1138,26 +831,26 @@ export default function UserProfile() {
               {/* Scrollable container */}
               <div
                 id="post-container"
-                className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide"
+                className="flex gap-4 pb-4 overflow-x-auto scrollbar-hide"
               >
                 {userPosts?.length > 0 ? (
                   userPosts.map((post) => (
                     <div
                       key={post.id}
-                      className="flex-shrink-0 w-64 border rounded-lg overflow-hidden bg-white shadow-sm"
+                      className="flex-shrink-0 w-64 overflow-hidden bg-white border rounded-lg shadow-sm"
                     >
                       {/* Post header */}
                       <div className="p-4 border-b">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                          <div className="flex-shrink-0 w-10 h-10 overflow-hidden bg-gray-200 rounded-full">
                             {profileImage ? (
                               <img
                                 src={apiUrl + "/" + profileImage}
                                 alt="Profile"
-                                className="w-full h-full object-cover"
+                                className="object-cover w-full h-full"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-gray-300">
+                              <div className="flex items-center justify-center w-full h-full bg-gray-300">
                                 <span className="text-lg font-bold text-gray-600">
                                   {user.name
                                     .split(" ")
@@ -1168,7 +861,7 @@ export default function UserProfile() {
                             )}
                           </div>
                           <div>
-                            <h4 className="font-semibold text-sm">
+                            <h4 className="text-sm font-semibold">
                               {user.name}
                             </h4>
                             <p className="text-xs text-gray-500">
@@ -1192,17 +885,12 @@ export default function UserProfile() {
                       <div className="p-4">
                         <Link
                           to={`/post/${post.id}`}
-                          className="text-sm text-gray-700 mb-3"
+                          className="mb-3 text-sm text-gray-700"
                         >
-                          <p className="mb-3">
-                            {post.content
-                              ? post.content.length > 100
-                                ? post.content
-                                    .substring(0, 100)
-                                    .replace(/<[^>]*>/g, "") + "..."
-                                : post.content.replace(/<[^>]*>/g, "")
-                              : "No content"}
-                          </p>
+                          <div
+                            className="prose max-w-none text-gray-700"
+                            dangerouslySetInnerHTML={{ __html: post.content }}
+                          />
 
                           {/* Only show image if exists */}
                           {post.images && post.images.length > 0 && (
@@ -1217,7 +905,7 @@ export default function UserProfile() {
                         </Link>
 
                         {/* Post footer */}
-                        <div className="flex justify-between items-center text-xs text-gray-500">
+                        <div className="flex items-center justify-between text-xs text-gray-500">
                           <div className="flex items-center gap-1">
                             <ThumbsUp size={14} />
                             <span>{post.likes_count || 0}</span>
@@ -1229,22 +917,24 @@ export default function UserProfile() {
                         </div>
 
                         {/* Action buttons */}
-                        <div className="flex border-t mt-3 pt-2">
-                          <button className="flex-1 flex items-center justify-center gap-1 py-1 hover:bg-gray-50 rounded text-gray-600 text-sm">
-                            <ThumbsUp size={16} /> Like
-                          </button>
-                          <button className="flex-1 flex items-center justify-center gap-1 py-1 hover:bg-gray-50 rounded text-gray-600 text-sm">
-                            <MessageCircle size={16} /> Comment
-                          </button>
-                          <button className="flex-1 flex items-center justify-center gap-1 py-1 hover:bg-gray-50 rounded text-gray-600 text-sm">
-                            <Share2 size={16} /> Share
-                          </button>
-                        </div>
+                        <Link to={`/post-page/${username}`}>
+                          <div className="flex pt-2 mt-3 border-t">
+                            <button className="flex items-center justify-center flex-1 gap-1 py-1 text-sm text-gray-600 rounded hover:bg-gray-50">
+                              <ThumbsUp size={16} /> Like
+                            </button>
+                            <button className="flex items-center justify-center flex-1 gap-1 py-1 text-sm text-gray-600 rounded hover:bg-gray-50">
+                              <MessageCircle size={16} /> Comment
+                            </button>
+                            <button className="flex items-center justify-center flex-1 gap-1 py-1 text-sm text-gray-600 rounded hover:bg-gray-50">
+                              <Share2 size={16} /> Share
+                            </button>
+                          </div>
+                        </Link>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-8 w-full">
+                  <div className="w-full py-8 text-center">
                     <p className="text-gray-500">No posts yet</p>
                   </div>
                 )}
@@ -1271,8 +961,8 @@ export default function UserProfile() {
 
       {/* Experience Modal */}
       {showExperienceModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl p-6 bg-white rounded-lg shadow-lg">
             <div className="flex items-center gap-2 mb-4">
               <Briefcase size={20} className="text-[#00AEEF]" />
               <h2 className="text-xl font-bold">
@@ -1312,7 +1002,7 @@ export default function UserProfile() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">
+                    <label className="block mb-1 text-sm font-medium">
                       Start Date *
                     </label>
                     <div className="flex gap-2">
@@ -1345,7 +1035,7 @@ export default function UserProfile() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">
+                    <label className="block mb-1 text-sm font-medium">
                       End Date
                     </label>
                     <div className="flex gap-2">
@@ -1389,7 +1079,7 @@ export default function UserProfile() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block mb-1 text-sm font-medium">
                     Company Logo
                   </label>
                   <input
@@ -1404,7 +1094,7 @@ export default function UserProfile() {
                         <img
                           src={apiUrl + "/" + experienceForm.photo}
                           alt="Company logo"
-                          className="w-20 h-20 object-contain mt-1"
+                          className="object-contain w-20 h-20 mt-1"
                         />
                       </div>
                     )}
@@ -1425,11 +1115,11 @@ export default function UserProfile() {
                         setShowExperienceModal(false);
                       }
                     }}
-                    className="px-4 py-2 rounded text-red-500 transition flex items-center gap-1"
+                    className="flex items-center gap-1 px-4 py-2 text-red-500 transition rounded"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4"
+                      className="w-4 h-4"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -1451,7 +1141,7 @@ export default function UserProfile() {
                 <div className="flex gap-3">
                   <button
                     type="button"
-                    className="px-4 py-2 rounded border hover:bg-gray-50 transition"
+                    className="px-4 py-2 transition border rounded hover:bg-gray-50"
                     onClick={() => {
                       setShowExperienceModal(false);
                       setEditingExperience(null);
@@ -1479,8 +1169,8 @@ export default function UserProfile() {
 
       {/* Add Education Modal */}
       {showEducationModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl p-6 bg-white rounded-lg shadow-lg">
             <div className="flex items-center gap-2 mb-4">
               <GraduationCap size={20} className="text-[#00AEEF]" />
               <h2 className="text-xl font-bold">
@@ -1520,7 +1210,7 @@ export default function UserProfile() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">
+                    <label className="block mb-1 text-sm font-medium">
                       Start Date *
                     </label>
                     <div className="flex gap-2">
@@ -1553,7 +1243,7 @@ export default function UserProfile() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">
+                    <label className="block mb-1 text-sm font-medium">
                       End Date
                     </label>
                     <div className="flex gap-2">
@@ -1597,7 +1287,7 @@ export default function UserProfile() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block mb-1 text-sm font-medium">
                     School Logo
                   </label>
                   <input
@@ -1622,11 +1312,11 @@ export default function UserProfile() {
                         setShowEducationModal(false);
                       }
                     }}
-                    className="px-4 py-2 rounded text-red-500 transition flex items-center gap-1"
+                    className="flex items-center gap-1 px-4 py-2 text-red-500 transition rounded"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4"
+                      className="w-4 h-4"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -1647,7 +1337,7 @@ export default function UserProfile() {
                 <div className="flex gap-3">
                   <button
                     type="button"
-                    className="px-4 py-2 rounded border hover:bg-gray-50 transition"
+                    className="px-4 py-2 transition border rounded hover:bg-gray-50"
                     onClick={() => {
                       setShowEducationModal(false);
                       setEditingEducation(null);
@@ -1675,8 +1365,8 @@ export default function UserProfile() {
 
       {/* Edit Education Modal */}
       {showEditEducationModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl p-6 bg-white rounded-lg shadow-lg">
             <div className="flex items-center gap-2 mb-4">
               <GraduationCap size={20} className="text-[#00AEEF]" />
               <h2 className="text-xl font-bold">Edit Education</h2>
@@ -1714,7 +1404,7 @@ export default function UserProfile() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">
+                    <label className="block mb-1 text-sm font-medium">
                       Start Date *
                     </label>
                     <div className="flex gap-2">
@@ -1747,7 +1437,7 @@ export default function UserProfile() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">
+                    <label className="block mb-1 text-sm font-medium">
                       End Date
                     </label>
                     <div className="flex gap-2">
@@ -1791,7 +1481,7 @@ export default function UserProfile() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block mb-1 text-sm font-medium">
                     School Logo
                   </label>
                   <input
@@ -1815,7 +1505,7 @@ export default function UserProfile() {
               <div className="flex justify-between mt-6">
                 <button
                   type="button"
-                  className="px-4 py-2 rounded border hover:bg-gray-50 transition text-red-500 hover:text-red-700"
+                  className="px-4 py-2 text-red-500 transition border rounded hover:bg-gray-50 hover:text-red-700"
                   onClick={() => {
                     if (editingEducation?.id) {
                       if (
@@ -1835,7 +1525,7 @@ export default function UserProfile() {
                 <div className="flex justify-end gap-3">
                   <button
                     type="button"
-                    className="px-4 py-2 rounded border hover:bg-gray-50 transition"
+                    className="px-4 py-2 transition border rounded hover:bg-gray-50"
                     onClick={() => {
                       setEditShowEducationModal(false);
                       setEditingEducation(null);
@@ -1858,29 +1548,29 @@ export default function UserProfile() {
       )}
       {showContactModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="w-full max-w-2xl transform rounded-2xl bg-white p-8 shadow-2xl transition-all duration-300 ease-in-out scale-100">
+          <div className="w-full max-w-2xl p-8 transition-all duration-300 ease-in-out transform scale-100 bg-white shadow-2xl rounded-2xl">
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-gray-200 pb-5">
+            <div className="flex items-center justify-between pb-5 border-b border-gray-200">
               <h2 className="text-2xl font-semibold text-gray-800">
                 Contact Information
               </h2>
               <button
                 onClick={() => setShowContactModal(false)}
-                className="rounded-md p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+                className="p-2 text-gray-400 transition rounded-md hover:bg-gray-100 hover:text-gray-600"
               >
                 <X size={24} />
               </button>
             </div>
 
             {/* Content */}
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-8 text-base text-gray-700">
+            <div className="grid grid-cols-1 gap-8 mt-6 text-base text-gray-700 md:grid-cols-2">
               {/* Contact Details */}
               <section>
-                <h3 className="mb-4 flex items-center gap-2 text-lg font-medium text-gray-600">
+                <h3 className="flex items-center gap-2 mb-4 text-lg font-medium text-gray-600">
                   <Mail size={18} className="text-blue-600" />
                   Contact Details
                 </h3>
-                <div className="space-y-3 pl-6">
+                <div className="pl-6 space-y-3">
                   {user.email ? (
                     <div className="flex items-center gap-2">
                       <Mail size={16} className="text-gray-400" />
@@ -1922,11 +1612,11 @@ export default function UserProfile() {
 
               {/* Professional Details */}
               <section>
-                <h3 className="mb-4 flex items-center gap-2 text-lg font-medium text-gray-600">
+                <h3 className="flex items-center gap-2 mb-4 text-lg font-medium text-gray-600">
                   <Building size={18} className="text-blue-600" />
                   Professional Details
                 </h3>
-                <div className="space-y-3 pl-6">
+                <div className="pl-6 space-y-3">
                   {user.organization ? (
                     <div className="flex items-center gap-2">
                       <Building size={16} className="text-gray-400" />
@@ -1940,7 +1630,7 @@ export default function UserProfile() {
                     <div className="flex items-center gap-2">
                       <Link2
                         size={16}
-                        className="text-gray-400 mt-1 flex-shrink-0"
+                        className="flex-shrink-0 mt-1 text-gray-400"
                       />
                       <a
                         href={
@@ -1950,7 +1640,7 @@ export default function UserProfile() {
                         }
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline break-all"
+                        className="text-blue-600 break-all hover:underline"
                       >
                         {user.website.replace(/^https?:\/\//, "")}
                       </a>
@@ -1963,7 +1653,7 @@ export default function UserProfile() {
             </div>
 
             {/* Footer */}
-            <div className="mt-8 flex justify-end">
+            <div className="flex justify-end mt-8">
               <button
                 onClick={() => setShowContactModal(false)}
                 className="rounded-md bg-blue-600 px-5 py-2.5 text-base font-medium text-white transition hover:bg-blue-700"

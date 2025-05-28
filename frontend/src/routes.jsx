@@ -33,6 +33,12 @@ import MemberList from "./pages/MemberList.jsx";
 import SearchResults from "./pages/SearchResults.jsx";
 import CreateCompany from "./pages/CreateCompany.jsx";
 import UserListConnection from "./pages/UserListConnection.jsx";
+import LoginAdmin from "./pages/Admin/AuthAdmin/LoginAdmin.jsx";
+import Dashboard from "./pages/Admin/Admin1/Dashboard.jsx";
+import Settings from "./pages/Admin/Admin1/Settings.jsx";
+import Tables from "./pages/Admin/Admin1/Tables.jsx";
+
+import ListCompany from "./pages/Admin/Admin1/ListCompany.jsx";
 
 const router = createBrowserRouter([
   {
@@ -293,6 +299,43 @@ const router = createBrowserRouter([
     <ProtectedRoute>
       <CreateCompany />
     </ProtectedRoute>
+  ),
+},
+// Admin
+{
+  path: "/login-admin",
+  element: <LoginAdmin />,
+},
+{
+  path: "/dashboard",
+  element: (
+    // <ProtectedRoute>
+      <Dashboard />
+    // </ProtectedRoute>
+  ),
+},
+{
+  path: "/settings",
+  element: (
+    // <ProtectedRoute>
+      <Settings />
+    // </ProtectedRoute>
+  ),
+},
+{
+  path: "/tables",
+  element: (
+    // <ProtectedRoute>
+      <Tables />
+    // </ProtectedRoute>
+  ),
+},
+{
+  path: "/list-company",
+  element: (
+    // <ProtectedRoute>
+      <ListCompany />
+    // </ProtectedRoute>
   ),
 },
 ]);

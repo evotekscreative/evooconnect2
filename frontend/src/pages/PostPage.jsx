@@ -24,6 +24,7 @@ import {
   RefreshCw,
   UserPlus,
   Eye,
+  X,
 } from "lucide-react";
 import Case from "../components/Case.jsx";
 import axios from "axios";
@@ -39,6 +40,17 @@ const PostPage = () => {
   const [loadingSuggested, setLoadingSuggested] = useState(false);
   const [connections, setConnections] = useState([]);
   const [connectionsCount, setConnectionsCount] = useState(0);
+  const [showCommentModal, setShowCommentModal] = useState(false);
+  const [currentPostId, setCurrentPostId] = useState(null);
+  const [comments, setComments] = useState({});
+  const [loadingComments, setLoadingComments] = useState({});
+  const [commentError, setCommentError] = useState(null);
+  const [commentText, setCommentText] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [sharePostId, setSharePostId] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const clientUrl =
+    import.meta.env.VITE_APP_CLIENT_URL || "http://localhost:5173";
   const [profileViews, setProfileViews] = useState({
     thisWeek: 0,
     lastWeek: 0,
@@ -255,12 +267,15 @@ const PostPage = () => {
 
       // Handle skills data
       let userSkills = [];
-      if (response.data.data.skills && response.data.data.skills.Valid) {
-        userSkills = Array.isArray(response.data.data.skills.String)
-          ? response.data.data.skills.String
-          : response.data.data.skills.String
-          ? [response.data.data.skills.String]
-          : [];
+
+      const skillsData = response?.data?.data?.skills;
+
+      if (skillsData) {
+        if (Array.isArray(skillsData)) {
+          userSkills = skillsData;
+        } else if (skillsData.String) {
+          userSkills = [skillsData.String];
+        }
       }
 
       setUser({
@@ -287,7 +302,6 @@ const PostPage = () => {
   useEffect(() => {
     if (user.id) {
       fetchConnections();
-      fetchProfileViews();
       fetchSuggestedConnections();
       fetchUserPosts();
     }
@@ -303,6 +317,203 @@ const PostPage = () => {
     document
       .getElementById("post-container")
       .scrollBy({ left: 300, behavior: "smooth" });
+  };
+
+  const handleLikePost = async (postId, isCurrentlyLiked) => {
+    try {
+      const userToken = localStorage.getItem("token");
+
+      // Optimistic UI update
+      setUserPosts((prevPosts) =>
+        prevPosts.map((post) => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              likes_count: isCurrentlyLiked
+                ? Math.max(post.likes_count - 1, 0)
+                : post.likes_count + 1,
+              isLiked: !isCurrentlyLiked,
+            };
+          }
+          return post;
+        })
+      );
+
+      // Send request to backend
+      if (isCurrentlyLiked) {
+        await axios.delete(`${apiUrl}/api/post-actions/${postId}/like`, {
+          headers: { Authorization: `Bearer ${userToken}` },
+        });
+      } else {
+        await axios.post(
+          `${apiUrl}/api/post-actions/${postId}/like`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${userToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
+    } catch (error) {
+      console.error("Failed to like post:", error);
+
+      // Rollback on error
+      setUserPosts((prevPosts) =>
+        prevPosts.map((post) => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              likes_count: isCurrentlyLiked
+                ? post.likes_count + 1
+                : Math.max(post.likes_count - 1, 0),
+              isLiked: isCurrentlyLiked,
+            };
+          }
+          return post;
+        })
+      );
+
+      toast.error("Failed to like post. Please try again.");
+    }
+  };
+
+  const openCommentModal = (postId) => {
+    setCurrentPostId(postId);
+    setShowCommentModal(true);
+    fetchComments(postId);
+  };
+
+  const closeCommentModal = () => {
+    setShowCommentModal(false);
+    setCurrentPostId(null);
+    setCommentText("");
+  };
+
+  const fetchComments = async (postId) => {
+    try {
+      setLoadingComments((prev) => ({ ...prev, [postId]: true }));
+      setCommentError(null);
+
+      const userToken = localStorage.getItem("token");
+      const response = await axios.get(
+        `${apiUrl}/api/post-comments/${postId}?limit=10&offset=0`,
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        }
+      );
+
+      setComments((prev) => ({
+        ...prev,
+        [postId]: response.data?.data?.comments || [],
+      }));
+    } catch (error) {
+      console.error("Failed to fetch comments:", error);
+      setCommentError("Failed to load comments");
+    } finally {
+      setLoadingComments((prev) => ({ ...prev, [postId]: false }));
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!commentText.trim()) {
+      setCommentError("Comment cannot be empty");
+      return;
+    }
+
+    try {
+      const userToken = localStorage.getItem("token");
+      await axios.post(
+        `${apiUrl}/api/post-comments/${currentPostId}`,
+        { content: commentText },
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      setUserPosts((prevPosts) =>
+        prevPosts.map((post) => {
+          if (post.id === currentPostId) {
+            return {
+              ...post,
+              comments_count: (post.comments_count || 0) + 1,
+            };
+          }
+          return post;
+        })
+      );
+
+      fetchComments(currentPostId);
+      setCommentText("");
+      setCommentError(null);
+      toast.success("Successfully added comment!");
+    } catch (error) {
+      toast.error("Failed to add comment");
+      setCommentError(
+        error.response?.data?.message ||
+          "Failed to add comment. Please try again."
+      );
+    }
+  };
+
+  const handleOpenShareModal = (postId) => {
+    setSharePostId(postId);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseShareModal = () => {
+    setIsModalOpen(false);
+    setSharePostId(null);
+  };
+
+  const copyToClipboard = async () => {
+    try {
+      const urlToCopy = `${clientUrl}/post/${sharePostId}`;
+
+      if (!navigator.clipboard) {
+        const textArea = document.createElement("textarea");
+        textArea.value = urlToCopy;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      } else {
+        await navigator.clipboard.writeText(urlToCopy);
+      }
+
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+      const input = document.createElement("input");
+      input.value = `${clientUrl}/post/${sharePostId}`;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      document.body.removeChild(input);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const shareToWhatsApp = () => {
+    const url = `https://wa.me/?text=${encodeURIComponent(
+      `Check out this post: ${clientUrl}/post/${sharePostId}`
+    )}`;
+    window.open(url, "_blank");
+  };
+
+  const shareToTwitter = () => {
+    const url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(
+      `${clientUrl}/post/${sharePostId}`
+    )}`;
+    window.open(url, "_blank");
   };
 
   if (isLoading) {
@@ -396,15 +607,15 @@ const PostPage = () => {
                   {user.skills.map((skill, index) => (
                     <span
                       key={index}
-                      className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs"
+                      className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm"
                     >
                       {skill}
                     </span>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500 mt-1">
-                  No skills added yet.
+                <p className="text-base text-gray-500 mt-1">
+                  No skills added yet
                 </p>
               )}
             </div>
@@ -429,7 +640,7 @@ const PostPage = () => {
                             {platformInfo.icon}
                           </div>
                         )}
-                        <span className="text-sm">@{username}</span>
+                        <span className="text-sm truncate">@{username}</span>
                       </div>
                     );
                   })}
@@ -511,12 +722,13 @@ const PostPage = () => {
 
                     {/* Body */}
                     <div className="mt-3 text-sm">
-                      <p className="text-gray-700">
-                        {post.content || "No content"}
-                      </p>
-                      {post.photo && post.photo.length > 0 && (
+                      <div
+                        className="prose max-w-none text-gray-700"
+                        dangerouslySetInnerHTML={{ __html: post.content }}
+                      />
+                      {post.images && post.images.length > 0 && (
                         <img
-                          src={apiUrl + "/" + post.photo[0]}
+                          src={apiUrl + "/" + post.images[0]}
                           alt={`Post ${post.id}`}
                           className="mt-2 w-full rounded-lg border object-cover"
                         />
@@ -751,6 +963,172 @@ const PostPage = () => {
           </div>
         </div>
       </div>
+      {showCommentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
+            <div className="p-3 md:p-4 border-b flex justify-between items-center">
+              <h3 className="text-base md:text-lg font-semibold">Comments</h3>
+              <button onClick={closeCommentModal}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-3 md:p-4 overflow-y-auto flex-1">
+              {loadingComments[currentPostId] ? (
+                <div className="text-center py-4">Loading comments...</div>
+              ) : !Array.isArray(comments[currentPostId]) ||
+                comments[currentPostId].length === 0 ? (
+                <p className="text-gray-500 text-center py-4">
+                  No comments yet. Be the first to comment!
+                </p>
+              ) : (
+                Array.isArray(comments[currentPostId]) &&
+                comments[currentPostId].map((comment) => (
+                  <div key={comment.id} className="mb-4">
+                    <div className="flex items-start mb-2">
+                      <div className="w-10 h-10 flex items-center justify-center bg-gray-300 rounded-full border-2 border-white ml-3 mt-2 relative z-10">
+                        <span className="text-lg font-bold text-gray-600">
+                          {comment.user?.name
+                            ?.split(" ")
+                            .map((n) => n[0])
+                            .join("") || "UU"}
+                        </span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="bg-gray-100 rounded-lg p-2 md:p-3">
+                          <div className="font-semibold text-xs md:text-sm">
+                            {comment.user?.name || "Unknown User"}
+                          </div>
+                          <p className="text-xs md:text-sm">
+                            {comment.content}
+                          </p>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {new Date(comment.created_at).toLocaleDateString(
+                            "en-US",
+                            {
+                              month: "short",
+                              day: "numeric",
+                            }
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="p-3 md:p-4 border-t">
+              <div className="flex items-center mb-2">
+                <div className="w-6 md:w-8 h-6 md:h-8 rounded-full bg-gray-200 flex items-center justify-center text-xxs md:text-xs mr-2 md:mr-3">
+                  {user.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
+                </div>
+                <input
+                  type="text"
+                  className="flex-1 border rounded-lg p-2 text-xs md:text-sm"
+                  placeholder="Write a comment..."
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  onKeyPress={(e) => e.key === "Enter" && handleAddComment()}
+                />
+              </div>
+              {commentError && (
+                <span className="text-red-500 text-center text-xs font-medium mb-4">
+                  {commentError}
+                </span>
+              )}
+              <div className="flex justify-end">
+                <button
+                  className="bg-blue-500 text-white px-3 md:px-4 py-1 rounded-lg text-xs md:text-sm"
+                  onClick={handleAddComment}
+                >
+                  Post
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">Share this post</h3>
+              <button
+                onClick={handleCloseShareModal}
+                className="p-1 rounded-full hover:bg-gray-100"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-sm text-gray-500 mb-2">Copy link</p>
+              <div className="flex items-center border rounded-lg p-2">
+                <input
+                  type="text"
+                  value={`${clientUrl}/post/${sharePostId}`}
+                  readOnly
+                  className="flex-grow text-sm text-gray-700 mr-2 outline-none"
+                />
+                <button
+                  onClick={copyToClipboard}
+                  className="text-blue-500 hover:text-blue-700"
+                >
+                  <Copy size={16} />
+                </button>
+              </div>
+              {copied && (
+                <p className="text-xs text-green-600 mt-1">
+                  Link copied to clipboard!
+                </p>
+              )}
+            </div>
+
+            <div>
+              <p className="text-sm text-gray-500 mb-3">Share to</p>
+              <div className="flex justify-around">
+                <button
+                  onClick={shareToWhatsApp}
+                  className="flex flex-col items-center"
+                >
+                  <div className="bg-green-100 p-3 rounded-full mb-1">
+                    <MessageCircle size={24} className="text-green-600" />
+                  </div>
+                  <span className="text-xs">WhatsApp</span>
+                </button>
+
+                <button
+                  onClick={() =>
+                    window.open("https://www.instagram.com", "_blank")
+                  }
+                  className="flex flex-col items-center"
+                >
+                  <div className="bg-pink-100 p-3 rounded-full mb-1">
+                    <Instagram size={24} className="text-pink-600" />
+                  </div>
+                  <span className="text-xs">Instagram</span>
+                </button>
+
+                <button
+                  onClick={shareToTwitter}
+                  className="flex flex-col items-center"
+                >
+                  <div className="bg-blue-100 p-3 rounded-full mb-1">
+                    <Twitter size={24} className="text-blue-600" />
+                  </div>
+                  <span className="text-xs">Twitter</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

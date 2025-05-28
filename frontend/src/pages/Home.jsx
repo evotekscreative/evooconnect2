@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import axios from "axios";
 import dayjs from "dayjs";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
@@ -64,6 +64,9 @@ export default function SocialNetworkFeed() {
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [activeTab, setActiveTab] = useState("update");
+  const [editActiveTab, setEditActiveTab] = useState("update");
+  const [editPostContent, setEditPostContent] = useState("");
+  const [editArticleContent, setEditArticleContent] = useState("");
   const [articleImages, setArticleImages] = useState([]);
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [currentPostId, setCurrentPostId] = useState(null);
@@ -107,6 +110,7 @@ export default function SocialNetworkFeed() {
   const [profileImage, setProfileImage] = useState(null);
   const [suggestedConnections, setSuggestedConnections] = useState([]);
   const [loadingSuggested, setLoadingSuggested] = useState(false);
+  const [reportTargetUserId, setReportTargetUserId] = useState(null);
   const [user, setUser] = useState({
     name: "",
     username: "",
@@ -171,7 +175,6 @@ export default function SocialNetworkFeed() {
     try {
       const userToken = localStorage.getItem("token");
 
-      // Fetch data minggu ini dan minggu lalu secara paralel
       const [thisWeekResponse, lastWeekResponse] = await Promise.all([
         axios.get(apiUrl + "/api/user/profile/views/this-week", {
           headers: { Authorization: `Bearer ${userToken}` },
@@ -184,7 +187,6 @@ export default function SocialNetworkFeed() {
       const thisWeekData = thisWeekResponse.data.data || {};
       const lastWeekData = lastWeekResponse.data.data || {};
 
-      // Format data harian untuk chart
       const days = [];
       const dailyCounts = [];
 
@@ -202,28 +204,33 @@ export default function SocialNetworkFeed() {
         dailyCounts.push(dailyViews.length);
       }
 
-      // Hitung total views
-      const thisWeekTotal = thisWeekData.count || 0;
-      const lastWeekTotal = lastWeekData.count || 0;
+      setProfileViews((prev) => {
+        const newThisWeek = thisWeekData.count || 0;
+        const newLastWeek = lastWeekData.count || 0;
 
-      // Hitung persentase perubahan
-      let percentageChange = 0;
-      if (lastWeekTotal > 0) {
-        percentageChange =
-          ((thisWeekTotal - lastWeekTotal) / lastWeekTotal) * 100;
-      } else if (thisWeekTotal > 0) {
-        percentageChange = 100;
-      }
+        // Jika data sama dengan sebelumnya, jangan update
+        if (prev.thisWeek === newThisWeek && prev.lastWeek === newLastWeek) {
+          return prev;
+        }
 
-      setProfileViews({
-        thisWeek: thisWeekTotal,
-        lastWeek: lastWeekTotal,
-        percentageChange: Math.round(percentageChange),
-        dailyViews: thisWeekData.viewers || [],
-        chartData: {
-          labels: days.map((date) => dayjs(date).format("ddd")),
-          data: dailyCounts,
-        },
+        // Hitung perubahan hanya jika data berbeda
+        let percentageChange = 0;
+        if (newLastWeek > 0) {
+          percentageChange = ((newThisWeek - newLastWeek) / newLastWeek) * 100;
+        } else if (newThisWeek > 0) {
+          percentageChange = 100;
+        }
+
+        return {
+          thisWeek: newThisWeek,
+          lastWeek: newLastWeek,
+          percentageChange: Math.round(percentageChange),
+          dailyViews: thisWeekData.viewers || [],
+          chartData: {
+            labels: days.map((date) => dayjs(date).format("ddd")),
+            data: dailyCounts,
+          },
+        };
       });
     } catch (error) {
       console.error("Failed to fetch profile views:", error);
@@ -268,12 +275,20 @@ export default function SocialNetworkFeed() {
   };
 
   useEffect(() => {
-    fetchProfileViews();
-    fetchConnections();
-    fetchSuggestedConnections();
-    // console.log("Profile views data fetched successfully", profileViews);
-  }, []);
+    // Simpan fungsi fetch dalam variabel
+    const fetchData = async () => {
+      await fetchProfileViews();
+      await fetchConnections();
+      await fetchSuggestedConnections();
+    };
 
+    fetchData();
+
+    // Bersihkan jika komponen unmount
+    return () => {
+      // Cleanup jika perlu
+    };
+  }, []); // Empty array untuk eksekusi sekali saja
   useEffect(() => {
     const userData = localStorage.getItem("user");
     if (userData) {
@@ -326,27 +341,30 @@ export default function SocialNetworkFeed() {
   };
   const { labels, data } = getLast7DaysData();
 
-  const chartData = {
-    labels: profileViews.chartData?.labels || [
-      "Mon",
-      "Tue",
-      "Wed",
-      "Thu",
-      "Fri",
-      "Sat",
-      "Sun",
-    ],
-    datasets: [
-      {
-        label: "Profile Views",
-        data: profileViews.chartData?.data || [0, 0, 0, 0, 0, 0, 0],
-        fill: false,
-        borderColor: "#06b6d4",
-        backgroundColor: "#06b6d4",
-        tension: 0.4,
-      },
-    ],
-  };
+  const chartData = useMemo(
+    () => ({
+      labels: profileViews.chartData?.labels || [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri",
+        "Sat",
+        "Sun",
+      ],
+      datasets: [
+        {
+          label: "Profile Views",
+          data: profileViews.chartData?.data || [0, 0, 0, 0, 0, 0, 0],
+          fill: false,
+          borderColor: "#06b6d4",
+          backgroundColor: "#06b6d4",
+          tension: 0.4,
+        },
+      ],
+    }),
+    [profileViews.chartData]
+  ); // Hanya re-render ketika data berubah
 
   const chartOptions = {
     responsive: true,
@@ -519,9 +537,12 @@ export default function SocialNetworkFeed() {
         const userToken = localStorage.getItem("token");
 
         // Lalu fetch data terbaru dari API
-        const response = await axios.get(apiUrl + "/api/posts", {
-          headers: { Authorization: `Bearer ${userToken}` },
-        });
+        const response = await axios.get(
+          apiUrl + "/api/posts?limit=100&offset=0",
+          {
+            headers: { Authorization: `Bearer ${userToken}` },
+          }
+        );
 
         if (response.data?.data) {
           // Tambahkan transformasi data setelah fetch:
@@ -688,7 +709,7 @@ export default function SocialNetworkFeed() {
           // Jika ini file baru yang diupload
           formData.append("images", img.file);
         } else if (typeof img === "string") {
-          // Jika ini URL gambar yang sudah ada
+          // Jika ini URL gambar yang sudah ad
           formData.append("existingImages", img);
         }
       });
@@ -825,8 +846,6 @@ export default function SocialNetworkFeed() {
 
   const fetchReplies = async (commentId) => {
     try {
-      setLoadingComments((prev) => ({ ...prev, [commentId]: true }));
-
       const userToken = localStorage.getItem("token");
       const response = await axios.get(
         `${apiUrl}/api/comments/${commentId}/replies`,
@@ -835,15 +854,52 @@ export default function SocialNetworkFeed() {
         }
       );
 
+      const replies = response.data.data.comments || [];
+
+      const processedReplies = replies.map((reply) => ({
+        ...reply,
+        // Create initials for the reply user
+        user: reply.user
+          ? {
+              ...reply.user,
+              initials: reply.user.name
+                ? reply.user.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                : "UU",
+            }
+          : { name: "Unknown User", initials: "UU" },
+        // Ensure replyTo has complete user data including initials
+        replyTo: reply.reply_to_id
+          ? replies.find((r) => r.id === reply.reply_to_id)?.user
+            ? {
+                id: replies.find((r) => r.id === reply.reply_to_id).user.id,
+                name:
+                  replies.find((r) => r.id === reply.reply_to_id).user.name ||
+                  "Unknown User",
+                username:
+                  replies.find((r) => r.id === reply.reply_to_id).user
+                    .username || "unknown",
+                initials: replies.find((r) => r.id === reply.reply_to_id).user
+                  .name
+                  ? replies
+                      .find((r) => r.id === reply.reply_to_id)
+                      .user.name.split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                  : "UU",
+              }
+            : null
+          : null,
+      }));
+
       setAllReplies((prev) => ({
         ...prev,
-        [commentId]: response.data.data.comments || [],
+        [commentId]: processedReplies,
       }));
     } catch (error) {
       console.error("Failed to fetch replies:", error);
-      setCommentError("Failed to load replies");
-    } finally {
-      setLoadingComments((prev) => ({ ...prev, [commentId]: false }));
     }
   };
 
@@ -862,12 +918,54 @@ export default function SocialNetworkFeed() {
       );
 
       const replies = Array.isArray(response.data?.data)
-        ? response.data.data
+        ? response.data.data.map((reply) => ({
+            ...reply,
+            // Create initials for the reply user
+            user: reply.user
+              ? {
+                  ...reply.user,
+                  initials: reply.user.name
+                    ? reply.user.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                    : "UU",
+                }
+              : { name: "Unknown User", initials: "UU" },
+            // Ensure replyTo has complete user data including initials
+            replyTo: reply.reply_to_id
+              ? response.data.data.find((r) => r.id === reply.reply_to_id)?.user
+                ? {
+                    id: response.data.data.find((r) => r.id === reply.reply_to_id).user.id,
+                    name:
+                      response.data.data.find((r) => r.id === reply.reply_to_id).user.name ||
+                      "Unknown User",
+                    username:
+                      response.data.data.find((r) => r.id === reply.reply_to_id).user
+                        .username || "unknown",
+                    initials: response.data.data.find((r) => r.id === reply.reply_to_id).user
+                      .name
+                      ? response.data.data
+                          .find((r) => r.id === reply.reply_to_id)
+                          .user.name.split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                      : "UU",
+                  }
+                : null
+              : null,
+          }))
         : [];
 
       setAllReplies((prev) => ({
         ...prev,
         [commentId]: replies,
+      }));
+
+      // Mark that all replies have been loaded for this comment
+      setAllRepliesLoaded((prev) => ({
+        ...prev,
+        [commentId]: true,
       }));
 
       // localStorage.setItem(`replies_${commentId}`, JSON.stringify(replies));
@@ -986,7 +1084,7 @@ export default function SocialNetworkFeed() {
         `${apiUrl}/api/comments/${commentId}/replies`,
         {
           content: replyText,
-          replyTo: replyToUser?.id,
+          replyTo: replyToUser?.id, // Kirim ID user yang direply
         },
         {
           headers: {
@@ -998,43 +1096,33 @@ export default function SocialNetworkFeed() {
 
       const newReply = {
         ...response.data.data,
-        user: response.data.data.user || {
-          name: "Current User",
-          initials: "CU",
+        user: {
+          ...response.data.data.user,
+          initials: response.data.data.user?.name
+            ? response.data.data.user.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+            : "CU",
         },
+        replyTo: replyToUser
+          ? {
+              id: replyToUser.id,
+              name: replyToUser.name,
+              username: replyToUser.username,
+              initials: replyToUser.name
+                .split(" ")
+                .map((n) => n[0])
+                .join(""),
+            }
+          : null,
       };
 
-      // Update state dan cache
-      const updatedReplies = [...(allReplies[commentId] || []), newReply];
-
+      // Update state
       setAllReplies((prev) => ({
         ...prev,
-        [commentId]: updatedReplies,
+        [commentId]: [...(prev[commentId] || []), newReply],
       }));
-
-      // Update localStorage cache
-      // localStorage.setItem(
-      //   `replies_${commentId}`,
-      //   JSON.stringify(updatedReplies)
-      // );
-
-      // Update replies count in comments state
-      // Setelah menambahkan reply baru, update replies count
-      setComments((prev) => {
-        const updated = { ...prev };
-        if (updated[currentPostId]) {
-          updated[currentPostId] = updated[currentPostId].map((c) => {
-            if (c.id === commentId) {
-              return {
-                ...c,
-                repliesCount: (c.replies_count || 0) + 1,
-              };
-            }
-            return c;
-          });
-        }
-        return updated;
-      });
 
       // Reset form
       setReplyText("");
@@ -1168,23 +1256,27 @@ export default function SocialNetworkFeed() {
     setIsLoading(true);
     try {
       const userToken = localStorage.getItem("token");
+      const content =
+        editActiveTab === "update" ? editPostContent : editArticleContent;
 
-      // Upload new images first
       const formData = new FormData();
-      formData.append("content", postContent);
+      formData.append("content", content);
       formData.append("visibility", postVisibility);
 
-      // Add existing images that weren't removed
+      // Tambahkan gambar yang sudah ada dan tidak dihapus
       articleImages.forEach((img) => {
-        formData.append("existingImages", img);
+        if (typeof img === "string") {
+          // Hanya URL string yang sudah ada
+          formData.append("existingImages", img);
+        }
       });
 
-      // Add any new images
+      // Tambahkan gambar baru
       newImages.forEach((file) => {
         formData.append("images", file);
       });
 
-      // Send the update request with a single API call
+      // Kirim permintaan update
       const response = await axios.put(
         `${apiUrl}/api/posts/${editingPost.id}`,
         formData,
@@ -1196,30 +1288,28 @@ export default function SocialNetworkFeed() {
         }
       );
 
-      console.log("Post updated successfully:", response);
-
+      // Update state posts dengan data terbaru dari response
       setPosts((prevPosts) =>
         prevPosts.map((post) =>
           post.id === editingPost.id ? response.data.data : post
         )
       );
 
+      // Tutup modal dan reset state
       setShowEditModal(false);
       setEditingPost(null);
-      setNewImages([]);
-      setRemovedImages([]);
       setAlertInfo({
         show: true,
         type: "success",
-        message: "Post berhasil diubah!",
+        message: "Post updated successfully!",
       });
     } catch (error) {
+      console.error("Failed to update post:", error);
       setAlertInfo({
         show: true,
         type: "error",
-        message: "Gagal mengubah post!",
+        message: "Failed to update post. Please try again.",
       });
-      setError("Failed to update post. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -1242,11 +1332,13 @@ export default function SocialNetworkFeed() {
 
   const handleEditPost = (post) => {
     setEditingPost(post);
-    setPostContent(post.content);
+    setEditPostContent(post.content);
+    setEditArticleContent(post.content);
     setArticleImages(post.images || []);
     setNewImages([]);
     setRemovedImages([]);
     setPostVisibility(post.visibility || "public");
+    setEditActiveTab("update");
     setShowEditModal(true);
   };
 
@@ -1308,7 +1400,16 @@ export default function SocialNetworkFeed() {
                 <button
                   className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
                   onClick={() => {
-                    setShowReportModal(true);
+                    const post = posts.find((p) => p.id === selectedPostId);
+                    if (post && post.user) {
+                      handleReportClick(post.user.id, "post", selectedPostId);
+                    } else {
+                      setAlertInfo({
+                        show: true,
+                        type: "error",
+                        message: "Cannot identify post owner. Report failed.",
+                      });
+                    }
                     handleClosePostOptions();
                   }}
                 >
@@ -1328,22 +1429,15 @@ export default function SocialNetworkFeed() {
                   </svg>
                   Report Post
                 </button>
-                <button
-                  className={`w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center ${
-                    isConnected
-                      ? "text-white bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 "
-                      : "text-blue-500"
-                  }`}
-                  onClick={() => {
-                    if (!isConnected) {
-                      handleConnectWithUser(post.user?.id);
-                    }
-                  }}
-                  disabled={isConnected}
-                >
-                  <Users size={16} className="mr-2" />
-                  {isConnected ? "Connected" : "Connect with User"}
-                </button>
+                {!isConnected && (
+                  <button
+                    className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-blue-500"
+                    onClick={() => handleConnectWithUser(post.user?.id)}
+                  >
+                    <Users size={16} className="mr-2" />
+                    Connect with User
+                  </button>
+                )}
               </>
             )}
           </div>
@@ -1358,21 +1452,6 @@ export default function SocialNetworkFeed() {
         </div>
       </div>
     );
-  };
-  const handleReportClick = (userId, targetType, id) => {
-    if (userId === currentUserId) {
-      setAlertInfo({
-        show: true,
-        type: "error",
-        message: "You cannot report your own content",
-      });
-      return;
-    }
-
-    setSelectedPostId(id);
-    setShowReportModal(true);
-    setShowPostOptions(false);
-    setShowCommentOptions(false);
   };
 
   const renderPhotoGrid = (images) => {
@@ -1480,6 +1559,21 @@ export default function SocialNetworkFeed() {
     setSharePostId(null);
   };
 
+  // Add this at the top of your file with other utility functions
+  const getInitials = (name) => {
+    if (!name || typeof name !== "string") return "UU";
+
+    const names = name.trim().split(/\s+/); // Pisahkan berdasarkan spasi
+
+    // Ambil maksimal 3 huruf pertama dari nama depan, tengah, dan belakang
+    const initials = names
+      .slice(0, 3)
+      .map((word) => word[0].toUpperCase())
+      .join("");
+
+    return initials || "UU";
+  };
+
   const copyToClipboard = async () => {
     try {
       const urlToCopy = `${clientUrl}/post/${sharePostId}`;
@@ -1536,9 +1630,30 @@ export default function SocialNetworkFeed() {
     setShowMobileMenu(!showMobileMenu);
   };
 
-  const handleReportComment = async (userId, targetType, targetId, reason) => {
-    // Validasi tambahan
-    if (userId === currentUserId) {
+  // Fix for handleReportComment function
+  const handleReportComment = async (
+    targetUserId,
+    targetType,
+    targetId,
+    reason
+  ) => {
+    // Validate all required parameters
+    if (!targetUserId || !targetType || !targetId) {
+      console.error("Missing required parameters:", {
+        targetUserId,
+        targetType,
+        targetId,
+      });
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: "Unable to report content due to missing information",
+      });
+      return;
+    }
+
+    // Prevent reporting own content
+    if (targetUserId === user.id) {
       setAlertInfo({
         show: true,
         type: "error",
@@ -1548,10 +1663,18 @@ export default function SocialNetworkFeed() {
     }
 
     try {
+      console.log("Submitting report with:", {
+        targetUserId,
+        targetType,
+        targetId,
+        reason,
+        reporterId: user.id,
+      });
+
       const userToken = localStorage.getItem("token");
       const response = await axios.post(
-        `${apiUrl}/api/reports/${userId}/${targetType}/${targetId}`,
-        { reason },
+        `${apiUrl}/api/reports/${targetUserId}/${targetType}/${targetId}`,
+        { reason, reporterId: user.id },
         {
           headers: {
             Authorization: `Bearer ${userToken}`,
@@ -1560,31 +1683,66 @@ export default function SocialNetworkFeed() {
         }
       );
 
-      if (response.data.success) {
+      if (response.data.code == 201) {
         setAlertInfo({
           show: true,
           type: "success",
-          message: "Report submitted successfully!",
-        });
-      } else {
-        setAlertInfo({
-          show: true,
-          type: "error",
-          message: response.data.message || "Failed to submit report",
+          message: "Report submitted successfully",
         });
       }
     } catch (error) {
-      console.error("Failed to submit report:", error);
+      console.error("Report submission error:", error);
       setAlertInfo({
         show: true,
         type: "error",
-        message: error.response?.data?.message || "Failed to submit report",
+        message: error.response?.data?.error || "Failed to submit report",
       });
     } finally {
       setShowReportModal(false);
       setSelectedReason("");
       setCustomReason("");
     }
+  };
+
+  // Fix for handleReportClick to properly set target IDs
+  const handleReportClick = (targetUserId, targetType, id) => {
+    // Validate parameters first
+    if (!targetUserId) {
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: "Cannot identify the content owner",
+      });
+      return;
+    }
+
+    if (!id) {
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: "Cannot identify the content to report",
+      });
+      return;
+    }
+
+    // Set report target information
+    setReportTargetUserId(targetUserId);
+
+    if (targetType === "comment") {
+      setSelectedComment({
+        id: id,
+        userId: targetUserId,
+        targetType: targetType,
+      });
+      setSelectedPostId(null); // Clear post ID when reporting a comment
+    } else if (targetType === "post") {
+      setSelectedPostId(id);
+      setSelectedComment(null); // Clear comment data when reporting a post
+    }
+
+    setShowReportModal(true);
+    setShowPostOptions(false);
+    setShowCommentOptions(false);
   };
 
   const renderCommentOptionsModal = () => {
@@ -1623,11 +1781,19 @@ export default function SocialNetworkFeed() {
               <button
                 className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
                 onClick={() => {
-                  handleReportClick(
-                    selectedComment.user?.id,
-                    "comment",
-                    selectedComment.id
-                  );
+                  if (selectedComment?.user?.id) {
+                    handleReportClick(
+                      selectedComment.user.id,
+                      "comment",
+                      selectedComment.id
+                    );
+                  } else {
+                    setAlertInfo({
+                      show: true,
+                      type: "error",
+                      message: "Cannot identify comment owner. Report failed.",
+                    });
+                  }
                   setShowCommentOptions(false);
                 }}
               >
@@ -1671,8 +1837,10 @@ export default function SocialNetworkFeed() {
     customReason,
     setCustomReason,
     handleReportComment,
-    currentUserId,
+    targetUserId,
     selectedPostId,
+    selectedComment,
+    setAlertInfo, // Add this prop
   }) => {
     return (
       <div
@@ -1750,12 +1918,33 @@ export default function SocialNetworkFeed() {
                 const reasonText =
                   selectedReason === "Other" ? customReason : selectedReason;
 
-                handleReportComment(
-                  currentUserId,
-                  "comment", // targetType
-                  selectedPostId, // targetId (comment id)
-                  reasonText
-                );
+                // Determine the correct content type and ID
+                const contentType = selectedComment ? "comment" : "post";
+                const contentId = selectedComment
+                  ? selectedComment.id
+                  : selectedPostId;
+
+                // Ensure all parameters are defined
+                if (targetUserId && contentId && reasonText) {
+                  handleReportComment(
+                    targetUserId,
+                    contentType,
+                    contentId,
+                    reasonText
+                  );
+                } else {
+                  console.error("Report parameters:", {
+                    targetUserId,
+                    contentType,
+                    contentId,
+                    reasonText,
+                  });
+                  setAlertInfo({
+                    show: true,
+                    type: "error",
+                    message: "Missing information needed to submit report",
+                  });
+                }
               }}
             >
               Report
@@ -1885,9 +2074,18 @@ export default function SocialNetworkFeed() {
       // Reset state
       setEditingCommentId(null);
       setCommentText("");
+      setAlertInfo({
+        show: true,
+        type: "success",
+        message: "Comment updated successfully!",
+      });
     } catch (error) {
-      console.error("Failed to update comment:", error);
-      setCommentError("Failed to update comment. Please try again.");
+      console.error("Failed to update post:", error);
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: "Failed to update comment. Please try again.",
+      });
     }
   };
 
@@ -2039,13 +2237,14 @@ export default function SocialNetworkFeed() {
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     e.target.onerror = null;
-                    e.target.src = ""; // Fallback ke initials jika gambar error
+                    e.target.src = "";
+                    e.target.parentElement.classList.add("bg-gray-300");
                   }}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gray-300">
                   <span className="text-lg font-bold text-gray-600">
-                    {user.initials}
+                    {getInitials(user.name)}
                   </span>
                 </div>
               )}
@@ -2176,13 +2375,14 @@ export default function SocialNetworkFeed() {
                       className="w-full h-full object-cover rounded-full"
                       onError={(e) => {
                         e.target.onerror = null;
-                        e.target.src = ""; // Fallback ke initials jika gambar error
+                        e.target.src = "";
+                        e.target.parentElement.classList.add("bg-gray-300");
                       }}
                     />
                   ) : (
                     <div className="w-full h-full rounded-full flex items-center justify-center bg-gray-300">
-                      <span className=" font-bold text-gray-600">
-                        {user.initials}
+                      <span className="font-bold text-gray-600">
+                        {getInitials(user.name)}
                       </span>
                     </div>
                   )}
@@ -2420,14 +2620,17 @@ export default function SocialNetworkFeed() {
                               alt="Profile"
                               onError={(e) => {
                                 e.target.onerror = null;
-                                e.target.src = ""; // Fallback ke initials jika gambar error
+                                e.target.src = "";
+                                e.target.parentElement.classList.add(
+                                  "bg-gray-300"
+                                );
                               }}
                             />
                           </Link>
                         ) : (
-                          <div className="w-10 h-10 flex items-center justify-center bg-gray-300 rounded-full border-2 border-white ml-3 mt-2 relative z-10">
-                            <span className="text-lg font-bold text-gray-600">
-                              {post.user?.initials || "UU"}
+                          <div className="w-10 h-10 bg-gray-200 text-xs rounded-full flex items-center justify-center font-semibold text-gray-600">
+                            <span className="text-xs font-bold text-gray-600">
+                              {getInitials(post.user?.name)}
                             </span>
                           </div>
                         )}
@@ -2639,14 +2842,68 @@ export default function SocialNetworkFeed() {
 
       {showEditModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-md p-6">
+          <div className="bg-white rounded-lg w-full max-w-2xl p-6">
             <h3 className="text-lg font-medium mb-4">Edit Post</h3>
-            <textarea
-              className="w-full border rounded-lg p-2 mb-4"
-              rows="4"
-              value={postContent}
-              onChange={(e) => setPostContent(e.target.value)}
-            />
+
+            {/* Tabs untuk modal edit */}
+            <div className="flex border-b pb-2 space-x-1 mb-4">
+              <button
+                className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${
+                  editActiveTab === "update"
+                    ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                    : "text-gray-500 hover:text-blue-500"
+                }`}
+                onClick={() => setEditActiveTab("update")}
+              >
+                <SquarePen size={16} className="mr-2" />
+                Simple Text
+              </button>
+              <button
+                className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${
+                  editActiveTab === "article"
+                    ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                    : "text-gray-500 hover:text-blue-500"
+                }`}
+                onClick={() => setEditActiveTab("article")}
+              >
+                <NotebookPen size={16} className="mr-2" />
+                Rich Text Editor
+              </button>
+            </div>
+
+            {/* Konten editor berdasarkan tab aktif */}
+            {editActiveTab === "update" ? (
+              <textarea
+                className="w-full border rounded-lg p-2 mb-4"
+                rows="4"
+                value={editPostContent}
+                onChange={(e) => setEditPostContent(e.target.value)}
+              />
+            ) : (
+              <div className="border rounded-md overflow-hidden text-black ck-editor-mode mb-4">
+                <CKEditor
+                  editor={ClassicEditor}
+                  data={editArticleContent}
+                  onChange={(e, editor) =>
+                    setEditArticleContent(editor.getData())
+                  }
+                  config={{
+                    toolbar: [
+                      "heading",
+                      "|",
+                      "bold",
+                      "italic",
+                      "link",
+                      "bulletedList",
+                      "numberedList",
+                      "|",
+                      "undo",
+                      "redo",
+                    ],
+                  }}
+                />
+              </div>
+            )}
 
             {/* Existing Images */}
             {articleImages.length > 0 && (
@@ -2838,12 +3095,13 @@ export default function SocialNetworkFeed() {
                           onError={(e) => {
                             e.target.onerror = null;
                             e.target.src = "";
+                            e.target.parentElement.classList.add("bg-gray-300");
                           }}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <span className="text-sm font-semibold text-gray-500">
-                            {person.initials}
+                            {getInitials(person.name)}
                           </span>
                         </div>
                       )}
@@ -3160,56 +3418,70 @@ export default function SocialNetworkFeed() {
           customReason={customReason}
           setCustomReason={setCustomReason}
           handleReportComment={handleReportComment}
-          currentUserId={currentUserId}
-          selectedPostId={selectedPostId || selectedComment?.id}
+          targetUserId={reportTargetUserId}
+          selectedPostId={selectedPostId}
+          selectedComment={selectedComment}
+          setAlertInfo={setAlertInfo} // Pass this prop
         />
       )}
 
       {/* Comment Modal */}
       {showCommentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
           {renderShowcase()}
+
+          {/* Main Comment Modal */}
           <div
-            className="bg-white rounded-lg w-full max-w-md mx-4 max-h-[90vh] flex flex-col"
+            className="bg-white rounded-lg w-full max-w-md mx-4 max-h-[90vh] flex flex-col shadow-xl"
             style={{ zIndex: showReportModal ? 40 : 50 }}
           >
-            <div className="p-3 md:p-4 border-b flex justify-between items-center">
-              <h3 className="text-base md:text-lg font-semibold">Comments</h3>
-              <button onClick={closeCommentModal}>
+            {/* Modal Header */}
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-800">Comments</h3>
+              <button
+                onClick={closeCommentModal}
+                className="text-gray-500 hover:text-gray-700 transition-colors"
+              >
                 <X size={20} />
               </button>
             </div>
 
-
-            <div className="p-3 md:p-4 overflow-y-auto flex-1">
+            {/* Comments Content */}
+            <div className="p-4 overflow-y-auto flex-1 space-y-4">
               {loadingComments[currentPostId] ? (
-                <div className="text-center py-4">Loading comments...</div>
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                </div>
               ) : !Array.isArray(comments[currentPostId]) ||
                 comments[currentPostId].length === 0 ? (
-                <p className="text-gray-500 text-center py-4">
-                  No comments yet. Be the first to comment!
-                </p>
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No comments yet.</p>
+                  <p className="text-gray-400 text-sm mt-1">
+                    Be the first to comment!
+                  </p>
+                </div>
               ) : (
                 Array.isArray(comments[currentPostId]) &&
-                comments[currentPostId]
-                  .filter(Boolean) // Filter komentar yang undefined/null
-                  .map((comment) => {
-                    // Add this check at the start of your map function
-                    if (!comment) return null;
+                comments[currentPostId].filter(Boolean).map((comment) => {
+                  if (!comment) return null;
 
-                    const commentUser = comment.user || {
-                      name: "Unknown User",
-                      initials: "UU",
-                      username: "unknown",
-                      profile_photo: null,
-                    };
-                    return (
-                      <div key={comment.id} className="mb-4">
-                        <div className="flex items-start mb-2">
+                  const commentUser = comment.user || {
+                    name: "Unknown User",
+                    initials: "UU",
+                    username: "unknown",
+                    profile_photo: null,
+                  };
+
+                  return (
+                    <div key={comment.id} className="group">
+                      {/* Comment Container */}
+                      <div className="flex gap-3">
+                        {/* User Avatar */}
+                        <div className="flex-shrink-0">
                           {commentUser.profile_photo ? (
                             <Link to={`/user-profile/${commentUser.username}`}>
                               <img
-                                className="rounded-full border-2 border-white ml-3 mt-2 w-10 h-10 relative z-10"
+                                className="rounded-full w-10 h-10 object-cover border-2 border-white hover:border-blue-200 transition-colors"
                                 src={
                                   commentUser.profile_photo.startsWith("http")
                                     ? commentUser.profile_photo
@@ -3219,295 +3491,348 @@ export default function SocialNetworkFeed() {
                                 onError={(e) => {
                                   e.target.onerror = null;
                                   e.target.src = "";
+                                  e.target.parentElement.classList.add(
+                                    "bg-gray-300"
+                                  );
                                 }}
                               />
                             </Link>
                           ) : (
-                            <div className="w-10 h-10 flex items-center justify-center bg-gray-300 rounded-full border-2 border-white ml-3 mt-2 relative z-10">
-                              <span className="text-lg font-bold text-gray-600">
-                                {commentUser.initials}
+                            <div className="w-10 h-10 flex items-center justify-center bg-gray-200 rounded-full border-2 border-white">
+                              <span className="text-sm font-medium text-gray-600">
+                                {getInitials(commentUser.name)}
                               </span>
                             </div>
                           )}
-                          <div className="flex-1">
-                            <div className="bg-gray-100 rounded-lg p-2 md:p-3">
-                              <div
-                                className="font-semibold text-xs md:text-sm cursor-pointer hover:underline"
-                                onClick={() =>
-                                  fetchUserProfile(
-                                    comment.user.username,
-                                    comment.user.id
-                                  )
-                                }
+                        </div>
+
+                        {/* Comment Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="bg-gray-50 rounded-lg p-3">
+                            {/* User Info */}
+                            <div className="flex items-center justify-between">
+                              <Link
+                                to={`/user-profile/${commentUser.username}`}
+                                className="text-sm font-semibold text-gray-800 hover:text-blue-600 hover:underline"
                               >
-                                {comment.user.name}
-                              </div>
+                                {commentUser.name}
+                              </Link>
 
-                              {editingCommentId === comment.id ? (
-                                <div className="mt-2 flex">
-                                  <input
-                                    type="text"
-                                    className="flex-1 border rounded-l-lg p-2 text-xs md:text-sm"
-                                    value={commentText}
-                                    onChange={(e) =>
-                                      setCommentText(e.target.value)
-                                    }
-                                  />
-                                  <button
-                                    className="bg-blue-500 text-white px-2 md:px-3 rounded-r-lg text-xs md:text-sm"
-                                    onClick={() =>
-                                      handleUpdateComment(comment.id)
-                                    }
-                                  >
-                                    Update
-                                  </button>
-                                  <button
-                                    className="bg-gray-500 text-white px-2 md:px-3 rounded-r-lg text-xs md:text-sm ml-1"
-                                    onClick={() => {
-                                      setEditingCommentId(null);
-                                      setCommentText("");
-                                    }}
-                                  >
-                                    Cancel
-                                  </button>
-                                </div>
-                              ) : (
-                                <p className="text-xs md:text-sm">
-                                  {comment.content}
-                                </p>
-                              )}
-                            </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {formatPostTime(comment.created_at)}
-                            </div>
-                            <div className="relative">
-                              {/* Main actions row */}
-                              <div className="flex items-center space-x-4 p-2 rounded-lg">
-                                <button
-                                  className="text-xs text-blue-500 hover:text-blue-700 font-medium flex items-center"
-                                  onClick={() => {
-                                    setReplyingTo(comment.id);
-                                    setReplyToUser(comment.user);
-                                  }}
-                                >
-                                  Reply
-                                </button>
-
+                              {/* Comment Actions */}
+                              <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 {comment.user?.id === currentUserId && (
                                   <button
-                                    className="text-gray-500 hover:text-gray-700 ml-2"
+                                    className="text-gray-500 hover:text-gray-700"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setSelectedComment(comment);
                                       setShowCommentOptions(true);
                                     }}
                                   >
-                                    <MoreHorizontal size={14} />
+                                    <MoreHorizontal size={16} />
                                   </button>
                                 )}
 
                                 {comment.user?.id !== currentUserId && (
                                   <button
-                                    className="text-red-500 hover:text-red-700"
+                                    className="text-gray-500 hover:text-red-500"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleReportClick(
-                                        comment.user?.id,
-                                        "comment",
-                                        comment.id
-                                      );
+                                      if (comment.user?.id) {
+                                        handleReportClick(
+                                          comment.user.id,
+                                          "comment",
+                                          comment.id
+                                        );
+                                      }
                                     }}
                                   >
-                                    <TriangleAlert size={14} />
-                                  </button>
-                                )}
-
-                                {/* Di dalam map comments */}
-                                {(comment.repliesCount > 0 ||
-                                  allReplies[comment.id]?.length > 0) && (
-                                  <button
-                                    className="text-xs text-gray-500 hover:text-blue-500 mt-1"
-                                    onClick={() => toggleReplies(comment.id)}
-                                  >
-                                    {expandedReplies[comment.id]
-                                      ? "Hide replies"
-                                      : `Show replies (${comment.repliesCount})`}
+                                    <TriangleAlert size={16} />
                                   </button>
                                 )}
                               </div>
                             </div>
 
-                            {replyingTo === comment.id && (
-                              <div className="mt-2 flex">
+                            {/* Comment Text */}
+                            {editingCommentId === comment.id ? (
+                              <div className="mt-2 flex gap-2">
                                 <input
                                   type="text"
-                                  className="flex-1 border rounded-l-lg p-2 text-xs md:text-sm"
-                                  placeholder={`Reply to ${comment.user.name}...`}
-                                  value={replyText}
-                                  onChange={(e) => setReplyText(e.target.value)}
+                                  className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                  value={commentText}
+                                  onChange={(e) =>
+                                    setCommentText(e.target.value)
+                                  }
+                                  autoFocus
                                 />
                                 <button
-                                  className="bg-blue-500 text-white px-2 md:px-3 rounded-r-lg text-xs md:text-sm"
+                                  className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-colors"
                                   onClick={() =>
-                                    handleReply(comment.id, comment.user)
+                                    handleUpdateComment(comment.id)
                                   }
                                 >
-                                  Post
+                                  Update
+                                </button>
+                                <button
+                                  className="bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm hover:bg-gray-300 transition-colors"
+                                  onClick={() => {
+                                    setEditingCommentId(null);
+                                    setCommentText("");
+                                  }}
+                                >
+                                  Cancel
                                 </button>
                               </div>
-                            )}
-
-                            {expandedReplies[comment.id] && (
-                              <div className="mt-2 ml-4 md:ml-6 pl-2 md:pl-4 border-l-2 border-gray-200">
-                                {loadingComments[comment.id] ? (
-                                  <div className="text-center py-2">
-                                    Loading replies...
-                                  </div>
-                                ) : (
-                                  <>
-                                    {(allReplies[comment.id] || []).map(
-                                      (reply) => (
-                                        <div
-                                          key={reply.id}
-                                          className="mb-3 group relative"
-                                        >
-                                          <div className="flex items-start">
-                                            {reply.user?.profile_photo ? (
-                                              <Link
-                                                to={`/user-profile/${comment.user.username}`}
-                                              >
-                                                <img
-                                                  className="rounded-full border-2 border-white ml-3 mt-2 w-10 h-10 relative z-10"
-                                                  src={
-                                                    reply.user.profile_photo.startsWith(
-                                                      "http"
-                                                    )
-                                                      ? reply.user.profile_photo
-                                                      : `${apiUrl}/${reply.user.profile_photo}`
-                                                  }
-                                                  alt="Profile"
-                                                  onError={(e) => {
-                                                    e.target.onerror = null;
-                                                    e.target.src = ""; // Fallback ke initials jika gambar error
-                                                  }}
-                                                />
-                                              </Link>
-                                            ) : (
-                                              <div className="w-10 h-10 flex items-center justify-center bg-gray-300 rounded-full border-2 border-white ml-3 mt-2 relative z-10">
-                                                <span className="text-lg font-bold text-gray-600">
-                                                  {reply.user?.initials || "Z"}
-                                                </span>
-                                              </div>
-                                            )}
-                                            <div className="flex-1">
-                                              <div className="bg-gray-100 rounded-lg p-1 md:p-2">
-                                                <div
-                                                  className="font-semibold text-xxs md:text-xs items-center flex cursor-pointer hover:underline"
-                                                  onClick={() =>
-                                                    fetchUserProfile(
-                                                      reply.user.username,
-                                                      reply.user.id
-                                                    )
-                                                  }
-                                                >
-                                                  {reply.user?.name ||
-                                                    "Unknown User"}
-                                                  {reply.replyTo && (
-                                                    <span className="text-gray-500 ml-1 items-center flex">
-                                                      <svg
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        width="10"
-                                                        height="10"
-                                                        fill="currentColor"
-                                                        className="mr-1"
-                                                        viewBox="0 0 16 16"
-                                                      >
-                                                        <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z" />
-                                                      </svg>
-                                                      {reply.replyTo.name}
-                                                    </span>
-                                                  )}
-                                                </div>
-                                                <p className="text-xxs md:text-xs">
-                                                  {reply.content}
-                                                </p>
-                                              </div>
-                                              <div className="flex justify-between items-center">
-                                                <div className="text-xxs md:text-xs text-gray-500 mt-1">
-                                                  {formatPostTime(
-                                                    reply.created_at
-                                                  )}
-                                                </div>
-                                                {reply.user?.id !==
-                                                  currentUserId && (
-                                                  <button
-                                                    className="text-xxs text-red-500 hover:text-red-700"
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      handleReportClick(
-                                                        reply.user?.id,
-                                                        "comment",
-                                                        reply.id
-                                                      );
-                                                    }}
-                                                  >
-                                                    <TriangleAlert
-                                                      size={16}
-                                                      className="mr-1"
-                                                    />
-                                                  </button>
-                                                )}
-                                              </div>
-                                              <button
-                                                className="text-xxs text-blue-500 mt-1 md:text-xs"
-                                                onClick={() => {
-                                                  setReplyingTo(comment.id);
-                                                  setReplyToUser(reply.user);
-                                                }}
-                                              >
-                                                Reply
-                                              </button>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      )
-                                    )}
-                                  </>
-                                )}
-                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-700 mt-1">
+                                {comment.content}
+                              </p>
                             )}
                           </div>
+
+                          {/* Comment Meta */}
+                          <div className="flex items-center justify-between mt-2 px-1">
+                            <span className="text-xs text-gray-500">
+                              {formatPostTime(comment.created_at)}
+                            </span>
+
+                            <div className="flex items-center space-x-4">
+                              <button
+                                className="text-xs text-blue-500 hover:text-blue-700 font-medium"
+                                onClick={() => {
+                                  setReplyingTo(comment.id);
+                                  setReplyToUser(comment.user);
+                                }}
+                              >
+                                Reply
+                              </button>
+
+                              {(comment.repliesCount > 0 ||
+                                allReplies[comment.id]?.length > 0) && (
+                                <button
+                                  className="text-xs text-gray-500 hover:text-blue-500"
+                                  onClick={() => toggleReplies(comment.id)}
+                                >
+                                  {expandedReplies[comment.id]
+                                    ? "Hide replies"
+                                    : `Show replies (${comment.repliesCount})`}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Reply Input */}
+                          {replyingTo === comment.id && (
+                            <div className="mt-3 flex gap-2">
+                              <input
+                                type="text"
+                                className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                placeholder={`Reply to ${
+                                  replyToUser?.name || comment.user.name
+                                }...`}
+                                value={replyText}
+                                onChange={(e) => setReplyText(e.target.value)}
+                                autoFocus
+                              />
+                              <button
+                                className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-colors"
+                                onClick={() =>
+                                  handleReply(
+                                    comment.id,
+                                    replyToUser || comment.user
+                                  )
+                                }
+                              >
+                                Post
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Replies Section */}
+                          {expandedReplies[comment.id] && (
+                            <div className="mt-3 ml-4 pl-4 border-l-2 border-gray-200 space-y-3">
+                              {loadingComments[comment.id] ? (
+                                <div className="flex justify-center py-2">
+                                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500"></div>
+                                </div>
+                              ) : (
+                                (allReplies[comment.id] || []).map((reply) => (
+                                  <div key={reply.id} className="group">
+                                    <div className="flex gap-2">
+                                      {/* Reply User Avatar */}
+                                      <div className="flex-shrink-0">
+                                        {reply.user?.profile_photo ? (
+                                          <Link
+                                            to={`/user-profile/${reply.user.username}`}
+                                          >
+                                            <img
+                                              className="rounded-full w-8 h-8 object-cover border-2 border-white hover:border-blue-200 transition-colors"
+                                              src={
+                                                reply.user.profile_photo.startsWith(
+                                                  "http"
+                                                )
+                                                  ? reply.user.profile_photo
+                                                  : `${apiUrl}/${reply.user.profile_photo}`
+                                              }
+                                              alt="Profile"
+                                              onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = "";
+                                                e.target.parentElement.classList.add(
+                                                  "bg-gray-300"
+                                                );
+                                              }}
+                                            />
+                                          </Link>
+                                        ) : (
+                                          <div className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-full border-2 border-white">
+                                            <span className="text-xs font-medium text-gray-600">
+                                              {getInitials(reply.user?.name)}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {/* Reply Content */}
+                                      <div className="flex-1 min-w-0">
+                                        <div className="bg-gray-50 rounded-lg p-2">
+                                          {/* Reply User Info */}
+                                          <div className="flex items-center">
+                                            <Link
+                                              to={`/user-profile/${reply.user.username}`}
+                                              className="text-xs font-semibold text-gray-800 hover:text-blue-600 hover:underline"
+                                            >
+                                              {reply.user?.name ||
+                                                "Unknown User"}
+                                            </Link>
+
+                                            {reply.replyTo && (
+                                              <div className="flex items-center ml-2 text-gray-500">
+                                                <svg
+                                                  xmlns="http://www.w3.org/2000/svg"
+                                                  width="10"
+                                                  height="10"
+                                                  fill="currentColor"
+                                                  className="mr-1"
+                                                  viewBox="0 0 16 16"
+                                                >
+                                                  <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z" />
+                                                </svg>
+                                                <Link
+                                                  to={`/user-profile/${reply.replyTo.username}`}
+                                                  className="text-xs hover:underline"
+                                                >
+                                                  {reply.replyTo.name}
+                                                </Link>
+                                              </div>
+                                            )}
+                                          </div>
+
+                                          {/* Reply Text */}
+                                          <p className="text-xs text-gray-700 mt-1">
+                                            {reply.content}
+                                          </p>
+                                        </div>
+
+                                        {/* Reply Meta */}
+                                        <div className="flex items-center justify-between mt-1 px-1">
+                                          <span className="text-xs text-gray-500">
+                                            {formatPostTime(reply.created_at)}
+                                          </span>
+
+                                          <div className="flex items-center space-x-3">
+                                            <button
+                                              className="text-xs text-blue-500 hover:text-blue-700"
+                                              onClick={() => {
+                                                setReplyingTo(comment.id);
+                                                setReplyToUser(reply.user);
+                                              }}
+                                            >
+                                              Reply
+                                            </button>
+
+                                            {reply.user?.id !==
+                                              currentUserId && (
+                                              <button
+                                                className="text-xs text-gray-500 hover:text-red-500"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  if (reply.user?.id) {
+                                                    handleReportClick(
+                                                      reply.user.id,
+                                                      "comment",
+                                                      reply.id
+                                                    );
+                                                  }
+                                                }}
+                                              >
+                                                <TriangleAlert size={14} />
+                                              </button>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
-                    );
-                  })
+                    </div>
+                  );
+                })
               )}
             </div>
 
-             {renderCommentOptionsModal()}
+            {/* Comment Options Modal */}
+            {renderCommentOptionsModal()}
 
-            <div className="p-3 md:p-4 border-t">
-              <div className="flex items-center mb-2">
-                <div className="w-6 md:w-8 h-6 md:h-8 rounded-full bg-gray-200 flex items-center justify-center text-xxs md:text-xs mr-2 md:mr-3">
-                  PE
+            {/* Add Comment Section */}
+            <div className="p-4 border-t border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0">
+                  {user.photo ? (
+                    <img
+                      className="w-8 h-8 rounded-full object-cover"
+                      src={
+                        user.photo.startsWith("http")
+                          ? user.photo
+                          : `${apiUrl}/${user.photo}`
+                      }
+                      alt="Profile"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = "";
+                        e.target.parentElement.classList.add("bg-gray-300");
+                      }}
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
+                      <span className="text-xs font-bold text-gray-600">
+                        {getInitials(user.name)}
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <input
-                  type="text"
-                  className="flex-1 border rounded-lg p-2 text-xs md:text-sm"
-                  placeholder="Write a comment..."
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleAddComment()}
-                />
-              </div>
-              {commentError && (
-                <span className="text-red-500 text-center text-xs  font-medium mb-4 ">
-                  {commentError}
-                </span>
-              )}
-              <div className="flex justify-end">
+
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    placeholder="Write a comment..."
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && handleAddComment()}
+                  />
+                  {commentError && (
+                    <p className="text-red-500 text-xs mt-1">{commentError}</p>
+                  )}
+                </div>
+
                 <button
-                  className="bg-blue-500 text-white px-3 md:px-4 py-1 rounded-lg text-xs md:text-sm"
+                  className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors"
                   onClick={handleAddComment}
                 >
                   Post
