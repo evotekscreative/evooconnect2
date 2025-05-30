@@ -269,9 +269,11 @@ export default function SocialNetworkFeed() {
 
   useEffect(() => {
     fetchProfileViews();
-    fetchConnections();
-    fetchSuggestedConnections();
-    // console.log("Profile views data fetched successfully", profileViews);
+    setUser(JSON.parse(localStorage.getItem("user")));
+    // Simpan data ke cache saat komponen unmount
+    return () => {
+      localStorage.setItem("profileViewsData", JSON.stringify(profileViews));
+    };
   }, []);
 
   useEffect(() => {
@@ -1958,32 +1960,35 @@ export default function SocialNetworkFeed() {
     );
   };
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const userToken = localStorage.getItem("token");
-        const response = await axios.get(apiUrl + "/api/user/profile", {
-          headers: { Authorization: `Bearer ${userToken}` },
-        });
+  // useEffect(() => {
+  //   const fetchUserData = async () => {
+  //     try {
+  //       const userToken = localStorage.getItem("token");
+  //       const response = await axios.get(
+  //         "http://localhost:3000/api/user/profile",
+  //         {
+  //           headers: { Authorization: `Bearer ${userToken}` },
+  //         }
+  //       );
 
-        const userData = response.data.data;
-        setUser({
-          name: userData.name,
-          username: userData.username,
-          initials: userData.name
-            .split(" ")
-            .map((n) => n[0])
-            .join(""),
-          photo: userData.photo,
-        });
-        setProfileImage(userData.photo);
-      } catch (error) {
-        console.error("Failed to fetch user data:", error);
-      }
-    };
+  //       const userData = response.data.data;
+  //       setUser({
+  //         name: userData.name,
+  //         username: userData.username,
+  //         initials: userData.name
+  //           .split(" ")
+  //           .map((n) => n[0])
+  //           .join(""),
+  //         photo: userData.photo,
+  //       });
+  //       setProfileImage(userData.photo);
+  //     } catch (error) {
+  //       console.error("Failed to fetch user data:", error);
+  //     }
+  //   };
 
-    fetchUserData();
-  }, []);
+  //   fetchUserData();
+  // }, []);
 
   const fetchUserProfile = (username, userId) => {
     try {

@@ -4,6 +4,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import {
   FaUserAlt, FaCommentDots, FaFileAlt, FaBriefcase,
   FaBars, FaRegCommentDots, FaStickyNote,
+  FaChevronLeft, FaChevronRight
 } from 'react-icons/fa';
 import Sidebar from "../../../components/Admin/Sidebar/Sidebar.jsx";
 
@@ -60,15 +61,11 @@ const ReportPage = () => {
               <Link to="/admin/report-user">
                 <ReportCard icon={<FaUserAlt />} title="Report User" count="20.000" />
               </Link>
-              <Link to="/admin/report-comment-page">
               <ReportCard icon={<FaCommentDots />} title="Report Comment" count="12.000" />
-              </Link>
-              <Link to="/admin/report-blog-page">
               <ReportCard icon={<FaFileAlt />} title="Report Blog" count="8.000" />
-              </Link>
               <ReportCard icon={<FaBriefcase />} title="Report Job" count="7.000" />
               <ReportCard icon={<FaRegCommentDots />} title="Report Comment Blog" count="6.000" />
-              <Link to="/admin/report-post-detail">
+              <Link to="/admin/report-post">
               <ReportCard icon={<FaStickyNote />} title="Report Post" count="10.000" />
               </Link>
             </div>

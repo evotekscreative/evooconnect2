@@ -6,9 +6,9 @@ import App from "./App";
 import Connections from "./pages/Connections.jsx";
 import PrivacyPolicy from "./pages/PrivacyPolicy.jsx";
 import TermsCondition from "./pages/TermsCondition.jsx";
-import Jobs from "./pages/Jobs/index.jsx";
+import Jobs from "./pages/Jobs/jobs.jsx";
 import JobProfile from "./pages/Profile/job-profile.jsx";
-import Faq from "./pages/Faq/index.jsx";
+import Faq from "./pages/Faq/faq.jsx";
 import CompanyProfile from "./pages/Profile/company-profile.jsx";
 import Groups from "./pages/Groups.jsx";
 import CreateBlog from "./pages/Blog/CreateBlog.jsx";
@@ -27,22 +27,21 @@ import VerifyEmail from "./pages/Auth/VerifyEmail.jsx";
 import ResetPassword from "./pages/Auth/ResetPassword.jsx";
 import IsGuest from "./components/Auth/IsGuest.jsx";
 import SinglePost from "./pages/SinglePost.jsx";
-import SearchResults from "./pages/SearchResults.jsx";
 import UserListConnection from "./pages/UserListConnection.jsx";
 import UserPostPage from "./pages/UserPostPage.jsx";
 import UserProfile from "./pages/UserProfile.jsx";
 import MemberList from "./pages/MemberList.jsx";
+// Admin
 import LoginAdmin from "./pages/Admin/AuthAdmin/LoginAdmin.jsx";
 import Dashboard from "./pages/Admin/Admin1/Dashboard.jsx";
 import Settings from "./pages/Admin/Admin1/Settings.jsx";
 import Tables from "./pages/Admin/Admin1/Tables.jsx";
+import SearchResults from "./pages/SearchResults";
 import ProtectedAdminRoute from "./components/Auth/ProtectedAdminRoute.jsx";
 import ReportPage from "./pages/Admin/Admin1/Index.jsx";
 import ReportUser from "./pages/Admin/Report/ReportUser.jsx";
+import CreateCompany from "./pages/CreateCompany.jsx";
 import ListCompany from "./pages/Admin/Admin1/ListCompany.jsx";
-import ReportPostDetail from "./pages/Admin/Report/ReportPostDetail.jsx";
-import ReportBlogPage from "./pages/Admin/Report/ReportBlogPage.jsx";
-import ReportCommentPage from "./pages/Admin/Report/ReportCommentPage.jsx";
 
 const router = createBrowserRouter([
   {
@@ -304,12 +303,12 @@ const router = createBrowserRouter([
         <ResetPassword />
     )
   },
-  {
-    path : "/post/:postId",
-    element : <SinglePost />
-  },
+{
+  path : "/post/:postId",
+   element : <SinglePost />
+},
 
-  {
+{
     path: "/login-admin",
     element: <LoginAdmin />,
   },
@@ -342,19 +341,13 @@ const router = createBrowserRouter([
         element: <ListCompany />,
       },
       {
-        path: "report-post-detail",
-        element: <ReportPostDetail />,
-      },
-      {
-        path: "report-blog-page",
-        element: <ReportBlogPage />,
-      },
-      {
-        path: "report-comment-page",
-        element: <ReportCommentPage />,
-      },
+        path: "create-company",
+        element: <CreateCompany />,
+      }
+      
     ],
   },
+
 ]);
 
 export default router;

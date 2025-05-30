@@ -11,9 +11,12 @@
     );
 }
 
-.ck-editor-mode a {
-    color: #007bff;
-    text-decoration: none;
+* {
+    font-family: "avenir", sans-serif;
+}
+.ck-editor-mode ul {
+    list-style: none;
+    padding-left: 10px;
 }
 
 .ck-editor__editable a {
