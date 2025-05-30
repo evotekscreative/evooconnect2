@@ -12,19 +12,20 @@ type AdminLoginRequest struct {
 }
 
 type AdminRegisterRequest struct {
-	Username string `json:"username" validate:"required"`
+	Name     string `json:"name" validate:"required,min=2,max=100"`
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=6"`
-	Name     string `json:"name" validate:"required"`
-	Role     string `json:"role" validate:"required"`
 }
 
 type AdminResponse struct {
-	Id        uuid.UUID `json:"id"`
-	Username  string    `json:"username"`
-	Email     string    `json:"email"`
+	ID        uuid.UUID `json:"id"`
 	Name      string    `json:"name"`
-	Role      string    `json:"role"`
+	Email     string    `json:"email"`
 	CreatedAt time.Time `json:"created_at"`
-	Token     string    `json:"token,omitempty"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type AdminLoginResponse struct {
+	Token string        `json:"token"`
+	Admin AdminResponse `json:"admin"`
 }

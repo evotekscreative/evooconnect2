@@ -8,7 +8,7 @@ import (
 )
 
 type AdminAuthService interface {
-	Login(ctx context.Context, request web.AdminLoginRequest) web.AdminResponse
+	Login(ctx context.Context, request web.AdminLoginRequest) web.AdminLoginResponse
 	Register(ctx context.Context, request web.AdminRegisterRequest) web.AdminResponse
 	FindById(ctx context.Context, adminId uuid.UUID) web.AdminResponse
 }
