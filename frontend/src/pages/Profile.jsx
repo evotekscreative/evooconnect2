@@ -70,9 +70,14 @@ export default function ProfilePage() {
   const [editingExperience, setEditingExperience] = useState(null);
   const [userPosts, setUserPosts] = useState([]);
   const [profileImage, setProfileImage] = useState(null);
-  const [connectionCount, setConnectionCount] = useState(0);
-  const [viewCount, setViewCount] = useState(0);
-
+  const [connections, setConnections] = useState([]);
+  const [connectionsCount, setConnectionsCount] = useState(0);
+  const [profileViews, setProfileViews] = useState({
+    thisWeek: 0,
+    lastWeek: 0,
+    percentageChange: 0,
+    dailyViews: [],
+  });
   const [user, setUser] = useState({
     id: "",
     name: "",
@@ -87,7 +92,7 @@ export default function ProfilePage() {
     organization: "",
     website: "",
     birthdate: "",
-    gender: ""
+    gender: "",
   });
 
   // Education Form State
@@ -138,46 +143,85 @@ export default function ProfilePage() {
     ...Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i),
   ];
 
-  const fetchConnectionCount = async () => {
+  const fetchConnections = async () => {
+    const token = localStorage.getItem("token");
+    setIsLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      const userId = user.id;
       const response = await axios.get(
-        `${base_url}/api/users/${userId}/connections?limit=10&offset=0`,
+        `${apiUrl}/api/users/${user.id}/connections`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
-      setConnectionCount(response.data.data.total || 0);
+      const connectionsData = response.data.data.connections || [];
+      setConnections(connectionsData);
+      setConnectionsCount(response.data.data.total || 0);
     } catch (error) {
-      console.error("Failed to fetch connection count:", error);
+      console.error("Failed to fetch connections:", error);
+      toast.error("Failed to load connections");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const fetchViewCount = async () => {
+  const fetchProfileViews = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get(
-        `${base_url}/api/user/profile/views/this-week`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      setViewCount(response.data.data.views || 0);
+      const [thisWeekResponse, lastWeekResponse] = await Promise.all([
+        axios.get(`${apiUrl}/api/user/profile/views/this-week`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`${apiUrl}/api/user/profile/views/last-week`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      const thisWeekData = thisWeekResponse.data.data || {};
+      const lastWeekData = lastWeekResponse.data.data || {};
+
+      const days = [];
+      const dailyCounts = [];
+
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const formattedDate = date.toISOString().split("T")[0];
+        days.push(formattedDate);
+
+        const dailyViews =
+          thisWeekData.viewers?.filter(
+            (viewer) =>
+              new Date(viewer.viewed_at).toISOString().split("T")[0] ===
+              formattedDate
+          ) || [];
+
+        dailyCounts.push(dailyViews.length);
+      }
+
+      const thisWeekTotal = thisWeekData.count || 0;
+      const lastWeekTotal = lastWeekData.count || 0;
+
+      let percentageChange = 0;
+      if (lastWeekTotal > 0) {
+        percentageChange =
+          ((thisWeekTotal - lastWeekTotal) / lastWeekTotal) * 100;
+      } else if (thisWeekTotal > 0) {
+        percentageChange = 100;
+      }
+
+      setProfileViews({
+        thisWeek: thisWeekTotal,
+        lastWeek: lastWeekTotal,
+        percentageChange: Math.round(percentageChange),
+        dailyViews: thisWeekData.viewers || [],
+      });
     } catch (error) {
-      console.error("Failed to fetch view count:", error);
+      console.error("Failed to fetch profile views:", error);
+      toast.error("Failed to load profile views");
     }
   };
-
-  useEffect(() => {
-    fetchConnectionCount();
-    fetchViewCount();
-  }, []);
-
 
   const fetchUserPosts = async () => {
     const token = localStorage.getItem("token");
@@ -210,14 +254,11 @@ export default function ProfilePage() {
       setIsLoading(true);
 
       try {
-        const response = await axios.get(
-          apiUrl + "/api/user/profile",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await axios.get(apiUrl + "/api/user/profile", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         const data = response.data.data;
 
@@ -235,8 +276,8 @@ export default function ProfilePage() {
           userSkills = Array.isArray(data.skills.String)
             ? data.skills.String
             : data.skills.String
-              ? [data.skills.String]
-              : [];
+            ? [data.skills.String]
+            : [];
         }
 
         setUser({
@@ -253,7 +294,7 @@ export default function ProfilePage() {
           organization: data.organization || "",
           website: data.website || "",
           birthdate: data.birthdate || "",
-          gender: data.gender || ""
+          gender: data.gender || "",
         });
 
         setProfileImage(data.photo || null);
@@ -340,12 +381,13 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (user.id) {
+      fetchConnections();
+      fetchProfileViews();
       fetchEducations();
       fetchExperiences();
       fetchUserPosts();
     }
   }, [user.id]);
-
   // Handle Education Form Submission
   // Handle Experience Form Submission
   const handleExperienceSubmit = async (e) => {
@@ -737,13 +779,15 @@ export default function ProfilePage() {
                   <span className="flex items-center gap-2 text-base">
                     <Users size={18} /> Connections
                   </span>
-                  <span className="font-bold text-lg">{connectionCount}</span>
+                  <span className="font-bold text-lg">{connectionsCount}</span>
                 </Link>
                 <div className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md">
                   <span className="flex items-center gap-2 text-base">
                     <Eye size={18} /> Views
                   </span>
-                  <span className="font-bold text-lg">{viewCount}</span>
+                  <span className="font-bold text-lg">
+                    {profileViews.thisWeek}
+                  </span>
                 </div>
                 <Link
                   to="/job-saved"
@@ -1082,8 +1126,8 @@ export default function ProfilePage() {
                             {post.content
                               ? post.content.length > 100
                                 ? post.content
-                                  .substring(0, 100)
-                                  .replace(/<[^>]*>/g, "") + "..."
+                                    .substring(0, 100)
+                                    .replace(/<[^>]*>/g, "") + "..."
                                 : post.content.replace(/<[^>]*>/g, "")
                               : "No content"}
                           </p>
@@ -1744,7 +1788,9 @@ export default function ProfilePage() {
           <div className="w-full max-w-2xl transform rounded-2xl bg-white p-8 shadow-2xl transition-all duration-300 ease-in-out scale-100">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gray-200 pb-5">
-              <h2 className="text-2xl font-semibold text-gray-800">Contact Information</h2>
+              <h2 className="text-2xl font-semibold text-gray-800">
+                Contact Information
+              </h2>
               <button
                 onClick={() => setShowContactModal(false)}
                 className="rounded-md p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
@@ -1765,7 +1811,10 @@ export default function ProfilePage() {
                   {user.email ? (
                     <div className="flex items-center gap-2">
                       <Mail size={16} className="text-gray-400" />
-                      <a href={`mailto:${user.email}`} className="text-blue-600 hover:underline">
+                      <a
+                        href={`mailto:${user.email}`}
+                        className="text-blue-600 hover:underline"
+                      >
                         {user.email}
                       </a>
                     </div>
@@ -1777,7 +1826,7 @@ export default function ProfilePage() {
                     <div className="flex items-center gap-2">
                       <Phone size={16} className="text-gray-400" />
                       <a
-                        href={`tel:${user.phone.replace(/[^0-9]/g, '')}`}
+                        href={`tel:${user.phone.replace(/[^0-9]/g, "")}`}
                         className="text-blue-600 hover:underline"
                       >
                         {user.phone}
@@ -1815,11 +1864,14 @@ export default function ProfilePage() {
                   )}
 
                   {user.website ? (
-                    <div className="flex items-start gap-2">
-                      <Link2 size={16} className="text-gray-400 mt-1 flex-shrink-0" />
+                    <div className="flex items-center gap-2">
+                      <Link2
+                        size={16}
+                        className="text-gray-400 mt-1 felx-shrink-0"
+                      />
                       <a
                         href={
-                          user.website.startsWith('http')
+                          user.website.startsWith("http")
                             ? user.website
                             : `https://${user.website}`
                         }
@@ -1827,7 +1879,7 @@ export default function ProfilePage() {
                         rel="noopener noreferrer"
                         className="text-blue-600 hover:underline break-all"
                       >
-                        {user.website.replace(/^https?:\/\//, '')}
+                        {user.website.replace(/^https?:\/\//, "")}
                       </a>
                     </div>
                   ) : (

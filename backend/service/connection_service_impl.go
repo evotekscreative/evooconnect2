@@ -9,10 +9,9 @@ import (
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
 	"fmt"
-	"time"
-
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
+	"time"
 )
 
 // Helper function to convert string to *string
@@ -128,7 +127,7 @@ func (service *ConnectionServiceImpl) SendConnectionRequest(ctx context.Context,
 			&senderId,
 		)
 	}()
-	
+
 	// Prepare response
 	return web.ConnectionRequestResponse{
 		Id:        createdRequest.Id,
@@ -340,11 +339,78 @@ func (service *ConnectionServiceImpl) RejectConnectionRequest(ctx context.Contex
 	}
 }
 
-func (service *ConnectionServiceImpl) GetConnections(ctx context.Context, userId uuid.UUID, limit, offset int) web.ConnectionListResponse {
-	return web.ConnectionListResponse{}
+func (service *ConnectionServiceImpl) GetConnections(ctx context.Context, userId, currentUserId uuid.UUID, limit, offset int) web.ConnectionListResponse {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Check if user exists
+	_, err = service.UserRepository.FindById(ctx, tx, userId)
+	if err != nil {
+		panic(exception.NewNotFoundError("User not found"))
+	}
+
+	// Get connections for user
+	connections, count := service.ConnectionRepository.FindConnectionsByUserId(ctx, tx, userId, limit, offset)
+
+	var connectionResponses []web.ConnectionResponse
+	for _, connection := range connections {
+		var otherUser *domain.User
+		if connection.UserId1 == userId && connection.User2 != nil {
+			otherUser = connection.User2
+		} else if connection.UserId2 == userId && connection.User1 != nil {
+			otherUser = connection.User1
+		} else {
+			continue
+		}
+
+		isConnected := service.ConnectionRepository.CheckConnectionExists(ctx, tx, userId, otherUser.Id)
+
+		fmt.Println("Is connected:", isConnected)
+
+		userShort := web.UserShort{
+			Id:          otherUser.Id,
+			Name:        otherUser.Name,
+			Username:    otherUser.Username,
+			Headline:    optionalStringPtr(otherUser.Headline),
+			Photo:       optionalStringPtr(otherUser.Photo),
+			IsConnected: isConnected,
+		}
+
+		connectionResponse := web.ConnectionResponse{
+			Id:        connection.Id,
+			CreatedAt: connection.CreatedAt.Format("2006-01-02T15:04:05Z"),
+			User:      &userShort,
+		}
+
+		connectionResponses = append(connectionResponses, connectionResponse)
+	}
+
+	return web.ConnectionListResponse{
+		Connections: connectionResponses,
+		Total:       count,
+	}
 }
 
 func (service *ConnectionServiceImpl) Disconnect(ctx context.Context, userId, targetUserId uuid.UUID) web.DisconnectResponse {
+	tx, err := service.DB.Begin()
+	if err != nil {
+		panic(err)
+	}
+	defer helper.CommitOrRollback(tx)
+
+	// Check if the users are connected
+	isConnected := service.ConnectionRepository.CheckConnectionExists(ctx, tx, userId, targetUserId)
+	if !isConnected {
+		panic(exception.NewBadRequestError("You are not connected with this user"))
+	}
+
+	// Perform disconnect operation
+	err = service.ConnectionRepository.Disconnect(ctx, tx, userId, targetUserId)
+	if err != nil {
+		panic(exception.NewInternalServerError("Failed to disconnect users: " + err.Error()))
+	}
+
 	return web.DisconnectResponse{
 		Message:        "Successfully disconnected",
 		UserId:         targetUserId,
@@ -353,5 +419,31 @@ func (service *ConnectionServiceImpl) Disconnect(ctx context.Context, userId, ta
 }
 
 func (service *ConnectionServiceImpl) CancelConnectionRequest(ctx context.Context, userId, toUserId uuid.UUID) string {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Get connection request
+	request, err := service.ConnectionRepository.FindRequest(ctx, tx, userId, toUserId)
+	if err != nil {
+		panic(exception.NewNotFoundError("Connection request not found"))
+	}
+
+	// Verify the current user is the sender of the request
+	if request.SenderId != userId {
+		panic(exception.NewForbiddenError("You can only cancel requests you've sent"))
+	}
+
+	// Verify the request is pending
+	if request.Status != domain.ConnectionStatusPending {
+		panic(exception.NewBadRequestError("Connection request is not pending"))
+	}
+
+	// Update request status to canceled
+	err = service.ConnectionRepository.DeleteConnectionRequest(ctx, tx, request.Id)
+	if err != nil {
+		panic(exception.NewInternalServerError("Failed to cancel connection request: " + err.Error()))
+	}
+
 	return "Connection request canceled successfully"
 }

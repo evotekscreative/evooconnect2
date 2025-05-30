@@ -143,17 +143,7 @@ function Login() {
 
       // Simpan token dan data user
       localStorage.setItem("token", response.data.data.token);
-
-      localStorage.setItem(
-        "userData",
-        JSON.stringify({
-          id: response.data.data.id,
-          name: response.data.data.name,
-          email: response.data.data.email,
-          photo: response.data.data.photo,
-          // tambahkan data user lainnya sesuai response API
-        })
-      );
+ 
 
       setAlertInfo({
         show: true,

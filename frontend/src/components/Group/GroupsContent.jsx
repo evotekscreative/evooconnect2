@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
 import { Trash2, LogOut, Check, X } from "lucide-react";
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
@@ -14,17 +14,21 @@ export default function GroupsContent({
   handleDeleteGroup,
   handleLeaveGroup,
   handleAcceptInvitation,
-  handleRejectInvitation
+  handleRejectInvitation,
 }) {
   const [showAllAdminGroups, setShowAllAdminGroups] = useState(false);
   const [showAllJoinedGroups, setShowAllJoinedGroups] = useState(false);
 
-  const pendingInvitations = invitations.filter(inv => inv.status === "pending");
-  const processedInvitations = invitations.filter(inv => inv.status !== "pending");
+  const pendingInvitations = invitations.filter(
+    (inv) => inv.status === "pending"
+  );
+  const processedInvitations = invitations.filter(
+    (inv) => inv.status !== "pending"
+  );
 
   return (
     <>
-      {activeTab === 'myGroups' ? (
+      {activeTab === "myGroups" ? (
         <>
           {/* Groups You Created */}
           {adminGroups.length > 0 && (
@@ -42,14 +46,18 @@ export default function GroupsContent({
                       </>
                     ) : (
                       <>
-                        <ChevronDown size={16} className="mr-1" /> Show All ({adminGroups.length})
+                        <ChevronDown size={16} className="mr-1" /> Show All (
+                        {adminGroups.length})
                       </>
                     )}
                   </button>
                 )}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                {(showAllAdminGroups ? adminGroups : adminGroups.slice(0, 3)).map((group) => (
+                {(showAllAdminGroups
+                  ? adminGroups
+                  : adminGroups.slice(0, 3)
+                ).map((group) => (
                   <GroupCard
                     key={`admin-${group.id}`}
                     group={group}
@@ -78,14 +86,18 @@ export default function GroupsContent({
                       </>
                     ) : (
                       <>
-                        <ChevronDown size={16} className="mr-1" /> Show All ({joinedGroups.length})
+                        <ChevronDown size={16} className="mr-1" /> Show All (
+                        {joinedGroups.length})
                       </>
                     )}
                   </button>
                 )}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                {(showAllJoinedGroups ? joinedGroups : joinedGroups.slice(0, 3)).map((group) => (
+                {(showAllJoinedGroups
+                  ? joinedGroups
+                  : joinedGroups.slice(0, 3)
+                ).map((group) => (
                   <GroupCard
                     key={`joined-${group.id}`}
                     group={group}
@@ -101,7 +113,9 @@ export default function GroupsContent({
           {/* Empty State */}
           {adminGroups.length === 0 && joinedGroups.length === 0 && (
             <div className="col-span-full text-center py-8">
-              <p className="text-gray-500">You haven't joined any groups yet.</p>
+              <p className="text-gray-500">
+                You haven't joined any groups yet.
+              </p>
               <button
                 onClick={() => setShowModal(true)}
                 className="mt-2 text-blue-600 hover:underline"
@@ -112,7 +126,7 @@ export default function GroupsContent({
           )}
         </>
       ) : (
-        activeTab === 'invitations' && (
+        activeTab === "invitations" && (
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Pending Invitations</h3>
 
@@ -133,7 +147,9 @@ export default function GroupsContent({
               </div>
             ) : (
               <div className="text-center py-8">
-                <p className="text-gray-500">You don't have any pending invitations.</p>
+                <p className="text-gray-500">
+                  You don't have any pending invitations.
+                </p>
               </div>
             )}
 
@@ -142,13 +158,15 @@ export default function GroupsContent({
               <div className="mt-2 space-y-2">
                 {processedInvitations.length > 0 ? (
                   processedInvitations.map((invitation) => (
-                    <InvitationHistoryItem 
-                      key={`history-${invitation.id}`} 
-                      invitation={invitation} 
+                    <InvitationHistoryItem
+                      key={`history-${invitation.id}`}
+                      invitation={invitation}
                     />
                   ))
                 ) : (
-                  <p className="text-sm text-gray-500 py-2">No invitation history yet.</p>
+                  <p className="text-sm text-gray-500 py-2">
+                    No invitation history yet.
+                  </p>
                 )}
               </div>
             </div>
@@ -160,13 +178,14 @@ export default function GroupsContent({
 }
 
 function InvitationHistoryItem({ invitation }) {
+  const apiUrl = import.meta.env.VITE_APP_BACKEND_URL;
   return (
     <div className="flex items-center justify-between p-3 border-b hover:bg-gray-50">
       <div className="flex items-center space-x-3">
         <div className="flex-shrink-0">
           <img
             className="w-8 h-8 rounded-full"
-            src={invitation.group.image || "/default-group.png"}
+            src={apiUrl + "/" + invitation.group.image || "/default-group.png"}
             alt="Group"
             onError={(e) => {
               e.target.src = "/default-group.png";
@@ -174,19 +193,20 @@ function InvitationHistoryItem({ invitation }) {
           />
         </div>
         <div>
-          <p className="text-sm">
+          <Link to={`/groups/${invitation.group.id}`} className="text-sm">
             {invitation.inviter.name}'s invitation to {invitation.group.name}
-          </p>
+          </Link>
           <p className="text-xs text-gray-500">
             {new Date(invitation.updated_at).toLocaleDateString()}
           </p>
         </div>
       </div>
       <span
-        className={`text-xs px-2 py-1 rounded ${invitation.status === "accepted"
-          ? "bg-green-100 text-green-800"
-          : "bg-red-100 text-red-800"
-          }`}
+        className={`text-xs px-2 py-1 rounded ${
+          invitation.status === "accepted"
+            ? "bg-green-100 text-green-800"
+            : "bg-red-100 text-red-800"
+        }`}
       >
         {invitation.status === "accepted" ? "Accepted" : "Declined"}
       </span>

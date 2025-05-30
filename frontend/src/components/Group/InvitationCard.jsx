@@ -1,13 +1,14 @@
 import { Check, X } from "lucide-react";
 
 export default function InvitationCard({ invitation, onAccept, onReject }) {
+  const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
   return (
     <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
       <div className="flex items-start space-x-3">
         <div className="flex-shrink-0">
           <img
             className="w-10 h-10 rounded-full"
-            src={invitation.group.image || "/default-group.png"}
+            src={apiUrl + "/"+invitation.group.image || "/default-group.png"}
             alt="Group"
             onError={(e) => {
               e.target.src = "/default-group.png";

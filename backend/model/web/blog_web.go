@@ -12,6 +12,7 @@ type BlogUserResponse struct {
 	Name     string `json:"name"`
 	Username string `json:"username"`
 	Photo    string `json:"photo"`
+	IsConnected bool `json:"is_connected"`
 }
 
 type BlogResponse struct {

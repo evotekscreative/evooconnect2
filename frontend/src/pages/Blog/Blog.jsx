@@ -15,6 +15,8 @@ const cleanHTML = (html) => {
 };
 
 const Blog = () => {
+          const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
   const [blogs, setBlogs] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageGroup, setPageGroup] = useState(0);
@@ -24,7 +26,7 @@ const Blog = () => {
     const fetchBlogs = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await axios.get("http://localhost:3000/api/blogs", {
+        const response = await axios.get(apiUrl + "/api/blogs", {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json", 
@@ -35,7 +37,7 @@ const Blog = () => {
           ...blog,
           content: cleanHTML(blog.content),
           photo: blog.photo && /\.(jpg|jpeg|png)$/i.test(blog.photo)
-            ? `http://localhost:3000/${blog.photo}`
+            ? `${apiUrl}/${blog.photo}`
             : "https://via.placeholder.com/300", 
         }));
 
@@ -67,7 +69,7 @@ const Blog = () => {
           <p className="text-center text-gray-500">No articles yet.</p>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {currentArticles.map((article) => (
                 <BlogCard article={article} key={article.id} />
               ))}

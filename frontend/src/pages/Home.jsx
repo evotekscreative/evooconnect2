@@ -150,9 +150,9 @@ export default function SocialNetworkFeed() {
           username: person.username || "unknown",
           initials: person.name
             ? person.name
-              .split(" ")
-              .map((n) => n[0])
-              .join("")
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
             : "UU",
           photo: person.photo || null,
           headline: person.headline || "No headline specified",
@@ -252,9 +252,9 @@ export default function SocialNetworkFeed() {
         username: connection.user.username || "unknown",
         initials: connection.user.name
           ? connection.user.name
-            .split(" ")
-            .map((n) => n[0])
-            .join("")
+              .split(" ")
+              .map((n) => n[0])
+              .join("")
           : "UU",
         photo: connection.user.photo || null,
         status: connection.status,
@@ -466,9 +466,9 @@ export default function SocialNetworkFeed() {
             response.data.data?.user?.username || tempConnection.username,
           initials: response.data.data?.user?.name
             ? response.data.data.user.name
-              .split(" ")
-              .map((n) => n[0])
-              .join("")
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
             : tempConnection.initials,
           photo: response.data.data?.user?.photo || tempConnection.photo,
           status: response.data.data?.status || "connected",
@@ -732,13 +732,13 @@ export default function SocialNetworkFeed() {
       setAlertInfo({
         show: true,
         type: "success",
-        message: "Post berhasil dibuat!",
+        message: "Successfully created post!",
       });
     } catch (error) {
       setAlertInfo({
         show: true,
         type: "error",
-        message: "Gagal menambahkan post!",
+        message: "Failed to create post",
       });
       setError(
         error.response?.data?.message ||
@@ -1328,10 +1328,11 @@ export default function SocialNetworkFeed() {
                   Report Post
                 </button>
                 <button
-                  className={`w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center ${isConnected
+                  className={`w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center ${
+                    isConnected
                       ? "text-white bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 "
                       : "text-blue-500"
-                    }`}
+                  }`}
                   onClick={() => {
                     if (!isConnected) {
                       handleConnectWithUser(post.user?.id);
@@ -1674,8 +1675,9 @@ export default function SocialNetworkFeed() {
   }) => {
     return (
       <div
-        className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60 ${showReportModal ? "block" : "hidden"
-          }`}
+        className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] ${
+          showReportModal ? "block" : "hidden"
+        }`}
       >
         <div className="bg-white rounded-lg w-full max-w-md mx-4 p-5">
           <h3 className="text-lg font-semibold mb-4">Report this content</h3>
@@ -1703,10 +1705,11 @@ export default function SocialNetworkFeed() {
             ].map((reason) => (
               <button
                 key={reason}
-                className={`py-2 px-3 text-sm border rounded-full ${selectedReason === reason
+                className={`py-2 px-3 text-sm border rounded-full ${
+                  selectedReason === reason
                     ? "bg-blue-100 border-blue-500 text-blue-700"
                     : "bg-white hover:bg-gray-100"
-                  }`}
+                }`}
                 onClick={() => setSelectedReason(reason)}
               >
                 {reason}
@@ -1736,10 +1739,11 @@ export default function SocialNetworkFeed() {
               Cancel
             </button>
             <button
-              className={`px-4 py-2 rounded text-white ${selectedReason
+              className={`px-4 py-2 rounded text-white ${
+                selectedReason
                   ? "bg-blue-600 hover:bg-blue-700"
                   : "bg-gray-300 cursor-not-allowed"
-                }`}
+              }`}
               disabled={!selectedReason}
               onClick={() => {
                 const reasonText =
@@ -2000,7 +2004,6 @@ export default function SocialNetworkFeed() {
 
   return (
     <div className="flex flex-col md:flex-row bg-gray-50 px-4 md:px-6 lg:px-12 xl:px-32 py-4 md:py-6">
-      {renderCommentOptionsModal()}
       {renderShowcase()}
       <div className="fixed top-5 right-5 z-50">
         {alertInfo.show && (
@@ -2093,7 +2096,8 @@ export default function SocialNetworkFeed() {
             </div>
             <div className="text-center">
               <div
-                className={`text-xl font-semibold flex items-center justify-center ${profileViews.percentageChange >= 0
+                className={`text-xl font-semibold flex items-center justify-center ${
+                  profileViews.percentageChange >= 0
                     ? "text-green-500"
                     : "text-red-500"
                   }`}
@@ -2197,7 +2201,7 @@ export default function SocialNetworkFeed() {
                   {[
                     ["public", <Globe size={14} />],
                     ["private", <LockKeyhole size={14} />],
-                    ["connection", <Users size={14} />],
+                    ["connections", <Users size={14} />],
                   ].map(([type, icon]) => (
                     <Tooltip
                       title={type.charAt(0).toUpperCase() + type.slice(1)}
@@ -2304,7 +2308,7 @@ export default function SocialNetworkFeed() {
                   {[
                     ["public", <Globe size={14} />],
                     ["private", <LockKeyhole size={14} />],
-                    ["connection", <Users size={14} />],
+                    ["connections", <Users size={14} />],
                   ].map(([type, icon]) => (
                     <Tooltip
                       title={type.charAt(0).toUpperCase() + type.slice(1)}
@@ -2469,7 +2473,7 @@ export default function SocialNetworkFeed() {
                         {post.visibility === "private" && (
                           <LockKeyhole size={14} />
                         )}
-                        {post.visibility === "connection" && (
+                        {post.visibility === "connections" && (
                           <Users size={14} />
                         )}
                       </button>
@@ -2512,7 +2516,7 @@ export default function SocialNetworkFeed() {
                       className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${post.isLiked
                           ? "text-blue-600 bg-blue-50"
                           : "text-black hover:bg-gray-100"
-                        }`}
+                      }`}
                       onClick={() => handleLikePost(post.id, post.isLiked)}
                     >
                       <ThumbsUp size={14} className="mr-2" />
@@ -2710,7 +2714,7 @@ export default function SocialNetworkFeed() {
                 {[
                   ["public", <Globe size={14} />, "Public"],
                   ["private", <LockKeyhole size={14} />, "Private"],
-                  ["connection", <Users size={14} />, "Connections"],
+                  ["connections", <Users size={14} />, "Connections"],
                 ].map(([type, icon, label]) => (
                   <button
                     key={type}
@@ -3153,7 +3157,6 @@ export default function SocialNetworkFeed() {
       {/* Comment Modal */}
       {showCommentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-          {renderCommentOptionsModal()}
           {renderShowcase()}
           <div
             className="bg-white rounded-lg w-full max-w-md mx-4 max-h-[90vh] flex flex-col"
@@ -3165,6 +3168,7 @@ export default function SocialNetworkFeed() {
                 <X size={20} />
               </button>
             </div>
+
 
             <div className="p-3 md:p-4 overflow-y-auto flex-1">
               {loadingComments[currentPostId] ? (
@@ -3284,7 +3288,7 @@ export default function SocialNetworkFeed() {
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setSelectedComment(comment);
-                                      setShowCommentOptions(!showCommentOptions);
+                                      setShowCommentOptions(true);
                                     }}
                                   >
                                     <MoreHorizontal size={14} />
@@ -3310,35 +3314,16 @@ export default function SocialNetworkFeed() {
                                 {/* Di dalam map comments */}
                                 {(comment.repliesCount > 0 ||
                                   allReplies[comment.id]?.length > 0) && (
-                                    <button
-                                      className="text-xs text-gray-500 hover:text-blue-500 mt-1"
-                                      onClick={() => toggleReplies(comment.id)}
-                                    >
-                                      {expandedReplies[comment.id]
-                                        ? "Hide replies"
-                                        : `Show replies (${comment.repliesCount})`}
-                                    </button>
-                                  )}
-                              </div>
-
-                              {/* Dropdown menu */}
-                              {showCommentOptions && (
-                                <div className="absolute top-8 right-0 bg-white shadow-lg rounded-md border border-gray-200 w-36 py-1 z-10">
                                   <button
-                                    className="w-full text-left py-2 px-3 text-sm hover:bg-gray-100 flex items-center"
-                                    onClick={() => {
-                                      if (selectedComment) {
-                                        handleOpenShowcase(selectedComment.id);
-                                        setShowCommentOptions(false);
-                                      }
-                                    }}
+                                    className="text-xs text-gray-500 hover:text-blue-500 mt-1"
+                                    onClick={() => toggleReplies(comment.id)}
                                   >
-                                    <MessageCircle size={12} className="mr-2" />
-                                    See Thread
+                                    {expandedReplies[comment.id]
+                                      ? "Hide replies"
+                                      : `Show replies (${comment.repliesCount})`}
                                   </button>
-                                  {/* You can add more dropdown options here */}
-                                </div>
-                              )}
+                                )}
+                              </div>
                             </div>
 
                             {replyingTo === comment.id && (
@@ -3444,23 +3429,23 @@ export default function SocialNetworkFeed() {
                                                 </div>
                                                 {reply.user?.id !==
                                                   currentUserId && (
-                                                    <button
-                                                      className="text-xxs text-red-500 hover:text-red-700"
-                                                      onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleReportClick(
-                                                          reply.user?.id,
-                                                          "comment",
-                                                          reply.id
-                                                        );
-                                                      }}
-                                                    >
-                                                      <TriangleAlert
-                                                        size={16}
-                                                        className="mr-1"
-                                                      />
-                                                    </button>
-                                                  )}
+                                                  <button
+                                                    className="text-xxs text-red-500 hover:text-red-700"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      handleReportClick(
+                                                        reply.user?.id,
+                                                        "comment",
+                                                        reply.id
+                                                      );
+                                                    }}
+                                                  >
+                                                    <TriangleAlert
+                                                      size={16}
+                                                      className="mr-1"
+                                                    />
+                                                  </button>
+                                                )}
                                               </div>
                                               <button
                                                 className="text-xxs text-blue-500 mt-1 md:text-xs"
@@ -3487,6 +3472,8 @@ export default function SocialNetworkFeed() {
                   })
               )}
             </div>
+
+             {renderCommentOptionsModal()}
 
             <div className="p-3 md:p-4 border-t">
               <div className="flex items-center mb-2">

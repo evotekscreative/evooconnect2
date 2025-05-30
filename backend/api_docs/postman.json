@@ -822,13 +822,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/posts?limit=10&offset=0",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "posts"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["api", "posts"],
               "query": [
                 {
                   "key": "limit",
@@ -852,13 +847,8 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/api/posts?limit=10&offset=0",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "api",
-                    "posts"
-                  ],
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "posts"],
                   "query": [
                     {
                       "key": "limit",
@@ -898,15 +888,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/users/{{userId}}/posts?limit=10&offset=0",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "users",
-                "{{userId}}",
-                "posts"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{userId}}", "posts"],
               "query": [
                 {
                   "key": "limit",
@@ -930,9 +913,7 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/api/users/550e8400-e29b-41d4-a716-446655440000/posts?limit=10&offset=0",
-                  "host": [
-                    "{{base_url}}"
-                  ],
+                  "host": ["{{base_url}}"],
                   "path": [
                     "api",
                     "users",
@@ -1263,15 +1244,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/posts/{{postId}}/comments?limit=10&offset=0",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "posts",
-                "{{postId}}",
-                "comments"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["api", "posts", "{{postId}}", "comments"],
               "query": [
                 {
                   "key": "limit",
@@ -1295,9 +1269,7 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/api/posts/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/comments?limit=10&offset=0",
-                  "host": [
-                    "{{base_url}}"
-                  ],
+                  "host": ["{{base_url}}"],
                   "path": [
                     "api",
                     "posts",
@@ -1438,15 +1410,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/comments/{{commentId}}/replies?limit=10&offset=0",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "comments",
-                "{{commentId}}",
-                "replies"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["api", "comments", "{{commentId}}", "replies"],
               "query": [
                 {
                   "key": "limit",
@@ -1470,9 +1435,7 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/api/comments/d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m/replies?limit=10&offset=0",
-                  "host": [
-                    "{{base_url}}"
-                  ],
+                  "host": ["{{base_url}}"],
                   "path": [
                     "api",
                     "comments",
@@ -1734,14 +1697,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/connections/requests?limit=10&offset=0",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "connections",
-                "requests"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["api", "connections", "requests"],
               "query": [
                 {
                   "key": "limit",
@@ -1765,14 +1722,8 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/api/connections/requests?limit=10&offset=0",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "api",
-                    "connections",
-                    "requests"
-                  ],
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "connections", "requests"],
                   "query": [
                     {
                       "key": "limit",
@@ -1804,14 +1755,8 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/api/connections/requests?limit=10&offset=0",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "api",
-                    "connections",
-                    "requests"
-                  ],
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "connections", "requests"],
                   "query": [
                     {
                       "key": "limit",
@@ -2073,15 +2018,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/users/{{userId}}/connections?limit=10&offset=0",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "users",
-                "{{userId}}",
-                "connections"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{userId}}", "connections"],
               "query": [
                 {
                   "key": "limit",
@@ -2105,9 +2043,7 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/api/users/550e8400-e29b-41d4-a716-446655440000/connections?limit=10&offset=0",
-                  "host": [
-                    "{{base_url}}"
-                  ],
+                  "host": ["{{base_url}}"],
                   "path": [
                     "api",
                     "users",
@@ -2145,9 +2081,7 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/api/users/550e8400-e29b-41d4-a716-446655440000/connections?limit=10&offset=0",
-                  "host": [
-                    "{{base_url}}"
-                  ],
+                  "host": ["{{base_url}}"],
                   "path": [
                     "api",
                     "users",
@@ -2185,15 +2119,8 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/api/users/non-existent-id/connections?limit=10&offset=0",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "api",
-                    "users",
-                    "non-existent-id",
-                    "connections"
-                  ],
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "users", "non-existent-id", "connections"],
                   "query": [
                     {
                       "key": "limit",
@@ -2360,13 +2287,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/groups?limit=10&offset=0",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "groups"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["api", "groups"],
               "query": [
                 {
                   "key": "limit",
@@ -2457,18 +2379,49 @@
               }
             },
             "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [],
             "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Golang Developers Indonesia - Official\",\n  \"description\": \"The official community for Go developers in Indonesia to network and share knowledge\",\n  \"rule\": \"Be respectful and professional. No spam or self-promotion without contributing value.\",\n  \"image\": \"uploads/groups/golang-dev-updated.jpg\",\n  \"privacy_level\": \"public\",\n  \"invite_policy\": \"all_members\"\n}"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "Golang Developers Indonesia - Official",
+                  "type": "text",
+                  "description": "Nama grup yang diperbarui"
+                },
+                {
+                  "key": "description",
+                  "value": "The official community for Go developers in Indonesia to network and share knowledge",
+                  "type": "text",
+                  "description": "Deskripsi grup yang diperbarui"
+                },
+                {
+                  "key": "rule",
+                  "value": "Be respectful and professional. No spam or self-promotion without contributing value.",
+                  "type": "text",
+                  "description": "Aturan grup yang diperbarui"
+                },
+                {
+                  "key": "privacy_level",
+                  "value": "public",
+                  "type": "text",
+                  "description": "Level privasi grup (public/private)"
+                },
+                {
+                  "key": "invite_policy",
+                  "value": "all_members",
+                  "type": "text",
+                  "description": "Kebijakan undangan (admin/all_members)"
+                },
+                {
+                  "key": "image",
+                  "type": "file",
+                  "description": "Foto profil grup (opsional)"
+                }
+              ]
             },
             "url": "{{base_url}}/api/groups/{{groupId}}",
-            "description": "Update an existing group by ID (only group admin can update)"
+            "description": "Update grup yang sudah ada dengan menggunakan form-data. Field image bersifat opsional. Hanya admin grup yang dapat mengupdate grup."
           },
           "response": [
             {
@@ -2672,15 +2625,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/groups/{{groupId}}/posts?limit=10&offset=0",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "groups",
-                "{{groupId}}",
-                "posts"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["api", "groups", "{{groupId}}", "posts"],
               "query": [
                 {
                   "key": "limit",
@@ -2704,9 +2650,7 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/api/groups/a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d/posts?limit=10&offset=0",
-                  "host": [
-                    "{{base_url}}"
-                  ],
+                  "host": ["{{base_url}}"],
                   "path": [
                     "api",
                     "groups",
@@ -2744,9 +2688,7 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/api/groups/c3d4e5f6-g7h8-6c5d-0e1f-2g3h4i5j6k7l/posts?limit=10&offset=0",
-                  "host": [
-                    "{{base_url}}"
-                  ],
+                  "host": ["{{base_url}}"],
                   "path": [
                     "api",
                     "groups",
@@ -2784,15 +2726,8 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/api/groups/invalid-group-id/posts?limit=10&offset=0",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "api",
-                    "groups",
-                    "invalid-group-id",
-                    "posts"
-                  ],
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "groups", "invalid-group-id", "posts"],
                   "query": [
                     {
                       "key": "limit",
@@ -2824,9 +2759,7 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/api/groups/b2c3d4e5-f6g7-5b4c-9d8e-0f1g2h3i4j5k/posts?limit=10&offset=0",
-                  "host": [
-                    "{{base_url}}"
-                  ],
+                  "host": ["{{base_url}}"],
                   "path": [
                     "api",
                     "groups",
@@ -3657,15 +3590,9 @@
             "url": {
               "raw": "http://localhost:3000/api/blogs/random?limit=3",
               "protocol": "http",
-              "host": [
-                "localhost"
-              ],
+              "host": ["localhost"],
               "port": "3000",
-              "path": [
-                "api",
-                "blogs",
-                "random"
-              ],
+              "path": ["api", "blogs", "random"],
               "query": [
                 {
                   "key": "limit",
@@ -3706,16 +3633,9 @@
             "url": {
               "raw": "http://localhost:3000/api/blogs/{{blog_id}}",
               "protocol": "http",
-              "host": [
-                "localhost"
-              ],
+              "host": ["localhost"],
               "port": "3000",
-              "path": [
-                "api",
-                "blogs",
-                "{{blog_id}}",
-                "photo"
-              ]
+              "path": ["api", "blogs", "{{blog_id}}", "photo"]
             },
             "description": "Mengupload foto untuk blog tertentu berdasarkan ID blog."
           },
@@ -3879,14 +3799,8 @@
             },
             "url": {
               "raw": "{{base_url}}/api/blog-comments/{{blogId}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "blog-comments",
-                "{{blogId}}"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["api", "blog-comments", "{{blogId}}"]
             }
           }
         },
@@ -3916,16 +3830,8 @@
             },
             "url": {
               "raw": "{{base_url}}/api/blog/comments/{{commentId}}/replies",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "blog",
-                "comments",
-                "{{commentId}}",
-                "replies"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["api", "blog", "comments", "{{commentId}}", "replies"]
             }
           }
         },
@@ -3935,16 +3841,8 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/api/blog/comments/{{commentId}}/replies",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "blog",
-                "comments",
-                "{{commentId}}",
-                "replies"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["api", "blog", "comments", "{{commentId}}", "replies"]
             }
           }
         },
@@ -3974,15 +3872,8 @@
             },
             "url": {
               "raw": "{{base_url}}/api/blog/comments/{{commentblogId}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "blog",
-                "comments",
-                "{{commentblogId}}"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["api", "blog", "comments", "{{commentblogId}}"]
             }
           }
         },
@@ -3992,14 +3883,8 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/api/blog-comments/{{blogId}}?limit=10&offset=0",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "blog-comments",
-                "{{blogId}}"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["api", "blog-comments", "{{blogId}}"],
               "query": [
                 {
                   "key": "limit",
@@ -4029,15 +3914,8 @@
             },
             "url": {
               "raw": "{{base_url}}/api/blog/comments/{{commentblogId}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "blog",
-                "comments",
-                "{{commentblogId}}"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["api", "blog", "comments", "{{commentblogId}}"]
             }
           }
         },
@@ -4047,15 +3925,8 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/api/blog/comments/{{commentblogId}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "blog",
-                "comments",
-                "{{commentblogId}}"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["api", "blog", "comments", "{{commentblogId}}"]
             }
           }
         }
@@ -4492,15 +4363,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/users/{{userId}}/education?limit=10&offset=0",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "users",
-                "{{userId}}",
-                "education"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{userId}}", "education"],
               "query": [
                 {
                   "key": "limit",
@@ -4524,9 +4388,7 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/api/users/661f9511-f3a2-41d5-b882-557535440123/education?limit=10&offset=0",
-                  "host": [
-                    "{{base_url}}"
-                  ],
+                  "host": ["{{base_url}}"],
                   "path": [
                     "api",
                     "users",
@@ -4946,15 +4808,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/users/{{userId}}/experience?limit=10&offset=0",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "users",
-                "{{userId}}",
-                "experience"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{userId}}", "experience"],
               "query": [
                 {
                   "key": "limit",
@@ -4978,9 +4833,7 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/api/users/661f9511-f3a2-41d5-b882-557535440123/experience?limit=10&offset=0",
-                  "host": [
-                    "{{base_url}}"
-                  ],
+                  "host": ["{{base_url}}"],
                   "path": [
                     "api",
                     "users",
@@ -5152,13 +5005,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/conversations?limit=10&offset=0",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "conversations"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["api", "conversations"],
               "query": [
                 {
                   "key": "limit",
@@ -5182,13 +5030,8 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/api/conversations?limit=10&offset=0",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "api",
-                    "conversations"
-                  ],
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "conversations"],
                   "query": [
                     {
                       "key": "limit",
@@ -5518,9 +5361,7 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/conversations/{{conversationId}}/messages?limit=20&offset=0",
-              "host": [
-                "{{base_url}}"
-              ],
+              "host": ["{{base_url}}"],
               "path": [
                 "api",
                 "conversations",
@@ -5550,9 +5391,7 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/api/conversations/f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3/messages?limit=20&offset=0",
-                  "host": [
-                    "{{base_url}}"
-                  ],
+                  "host": ["{{base_url}}"],
                   "path": [
                     "api",
                     "conversations",
@@ -5891,13 +5730,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/notifications?limit=10&offset=0",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "notifications"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications"],
               "query": [
                 {
                   "key": "limit",
@@ -5921,13 +5755,8 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/api/notifications?limit=10&offset=0",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "api",
-                    "notifications"
-                  ],
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "notifications"],
                   "query": [
                     {
                       "key": "limit",
@@ -5967,13 +5796,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/notifications?category=post&limit=10&offset=0",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "notifications"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications"],
               "query": [
                 {
                   "key": "category",
@@ -6002,13 +5826,8 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/api/notifications?category=post&limit=10&offset=0",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "api",
-                    "notifications"
-                  ],
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "notifications"],
                   "query": [
                     {
                       "key": "category",
@@ -6052,13 +5871,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/notifications?category=blog&limit=10&offset=0",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "notifications"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications"],
               "query": [
                 {
                   "key": "category",
@@ -6087,13 +5901,8 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/api/notifications?category=blog&limit=10&offset=0",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "api",
-                    "notifications"
-                  ],
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "notifications"],
                   "query": [
                     {
                       "key": "category",
@@ -6137,13 +5946,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/notifications?category=connection&limit=10&offset=0",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "notifications"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications"],
               "query": [
                 {
                   "key": "category",
@@ -6179,13 +5983,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/notifications?category=profile&limit=10&offset=0",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "notifications"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications"],
               "query": [
                 {
                   "key": "category",
@@ -6221,13 +6020,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/notifications?category=group&limit=10&offset=0",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "notifications"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications"],
               "query": [
                 {
                   "key": "category",
@@ -6299,13 +6093,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/notifications?category=post",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "notifications"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications"],
               "query": [
                 {
                   "key": "category",
@@ -6324,13 +6113,8 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/api/notifications?category=post",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "api",
-                    "notifications"
-                  ],
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "notifications"],
                   "query": [
                     {
                       "key": "category",
@@ -6366,13 +6150,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/notifications?category=blog",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "notifications"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications"],
               "query": [
                 {
                   "key": "category",
@@ -6398,13 +6177,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/notifications?category=connection",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "notifications"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications"],
               "query": [
                 {
                   "key": "category",
@@ -6430,13 +6204,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/notifications?category=profile",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "notifications"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications"],
               "query": [
                 {
                   "key": "category",
@@ -6462,13 +6231,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/notifications?category=group",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "notifications"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications"],
               "query": [
                 {
                   "key": "category",
@@ -6572,14 +6336,8 @@
             },
             "url": {
               "raw": "{{base_url}}/api/notifications/selected?category=post",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "notifications",
-                "selected"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications", "selected"],
               "query": [
                 {
                   "key": "category",
@@ -6722,6 +6480,418 @@
         }
       ],
       "description": "Endpoints untuk manajemen notifikasi pengguna"
+    },
+    {
+      "name": "Search",
+      "item": [
+        {
+          "name": "Search Users",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/search/users?query=john&limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "search", "users"],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "john",
+                  "description": "Kata kunci pencarian untuk nama, username, atau headline pengguna"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah hasil per halaman"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Offset untuk pagination"
+                }
+              ]
+            },
+            "description": "Mencari pengguna berdasarkan nama, username, atau headline"
+          },
+          "response": [
+            {
+              "name": "Search Users Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/search/users?query=john&limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "search", "users"],
+                  "query": [
+                    {
+                      "key": "query",
+                      "value": "john"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"users\": [\n      {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"John Doe\",\n        \"username\": \"johndoe\",\n        \"headline\": \"Fullstack Developer\",\n        \"photo\": \"uploads/photos/johndoe.jpg\",\n        \"organization\": \"EvoConnect\",\n        \"location\": \"Jakarta\",\n        \"is_connected\": false,\n        \"is_following\": true\n      },\n      {\n        \"id\": \"772g0622-g4b3-52e6-c993-668646551234\",\n        \"name\": \"Alex Johnson\",\n        \"username\": \"alexj\",\n        \"headline\": \"Backend Developer\",\n        \"photo\": \"uploads/photos/alexj.jpg\",\n        \"organization\": \"Tech Solutions\",\n        \"location\": \"Bandung\",\n        \"is_connected\": true,\n        \"is_following\": false\n      }\n    ],\n    \"total\": 2,\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
+            },
+            {
+              "name": "Search Users Empty",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/search/users?query=nonexistent&limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "search", "users"],
+                  "query": [
+                    {
+                      "key": "query",
+                      "value": "nonexistent"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"users\": [],\n    \"total\": 0,\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Search Posts",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/search/posts?query=golang&limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "search", "posts"],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "golang",
+                  "description": "Kata kunci pencarian untuk konten postingan"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah hasil per halaman"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Offset untuk pagination"
+                }
+              ]
+            },
+            "description": "Mencari postingan berdasarkan konten"
+          },
+          "response": [
+            {
+              "name": "Search Posts Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/search/posts?query=golang&limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "search", "posts"],
+                  "query": [
+                    {
+                      "key": "query",
+                      "value": "golang"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"posts\": [\n      {\n        \"id\": \"d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m\",\n        \"content\": \"This is a post in our Golang group!\",\n        \"images\": [\n          \"uploads/posts/550e8400-e29b-41d4-a716-446655440000/post-1672531496-a1b2c3d4.jpg\",\n          \"uploads/posts/550e8400-e29b-41d4-a716-446655440000/post-1672531496-e5f6g7h8.jpg\"\n        ],\n        \"visibility\": \"public\",\n        \"likes_count\": 5,\n        \"comments_count\": 2,\n        \"is_liked\": true,\n        \"user\": {\n          \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n          \"name\": \"John Doe\",\n          \"username\": \"johndoe\",\n          \"photo\": \"uploads/photos/johndoe.jpg\",\n          \"headline\": \"Fullstack Developer\"\n        },\n        \"group\": {\n          \"id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n          \"name\": \"Golang Developers Indonesia\",\n          \"image\": \"uploads/groups/golang-dev.jpg\"\n        },\n        \"created_at\": \"2023-11-27T10:20:00Z\",\n        \"updated_at\": \"2023-11-27T10:20:00Z\"\n      },\n      {\n        \"id\": \"e5f6g7h8-i9j0-8e7f-2g3h-4i5j6k7l8m9n\",\n        \"content\": \"Just shared a new Go module for authentication, check it out!\",\n        \"images\": [\n          \"uploads/posts/661f9511-f3a2-41d5-b882-557535440123/post-1672532500-b2c3d4e5.jpg\"\n        ],\n        \"visibility\": \"public\",\n        \"likes_count\": 8,\n        \"comments_count\": 3,\n        \"is_liked\": false,\n        \"user\": {\n          \"id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n          \"name\": \"Jane Smith\",\n          \"username\": \"janesmith\",\n          \"photo\": \"uploads/photos/janesmith.jpg\",\n          \"headline\": \"Backend Developer\"\n        },\n        \"created_at\": \"2023-11-26T15:30:00Z\",\n        \"updated_at\": \"2023-11-26T15:30:00Z\"\n      }\n    ],\n    \"total\": 2,\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Search Groups",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/search/groups?query=developer&limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "search", "groups"],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "developer",
+                  "description": "Kata kunci pencarian untuk nama atau deskripsi grup"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah hasil per halaman"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Offset untuk pagination"
+                }
+              ]
+            },
+            "description": "Mencari grup berdasarkan nama atau deskripsi"
+          },
+          "response": [
+            {
+              "name": "Search Groups Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/search/groups?query=developer&limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "search", "groups"],
+                  "query": [
+                    {
+                      "key": "query",
+                      "value": "developer"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"groups\": [\n      {\n        \"id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n        \"name\": \"Golang Developers Indonesia\",\n        \"description\": \"A community for Go developers in Indonesia to network and share knowledge\",\n        \"image\": \"uploads/groups/golang-dev.jpg\",\n        \"privacy_level\": \"public\",\n        \"creator\": {\n          \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n          \"name\": \"John Doe\",\n          \"username\": \"johndoe\",\n          \"photo\": \"uploads/photos/johndoe.jpg\"\n        },\n        \"members_count\": 12,\n        \"created_at\": \"2023-11-28T10:20:00Z\"\n      },\n      {\n        \"id\": \"b2c3d4e5-f6g7-5b4c-9d8e-0f1g2h3i4j5k\",\n        \"name\": \"React Indonesia\",\n        \"description\": \"For frontend developers working with React in Indonesia\",\n        \"image\": \"uploads/groups/react-ind.jpg\",\n        \"privacy_level\": \"public\",\n        \"creator\": {\n          \"id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n          \"name\": \"Jane Smith\",\n          \"username\": \"janesmith\",\n          \"photo\": \"uploads/photos/janesmith.jpg\"\n        },\n        \"members_count\": 28,\n        \"created_at\": \"2023-11-25T14:30:00Z\"\n      }\n    ],\n    \"total\": 2,\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Search Blogs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/search/blogs?query=golang&limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "search", "blogs"],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "golang",
+                  "description": "Kata kunci pencarian untuk judul atau konten blog"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah hasil per halaman"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Offset untuk pagination"
+                }
+              ]
+            },
+            "description": "Mencari blog berdasarkan judul atau konten"
+          },
+          "response": [
+            {
+              "name": "Search Blogs Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/search/blogs?query=golang&limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "search", "blogs"],
+                  "query": [
+                    {
+                      "key": "query",
+                      "value": "golang"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"blogs\": [\n      {\n        \"id\": \"e8e37ee0-dcf2-434f-a918-0716972ccee7\",\n        \"title\": \"How to Build a Go Backend\",\n        \"slug\": \"how-to-build-a-go-backend-46e0cbc0\",\n        \"category\": \"Technology\",\n        \"content\": \"This is a detailed tutorial on building Go backends.\",\n        \"photo\": \"uploads/blogs/69956cff-aa88-4bb2-92a3-4e916c0d1e11/blog-1747193382175226300.jpg\",\n        \"user_id\": \"69956cff-aa88-4bb2-92a3-4e916c0d1e11\",\n        \"created_at\": \"2025-05-14T10:29:42+07:00\",\n        \"updated_at\": \"2025-05-14T10:29:42+07:00\",\n        \"user\": {\n          \"id\": \"69956cff-aa88-4bb2-92a3-4e916c0d1e11\",\n          \"name\": \"mamal\",\n          \"username\": \"yamanalu\",\n          \"photo\": \"\"\n        }\n      },\n      {\n        \"id\": \"f9f48ff1-edf3-435e-b919-1827983ddff8\",\n        \"title\": \"Golang for Beginners\",\n        \"slug\": \"golang-for-beginners-57f1dbc1\",\n        \"category\": \"Programming\",\n        \"content\": \"Introduction to Go programming language for beginners.\",\n        \"photo\": \"uploads/blogs/550e8400-e29b-41d4-a716-446655440000/blog-1747193382175226301.jpg\",\n        \"user_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"created_at\": \"2025-05-10T08:15:22+07:00\",\n        \"updated_at\": \"2025-05-10T08:15:22+07:00\",\n        \"user\": {\n          \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n          \"name\": \"John Doe\",\n          \"username\": \"johndoe\",\n          \"photo\": \"uploads/photos/johndoe.jpg\"\n        }\n      }\n    ],\n    \"total\": 2,\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Global Search",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "token": "{{token}}"
+              }
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/search?query=golang&limit=5&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "search"],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "golang",
+                  "description": "Kata kunci pencarian global"
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "description": "Jumlah hasil per kategori"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Offset untuk pagination"
+                }
+              ]
+            },
+            "description": "Pencarian global yang mengembalikan hasil dari semua kategori (pengguna, postingan, grup, dan blog)"
+          },
+          "response": [
+            {
+              "name": "Global Search Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/search?query=golang&limit=5&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "search"],
+                  "query": [
+                    {
+                      "key": "query",
+                      "value": "golang"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "5"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"users\": [\n      {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"John Doe\",\n        \"username\": \"johndoe\",\n        \"headline\": \"Golang Developer\",\n        \"photo\": \"uploads/photos/johndoe.jpg\",\n        \"organization\": \"EvoConnect\",\n        \"location\": \"Jakarta\",\n        \"is_connected\": false,\n        \"is_following\": true\n      }\n    ],\n    \"posts\": [\n      {\n        \"id\": \"d4e5f6g7-h8i9-7d6e-1f2g-3h4i5j6k7l8m\",\n        \"content\": \"This is a post in our Golang group!\",\n        \"images\": [\n          \"uploads/posts/550e8400-e29b-41d4-a716-446655440000/post-1672531496-a1b2c3d4.jpg\"\n        ],\n        \"visibility\": \"public\",\n        \"likes_count\": 5,\n        \"comments_count\": 2,\n        \"is_liked\": true,\n        \"user\": {\n          \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n          \"name\": \"John Doe\",\n          \"username\": \"johndoe\",\n          \"photo\": \"uploads/photos/johndoe.jpg\",\n          \"headline\": \"Fullstack Developer\"\n        },\n        \"created_at\": \"2023-11-27T10:20:00Z\",\n        \"updated_at\": \"2023-11-27T10:20:00Z\"\n      }\n    ],\n    \"groups\": [\n      {\n        \"id\": \"a1b2c3d4-e5f6-4a3b-8c7d-9e8f7a6b5c4d\",\n        \"name\": \"Golang Developers Indonesia\",\n        \"description\": \"A community for Go developers in Indonesia to network and share knowledge\",\n        \"image\": \"uploads/groups/golang-dev.jpg\",\n        \"privacy_level\": \"public\",\n        \"creator\": {\n          \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n          \"name\": \"John Doe\",\n          \"username\": \"johndoe\",\n          \"photo\": \"uploads/photos/johndoe.jpg\"\n        },\n        \"members_count\": 12,\n        \"created_at\": \"2023-11-28T10:20:00Z\"\n      }\n    ],\n    \"blogs\": [\n      {\n        \"id\": \"e8e37ee0-dcf2-434f-a918-0716972ccee7\",\n        \"title\": \"How to Build a Go Backend\",\n        \"slug\": \"how-to-build-a-go-backend-46e0cbc0\",\n        \"category\": \"Technology\",\n        \"photo\": \"uploads/blogs/69956cff-aa88-4bb2-92a3-4e916c0d1e11/blog-1747193382175226300.jpg\",\n        \"user\": {\n          \"id\": \"69956cff-aa88-4bb2-92a3-4e916c0d1e11\",\n          \"name\": \"mamal\",\n          \"username\": \"yamanalu\",\n          \"photo\": \"\"\n        },\n        \"created_at\": \"2025-05-14T10:29:42+07:00\"\n      }\n    ],\n    \"limit\": 5,\n    \"offset\": 0\n  }\n}"
+            }
+          ]
+        }
+      ],
+      "description": "Endpoints untuk pencarian pengguna, postingan, grup, dan blog"
     }
   ],
   "variable": [

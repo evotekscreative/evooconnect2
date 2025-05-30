@@ -1,7 +1,8 @@
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
 import { Trash2, LogOut } from "lucide-react";
 
-const base_url = "http://localhost:3000";
+const base_url =
+  import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
 export default function GroupCard({ group, isAdmin, onDelete, onLeave }) {
   return (
@@ -9,17 +10,31 @@ export default function GroupCard({ group, isAdmin, onDelete, onLeave }) {
       <div className="flex items-center space-x-2 sm:space-x-3 border-b pb-3">
         <img
           className="w-10 h-10 rounded-full"
-          src={group.image ? `${base_url}/${group.image}` : "/default-group.png"}
+          src={
+            group.image ? `${base_url}/${group.image}` : "/default-group.png"
+          }
           alt="Group"
           onError={(e) => {
             e.target.src = "/default-group.png";
           }}
         />
         <div className="flex-1 min-w-0">
-          <div className="font-medium capitalize text-blue-500 truncate">{group.name}</div>
-          <div className="text-gray-500 text-xs sm:text-sm">{group.members_count || 0} Members</div>
-          <span className={`text-xs ${isAdmin ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'} px-1.5 py-0.5 rounded whitespace-nowrap`}>
-            {isAdmin ? `Created on ${group.createdDate}` : `Joined on ${group.joinedDate}`}
+          <Link to={`/groups/${group.id}`}>
+            <p title={group.name} className="font-medium capitalize truncate">{group.name}</p>
+          </Link>
+          <div className="text-gray-500 text-xs sm:text-sm">
+            {group.members_count || 0} Members
+          </div>
+          <span
+            className={`text-xs ${
+              isAdmin
+                ? "bg-blue-100 text-blue-800"
+                : "bg-gray-100 text-gray-800"
+            } px-1.5 py-0.5 rounded whitespace-nowrap`}
+          >
+            {isAdmin
+              ? `Created on ${group.createdDate}`
+              : `Joined on ${group.joinedDate}`}
           </span>
         </div>
       </div>
@@ -31,8 +46,12 @@ export default function GroupCard({ group, isAdmin, onDelete, onLeave }) {
           View Group
         </Link>
         <button
-          onClick={() => isAdmin ? onDelete(group.id) : onLeave(group.id)}
-          className={`flex items-center ${isAdmin ? 'text-red-600 hover:text-red-800' : 'text-gray-600 hover:text-gray-800'} text-xs sm:text-sm`}
+          onClick={() => (isAdmin ? onDelete(group.id) : onLeave(group.id))}
+          className={`flex items-center ${
+            isAdmin
+              ? "text-red-600 hover:text-red-800"
+              : "text-gray-600 hover:text-gray-800"
+          } text-xs sm:text-sm`}
           title={isAdmin ? "Delete Group" : "Leave Group"}
         >
           {isAdmin ? (

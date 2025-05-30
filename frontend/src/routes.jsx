@@ -27,7 +27,22 @@ import VerifyEmail from "./pages/Auth/VerifyEmail.jsx";
 import ResetPassword from "./pages/Auth/ResetPassword.jsx";
 import IsGuest from "./components/Auth/IsGuest.jsx";
 import SinglePost from "./pages/SinglePost.jsx";
-import SearchResults from "./pages/SearchResults";
+import SearchResults from "./pages/SearchResults.jsx";
+import UserListConnection from "./pages/UserListConnection.jsx";
+import UserPostPage from "./pages/UserPostPage.jsx";
+import UserProfile from "./pages/UserProfile.jsx";
+import MemberList from "./pages/MemberList.jsx";
+import LoginAdmin from "./pages/Admin/AuthAdmin/LoginAdmin.jsx";
+import Dashboard from "./pages/Admin/Admin1/Dashboard.jsx";
+import Settings from "./pages/Admin/Admin1/Settings.jsx";
+import Tables from "./pages/Admin/Admin1/Tables.jsx";
+import ProtectedAdminRoute from "./components/Auth/ProtectedAdminRoute.jsx";
+import ReportPage from "./pages/Admin/Admin1/Index.jsx";
+import ReportUser from "./pages/Admin/Report/ReportUser.jsx";
+import ListCompany from "./pages/Admin/Admin1/ListCompany.jsx";
+import ReportPostDetail from "./pages/Admin/Report/ReportPostDetail.jsx";
+import ReportBlogPage from "./pages/Admin/Report/ReportBlogPage.jsx";
+import ReportCommentPage from "./pages/Admin/Report/ReportCommentPage.jsx";
 
 const router = createBrowserRouter([
   {
@@ -168,7 +183,23 @@ const router = createBrowserRouter([
     ),
   },
   {
+    path: "/list-connection/:username",
+    element: (
+      <ProtectedRoute>
+        <UserListConnection />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: "/messages",
+    element: (
+      <ProtectedRoute>
+        <Messages />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/messages/:conversationId",
     element: (
       <ProtectedRoute>
         <Messages />
@@ -225,22 +256,105 @@ const router = createBrowserRouter([
   },
   {
     path: "/post-page",
-    element: <PostPage />,
+    element: (
+      <ProtectedRoute>
+        <PostPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/post-page/:username",
+    element:(
+      <ProtectedRoute>
+        <UserPostPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/verify-email",
-    element: <VerifyEmail />,
+    element: (
+      <ProtectedRoute>
+        <VerifyEmail />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/reset-password",
+    element: <ResetPassword />,
+  },
+  {
+    path: "/user-profile/:username",
     element: (
-      <ResetPassword />
+      <ProtectedRoute>
+        <UserProfile />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/groups/:groupId/members",
+    element: (
+      <ProtectedRoute>
+        <MemberList />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/search",
+    element: (
+        <ResetPassword />
     )
   },
   {
-    path: "/post/:postId",
-    element: <SinglePost />
-  }
+    path : "/post/:postId",
+    element : <SinglePost />
+  },
+
+  {
+    path: "/login-admin",
+    element: <LoginAdmin />,
+  },
+  {
+    path: "/admin",
+    element: <ProtectedAdminRoute />,
+    children: [
+      {
+        path: "dashboard",
+        element: <Dashboard />,
+      },
+      {
+        path: "settings",
+        element: <Settings />,
+      },
+      {
+        path: "tables",
+        element: <Tables />,
+      },
+      {
+        path: "report",
+        element: <ReportPage />,
+      },
+      {
+        path: "report-user",
+        element: <ReportUser />,
+      },
+      {
+        path: "list-company",
+        element: <ListCompany />,
+      },
+      {
+        path: "report-post-detail",
+        element: <ReportPostDetail />,
+      },
+      {
+        path: "report-blog-page",
+        element: <ReportBlogPage />,
+      },
+      {
+        path: "report-comment-page",
+        element: <ReportCommentPage />,
+      },
+    ],
+  },
 ]);
 
 export default router;

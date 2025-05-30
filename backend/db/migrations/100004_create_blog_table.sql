@@ -1,3 +1,4 @@
+-- SQLBook: Code
 CREATE TABLE tb_blog (
     id UUID PRIMARY KEY,
     title TEXT NOT NULL,

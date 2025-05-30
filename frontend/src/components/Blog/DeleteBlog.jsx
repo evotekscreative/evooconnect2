@@ -2,13 +2,15 @@ import React, { useState } from "react";
 import axios from "axios";
 
 const DeleteBlog = ({ articleId, onSuccess, onCancel }) => {
+          const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
   const [isLoading, setIsLoading] = useState(false);
 
   const deleteBlog = async () => {
     setIsLoading(true);
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:3000/api/blogs/${articleId}`, {
+      await axios.delete(`${apiUrl}/api/blogs/${articleId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

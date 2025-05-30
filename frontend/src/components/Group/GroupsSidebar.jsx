@@ -9,23 +9,39 @@ export default function GroupsSidebar({
   return (
     <div className="space-y-4">
       {/* Group Statistics */}
-      <div className="bg-white rounded-xl shadow p-4">
-        <h3 className="font-medium mb-2 border-b pb-4">Group Statistics</h3>
-        <ul className="text-sm text-gray-700 space-y-1">
-          <li key="total-groups" className="flex justify-between border-b pb-4">
-            <span>Total Groups</span>
-            <span>{adminGroups.length + joinedGroups.length}</span>
-          </li>
-          <li key="created-groups" className="flex justify-between border-b pb-4">
-            <span>Groups Created</span>
-            <span>{adminGroups.length}</span>
-          </li>
-          <li key="joined-groups" className="flex justify-between">
-            <span>Groups Joined</span>
-            <span>{joinedGroups.length}</span>
-          </li>
-        </ul>
+      
+      <div className="bg-white rounded-xl shadow p-5">
+  <h3 className="font-semibold mb-4 border-b pb-3 text-base sm:text-lg">
+    Group Statistics
+  </h3>
+  <ul className="text-sm sm:text-base text-gray-800 space-y-2">
+    <li className="border-b pb-3">
+      <div className="flex justify-between items-center">
+        <span className="font-medium">Total Groups</span>
+        <span className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm">
+          {adminGroups.length + joinedGroups.length}
+        </span>
       </div>
+    </li>
+    <li className="border-b pb-3">
+      <div className="flex justify-between items-center">
+        <span className="font-medium">Groups Created</span>
+        <span className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm">
+          {adminGroups.length}
+        </span>
+      </div>
+    </li>
+    <li>
+      <div className="flex justify-between items-center">
+        <span className="font-medium">Groups Joined</span>
+        <span className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm">
+          {joinedGroups.length}
+        </span>
+      </div>
+    </li>
+  </ul>
+</div>
+
 
       {/* Suggested Groups */}
       <div className="bg-white rounded-xl shadow p-4">

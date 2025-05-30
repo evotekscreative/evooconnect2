@@ -105,25 +105,40 @@ func (service *CommentBlogServiceImpl) Create(ctx context.Context, blogId uuid.U
 }
 
 func (service *CommentBlogServiceImpl) GetByBlogId(ctx context.Context, blogId uuid.UUID, limit, offset int) web.CommentBlogListResponse {
-	tx, err := service.DB.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
+    tx, err := service.DB.Begin()
+    helper.PanicIfError(err)
+    defer helper.CommitOrRollback(tx)
 
-	_, err = service.BlogRepository.FindByID(ctx, blogId.String())
-	if err != nil {
-		panic(exception.NewNotFoundError("Blog not found"))
-	}
+    _, err = service.BlogRepository.FindByID(ctx, blogId.String())
+    if err != nil {
+        panic(exception.NewNotFoundError("Blog not found"))
+    }
 
-	var nilParentId *uuid.UUID = nil
-	comments, err := service.CommentBlogRepository.FindByBlogId(ctx, tx, blogId, nilParentId, limit, offset)
-	helper.PanicIfError(err)
-	total, err := service.CommentBlogRepository.CountByBlogId(ctx, tx, blogId)
-	helper.PanicIfError(err)
+    var nilParentId *uuid.UUID = nil
+    comments, err := service.CommentBlogRepository.FindByBlogId(ctx, tx, blogId, nilParentId, limit, offset)
+    helper.PanicIfError(err)
+    total, err := service.CommentBlogRepository.CountByBlogId(ctx, tx, blogId)
+    helper.PanicIfError(err)
 
-	return web.CommentBlogListResponse{
-		Comments: helper.ToCommentBlogResponses(comments),
-		Total:    total,
-	}
+    // Hitung jumlah replies untuk setiap komentar
+    commentResponses := make([]web.CommentBlogResponse, 0)
+    for _, comment := range comments {
+        // Konversi ke response
+        commentResponse := helper.ToCommentBlogResponse(comment)
+        
+        // Hitung jumlah replies secara eksplisit
+        repliesCount, err := service.CommentBlogRepository.CountRepliesByParentId(ctx, tx, comment.Id)
+        if err == nil {
+            commentResponse.RepliesCount = repliesCount
+        }
+        
+        commentResponses = append(commentResponses, commentResponse)
+    }
+
+    return web.CommentBlogListResponse{
+        Comments: commentResponses,
+        Total:    total,
+    }
 }
 
 func (service *CommentBlogServiceImpl) GetById(ctx context.Context, commentId uuid.UUID) web.CommentBlogResponse {
