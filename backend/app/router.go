@@ -27,47 +27,51 @@ func NewRouter(
 	notificationController controller.NotificationController,
 	searchController controller.SearchController,
 	adminAuthController controller.AdminAuthController,
+<<<<<<< HEAD
+=======
+	companySubmissionController controller.CompanySubmissionController,
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
 ) *httprouter.Router {
 	router := httprouter.New()
 
-	// Auth routes
-	router.POST("/api/auth/google", authController.GoogleAuth)
-	router.POST("/api/auth/login", authController.Login)
-	router.POST("/api/auth/register", authController.Register)
-	router.POST("/api/auth/verify/send", authController.SendVerificationEmail)
-	router.POST("/api/auth/verify", authController.VerifyEmail)
-	router.POST("/api/auth/forgot-password", authController.ForgotPassword)
-	router.POST("/api/auth/reset-password", authController.ResetPassword)
+	// Setup user routes
+	setupUserRoutes(
+		router,
+		authController,
+		userController,
+		blogController,
+		postController,
+		commentController,
+		educationController,
+		experienceController,
+		commentBlogController,
+		connectionController,
+		reportController,
+		groupController,
+		chatController,
+		profileViewController,
+		notificationController,
+		searchController,
+		companySubmissionController,
+	)
 
-	// User routes
-	router.GET("/api/user/profile", userController.GetProfile)
-	router.PUT("/api/user/profile", userController.UpdateProfile)
-	router.GET("/api/user-profile/:username", userController.GetByUsername)
-	router.POST("/api/user/photo", userController.UploadPhotoProfile)
-	router.DELETE("/api/user/photo", userController.DeletePhotoProfile)
-	router.GET("/api/user-peoples", userController.GetPeoples)
+	// Setup admin routes
+	setupAdminRoutes(
+		router,
+		adminAuthController,
+		companySubmissionController,
+	)
 
-	// Blog routes
-	router.POST("/api/blogs", blogController.Create)
-	router.POST("/api/blogs-with-image", blogController.CreateWithImage)
-	router.GET("/api/blogs", blogController.FindAll)
-	router.GET("/api/blogs/random", blogController.GetRandomBlogs)
-	router.GET("/api/blogs/slug/:slug", blogController.GetBySlug)
-	router.DELETE("/api/blogs/:blogId", blogController.Delete)
-	router.PUT("/api/blogs/:blogId", blogController.Update)
-	router.POST("/api/blogs/:blogId/upload-photo", blogController.UploadPhoto)
+	// Static file servers
+	setupStaticRoutes(router)
 
-	// Blog comment routes
-	router.POST("/api/blog-comments/:blogId", commentBlogController.Create)
-	router.GET("/api/blog-comments/:blogId", commentBlogController.GetByBlogId)
-	// Ubah path berikut agar tidak konflik
-	router.GET("/api/blog/comments/:commentId", commentBlogController.GetById)            // <-- path ini diubah
-	router.PUT("/api/blog/comments/:commentId", commentBlogController.Update)             // <-- path ini diubah
-	router.DELETE("/api/blog/comments/:commentId", commentBlogController.Delete)          // <-- path ini diubah
-	router.POST("/api/blog/comments/:commentId/replies", commentBlogController.Reply)     // <-- path ini diubah
-	router.GET("/api/blog/comments/:commentId/replies", commentBlogController.GetReplies) // <-- path ini diubah
+	// Setup error handlers
+	setupErrorHandlers(router)
 
+	return router
+}
 
+<<<<<<< HEAD
 	// Post comment routes
 	router.POST("/api/post-comments/:postId", commentController.Create)
 	router.GET("/api/post-comments/:postId", commentController.GetByPostId)
@@ -175,8 +179,11 @@ func NewRouter(
 	router.POST("/api/admin/auth/login", adminAuthController.Login)
 	router.POST("/api/admin/auth/register", adminAuthController.Register)
 
+=======
+func setupStaticRoutes(router *httprouter.Router) {
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
 	uploadFS := http.FileServer(http.Dir("uploads"))
-	publicFS := http.FileServer(http.Dir("public")) // Add this line
+	publicFS := http.FileServer(http.Dir("public"))
 
 	// Add custom file server handler to serve static files
 	router.GET("/uploads/*filepath", func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -192,7 +199,7 @@ func NewRouter(
 	})
 
 	router.GET("/public/*filepath", func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		// Remove /uploads prefix from path
+		// Remove /public prefix from path
 		r.URL.Path = ps.ByName("filepath")
 
 		// Set headers for browser caching
@@ -202,7 +209,9 @@ func NewRouter(
 		// Serve the file
 		publicFS.ServeHTTP(w, r)
 	})
+}
 
+func setupErrorHandlers(router *httprouter.Router) {
 	// Add custom NotFound handler
 	router.NotFound = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Content-Type", "application/json")
@@ -218,6 +227,4 @@ func NewRouter(
 	})
 
 	router.PanicHandler = exception.ErrorHandler
-
-	return router
 }

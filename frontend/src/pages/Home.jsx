@@ -67,7 +67,13 @@ export default function SocialNetworkFeed() {
   const [editActiveTab, setEditActiveTab] = useState("update");
   const [editPostContent, setEditPostContent] = useState("");
   const [editArticleContent, setEditArticleContent] = useState("");
+<<<<<<< HEAD
   const [articleImages, setArticleImages] = useState([]);
+=======
+  const [newPostImages, setNewPostImages] = useState([]); // Untuk create post
+  const [editPostImages, setEditPostImages] = useState([]); // Untuk gambar yang sudah ada di edit post
+  const [newEditImages, setNewEditImages] = useState([]);
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [currentPostId, setCurrentPostId] = useState(null);
   const [commentText, setCommentText] = useState("");
@@ -105,6 +111,9 @@ export default function SocialNetworkFeed() {
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [allRepliesLoaded, setAllRepliesLoaded] = useState({});
   const [showcaseReplies, setShowcaseReplies] = useState([]);
+  const [selectedReply, setSelectedReply] = useState(null);
+  const [showReplyOptions, setShowReplyOptions] = useState(false);
+  const [editingReplyId, setEditingReplyId] = useState(null);
   const [showShowcase, setShowShowcase] = useState(false);
   const navigate = useNavigate();
   const [profileImage, setProfileImage] = useState(null);
@@ -567,7 +576,7 @@ export default function SocialNetworkFeed() {
             isLiked: post.is_liked || false,
           }));
           const gtw = response.data.data.filter(
-            (post) => post.is_liked === true 
+            (post) => post.is_liked === true
           );
 
           setPosts(formattedPosts);
@@ -668,22 +677,17 @@ export default function SocialNetworkFeed() {
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
-
-    // Buat URL untuk preview gambar
     const imagePreviews = files.map((file) => ({
-      file, // Simpan file asli
-      preview: URL.createObjectURL(file), // Buat URL untuk preview
+      file,
+      preview: URL.createObjectURL(file),
     }));
-
-    setArticleImages([...articleImages, ...imagePreviews]);
+    setNewPostImages([...newPostImages, ...imagePreviews]);
   };
-
   const removeImage = (index) => {
-    const newImages = [...articleImages];
-    // Hapus URL preview dari memori
+    const newImages = [...newPostImages];
     URL.revokeObjectURL(newImages[index].preview);
     newImages.splice(index, 1);
-    setArticleImages(newImages);
+    setNewPostImages(newImages);
   };
 
   const handlePostSubmit = async () => {
@@ -703,14 +707,16 @@ export default function SocialNetworkFeed() {
       formData.append("content", content);
       formData.append("visibility", postVisibility);
 
-      // Tambah semua gambar ke FormData
-      articleImages.forEach((img) => {
+      // Tambahkan semua gambar ke FormData
+      newPostImages.forEach((img) => {
         if (img.file) {
-          // file baru yang diupload
           formData.append("images", img.file);
+<<<<<<< HEAD
         } else if (typeof img === "string") {
           // Jika ini URL gambar yang sudah ad
           formData.append("existingImages", img);
+=======
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
         }
       });
 
@@ -725,7 +731,7 @@ export default function SocialNetworkFeed() {
         throw new Error("Invalid response from server");
       }
 
-      // response.data.data.images adalah array URL gambar
+      // Pastikan response.data.data.images adalah array URL gambar
       const images = response.data.data.images || [];
 
       const newPost = {
@@ -749,7 +755,7 @@ export default function SocialNetworkFeed() {
       setPosts((prevPosts) => [newPost, ...prevPosts]);
       setPostContent("");
       setArticleContent("");
-      setArticleImages([]);
+
       setAlertInfo({
         show: true,
         type: "success",
@@ -759,7 +765,7 @@ export default function SocialNetworkFeed() {
       setAlertInfo({
         show: true,
         type: "error",
-        message: "Failed to create post",
+        message: "Content:field is required",
       });
       setError(
         error.response?.data?.message ||
@@ -936,6 +942,7 @@ export default function SocialNetworkFeed() {
             replyTo: reply.reply_to_id
               ? response.data.data.find((r) => r.id === reply.reply_to_id)?.user
                 ? {
+<<<<<<< HEAD
                     id: response.data.data.find((r) => r.id === reply.reply_to_id).user.id,
                     name:
                       response.data.data.find((r) => r.id === reply.reply_to_id).user.name ||
@@ -945,6 +952,20 @@ export default function SocialNetworkFeed() {
                         .username || "unknown",
                     initials: response.data.data.find((r) => r.id === reply.reply_to_id).user
                       .name
+=======
+                    id: response.data.data.find(
+                      (r) => r.id === reply.reply_to_id
+                    ).user.id,
+                    name:
+                      response.data.data.find((r) => r.id === reply.reply_to_id)
+                        .user.name || "Unknown User",
+                    username:
+                      response.data.data.find((r) => r.id === reply.reply_to_id)
+                        .user.username || "unknown",
+                    initials: response.data.data.find(
+                      (r) => r.id === reply.reply_to_id
+                    ).user.name
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
                       ? response.data.data
                           .find((r) => r.id === reply.reply_to_id)
                           .user.name.split(" ")
@@ -1080,6 +1101,14 @@ export default function SocialNetworkFeed() {
 
     try {
       const userToken = localStorage.getItem("token");
+
+      // Jika sedang edit reply
+      if (editingReplyId) {
+        await handleUpdateReply(editingReplyId);
+        return;
+      }
+
+      // Jika membuat reply baru
       const response = await axios.post(
         `${apiUrl}/api/comments/${commentId}/replies`,
         {
@@ -1105,6 +1134,7 @@ export default function SocialNetworkFeed() {
                 .join("")
             : "CU",
         },
+<<<<<<< HEAD
         replyTo: replyToUser
           ? {
               id: replyToUser.id,
@@ -1116,6 +1146,9 @@ export default function SocialNetworkFeed() {
                 .join(""),
             }
           : null,
+=======
+        reply_to: response.data.data.reply_to, // Pastikan ini disimpan
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
       };
 
       // Update state
@@ -1124,6 +1157,26 @@ export default function SocialNetworkFeed() {
         [commentId]: [...(prev[commentId] || []), newReply],
       }));
 
+<<<<<<< HEAD
+=======
+      // Update comment replies count
+      setComments((prev) => {
+        const updated = { ...prev };
+        if (updated[currentPostId]) {
+          updated[currentPostId] = updated[currentPostId].map((c) => {
+            if (c.id === commentId) {
+              return {
+                ...c,
+                repliesCount: (c.repliesCount || 0) + 1,
+              };
+            }
+            return c;
+          });
+        }
+        return updated;
+      });
+
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
       // Reset form
       setReplyText("");
       setReplyingTo(null);
@@ -1151,6 +1204,12 @@ export default function SocialNetworkFeed() {
   };
 
   const toggleReplies = async (commentId) => {
+    // Reset editing states when toggling replies
+    setEditingReplyId(null);
+    setEditingCommentId(null);
+    setCommentText("");
+    setReplyText("");
+
     // Jika belum ada data replies, fetch dari API
     if (!allReplies[commentId] || allReplies[commentId].length === 0) {
       await fetchReplies(commentId);
@@ -1234,7 +1293,6 @@ export default function SocialNetworkFeed() {
       if (selectedPostId === postId) {
         setSelectedPostId(null);
         setPostContent("");
-        setArticleImages([]);
       }
       setAlertInfo({
         show: true,
@@ -1264,18 +1322,29 @@ export default function SocialNetworkFeed() {
       formData.append("visibility", postVisibility);
 
       // Tambahkan gambar yang sudah ada dan tidak dihapus
+<<<<<<< HEAD
       articleImages.forEach((img) => {
         if (typeof img === "string") {
           // Hanya URL string yang sudah ada
+=======
+      editPostImages.forEach((img) => {
+        if (typeof img === "string") {
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
           formData.append("existingImages", img);
         }
       });
 
       // Tambahkan gambar baru
+<<<<<<< HEAD
       newImages.forEach((file) => {
         formData.append("images", file);
       });
 
+=======
+      newEditImages.forEach((img) => {
+        formData.append("images", img.file);
+      });
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
       // Kirim permintaan update
       const response = await axios.put(
         `${apiUrl}/api/posts/${editingPost.id}`,
@@ -1317,25 +1386,36 @@ export default function SocialNetworkFeed() {
 
   const handleNewImageUpload = (e) => {
     const files = Array.from(e.target.files);
-    setNewImages([...newImages, ...files]);
+    const imagePreviews = files.map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+    setNewEditImages([...newEditImages, ...imagePreviews]);
   };
 
   const handleRemoveExistingImage = (index) => {
-    const removed = articleImages[index];
+    const removed = editPostImages[index];
     setRemovedImages([...removedImages, removed]);
-    setArticleImages(articleImages.filter((_, i) => i !== index));
+    setEditPostImages(editPostImages.filter((_, i) => i !== index));
   };
-
   const handleRemoveNewImage = (index) => {
-    setNewImages(newImages.filter((_, i) => i !== index));
+    const newImagesCopy = [...newEditImages];
+    URL.revokeObjectURL(newImagesCopy[index].preview);
+    newImagesCopy.splice(index, 1);
+    setNewEditImages(newImagesCopy);
   };
 
   const handleEditPost = (post) => {
     setEditingPost(post);
     setEditPostContent(post.content);
     setEditArticleContent(post.content);
+<<<<<<< HEAD
     setArticleImages(post.images || []);
     setNewImages([]);
+=======
+    setEditPostImages(post.images || []); // Set gambar yang sudah ada
+    setNewEditImages([]); // Reset gambar baru
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
     setRemovedImages([]);
     setPostVisibility(post.visibility || "public");
     setEditActiveTab("update");
@@ -1829,6 +1909,234 @@ export default function SocialNetworkFeed() {
     );
   };
 
+  const renderReplyOptionsModal = () => {
+    if (!showReplyOptions || !selectedReply) return null;
+
+    const isCurrentUserReply = selectedReply?.user?.id === currentUserId;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg w-full max-w-xs mx-4">
+          <div className="p-4">
+            <h3 className="font-medium text-lg mb-3">Reply Options</h3>
+
+            {isCurrentUserReply ? (
+              <>
+                <button
+                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
+                  onClick={() => {
+                    setEditingReplyId(selectedReply.id);
+                    setReplyText(selectedReply.content);
+                    setShowReplyOptions(false);
+                  }}
+                >
+                  <SquarePen size={16} className="mr-2" />
+                  Edit Reply
+                </button>
+                <button
+                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
+                  onClick={() => handleDeleteReply(selectedReply.id)}
+                >
+                  <X size={16} className="mr-2" />
+                  Delete Reply
+                </button>
+              </>
+            ) : (
+              <button
+                className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
+                onClick={() => {
+                  if (selectedReply?.user?.id) {
+                    handleReportClick(
+                      selectedReply.user.id,
+                      "comment",
+                      selectedReply.id
+                    );
+                  }
+                  setShowReplyOptions(false);
+                }}
+              >
+                <TriangleAlert size={16} className="mr-2" />
+                Report Reply
+              </button>
+            )}
+          </div>
+
+          <div className="border-t p-3">
+            <button
+              className="w-full py-2 text-gray-500 hover:text-gray-700"
+              onClick={() => setShowReplyOptions(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const handleUpdateReply = async (replyId) => {
+    if (!replyId || !replyText.trim()) return;
+
+    try {
+      const userToken = localStorage.getItem("token");
+      await axios.put(
+        `${apiUrl}/api/comments/${replyId}`,
+        { content: replyText },
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        }
+      );
+
+      // Update replies state
+      setAllReplies((prev) => {
+        const updatedReplies = { ...prev };
+        Object.keys(updatedReplies).forEach((commentId) => {
+          updatedReplies[commentId] = updatedReplies[commentId].map((reply) => {
+            if (reply.id === replyId) {
+              return {
+                ...reply,
+                content: replyText,
+              };
+            }
+            return reply;
+          });
+        });
+        return updatedReplies;
+      });
+
+      // Reset state
+      setEditingReplyId(null);
+      setReplyText("");
+      setAlertInfo({
+        show: true,
+        type: "success",
+        message: "Reply updated successfully!",
+      });
+    } catch (error) {
+      console.error("Failed to update reply:", error);
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: "Failed to update reply. Please try again.",
+      });
+    }
+  };
+
+  const handleDeleteReply = async (replyId) => {
+    try {
+      const userToken = localStorage.getItem("token");
+      if (!userToken) {
+        throw new Error("No authentication token found");
+      }
+
+      // Find the parent comment ID
+      let parentCommentId = null;
+      Object.keys(allReplies).forEach((commentId) => {
+        if (allReplies[commentId].some((reply) => reply.id === replyId)) {
+          parentCommentId = commentId;
+        }
+      });
+
+      if (!parentCommentId) {
+        throw new Error("Parent comment not found");
+      }
+
+      // Optimistic update
+      setAllReplies((prev) => ({
+        ...prev,
+        [parentCommentId]: prev[parentCommentId].filter(
+          (reply) => reply.id !== replyId
+        ),
+      }));
+
+      // Update comment replies count
+      setComments((prev) => {
+        const updated = { ...prev };
+        if (updated[currentPostId]) {
+          updated[currentPostId] = updated[currentPostId].map((comment) => {
+            if (comment.id === parentCommentId) {
+              return {
+                ...comment,
+                repliesCount: (comment.repliesCount || 1) - 1,
+              };
+            }
+            return comment;
+          });
+        }
+        return updated;
+      });
+
+      // Send delete request
+      await axios.delete(`${apiUrl}/api/comments/${replyId}`, {
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+        },
+      });
+
+      setShowReplyOptions(false);
+      setSelectedReply(null);
+
+      setAlertInfo({
+        show: true,
+        type: "success",
+        message: "Reply deleted successfully!",
+      });
+    } catch (error) {
+      console.error("Failed to delete reply:", error);
+
+      // Rollback optimistic update
+      if (selectedReply) {
+        setAllReplies((prev) => {
+          const updated = { ...prev };
+          const parentCommentId =
+            selectedReply.commentId ||
+            Object.keys(prev).find((id) =>
+              prev[id].some((r) => r.id === selectedReply.id)
+            );
+
+          if (parentCommentId) {
+            updated[parentCommentId] = [
+              ...(updated[parentCommentId] || []),
+              selectedReply,
+            ];
+          }
+          return updated;
+        });
+
+        // Rollback replies count
+        setComments((prev) => {
+          const updated = { ...prev };
+          const parentCommentId =
+            selectedReply.commentId ||
+            Object.keys(allReplies).find((id) =>
+              allReplies[id].some((r) => r.id === selectedReply.id)
+            );
+
+          if (updated[currentPostId] && parentCommentId) {
+            updated[currentPostId] = updated[currentPostId].map((comment) => {
+              if (comment.id === parentCommentId) {
+                return {
+                  ...comment,
+                  repliesCount: (comment.repliesCount || 0) + 1,
+                };
+              }
+              return comment;
+            });
+          }
+          return updated;
+        });
+      }
+
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: error.response?.data?.message || "Failed to delete reply",
+      });
+    }
+  };
+
   const ReportModal = ({
     showReportModal,
     setShowReportModal,
@@ -2170,11 +2478,17 @@ export default function SocialNetworkFeed() {
           name: userData.name,
           username: userData.username,
           initials: userData.name
+<<<<<<< HEAD
             ? userData.name
                 .split(" ")
                 .map((n) => n[0])
                 .join("")
             : "UU",
+=======
+            .split(" ")
+            .map((n) => n[0])
+            .join(""),
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
           photo: userData.photo,
         });
         setProfileImage(userData.photo);
@@ -2457,24 +2771,54 @@ export default function SocialNetworkFeed() {
           ) : (
             <>
               {/* Editor */}
-              <div className="border rounded-md overflow-hidden text-black ck-editor-mode">
+              <div className="ck-editor-container relative z-10">
                 <CKEditor
                   editor={ClassicEditor}
                   data={articleContent}
                   onChange={(e, editor) => setArticleContent(editor.getData())}
                   config={{
-                    toolbar: [
-                      "heading",
-                      "|",
-                      "bold",
-                      "italic",
-                      "link",
-                      "bulletedList",
-                      "numberedList",
-                      "|",
-                      "undo",
-                      "redo",
-                    ],
+                    toolbar: {
+                      items: [
+                        "heading",
+                        "|",
+                        "bold",
+                        "italic",
+                        "link",
+                        "bulletedList",
+                        "numberedList",
+                        "|",
+                        "undo",
+                        "redo",
+                      ],
+                      shouldNotGroupWhenFull: true,
+                    },
+                    heading: {
+                      options: [
+                        {
+                          model: "paragraph",
+                          title: "Paragraph",
+                          class: "ck-heading_paragraph",
+                        },
+                        {
+                          model: "heading1",
+                          view: "h1",
+                          title: "Heading 1",
+                          class: "ck-heading_heading1",
+                        },
+                        {
+                          model: "heading2",
+                          view: "h2",
+                          title: "Heading 2",
+                          class: "ck-heading_heading2",
+                        },
+                        {
+                          model: "heading3",
+                          view: "h3",
+                          title: "Heading 3",
+                          class: "ck-heading_heading3",
+                        },
+                      ],
+                    },
                   }}
                 />
               </div>
@@ -2482,26 +2826,31 @@ export default function SocialNetworkFeed() {
                 <div className="text-red-500 text-center py-4">{error}</div>
               )}
 
-              {/* Image preview */}
-              {articleImages.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {articleImages.map((img, index) => (
-                    <div key={index} className="relative">
-                      <img
-                        src={img.preview} // Gunakan URL preview
-                        className="w-full h-24 object-cover rounded-md border"
-                        alt={`img-${index}`}
-                      />
-                      <button
-                        className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1"
-                        onClick={() => removeImage(index)}
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {activeTab === "article" &&
+                newPostImages.length > 0 &&
+                !selectedPostId && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {newPostImages.map((img, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={img.preview}
+                          className="w-full h-24 object-cover rounded-md border"
+                          alt={`img-${index}`}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "";
+                          }}
+                        />
+                        <button
+                          className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1"
+                          onClick={() => removeImage(index)}
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
               {/* Visibility & Submit */}
               <div className="flex justify-between items-center pt-2">
@@ -2695,8 +3044,9 @@ export default function SocialNetworkFeed() {
 
                 {/* Post Content */}
                 {post.content && (
+                  // Tambahkan class khusus untuk konten post
                   <div
-                    className="prose max-w-none text-gray-700"
+                    className="prose max-w-none text-gray-700 ck-content custom-post-content"
                     dangerouslySetInnerHTML={{ __html: post.content }}
                   />
                 )}
@@ -2878,7 +3228,11 @@ export default function SocialNetworkFeed() {
               <textarea
                 className="w-full border rounded-lg p-2 mb-4"
                 rows="4"
+<<<<<<< HEAD
                 value={editPostContent}
+=======
+                value={editPostContent.replace(/<[^>]+>/g, "")}
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
                 onChange={(e) => setEditPostContent(e.target.value)}
               />
             ) : (
@@ -2902,26 +3256,95 @@ export default function SocialNetworkFeed() {
                       "undo",
                       "redo",
                     ],
+<<<<<<< HEAD
+=======
+                    heading: {
+                      options: [
+                        {
+                          model: "paragraph",
+                          title: "Paragraph",
+                          class: "ck-heading_paragraph",
+                        },
+                        {
+                          model: "heading1",
+                          view: "h1",
+                          title: "Heading 1",
+                          class: "ck-heading_heading1",
+                        },
+                        {
+                          model: "heading2",
+                          view: "h2",
+                          title: "Heading 2",
+                          class: "ck-heading_heading2",
+                        },
+                        {
+                          model: "heading3",
+                          view: "h3",
+                          title: "Heading 3",
+                          class: "ck-heading_heading3",
+                        },
+                      ],
+                    },
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
                   }}
                 />
               </div>
             )}
 
             {/* Existing Images */}
-            {articleImages.length > 0 && (
+            {/* Existing Images */}
+            {editPostImages.length > 0 && (
               <div className="mb-4">
                 <h4 className="text-sm font-medium mb-2">Current Images</h4>
                 <div className="grid grid-cols-3 gap-2">
-                  {articleImages.map((img, index) => (
+                  {editPostImages.map((img, index) => (
                     <div key={`existing-${index}`} className="relative">
                       <img
-                        src={apiUrl + "/" + img}
+                        src={
+                          typeof img === "string"
+                            ? img.startsWith("http")
+                              ? img
+                              : `${apiUrl}/${img}`
+                            : img.preview
+                        }
                         className="w-full h-24 object-cover rounded-md border"
-                        alt={`img-${index}`}
+                        alt={`Current image ${index + 1}`}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "";
+                        }}
                       />
                       <button
                         className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1"
                         onClick={() => handleRemoveExistingImage(index)}
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* New Images */}
+            {newEditImages.length > 0 && (
+              <div className="mb-4">
+                <h4 className="text-sm font-medium mb-2">New Images</h4>
+                <div className="grid grid-cols-3 gap-2">
+                  {newEditImages.map((img, index) => (
+                    <div key={`new-${index}`} className="relative">
+                      <img
+                        src={img.preview}
+                        className="w-full h-24 object-cover rounded-md border"
+                        alt={`New image ${index + 1}`}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "";
+                        }}
+                      />
+                      <button
+                        className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1"
+                        onClick={() => handleRemoveNewImage(index)}
                       >
                         <X size={12} />
                       </button>
@@ -2941,7 +3364,11 @@ export default function SocialNetworkFeed() {
                       <img
                         src={URL.createObjectURL(img)}
                         className="w-full h-24 object-cover rounded-md border"
-                        alt={`new-img-${index}`}
+                        alt={`New image ${index + 1}`}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "";
+                        }}
                       />
                       <button
                         className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1"
@@ -3651,6 +4078,11 @@ export default function SocialNetworkFeed() {
                           )}
 
                           {/* Replies Section */}
+<<<<<<< HEAD
+=======
+
+                          {/* Replies Section */}
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
                           {expandedReplies[comment.id] && (
                             <div className="mt-3 ml-4 pl-4 border-l-2 border-gray-200 space-y-3">
                               {loadingComments[comment.id] ? (
@@ -3696,6 +4128,7 @@ export default function SocialNetworkFeed() {
                                       </div>
 
                                       {/* Reply Content */}
+<<<<<<< HEAD
                                       <div className="flex-1 min-w-0">
                                         <div className="bg-gray-50 rounded-lg p-2">
                                           {/* Reply User Info */}
@@ -3734,6 +4167,115 @@ export default function SocialNetworkFeed() {
                                           <p className="text-xs text-gray-700 mt-1">
                                             {reply.content}
                                           </p>
+=======
+                                      <div className="flex-1  min-w-0">
+                                        <div className="bg-gray-50 rounded-lg p-2">
+                                          {/* Reply User Info */}
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center">
+                                              <Link
+                                                to={`/user-profile/${reply.user.username}`}
+                                                className="text-xs font-semibold text-gray-800 hover:text-blue-600 hover:underline"
+                                              >
+                                                {reply.user?.name ||
+                                                  "Unknown User"}
+                                              </Link>
+                                              {/* Tambahkan informasi "Replying to" di sini */}
+                                              {reply.reply_to && (
+                                                <span className="text-xs text-gray-500 ml-1 flex items-center">
+                                                  <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width="10"
+                                                    height="10"
+                                                    fill="currentColor"
+                                                    class="mr-1"
+                                                    viewBox="0 0 16 16"
+                                                  >
+                                                    <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z" />
+                                                  </svg>
+                                                  <Link
+                                                    to={`/user-profile/${reply.reply_to.name}`}
+                                                    className="text-blue-500 hover:underline"
+                                                  >
+                                                    {reply.reply_to.name}
+                                                  </Link>
+                                                </span>
+                                              )}
+                                            </div>
+
+                                            {/* Reply Actions */}
+                                            <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                              {reply.user?.id ===
+                                                currentUserId && (
+                                                <button
+                                                  className="text-gray-500 hover:text-gray-700"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedReply(reply);
+                                                    setShowReplyOptions(true);
+                                                  }}
+                                                >
+                                                  <MoreHorizontal size={14} />
+                                                </button>
+                                              )}
+
+                                              {reply.user?.id !==
+                                                currentUserId && (
+                                                <button
+                                                  className="text-gray-500 hover:text-red-500"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (reply.user?.id) {
+                                                      handleReportClick(
+                                                        reply.user.id,
+                                                        "comment",
+                                                        reply.id
+                                                      );
+                                                    }
+                                                  }}
+                                                >
+                                                  <TriangleAlert size={14} />
+                                                </button>
+                                              )}
+                                            </div>
+                                          </div>
+
+                                          {/* Reply Text */}
+                                          {editingReplyId === reply.id ? (
+                                            <div className="mt-1 flex gap-2">
+                                              <input
+                                                type="text"
+                                                className="flex-1 border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                value={replyText}
+                                                onChange={(e) =>
+                                                  setReplyText(e.target.value)
+                                                }
+                                                autoFocus
+                                              />
+                                              <button
+                                                className="bg-blue-500 text-white px-2 py-1 rounded-lg text-xs hover:bg-blue-600 transition-colors"
+                                                onClick={() =>
+                                                  handleUpdateReply(reply.id)
+                                                }
+                                              >
+                                                Update
+                                              </button>
+                                              <button
+                                                className="bg-gray-200 text-gray-700 px-2 py-1 rounded-lg text-xs hover:bg-gray-300 transition-colors"
+                                                onClick={() => {
+                                                  setEditingReplyId(null);
+                                                  setReplyText("");
+                                                }}
+                                              >
+                                                Cancel
+                                              </button>
+                                            </div>
+                                          ) : (
+                                            <p className="text-xs text-gray-700 mt-1">
+                                              {reply.content}
+                                            </p>
+                                          )}
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
                                         </div>
 
                                         {/* Reply Meta */}
@@ -3752,6 +4294,7 @@ export default function SocialNetworkFeed() {
                                             >
                                               Reply
                                             </button>
+<<<<<<< HEAD
 
                                             {reply.user?.id !==
                                               currentUserId && (
@@ -3771,6 +4314,8 @@ export default function SocialNetworkFeed() {
                                                 <TriangleAlert size={14} />
                                               </button>
                                             )}
+=======
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
                                           </div>
                                         </div>
                                       </div>
@@ -3789,6 +4334,10 @@ export default function SocialNetworkFeed() {
             </div>
 
             {/* Comment Options Modal */}
+<<<<<<< HEAD
+=======
+            {renderReplyOptionsModal()}
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
             {renderCommentOptionsModal()}
 
             {/* Add Comment Section */}

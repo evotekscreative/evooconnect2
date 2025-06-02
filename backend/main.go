@@ -29,7 +29,12 @@ func main() {
 	}
 	validate := validator.New()
 	utils.InitPusherClient()
-	jwtSecret := helper.GetEnv("JWT_SECRET_KEY", "your-secret-key")
+
+	// Initialize JWT dengan secret dari environment
+	jwtSecret := helper.GetEnv("JWT_SECRET_KEY", "your-super-secret-jwt-key-at-least-32-characters-long")
+	utils.InitJWT(jwtSecret) // Initialize JWT utils dengan secret
+
+	log.Printf("JWT Secret loaded successfully")
 
 	// ===== Repositories =====
 	// User-related repositories
@@ -65,7 +70,15 @@ func main() {
 	// Notification repository
 	notificationRepository := repository.NewNotificationRepository()
 
-	// Notification service (moved up)
+	// Admin repository
+	adminRepository := repository.NewAdminRepository()
+
+	// Company-related repositories
+	companyRepository := repository.NewCompanyRepository()
+	companySubmissionRepository := repository.NewCompanySubmissionRepository()
+
+	// ===== Services =====
+	// Notification service (moved up because it's used by many other services)
 	notificationService := service.NewNotificationService(
 		notificationRepository,
 		userRepository,
@@ -73,9 +86,6 @@ func main() {
 		validate,
 	)
 
-	adminRepository := repository.NewAdminRepository()
-
-	// ===== Services =====
 	// User-related services
 	profileViewService := service.NewProfileViewService(db, profileViewRepository, userRepository, notificationService)
 	connectionService := service.NewConnectionService(connectionRepository, userRepository, notificationService, db, validate)
@@ -162,7 +172,22 @@ func main() {
 		connectionRepository,
 	)
 
+	// Admin auth service
 	adminAuthService := service.NewAdminAuthService(adminRepository, db, validate)
+<<<<<<< HEAD
+=======
+
+	// Company submission service
+	companySubmissionService := service.NewCompanySubmissionService(
+		companySubmissionRepository,
+		companyRepository,
+		userRepository,
+		adminRepository,
+		notificationService,
+		db,
+		validate,
+	)
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
 
 	// ===== Controllers =====
 	// User-related controllers
@@ -179,6 +204,7 @@ func main() {
 	blogController := controller.NewBlogController(blogService)
 	postController := controller.NewPostController(postService)
 	commentController := controller.NewCommentController(commentService)
+	commentBlogController := controller.NewCommentBlogController(commentBlogService)
 
 	// Professional info controllers
 	educationController := controller.NewEducationController(educationService)
@@ -190,12 +216,8 @@ func main() {
 	// Chat controller
 	chatController := controller.NewChatController(chatService)
 
-	// ✅ Inject all controllers into router including reportController
 	// Report controller
 	reportController := controller.NewReportController(reportService)
-
-	// Comment blog controller
-	commentBlogController := controller.NewCommentBlogController(commentBlogService)
 
 	// Notification controller
 	notificationController := controller.NewNotificationController(notificationService)
@@ -203,10 +225,19 @@ func main() {
 	// Search controller
 	searchController := controller.NewSearchController(searchService)
 
+<<<<<<< HEAD
 	adminAuthController := controller.NewAdminAuthController(adminAuthService)
 
+=======
+	// Admin controllers
+	adminAuthController := controller.NewAdminAuthController(adminAuthService)
+
+	// Company submission controller
+	companySubmissionController := controller.NewCompanySubmissionController(companySubmissionService)
+
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
 	// ===== Router and Middleware =====
-	// Initialize router with all controllers
+	// Initialize router with all controllers and JWT secret
 	router := app.NewRouter(
 		authController,
 		userController,
@@ -224,25 +255,29 @@ func main() {
 		notificationController,
 		searchController,
 		adminAuthController,
+<<<<<<< HEAD
+=======
+		companySubmissionController,
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
 	)
 
+	// Seed admin data
 	seeder.SeedAdmin(db)
+	seeder.SeedAllData(db)
 
-	// Create middleware chain
+	// Create middleware chain (only CORS needed now since auth is handled per route)
 	var handler http.Handler = router
-	handler = middleware.NewAuthMiddleware(handler, jwtSecret)
 	handler = middleware.CORSMiddleware(handler)
-	handler = middleware.NewAdminAuthMiddleware(handler)
 
-	addres := helper.GetEnv("APP_SERVER", "localhost:3000")
+	address := helper.GetEnv("APP_SERVER", "localhost:3000")
 
 	// ===== Start Server =====
 	server := http.Server{
-		Addr:    addres,
+		Addr:    address,
 		Handler: handler,
 	}
-	// http://localhost:5173/
-	fmt.Println("\nServer starting on ", addres)
+
+	fmt.Println("\nServer starting on ", address)
 	err := server.ListenAndServe()
 	helper.PanicIfError(err)
 }

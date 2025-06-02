@@ -176,6 +176,7 @@ export default function Connection() {
   };
 
   const fetchPeoples = async () => {
+<<<<<<< HEAD
     const token = localStorage.getItem("token");
     const currentUserId = parseInt(localStorage.getItem("userId"));
     try {
@@ -198,26 +199,48 @@ export default function Connection() {
           status: person.is_connected
             ? "connected"
             : pendingIds.includes(person.id)
+=======
+  const token = localStorage.getItem("token");
+  const currentUserId = localStorage.getItem("userId"); // Perhatikan ini menggunakan string bukan parseInt
+  
+  try {
+    const response = await axios.get(apiUrl + "/api/user-peoples", {
+      params: { limit: 9999, offset: 0 },
+      headers: {
+        Authorization: "Bearer " + token,
+      },
+    });
+
+    const mappedConnections = response.data.data
+      .filter((person) => person.id !== currentUserId)
+      .map((person) => ({
+        id: person.id,
+        name: person.name,
+        headline: person.headline || "No headline",
+        status: person.is_connected 
+          ? "connected" 
+          : person.is_connected_request === "pending"
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
             ? "pending"
             : "connect",
-          profile: person.photo || "",
-          username: person.username || "",
-          verified: person.verified,
-        }));
+        profile: person.photo || "",
+        username: person.username || "",
+        verified: person.verified,
+      }));
 
-      setConnections(mappedConnections);
+    setConnections(mappedConnections);
 
-      // Set connected users
-      const connected = mappedConnections.filter(
-        (conn) => conn.status === "connected"
-      );
-      setConnectedUsers(connected);
-    } catch (error) {
-      console.error("Gagal mengambil data user-peoples:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    // Set connected users
+    const connected = mappedConnections.filter(
+      (conn) => conn.status === "connected"
+    );
+    setConnectedUsers(connected);
+  } catch (error) {
+    console.error("Gagal mengambil data user-peoples:", error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchPeoples();
@@ -225,6 +248,7 @@ export default function Connection() {
   }, [activeTab]);
 
   const handleConnect = async (id) => {
+<<<<<<< HEAD
     const token = localStorage.getItem("token");
     const person = connections.find((conn) => conn.id === id);
 
@@ -237,13 +261,28 @@ export default function Connection() {
           conn.id === id ? { ...conn, status: "processing" } : conn
         )
       );
+=======
+  const token = localStorage.getItem("token");
+  const person = connections.find((conn) => conn.id === id);
 
-      const response = await axios.post(
-        `${apiUrl}/api/users/${id}/connect`,
-        {},
-        { headers: { Authorization: "Bearer " + token } }
-      );
+  if (!person) return;
 
+  try {
+    // Update UI immediately
+    setConnections(
+      connections.map((conn) =>
+        conn.id === id ? { ...conn, status: "processing" } : conn
+      )
+    );
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
+
+    const response = await axios.post(
+      `${apiUrl}/api/users/${id}/connect`,
+      {},
+      { headers: { Authorization: "Bearer " + token } }
+    );
+
+<<<<<<< HEAD
       // Update status based on response
       const newStatus = response.data?.connected ? "connected" : "pending";
 
@@ -282,23 +321,47 @@ export default function Connection() {
       });
     }
   };
+=======
+    // Setelah berhasil connect, fetch ulang data
+    await fetchPeoples();
 
+    setAlertInfo({
+      show: true,
+      type: "success",
+      message: response.data?.connected 
+        ? "Connected successfully!" 
+        : "Connection request sent!",
+    });
+  } catch (error) {
+    setConnections(
+      connections.map((conn) =>
+        conn.id === id ? { ...conn, status: person.status } : conn
+      )
+    );
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
+
+    setAlertInfo({
+      show: true,
+      type: "error",
+      message: error.response?.data?.data || "Failed to connect",
+    });
+  }
+};
   const handleCancelRequest = async (id) => {
-    const token = localStorage.getItem("token");
-    const pendingIds =
-      JSON.parse(localStorage.getItem("pendingConnections")) || [];
+  const token = localStorage.getItem("token");
 
-    try {
-      setConnections(
-        connections.map((conn) =>
-          conn.id === id ? { ...conn, status: "processing" } : conn
-        )
-      );
+  try {
+    setConnections(
+      connections.map((conn) =>
+        conn.id === id ? { ...conn, status: "processing" } : conn
+      )
+    );
 
-      await axios.delete(`${apiUrl}/api/connections/requests/${id}`, {
-        headers: { Authorization: "Bearer " + token },
-      });
+    await axios.delete(`${apiUrl}/api/connections/requests/${id}`, {
+      headers: { Authorization: "Bearer " + token },
+    });
 
+<<<<<<< HEAD
       // const updatedPending = pendingIds.filter((pid) => pid !== id);
       // localStorage.setItem(
       //   "pendingConnections",
@@ -341,16 +404,51 @@ export default function Connection() {
     }
   };
 
+=======
+    // Setelah berhasil cancel, fetch ulang data
+    await fetchPeoples();
+
+    setInvitations((prev) => prev.filter((inv) => inv.id !== id));
+    setModalOpen(false);
+    setSelectedUser(null);
+    setAlertInfo({
+      show: true,
+      type: "success",
+      message: "Connection request cancelled",
+    });
+  } catch (error) {
+    setConnections(
+      connections.map((conn) =>
+        conn.id === id ? { ...conn, status: "pending" } : conn
+      )
+    );
+    setModalOpen(false);
+    setSelectedUser(null);
+    setAlertInfo({
+      show: true,
+      type: "error",
+      message: error.response?.data?.message || "Connection request not found",
+    });
+  }
+};
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
   const handleAccept = async (id) => {
-    const token = localStorage.getItem("token");
+  const token = localStorage.getItem("token");
 
-    try {
-      setInvitations(
-        invitations.map((inv) =>
-          inv.id === id ? { ...inv, status: "processing" } : inv
-        )
-      );
+  try {
+    // Optimistic UI update - immediately show the change
+    setInvitations(invitations.filter((inv) => inv.id !== id));
+    setConnections(
+      connections.map((conn) =>
+        conn.id === id ? { ...conn, status: "connected" } : conn
+      )
+    );
+    setConnectedUsers([
+      ...connectedUsers,
+      { ...invitations.find((inv) => inv.id === id), status: "connected" },
+    ]);
 
+<<<<<<< HEAD
       const response = await axios.put(
         `${apiUrl}/api/connections/requests/${id}/accept`,
         {},
@@ -379,6 +477,31 @@ export default function Connection() {
       );
     }
   };
+=======
+    // Then make the API call
+    await axios.put(
+      `${apiUrl}/api/connections/requests/${id}/accept`,
+      {},
+      { headers: { Authorization: "Bearer " + token } }
+    );
+
+    // If needed, you can do a final state sync here
+    await fetchPeoples();
+    
+  } catch (error) {
+    // Revert optimistic update if API call fails
+    setInvitations(invitations);
+    setConnections(connections);
+    setConnectedUsers(connectedUsers);
+    
+    setAlertInfo({
+      show: true,
+      type: "error",
+      message: error.response?.data?.message || "Failed to accept invitation",
+    });
+  }
+};
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
 
   const handleReject = async (id) => {
     const token = localStorage.getItem("token");

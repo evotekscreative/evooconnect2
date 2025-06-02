@@ -97,4 +97,8 @@ const BlogMenu = ({ onEdit, onDelete, onReport, currentUserId, postOwnerId }) =>
   );
 };
 
+<<<<<<< HEAD
 export default BlogMenu;
+=======
+export default BlogMenu;
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248

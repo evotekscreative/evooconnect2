@@ -6,9 +6,8 @@ import (
 
 func PanicIfError(err error) {
 	if err != nil {
-		log.Println("Error:", err)
+		log.Printf("ERROR DETAILS: %v", err)
+		log.Printf("ERROR TYPE: %T", err)
 		panic(err)
 	}
 }
-
-

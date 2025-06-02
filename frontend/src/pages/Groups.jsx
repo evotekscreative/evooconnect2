@@ -18,8 +18,6 @@ export default function Groups() {
   const [activeTab, setActiveTab] = useState('myGroups');
   const navigate = useNavigate();
   const [error, setError] = useState(null);
-  const [suggestedGroups, setSuggestedGroups] = useState([]);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   const [groupForm, setGroupForm] = useState({
     name: "",
@@ -58,10 +56,6 @@ export default function Groups() {
         axios.get(`${base_url}/api/groups`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
 
-      console.log("Admin response:", adminResponse.data);
-      console.log("All groups response:", allGroupsResponse.data);
-
-      // Grup yang dibuat user
       const adminGroupsData = Array.isArray(adminResponse.data.data)
         ? adminResponse.data.data.map(group => ({
           ...group,
@@ -80,9 +74,6 @@ export default function Groups() {
             joinedDate: group.joined_at ? group.joined_at.split('T')[0] : new Date().toISOString().split('T')[0]
           }))
         : [];
-
-      console.log("Admin groups data:", adminGroupsData);
-      console.log("Joined groups data:", joinedGroupsData);
 
       setAdminGroups(adminGroupsData);
       setJoinedGroups(joinedGroupsData);
@@ -152,9 +143,9 @@ export default function Groups() {
   // Handler functions
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    console.log(`Setting ${name} to ${value}`);  // Add this debug line
     setGroupForm(prev => ({ ...prev, [name]: value }));
   };
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     setGroupForm(prev => ({ ...prev, image: file }));
@@ -174,22 +165,8 @@ export default function Groups() {
       formData.append("rule", groupForm.rule);
       formData.append("privacy_level", groupForm.privacy_level);
       formData.append("invite_policy", groupForm.invite_policy);
-
-      // Make sure we're using the correct field name for the image
-      // Check if the API expects "photo" or "image"
       formData.append("photo", groupForm.image);
 
-      // Log FormData entries for debugging (won't show in console directly)
-      console.log("Form values being sent:", {
-        name: groupForm.name,
-        description: groupForm.description,
-        rule: groupForm.rule,
-        privacy_level: groupForm.privacy_level,
-        invite_policy: groupForm.invite_policy,
-        hasImage: !!groupForm.image
-      });
-
-      // Make the API request
       const response = await axios.post(`${base_url}/api/groups`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",

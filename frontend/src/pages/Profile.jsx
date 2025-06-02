@@ -484,7 +484,14 @@ const hideAlert = () => {
       });
     } catch (error) {
       console.error("Failed to add/update experience:", error);
+<<<<<<< HEAD
       showAlert('error', `Failed to ${editingExperience ? "update" : "add"} experience. Please try again.`);
+=======
+      toast.error(
+        `Failed to ${editingExperience ? "update" : "add"
+        } experience. Please try again.`
+      );
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
     } finally {
       setIsLoading(false);
     }
@@ -558,7 +565,14 @@ const hideAlert = () => {
       });
     } catch (error) {
       console.error("Failed to add/update education:", error);
+<<<<<<< HEAD
       showAlert('error', `Failed to ${editingEducation ? "update" : "add"} education. Please try again.`);
+=======
+      toast.error(
+        `Failed to ${editingEducation ? "update" : "add"
+        } education. Please try again.`
+      );
+>>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
     } finally {
       setIsLoading(false);
     }
@@ -958,7 +972,7 @@ showAlert('success', "Experience deleted successfully!");
                           <p className="text-gray-500 text-sm">
                             {formatDate(exp.start_month, exp.start_year)} -{" "}
                             {exp.end_month === "Month" ||
-                            exp.end_year === "Year"
+                              exp.end_year === "Year"
                               ? "Present"
                               : formatDate(exp.end_month, exp.end_year)}
                           </p>
@@ -1035,7 +1049,7 @@ showAlert('success', "Experience deleted successfully!");
                           <p className="text-gray-500 text-sm">
                             {formatDate(edu.start_month, edu.start_year)} -{" "}
                             {edu.end_month === "Month" ||
-                            edu.end_year === "Year"
+                              edu.end_year === "Year"
                               ? "Present"
                               : formatDate(edu.end_month, edu.end_year)}
                           </p>
@@ -1421,8 +1435,8 @@ showAlert('success', "Experience deleted successfully!");
                     {isLoading
                       ? "Saving..."
                       : editingExperience
-                      ? "Update"
-                      : "Save"}
+                        ? "Update"
+                        : "Save"}
                   </button>
                 </div>
               </div>
@@ -1617,8 +1631,8 @@ showAlert('success', "Experience deleted successfully!");
                     {isLoading
                       ? "Saving..."
                       : editingEducation
-                      ? "Update"
-                      : "Save"}
+                        ? "Update"
+                        : "Save"}
                   </button>
                 </div>
               </div>
