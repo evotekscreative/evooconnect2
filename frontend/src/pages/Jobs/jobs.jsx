@@ -273,9 +273,11 @@ export default function Jobs() {
                         <CardContent className="p-4 text-center">
                             <h2 className="font-bold text-md mb-1">Grow Your Business with EVOConnect</h2>
                             <p className="text-sm text-gray-600 mb-4">Expand your team with top talent today!</p>
-                            <Button className="bg-[#0A66C2] hover:bg-blue-700 text-white px-4 py-1 text-sm rounded" onClick={() => setShowCreateCompanyModal(true)}>
-                                Create Company
-                            </Button>
+                            <Link to="/create-company">
+                                <Button className="bg-[#0A66C2] hover:bg-blue-700 text-white px-4 py-1 text-sm rounded w-full">
+                                    Create Company
+                                </Button>
+                            </Link>
                         </CardContent>
                     </Card>
                 </div>

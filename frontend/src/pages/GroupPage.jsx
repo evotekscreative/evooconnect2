@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Case from "../components/Case";
 import axios from "axios";
 import { useParams, Link } from "react-router-dom";
-import Alert from "../components/Auth/alert";
+import Alert from "../components/Auth/Alert";
 import {
   MoreHorizontal,
   Image,
@@ -142,60 +142,60 @@ export default function GroupPage() {
   };
 
   const handleEditSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    const token = localStorage.getItem("token");
-    const formData = new FormData();
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
 
-    // Add all form fields to FormData
-    formData.append("name", editFormData.name);
-    formData.append("description", editFormData.description);
-    formData.append("rule", editFormData.rule);
-    formData.append("privacy_level", editFormData.privacy_level);
-    formData.append("invite_policy", editFormData.invite_policy);
-    
-    if (editFormData.image) {
-      formData.append("image", editFormData.image);
-    }
+      // Add all form fields to FormData
+      formData.append("name", editFormData.name);
+      formData.append("description", editFormData.description);
+      formData.append("rule", editFormData.rule);
+      formData.append("privacy_level", editFormData.privacy_level);
+      formData.append("invite_policy", editFormData.invite_policy);
 
-    console.log("Updating group with ID:", groupId);
-
-    const response = await axios.put(
-      `${apiUrl}/api/groups/${groupId}`,
-      formData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
+      if (editFormData.image) {
+        formData.append("image", editFormData.image);
       }
-    );
-    console.log("Update response:", response.data); 
 
-    if (response.data && response.data.data) {
-      setGroup(response.data.data);
-      setShowEditModal(false);
-      showAlert("success", "Group updated successfully");
-      
-      fetchGroupData();
-    } else {
-      throw new Error("Invalid response format from server");
-    }
-  } catch (error) {
-    console.error("Error updating group:", error);
-    
-    let errorMessage = "Failed to update group";
-    if (error.response) {
-      if (error.response.status === 404) {
-        errorMessage = "Group not found (404)";
-      } else if (error.response.data && error.response.data.message) {
-        errorMessage = error.response.data.message;
+      console.log("Updating group with ID:", groupId);
+
+      const response = await axios.put(
+        `${apiUrl}/api/groups/${groupId}`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      console.log("Update response:", response.data);
+
+      if (response.data && response.data.data) {
+        setGroup(response.data.data);
+        setShowEditModal(false);
+        showAlert("success", "Group updated successfully");
+
+        fetchGroupData();
+      } else {
+        throw new Error("Invalid response format from server");
       }
+    } catch (error) {
+      console.error("Error updating group:", error);
+
+      let errorMessage = "Failed to update group";
+      if (error.response) {
+        if (error.response.status === 404) {
+          errorMessage = "Group not found (404)";
+        } else if (error.response.data && error.response.data.message) {
+          errorMessage = error.response.data.message;
+        }
+      }
+
+      showAlert("error", errorMessage);
     }
-    
-    showAlert("error", errorMessage);
-  }
-};
+  };
   const openImageModal = (post, index) => {
     // Ensure post.images is an array of full URLs
     const images = post.images.map((img) =>
@@ -619,9 +619,9 @@ export default function GroupPage() {
 
       fetchComments(postId);
       setCommentText("");
-      setCommentError(null);
+      showAlert("success", "Comment added successfully");
     } catch (error) {
-      console.error("Failed to add comment:", error);
+      showAlert("error", "Failed to add comment");
       setCommentError(
         error.response?.data?.message ||
           "Failed to add comment. Please try again."
@@ -1744,11 +1744,12 @@ export default function GroupPage() {
         <div className="container mx-auto px-2 sm:px-4">
           <div className="flex flex-col lg:flex-row gap-4 mt-4">
             {/* Left Sidebar */}
+            {/* Left Sidebar */}
             <aside className="lg:block lg:w-1/4">
               <div className="rounded-lg border bg-white shadow-sm">
                 <div className="p-4 text-center">
                   <div className="profile-photo-container">
-                    {group.creator.photo ? (
+                    {group.image ? (
                       <img
                         src={`${apiUrl}/${group.image}`}
                         alt="avatar"
@@ -1777,6 +1778,18 @@ export default function GroupPage() {
                       </p>
                     </div>
                   </div>
+
+                  {/* Tambahkan bagian Rules di sini */}
+                  {group.rule && (
+                    <div className="mt-4 p-2 border-t">
+                      <h6 className="font-semibold text-left mb-2">
+                        Group Rules
+                      </h6>
+                      <div className="text-left text-sm text-gray-600 whitespace-pre-line">
+                        {group.rule}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Join button */}
                   {!isGroupMember && (
@@ -1832,14 +1845,15 @@ export default function GroupPage() {
                       {group.members_count || 0} Members
                     </p>
                   </div>
-                  <div className="top-2 right-2">
+                  {isCurrentUserAdmin && (
+                    <div className="top-2 right-2">
                     <button
                       className="text-gray-500 hover:text-gray-700"
                       onClick={handleOpenEditModal}
                     >
                       <Pencil size={20} />
                     </button>
-                  </div>
+                  </div>)}
                 </div>
               </div>
               {/* Create Post Box */}

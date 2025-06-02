@@ -100,19 +100,19 @@ func ToUserShortResponse(user domain.User, isConnected bool) web.UserShort {
 
 
 func ToPostResponse(post domain.Post) web.PostResponse {
-	postResponse := web.PostResponse{
-		Id:            post.Id,
-		UserId:        post.UserId,
-		Content:       post.Content,
-		Images:        post.Images,
-		Visibility:    post.Visibility,
-		CreatedAt:     post.CreatedAt,
-		UpdatedAt:     post.UpdatedAt,
-		IsLiked:       post.IsLiked,
-		LikesCount:    post.LikesCount,
-		CommentsCount: post.CommentsCount,
-		GroupId:       post.GroupId,
-	}
+    postResponse := web.PostResponse{
+        Id:            post.Id,
+        UserId:        post.UserId,
+        Content:       post.Content,
+        Images:        post.Images,
+        Visibility:    post.Visibility,
+        CreatedAt:     post.CreatedAt,
+        UpdatedAt:     post.UpdatedAt,
+        IsLiked:       post.IsLiked,
+        LikesCount:    post.LikesCount,
+        CommentsCount: post.CommentsCount,
+        GroupId:       post.GroupId,
+    }
 
 	if post.User != nil {
 		postResponse.User = web.UserShort{

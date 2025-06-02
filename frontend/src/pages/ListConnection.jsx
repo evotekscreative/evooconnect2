@@ -10,7 +10,8 @@ import Case from "../components/Case.jsx";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Profile from "../assets/img/logo-evo-2.png";
-import NetworkManager from "../components/NetworkManager";
+import NetworkManager from "../components/NetworkManager"
+import Alert from "../components/Auth/alert.jsx";
 
 export default function ConnectionList() {
   const apiUrl =
@@ -24,6 +25,17 @@ export default function ConnectionList() {
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [selectedConnection, setSelectedConnection] = useState(null);
+
+   const [alert, setAlert] = useState({
+      show: false,
+      type: "success",
+      message: "",
+    });
+  
+    const showAlert = (type, message) => {
+      setAlert({ show: true, type, message });
+      setTimeout(() => setAlert({ ...alert, show: false }), 5000);
+    };
 
   const handleMessageClick = async (connection) => {
     const token = localStorage.getItem("token");
@@ -172,9 +184,10 @@ export default function ConnectionList() {
         )
       );
       closeModal();
+    showAlert('success', 'Disconnected successfully');
     } catch (err) {
       console.error("Failed to disconnect:", err);
-      alert("Failed to disconnect. Please try again.");
+      showAlert('error', 'You are not connected to this user');
       closeModal();
     }
   };
@@ -241,8 +254,18 @@ export default function ConnectionList() {
         )}
 
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
+          
           {/* Left side - People suggestions */}
           <div className="lg:col-span-3 space-y-4 bg-white rounded-xl shadow p-4 sm:p-6">
+            {alert.show && (
+                    <div className="fixed top-4 right-4 z-50 w-full max-w-sm">
+                      <Alert 
+                        type={alert.type} 
+                        message={alert.message} 
+                        onClose={() => setAlert({ ...alert, show: false })}
+                      />
+                    </div>
+                  )}
             <div className="flex items-center mb-4">
               <button
                 onClick={() => navigate(-1)}

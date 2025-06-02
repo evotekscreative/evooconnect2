@@ -175,17 +175,6 @@ func main() {
 	// Admin auth service
 	adminAuthService := service.NewAdminAuthService(adminRepository, db, validate)
 
-	// Company submission service
-	companySubmissionService := service.NewCompanySubmissionService(
-		companySubmissionRepository,
-		companyRepository,
-		userRepository,
-		adminRepository,
-		notificationService,
-		db,
-		validate,
-	)
-
 	// ===== Controllers =====
 	// User-related controllers
 	userController := controller.NewUserController(
@@ -222,11 +211,7 @@ func main() {
 	// Search controller
 	searchController := controller.NewSearchController(searchService)
 
-	// Admin controllers
 	adminAuthController := controller.NewAdminAuthController(adminAuthService)
-
-	// Company submission controller
-	companySubmissionController := controller.NewCompanySubmissionController(companySubmissionService)
 
 	// ===== Router and Middleware =====
 	// Initialize router with all controllers and JWT secret
@@ -247,7 +232,6 @@ func main() {
 		notificationController,
 		searchController,
 		adminAuthController,
-		companySubmissionController,
 	)
 
 	// Seed admin data

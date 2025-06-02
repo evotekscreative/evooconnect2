@@ -30,18 +30,18 @@ import SinglePost from "./pages/SinglePost.jsx";
 import UserProfile from "./pages/userProfile.jsx";
 import UserPostPage from "./pages/UserPostPage.jsx";
 import MemberList from "./pages/MemberList.jsx";
+import CreateCompany from "./pages/Jobs/CreateCompany.jsx";
 import UserListConnection from "./pages/UserListConnection.jsx";
-// Admin
 import LoginAdmin from "./pages/Admin/AuthAdmin/LoginAdmin.jsx";
 import Dashboard from "./pages/Admin/Admin1/Dashboard.jsx";
 import Settings from "./pages/Admin/Admin1/Settings.jsx";
 import Tables from "./pages/Admin/Admin1/Tables.jsx";
-import SearchResults from "./pages/SearchResults";
 import ProtectedAdminRoute from "./components/Auth/ProtectedAdminRoute.jsx";
+import ListCompany from "./pages/Admin/Admin1/ListCompany.jsx";
 import ReportPage from "./pages/Admin/Admin1/Index.jsx";
 import ReportUser from "./pages/Admin/Report/ReportUser.jsx";
-import CreateCompany from "./pages/CreateCompany.jsx";
-import ListCompany from "./pages/Admin/Admin1/ListCompany.jsx";
+import CreateCompanyStatus from "./pages/CreateCompanyStatus.jsx";
+import CompanyCards from "./pages/CompanyCards.jsx";
 
 const router = createBrowserRouter([
   {
@@ -59,19 +59,9 @@ const router = createBrowserRouter([
         <Login />
       </IsGuest>
     ),
-    element: (
-      <IsGuest>
-        <Login />
-      </IsGuest>
-    ),
   },
   {
     path: "/register",
-    element: (
-      <IsGuest>
-        <Register />
-      </IsGuest>
-    ),
     element: (
       <IsGuest>
         <Register />
@@ -82,12 +72,6 @@ const router = createBrowserRouter([
     path: "/forgot-password",
     element: <ForgotPassword />,
   },
-
-  {
-    path: "/search",
-    element: <SearchResults />,
-  },
-  
   {
     path: "/terms",
     element: <TermsCondition />,
@@ -104,7 +88,6 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-
   {
     path: "/jobs",
     element: (
@@ -113,7 +96,6 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-
   {
     path: "/jobs/:jobId",
     element: (
@@ -122,7 +104,6 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-
   {
     path: "/job-saved",
     element: (
@@ -131,16 +112,6 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-
-  // {
-  //   path: "/help",
-  //   element: (
-  //     <ProtectedRoute>
-  //       <HelpPage />
-  //     </ProtectedRoute>
-  //   ),
-  // },
-
   {
     path: "/profile",
     element: (
@@ -149,7 +120,6 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-
   {
     path: "/edit-profile",
     element: (
@@ -158,7 +128,6 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-
   {
     path: "/faq",
     element: (
@@ -200,14 +169,6 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/list-connection/:username",
-    element: (
-      <ProtectedRoute>
-        <UserListConnection />
-      </ProtectedRoute>
-    ),
-  },
-  {
     path: "/messages",
     element: (
       <ProtectedRoute>
@@ -224,23 +185,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/messages/:conversationId",
-    element: (
-      <ProtectedRoute>
-        <Messages />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/messages/:conversationId",
-    element: (
-      <ProtectedRoute>
-        <Messages />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/group-page",
+    path: "/groups/:groupId",
     element: (
       <ProtectedRoute>
         <GroupPage />
@@ -289,20 +234,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/post-page/:username",
-    element:(
-      <ProtectedRoute>
-        <UserPostPage />
-      </ProtectedRoute>
-    ),
     element: (
-      <ProtectedRoute>
-        <PostPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/post-page/:username",
-    element:(
       <ProtectedRoute>
         <UserPostPage />
       </ProtectedRoute>
@@ -310,11 +242,6 @@ const router = createBrowserRouter([
   },
   {
     path: "/verify-email",
-    element: (
-      <ProtectedRoute>
-        <VerifyEmail />
-      </ProtectedRoute>
-    ),
     element: (
       <ProtectedRoute>
         <VerifyEmail />
@@ -342,52 +269,36 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/search",
-    element: <ResetPassword />,
-  },
-  {
-    path: "/user-profile/:username",
-    element: (
-      <ProtectedRoute>
-        <UserProfile />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/groups/:groupId/members",
-    element: (
-      <ProtectedRoute>
-        <MemberList />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/search",
-    element: (
-      <ProtectedRoute>
-        <SearchResults />
-      </ProtectedRoute>
-    ),
-  },
-  {
     path: "/post/:postId",
     element: <SinglePost />,
   },
-
+  // Company-related routes
   {
-  path: "/create-company",
-  element: (
-    <ProtectedRoute>
-      <CreateCompany />
-    </ProtectedRoute>
-  ),
-},
-{
-  path : "/post/:postId",
-   element : <SinglePost />
-},
-
-{
+    path: "/create-company",
+    element: (
+      <ProtectedRoute>
+        <CreateCompany />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/create-company/status",
+    element: (
+      <ProtectedRoute>
+        <CreateCompanyStatus />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/company-cards",
+    element: (
+      <ProtectedRoute>
+        <CompanyCards />
+      </ProtectedRoute>
+    ),
+  },
+  // Admin routes
+  {
     path: "/login-admin",
     element: <LoginAdmin />,
   },
@@ -423,10 +334,8 @@ const router = createBrowserRouter([
         path: "create-company",
         element: <CreateCompany />,
       }
-      
     ],
-  },
-
+  }
 ]);
 
 export default router;
