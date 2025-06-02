@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Case from "../components/Case";
 import axios from "axios";
 import { useParams, Link } from "react-router-dom";
-import { toast } from "sonner";
+import Alert from "../components/Auth/Alert";
 import {
   MoreHorizontal,
   Image,
@@ -17,10 +17,17 @@ import {
   Check,
   UserPlus,
   UserMinus,
+  Share2,
+  SquarePen,
+  Pencil,
 } from "lucide-react";
 import GroupCover from "../assets/img/cover.jpg";
 
 export default function GroupPage() {
+  const apiUrl =
+    import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+  const clientUrl =
+    import.meta.env.VITE_APP_CLIENT_URL || "http://localhost:5173";
   const [imagePreviews, setImagePreviews] = useState([]);
   const [imageFiles, setImageFiles] = useState([]);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
@@ -52,22 +59,147 @@ export default function GroupPage() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [commentModalPostId, setCommentModalPostId] = useState(null);
   const [sharePostId, setSharePostId] = useState(null);
+  const [currentPostId, setCurrentPostId] = useState(null);
   const [user, setUser] = useState({
     name: "",
     photo: "",
     following_count: 42,
   });
+  const [expandedReplies, setExpandedReplies] = useState({});
+  const [replyText, setReplyText] = useState("");
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [replyToUser, setReplyToUser] = useState(null);
+  const [allReplies, setAllReplies] = useState({});
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [selectedComment, setSelectedComment] = useState(null);
+  const [showCommentOptions, setShowCommentOptions] = useState(false);
+  const [showcaseReplies, setShowcaseReplies] = useState([]);
+  const [showShowcase, setShowShowcase] = useState(false);
   const [posts, setPosts] = useState([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(false);
   const [postError, setPostError] = useState(null);
   const [selectedPost, setSelectedPost] = useState(null);
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [alertInfo, setAlertInfo] = useState({
+    show: false,
+    type: "success",
+    message: "",
+  });
+  const [isGroupMember, setIsGroupMember] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    name: "",
+    description: "",
+    rule: "",
+    privacy_level: "public",
+    invite_policy: "all_members",
+    image: null,
+    imagePreview: "",
+  });
 
+  const showAlert = (type, message) => {
+    setAlertInfo({
+      show: true,
+      type,
+      message,
+    });
+    setTimeout(() => {
+      setAlertInfo((prev) => ({ ...prev, show: false }));
+    }, 5000);
+  };
+
+  const handleOpenEditModal = () => {
+    setEditFormData({
+      name: group.name,
+      description: group.description,
+      rule: group.rule,
+      privacy_level: group.privacy_level,
+      invite_policy: group.invite_policy,
+      image: null,
+      imagePreview: group.image ? `${apiUrl}/${group.image}` : "",
+    });
+    setShowEditModal(true);
+  };
+
+  const handleEditInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleEditImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setEditFormData((prev) => ({
+        ...prev,
+        image: file,
+        imagePreview: URL.createObjectURL(file),
+      }));
+    }
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
+
+      // Add all form fields to FormData
+      formData.append("name", editFormData.name);
+      formData.append("description", editFormData.description);
+      formData.append("rule", editFormData.rule);
+      formData.append("privacy_level", editFormData.privacy_level);
+      formData.append("invite_policy", editFormData.invite_policy);
+
+      if (editFormData.image) {
+        formData.append("image", editFormData.image);
+      }
+
+      console.log("Updating group with ID:", groupId);
+
+      const response = await axios.put(
+        `${apiUrl}/api/groups/${groupId}`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      console.log("Update response:", response.data);
+
+      if (response.data && response.data.data) {
+        setGroup(response.data.data);
+        setShowEditModal(false);
+        showAlert("success", "Group updated successfully");
+
+        fetchGroupData();
+      } else {
+        throw new Error("Invalid response format from server");
+      }
+    } catch (error) {
+      console.error("Error updating group:", error);
+
+      let errorMessage = "Failed to update group";
+      if (error.response) {
+        if (error.response.status === 404) {
+          errorMessage = "Group not found (404)";
+        } else if (error.response.data && error.response.data.message) {
+          errorMessage = error.response.data.message;
+        }
+      }
+
+      showAlert("error", errorMessage);
+    }
+  };
   const openImageModal = (post, index) => {
     // Ensure post.images is an array of full URLs
     const images = post.images.map((img) =>
-      img.startsWith("http") ? img : `http://localhost:3000/${img}`
+      img.startsWith("http") ? img : `${apiUrl}/${img}`
     );
 
     setSelectedPost({
@@ -102,7 +234,7 @@ export default function GroupPage() {
     const validImages = images
       .map((img) => {
         if (typeof img === "string") {
-          return img.startsWith("http") ? img : `http://localhost:3000/${img}`;
+          return img.startsWith("http") ? img : `${apiUrl}/${img}`;
         }
         return "";
       })
@@ -228,13 +360,12 @@ export default function GroupPage() {
 
       // Send request to backend
       if (isCurrentlyLiked) {
-        await axios.delete(
-          `http://localhost:3000/api/post-actions/${postId}/like`,
-          { headers: { Authorization: `Bearer ${userToken}` } }
-        );
+        await axios.delete(`${apiUrl}/api/post-actions/${postId}/like`, {
+          headers: { Authorization: `Bearer ${userToken}` },
+        });
       } else {
         await axios.post(
-          `http://localhost:3000/api/post-actions/${postId}/like`,
+          `${apiUrl}/api/post-actions/${postId}/like`,
           {},
           { headers: { Authorization: `Bearer ${userToken}` } }
         );
@@ -268,7 +399,7 @@ export default function GroupPage() {
 
       const userToken = localStorage.getItem("token");
       const response = await axios.get(
-        `http://localhost:3000/api/post-comments/${postId}?limit=10&offset=0`,
+        `${apiUrl}/api/post-comments/${postId}?limit=10&offset=0&includeReplies=true`,
         {
           headers: {
             Authorization: `Bearer ${userToken}`,
@@ -276,19 +407,26 @@ export default function GroupPage() {
         }
       );
 
-      const commentsWithUser = (response.data?.data?.comments || []).map(
-        (comment) => ({
-          ...comment,
-          user: comment.user || {
-            name: "Unknown User",
-            initials: "UU",
-          },
-        })
+      const commentsWithReplies = (response.data?.data?.comments || []).map(
+        (comment) => {
+          return {
+            id: comment.id || Math.random().toString(36).substr(2, 9),
+            content: comment.content || "",
+            user: comment.user || {
+              name: "Unknown User",
+              initials: "UU",
+              username: "unknown",
+              profile_photo: null,
+            },
+            replies: Array.isArray(comment.replies) ? comment.replies : [],
+            repliesCount: comment.replies_count || 0,
+          };
+        }
       );
 
       setComments((prev) => ({
         ...prev,
-        [postId]: commentsWithUser,
+        [postId]: commentsWithReplies,
       }));
     } catch (error) {
       console.error("Failed to fetch comments:", error);
@@ -296,6 +434,155 @@ export default function GroupPage() {
     } finally {
       setLoadingComments((prev) => ({ ...prev, [postId]: false }));
     }
+  };
+
+  const fetchReplies = async (commentId) => {
+    try {
+      setLoadingComments((prev) => ({ ...prev, [commentId]: true }));
+
+      const userToken = localStorage.getItem("token");
+      const response = await axios.get(
+        `${apiUrl}/api/comments/${commentId}/replies`,
+        {
+          headers: { Authorization: `Bearer ${userToken}` },
+        }
+      );
+
+      setAllReplies((prev) => ({
+        ...prev,
+        [commentId]: response.data.data.comments || [],
+      }));
+    } catch (error) {
+      console.error("Failed to fetch replies:", error);
+      setCommentError("Failed to load replies");
+    } finally {
+      setLoadingComments((prev) => ({ ...prev, [commentId]: false }));
+    }
+  };
+
+  const fetchAllReplies = async (commentId) => {
+    try {
+      setLoadingComments((prev) => ({ ...prev, [commentId]: true }));
+
+      const userToken = localStorage.getItem("token");
+      const response = await axios.get(
+        `${apiUrl}/api/comments/${commentId}/replies?limit=100`,
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        }
+      );
+
+      const replies = Array.isArray(response.data?.data)
+        ? response.data.data
+        : [];
+
+      setAllReplies((prev) => ({
+        ...prev,
+        [commentId]: replies,
+      }));
+
+      setComments((prev) => {
+        const updated = { ...prev };
+        if (updated[commentModalPostId]) {
+          // Changed from currentPostId to commentModalPostId
+          updated[commentModalPostId] = updated[commentModalPostId].map((c) => {
+            if (c.id === commentId) {
+              return {
+                ...c,
+                repliesCount: (c.replies_count || 0) + 1,
+              };
+            }
+            return c;
+          });
+        }
+        return updated;
+      });
+    } catch (error) {
+      console.error("Failed to fetch replies:", error);
+      setCommentError(
+        error.response?.data?.message || "Failed to load replies"
+      );
+    } finally {
+      setLoadingComments((prev) => ({ ...prev, [commentId]: false }));
+    }
+  };
+
+  const handleReply = async (commentId, replyToUser = null) => {
+    if (!commentId || !replyText.trim()) return;
+
+    try {
+      const userToken = localStorage.getItem("token");
+      const response = await axios.post(
+        `${apiUrl}/api/comments/${commentId}/replies`,
+        {
+          content: replyText,
+          replyTo: replyToUser?.id,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const newReply = {
+        ...response.data.data,
+        user: response.data.data.user || {
+          name: "Current User",
+          initials: "CU",
+        },
+      };
+
+      const updatedReplies = [...(allReplies[commentId] || []), newReply];
+
+      setAllReplies((prev) => ({
+        ...prev,
+        [commentId]: updatedReplies,
+      }));
+
+      setComments((prev) => {
+        const updated = { ...prev };
+        if (updated[currentPostId]) {
+          updated[currentPostId] = updated[currentPostId].map((c) => {
+            if (c.id === commentId) {
+              return {
+                ...c,
+                repliesCount: (c.replies_count || 0) + 1,
+              };
+            }
+            return c;
+          });
+        }
+        return updated;
+      });
+
+      setReplyText("");
+      setReplyingTo(null);
+      setReplyToUser(null);
+      setCommentError(null);
+      setExpandedReplies((prev) => ({ ...prev, [commentId]: true }));
+      showAlert("success", "Successfully added reply!");
+    } catch (error) {
+      showAlert("error", "Failed to add reply");
+      setCommentError(
+        error.response?.data?.message ||
+          "Failed to add reply. Please try again."
+      );
+    }
+  };
+
+  const toggleReplies = async (commentId) => {
+    if (!allReplies[commentId] || allReplies[commentId].length === 0) {
+      await fetchReplies(commentId);
+    }
+
+    setExpandedReplies((prev) => ({
+      ...prev,
+      [commentId]: !prev[commentId],
+    }));
   };
 
   // Add comment handler
@@ -308,7 +595,7 @@ export default function GroupPage() {
     try {
       const userToken = localStorage.getItem("token");
       await axios.post(
-        `http://localhost:3000/api/post-comments/${postId}`,
+        `${apiUrl}/api/post-comments/${postId}`,
         { content: commentText },
         {
           headers: {
@@ -332,9 +619,9 @@ export default function GroupPage() {
 
       fetchComments(postId);
       setCommentText("");
-      setCommentError(null);
+      showAlert("success", "Comment added successfully");
     } catch (error) {
-      console.error("Failed to add comment:", error);
+      showAlert("error", "Failed to add comment");
       setCommentError(
         error.response?.data?.message ||
           "Failed to add comment. Please try again."
@@ -344,6 +631,7 @@ export default function GroupPage() {
 
   // Open comment modal
   const openCommentModal = (postId) => {
+    setCurrentPostId(postId);
     setCommentModalPostId(postId);
     setShowCommentModal(true);
     fetchComments(postId);
@@ -354,6 +642,252 @@ export default function GroupPage() {
     setShowCommentModal(false);
     setCommentModalPostId(null);
     setCommentText("");
+  };
+
+  const handleOpenCommentOptions = (comment, e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setSelectedComment(comment);
+    setShowCommentOptions(true);
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    try {
+      const userToken = localStorage.getItem("token");
+      if (!userToken) {
+        throw new Error("No authentication token found");
+      }
+
+      const response = await axios.delete(
+        `${apiUrl}/api/comments/${commentId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        setComments((prev) => {
+          const updatedComments = { ...prev };
+          if (updatedComments[commentModalPostId]) {
+            updatedComments[commentModalPostId] = updatedComments[
+              commentModalPostId
+            ].filter((comment) => comment.id !== commentId);
+          }
+          return updatedComments;
+        });
+
+        setPosts((prevPosts) =>
+          prevPosts.map((post) => {
+            if (post.id === commentModalPostId) {
+              return {
+                ...post,
+                comments_count: (post.comments_count || 1) - 1,
+              };
+            }
+            return post;
+          })
+        );
+
+        setShowCommentOptions(false);
+        setSelectedComment(null);
+        showAlert("success", "Comment deleted successfully");
+      }
+    } catch (error) {
+      console.error("Failed to delete comment:", error);
+      let errorMessage = "Failed to delete comment. Please try again.";
+      if (error.response) {
+        errorMessage = error.response.data.message || errorMessage;
+      }
+      showAlert("error", errorMessage);
+    }
+  };
+
+  const handleUpdateComment = async (commentId) => {
+    if (!commentId || !commentText.trim()) return;
+
+    try {
+      const userToken = localStorage.getItem("token");
+      await axios.put(
+        `${apiUrl}/api/comments/${commentId}`,
+        { content: commentText },
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        }
+      );
+
+      setComments((prev) => {
+        const updatedComments = { ...prev };
+        if (updatedComments[commentModalPostId]) {
+          updatedComments[commentModalPostId] = updatedComments[
+            commentModalPostId
+          ].map((comment) => {
+            if (comment.id === commentId) {
+              return {
+                ...comment,
+                content: commentText,
+              };
+            }
+            return comment;
+          });
+        }
+        return updatedComments;
+      });
+
+      setEditingCommentId(null);
+      setCommentText("");
+      showAlert("success", "Comment updated successfully");
+    } catch (error) {
+      console.error("Failed to update comment:", error);
+      showAlert("error", "Failed to update comment. Please try again.");
+    }
+  };
+
+  const handleOpenShowcase = async (commentId) => {
+    if (!commentId) {
+      console.error("No comment ID provided");
+      return;
+    }
+
+    try {
+      const userToken = localStorage.getItem("token");
+      const response = await axios.get(
+        `${apiUrl}/api/comments/${commentId}/replies?limit=100`,
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        }
+      );
+
+      const replies = Array.isArray(response.data?.data)
+        ? response.data.data
+        : [];
+      setShowcaseReplies(replies);
+      setShowShowcase(true);
+    } catch (error) {
+      console.error("Failed to load replies:", error);
+      showAlert("error", "Failed to load replies. Please try again.");
+      setShowcaseReplies([]);
+    }
+  };
+
+  const renderShowcase = () => {
+    if (!showShowcase) return null;
+
+    const repliesToRender = Array.isArray(showcaseReplies)
+      ? showcaseReplies
+      : [];
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg w-full max-w-md max-h-[80vh] overflow-y-auto p-4">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">All Replies</h3>
+            <button onClick={() => setShowShowcase(false)}>
+              <X size={20} />
+            </button>
+          </div>
+
+          {repliesToRender.length === 0 ? (
+            <p className="text-gray-500 text-center py-4">No replies yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {repliesToRender.map((reply) => (
+                <div key={reply.id} className="flex items-start border-b pb-3">
+                  <div className="ml-3">
+                    <p className="font-medium">
+                      {reply.user?.name || "Unknown"}
+                    </p>
+                    <p className="text-sm">{reply.content}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderCommentOptionsModal = () => {
+    if (!showCommentOptions || !selectedComment) return null;
+
+    const isCurrentUserComment = selectedComment?.user?.id === currentUserId;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg w-full max-w-xs mx-4">
+          <div className="p-4">
+            <h3 className="font-medium text-lg mb-3">Comment Options</h3>
+
+            {isCurrentUserComment ? (
+              <>
+                <button
+                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
+                  onClick={() => {
+                    setEditingCommentId(selectedComment.id);
+                    setCommentText(selectedComment.content);
+                    setShowCommentOptions(false);
+                  }}
+                >
+                  <SquarePen size={16} className="mr-2" />
+                  Edit Comment
+                </button>
+                <button
+                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
+                  onClick={() => handleDeleteComment(selectedComment.id)}
+                >
+                  <X size={16} className="mr-2" />
+                  Delete Comment
+                </button>
+              </>
+            ) : (
+              <button
+                className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
+                onClick={() => {
+                  handleReportClick(
+                    selectedComment.user?.id,
+                    "comment",
+                    selectedComment.id
+                  );
+                  setShowCommentOptions(false);
+                }}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+                Report Comment
+              </button>
+            )}
+          </div>
+
+          <div className="border-t p-3">
+            <button
+              className="w-full py-2 text-gray-500 hover:text-gray-700"
+              onClick={() => setShowCommentOptions(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // Share post handlers
@@ -367,23 +901,48 @@ export default function GroupPage() {
     setSharePostId(null);
   };
 
-  const copyToClipboard = () => {
-    const urlToCopy = `http://localhost:5173/post/${sharePostId}`;
-    navigator.clipboard.writeText(urlToCopy);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copyToClipboard = async () => {
+    try {
+      const urlToCopy = `${clientUrl}/post/${sharePostId}`;
+
+      // Fallback untuk browser yang tidak support Clipboard API
+      if (!navigator.clipboard) {
+        const textArea = document.createElement("textarea");
+        textArea.value = urlToCopy;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      } else {
+        await navigator.clipboard.writeText(urlToCopy);
+      }
+
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+      // Fallback manual
+      const input = document.createElement("input");
+      input.value = `${clientUrl}/post/${sharePostId}`;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      document.body.removeChild(input);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const shareToWhatsApp = () => {
     const url = `https://wa.me/?text=${encodeURIComponent(
-      `Check out this post: http://localhost:5173/post/${sharePostId}`
+      `Check out this post: ${clientUrl}/post/${sharePostId}`
     )}`;
     window.open(url, "_blank");
   };
 
   const shareToTwitter = () => {
     const url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(
-      `http://localhost:5173/post/${sharePostId}`
+      `${clientUrl}/post/${sharePostId}`
     )}`;
     window.open(url, "_blank");
   };
@@ -402,7 +961,7 @@ export default function GroupPage() {
   const handleDeletePost = async (postId) => {
     try {
       const userToken = localStorage.getItem("token");
-      await axios.delete(`http://localhost:3000/api/posts/${postId}`, {
+      await axios.delete(`${apiUrl}/api/posts/${postId}`, {
         headers: {
           Authorization: `Bearer ${userToken}`,
         },
@@ -410,10 +969,10 @@ export default function GroupPage() {
 
       setPosts(posts.filter((post) => post.id !== postId));
       handleClosePostOptions();
-      toast.success("Post deleted successfully");
+      showAlert("success", "Post deleted successfully");
     } catch (error) {
       console.error("Failed to delete post:", error);
-      toast.error("Failed to delete post. Please try again.");
+      showAlert("error", "Failed to delete post. Please try again.");
     }
   };
 
@@ -421,54 +980,88 @@ export default function GroupPage() {
   const formatPostTime = (timestamp) => {
     if (!timestamp) return "Just now";
 
-    const now = new Date();
-    const postTime = new Date(timestamp);
-    const diffInSeconds = Math.floor((now - postTime) / 1000);
-    const diffInMinutes = Math.floor(diffInSeconds / 60);
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    const diffInDays = Math.floor(diffInHours / 24);
+    let postTime;
+    try {
+      postTime = dayjs(timestamp);
+      if (!postTime.isValid()) {
+        postTime = dayjs(new Date(timestamp));
+      }
+    } catch (e) {
+      console.error("Error parsing timestamp:", timestamp, e);
+      return "Just now";
+    }
+
+    if (!postTime.isValid()) {
+      return "Just now";
+    }
+
+    const now = dayjs();
+    const diffInSeconds = now.diff(postTime, "second");
+    const diffInMinutes = now.diff(postTime, "minute");
+    const diffInHours = now.diff(postTime, "hour");
+    const diffInDays = now.diff(postTime, "day");
+
+    // Handle future dates or timezone issues by showing "Just now" instead of negative values
+    if (diffInSeconds < 0) return "Just now";
 
     if (diffInSeconds < 60) return `${diffInSeconds}s ago`;
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInHours < 24) return `${diffInHours}h ago`;
     if (diffInDays < 7) return `${diffInDays}d ago`;
 
-    return postTime.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    // For older dates, return formatted date (e.g. "MMM D, YYYY")
+    return postTime.format("MMM D, YYYY");
   };
 
   const renderPostActions = (post) => (
-    <div className="border-t px-4 py-2 flex justify-between">
-      <button
-        className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${
-          post.isLiked
-            ? "text-blue-600 bg-blue-50"
-            : "text-blue-600 hover:bg-blue-50"
-        }`}
-        onClick={() => handleLikePost(post.id, post.isLiked)}
-      >
-        <ThumbsUp size={14} className="mr-2" />
-        Like ({post.likes_count || 0})
-      </button>
+    <div>
+      {/* Likes & Comments Info */}
+      <div className="flex items-center space-x-4 px-4 py-1 text-xs text-gray-500 justify-between">
+        <div className="flex items-center space-x-1 pt-1">
+          <span className="text-black flex">
+            <ThumbsUp size={14} className="mr-1" /> {post.likes_count || 0}
+          </span>
+        </div>
+        <div className="flex items-center space-x-1 cursor-pointer">
+          <span
+            className="text-black"
+            onClick={() => openCommentModal(post.id)}
+          >
+            {post.comments_count || 0} Comment
+          </span>
+        </div>
+      </div>
 
-      <button
-        className="flex items-center justify-center w-1/3 py-2 rounded-lg text-blue-600 hover:bg-blue-50"
-        onClick={() => openCommentModal(post.id)}
-      >
-        <MessageCircle size={14} className="mr-2" />
-        Comment ({post.comments_count || 0})
-      </button>
+      {/* Post Actions */}
+      <div className="border-t border-gray-200 px-4 py-2 flex justify-between">
+        <button
+          className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${
+            post.isLiked
+              ? "text-blue-600 bg-blue-50"
+              : "text-black hover:bg-gray-100"
+          }`}
+          onClick={() => handleLikePost(post.id, post.isLiked)}
+        >
+          <ThumbsUp size={14} className="mr-2" />
+          Like
+        </button>
 
-      <button
-        className="flex items-center justify-center w-1/3 py-2 rounded-lg text-blue-600 hover:bg-blue-50"
-        onClick={() => handleOpenShareModal(post.id)}
-      >
-        <Share size={14} className="mr-2" />
-        Share
-      </button>
+        <button
+          className="flex items-center justify-center w-1/3 py-2 rounded-lg text-black hover:bg-gray-100"
+          onClick={() => openCommentModal(post.id)}
+        >
+          <MessageCircle size={14} className="mr-2" />
+          Comment
+        </button>
+
+        <button
+          className="flex items-center justify-center w-1/3 py-2 rounded-lg text-black hover:bg-gray-100"
+          onClick={() => handleOpenShareModal(post.id)}
+        >
+          <Share2 size={14} className="mr-2" />
+          Share
+        </button>
+      </div>
     </div>
   );
 
@@ -483,7 +1076,7 @@ export default function GroupPage() {
               post.user.photo
                 ? post.user.photo.startsWith("http")
                   ? post.user.photo
-                  : `http://localhost:3000/${post.user.photo}`
+                  : `${apiUrl}/${post.user.photo}`
                 : "/default-user.png"
             }
             alt={post.user.name}
@@ -517,7 +1110,7 @@ export default function GroupPage() {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(
-        `http://localhost:3000/api/groups/${groupId}/posts`,
+        `${apiUrl}/api/groups/${groupId}/posts`,
         {
           params: {
             limit: 10,
@@ -533,7 +1126,7 @@ export default function GroupPage() {
         ...post,
         images:
           post.images?.map((img) =>
-            img.startsWith("http") ? img : `http://localhost:3000/${img}`
+            img.startsWith("http") ? img : `${apiUrl}/${img}`
           ) || [],
 
         user: post.user || {
@@ -570,7 +1163,7 @@ export default function GroupPage() {
       }
 
       const response = await axios.post(
-        `http://localhost:3000/api/groups/${groupId}/posts`,
+        `${apiUrl}/api/groups/${groupId}/posts`,
         formData,
         {
           headers: {
@@ -591,7 +1184,7 @@ export default function GroupPage() {
         },
         images: response.data.data.images
           ? response.data.data.images.map((img) =>
-              img.startsWith("http") ? img : `http://localhost:3000/${img}`
+              img.startsWith("http") ? img : `${apiUrl}/${img}`
             )
           : [],
         likes_count: 0,
@@ -612,14 +1205,11 @@ export default function GroupPage() {
       const token = localStorage.getItem("token");
       const user = JSON.parse(localStorage.getItem("user"));
 
-      const response = await axios.get(
-        `http://localhost:3000/api/groups/${groupId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await axios.get(`${apiUrl}/api/groups/${groupId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       const groupData = response.data.data;
       setGroup(groupData);
@@ -650,7 +1240,7 @@ export default function GroupPage() {
       }
 
       const response = await axios.get(
-        `http://localhost:3000/api/groups/${groupId}/members`,
+        `${apiUrl}/api/groups/${groupId}/members`,
         {
           headers: {
             Authorization: "Bearer " + token,
@@ -667,6 +1257,15 @@ export default function GroupPage() {
         ...prevGroup,
         members: members,
       }));
+
+      setIsGroupMember(
+        members.some((member) => member.user.id === currentUser?.id) || false
+      );
+
+      console.log(
+        "Group members fetched successfully:",
+        members.some((member) => member.user.id === currentUser?.id) || false
+      );
     } catch (error) {
       console.error("Error fetching group members:", error);
     }
@@ -701,7 +1300,7 @@ export default function GroupPage() {
       }
 
       const response = await axios.get(
-        `http://localhost:3000/api/users/${user.id}/connections`,
+        `${apiUrl}/api/users/${user.id}/connections`,
         {
           params: {
             limit: 10,
@@ -768,7 +1367,7 @@ export default function GroupPage() {
       const token = localStorage.getItem("token");
 
       const response = await axios.put(
-        `http://localhost:3000/api/groups/${groupId}/members/${userId}/role`,
+        `${apiUrl}/api/groups/${groupId}/members/${userId}/role`,
         { role: selectedRole },
         {
           headers: {
@@ -785,12 +1384,13 @@ export default function GroupPage() {
         ),
       }));
 
-      toast.success(`Successfully updated user role to ${selectedRole}`);
+      showAlert("success", `Successfully updated user role to ${selectedRole}`);
       setShowRoleModal(false);
       setEditingMemberId(null);
     } catch (error) {
       console.error("Error updating member role:", error);
-      toast.error(
+      showAlert(
+        "error",
         error.response?.data?.message ||
           "Failed to update role. Please try again."
       );
@@ -804,7 +1404,7 @@ export default function GroupPage() {
       const token = localStorage.getItem("token");
 
       await axios.delete(
-        `http://localhost:3000/api/groups/${groupId}/members/${memberToRemove.user.id}`,
+        `${apiUrl}/api/groups/${groupId}/members/${memberToRemove.user.id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -820,14 +1420,16 @@ export default function GroupPage() {
         members_count: prevGroup.members_count - 1,
       }));
 
-      toast.success(
+      showAlert(
+        "success",
         `Successfully removed ${memberToRemove.user.name} from the group`
       );
       setShowRemoveModal(false);
       setMemberToRemove(null);
     } catch (error) {
       console.error("Error removing member:", error);
-      toast.error(
+      showAlert(
+        "error",
         error.response?.data?.message ||
           "Failed to remove member. Please try again."
       );
@@ -899,7 +1501,7 @@ export default function GroupPage() {
       });
 
       const response = await axios.post(
-        `http://localhost:3000/api/groups/${groupId}/posts`,
+        `${apiUrl}/api/groups/${groupId}/posts`,
         formData,
         {
           headers: {
@@ -915,11 +1517,95 @@ export default function GroupPage() {
       setImageFiles([]);
       e.target.elements["post-image"].value = "";
 
-      toast.success("Post created successfully");
-      fetchGroupPosts(); // Refresh posts
+      showAlert("success", "Post created successfully");
+      fetchGroupPosts();
     } catch (error) {
       console.error("Error creating post:", error);
-      toast.error("Failed to create post");
+      showAlert("error", "Failed to create post");
+    }
+  };
+
+  const handleJoinGroup = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const user = JSON.parse(localStorage.getItem("user"));
+      if (!token || !user) {
+        toast.error("You need to be logged in to join a group");
+        return;
+      }
+      const response = await axios.post(
+        `${apiUrl}/api/groups/${groupId}/join`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (response.status === 200) {
+        setIsGroupMember(true);
+        setGroup((prevGroup) => ({
+          ...prevGroup,
+          members: [
+            ...(prevGroup.members || []),
+            { user: { id: user.id, name: user.name, photo: user.photo } },
+          ],
+          members_count: (prevGroup.members_count || 0) + 1,
+        }));
+        showAlert("success", "Successfully joined the group");
+      }
+    } catch (error) {
+      console.error("Error joining group:", error);
+      if (error.response) {
+        showAlert(
+          "error",
+          error.response.data?.message || `Error: ${error.response.status}`
+        );
+      } else {
+        showAlert("error", "Network error - please check your connection");
+      }
+    }
+  };
+
+  const handleLeaveGroup = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const user = JSON.parse(localStorage.getItem("user"));
+      if (!token || !user) {
+        toast.error("You need to be logged in to leave a group");
+        return;
+      }
+      const response = await axios.delete(
+        `${apiUrl}/api/groups/${groupId}/leave`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (response.status === 200) {
+        setIsGroupMember(false);
+        setGroup((prevGroup) => ({
+          ...prevGroup,
+          members: prevGroup.members.filter(
+            (member) => member.user.id !== user.id
+          ),
+          members_count: (prevGroup.members_count || 0) - 1,
+        }));
+        showAlert("success", "Successfully left the group");
+      }
+    } catch (error) {
+      console.error("Error leaving group:", error);
+      if (error.response) {
+        showAlert(
+          "error",
+          error.response.data?.message || `Error: ${error.response.status}`
+        );
+      } else {
+        showAlert("error", "Network error - please check your connection");
+      }
     }
   };
 
@@ -955,7 +1641,7 @@ export default function GroupPage() {
       }
 
       const response = await axios.post(
-        `http://localhost:3000/api/groups/${groupId}/invitations/${userId}`,
+        `${apiUrl}/api/groups/${groupId}/invitations/${userId}`,
         {},
         {
           headers: {
@@ -985,7 +1671,7 @@ export default function GroupPage() {
           ],
         }));
       }
-      toast.success(`Invitation sent to ${invitedUser?.name || "user"}`);
+      showAlert("success", `Invitation sent to ${invitedUser?.name || "user"}`);
     } catch (error) {
       console.error("Error inviting user:", error);
       if (error.response) {
@@ -993,14 +1679,18 @@ export default function GroupPage() {
           error.response.status === 400 &&
           error.response.data?.data === "invitation already sent to this user"
         ) {
-          toast.error("An invitation has already been sent to this user");
+          showAlert(
+            "error",
+            "An invitation has already been sent to this user"
+          );
         } else {
-          toast.error(
+          showAlert(
+            "error",
             error.response.data?.message || `Error: ${error.response.status}`
           );
         }
       } else {
-        toast.error("Network error - please check your connection");
+        showAlert("error", "Network error - please check your connection");
       }
     }
   };
@@ -1040,33 +1730,35 @@ export default function GroupPage() {
   return (
     <Case>
       <div className="flex flex-col md:flex-row bg-gray-50 px-4 md:px-6 lg:px-12 xl:px-32 py-2 md:py-4">
-        {showInviteSuccess && (
-          <div className="fixed top-5 right-5 z-50">
-            <div className="bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center">
-              <Check className="mr-2" />
-              <span>Successfully invited {invitedUserName} to the group!</span>
-            </div>
-          </div>
-        )}
+        <div className="fixed top-5 right-5 z-50">
+          {alertInfo.show && (
+            <Alert
+              type={alertInfo.type}
+              message={alertInfo.message}
+              onClose={() => setAlertInfo({ ...alertInfo, show: false })}
+            />
+          )}
+        </div>
 
         {/* Main Content Area */}
         <div className="container mx-auto px-2 sm:px-4">
           <div className="flex flex-col lg:flex-row gap-4 mt-4">
             {/* Left Sidebar */}
+            {/* Left Sidebar */}
             <aside className="lg:block lg:w-1/4">
               <div className="rounded-lg border bg-white shadow-sm">
                 <div className="p-4 text-center">
                   <div className="profile-photo-container">
-                    {group.creator.photo ? (
+                    {group.image ? (
                       <img
-                        src={`http://localhost:3000/${group.creator.photo}`}
+                        src={`${apiUrl}/${group.image}`}
                         alt="avatar"
                         className="rounded-full w-20 h-20 mx-auto object-cover"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gray-300">
                         <span className="text-sm font-bold text-gray-600">
-                          {group.creator.name
+                          {group.name
                             .split(" ")
                             .map((n) => n[0])
                             .join("")}
@@ -1074,7 +1766,7 @@ export default function GroupPage() {
                       </div>
                     )}
                     <h5 className="font-bold text-gray-800 mt-3">
-                      {group.creator?.name || "Admin"}
+                      {group.name}
                     </h5>
                   </div>
 
@@ -1086,6 +1778,37 @@ export default function GroupPage() {
                       </p>
                     </div>
                   </div>
+
+                  {/* Tambahkan bagian Rules di sini */}
+                  {group.rule && (
+                    <div className="mt-4 p-2 border-t">
+                      <h6 className="font-semibold text-left mb-2">
+                        Group Rules
+                      </h6>
+                      <div className="text-left text-sm text-gray-600 whitespace-pre-line">
+                        {group.rule}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Join button */}
+                  {!isGroupMember && (
+                    <button
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full mt-3"
+                      onClick={handleJoinGroup}
+                    >
+                      Join Group
+                    </button>
+                  )}
+
+                  {isGroupMember && !isCurrentUserAdmin && (
+                    <button
+                      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded w-full mt-3"
+                      onClick={handleLeaveGroup}
+                    >
+                      Leave Group
+                    </button>
+                  )}
                 </div>
               </div>
             </aside>
@@ -1103,10 +1826,10 @@ export default function GroupPage() {
                   <div className="absolute -bottom-8 left-4">
                     <div className="relative">
                       <img
-                        className="rounded-full w-16 h-16 border-4 border-white"
+                        className="rounded-full object-cover w-16 h-16 border-4 border-white"
                         src={
                           group.image
-                            ? `http://localhost:3000/${group.image}`
+                            ? `${apiUrl}/${group.image}`
                             : "/default-group.png"
                         }
                         alt={group.name}
@@ -1114,7 +1837,7 @@ export default function GroupPage() {
                     </div>
                   </div>
                 </div>
-                <div className="pt-10 px-4 pb-4">
+                <div className="pt-10 px-4 pb-4 justify-between flex items-start">
                   <div className="ml-4">
                     <h5 className="font-bold text-gray-800">{group.name}</h5>
                     <p className="text-gray-500 text-sm">{group.description}</p>
@@ -1122,78 +1845,89 @@ export default function GroupPage() {
                       {group.members_count || 0} Members
                     </p>
                   </div>
+                  {isCurrentUserAdmin && (
+                    <div className="top-2 right-2">
+                    <button
+                      className="text-gray-500 hover:text-gray-700"
+                      onClick={handleOpenEditModal}
+                    >
+                      <Pencil size={20} />
+                    </button>
+                  </div>)}
                 </div>
               </div>
               {/* Create Post Box */}
-              <div className="rounded-lg border bg-white shadow-sm mb-4">
-                <div className="border-b p-3">
-                  <h6 className="font-medium">Create New Post</h6>
-                </div>
-                <div className="p-3">
-                  <form onSubmit={handleSubmitPost}>
-                    <div className="mb-3">
-                      <textarea
-                        className="w-full p-2 border rounded text-sm sm:text-base"
-                        rows="3"
-                        placeholder="What's on your mind?"
-                        value={postContent}
-                        onChange={(e) => setPostContent(e.target.value)}
-                      ></textarea>
-                    </div>
+              {isGroupMember && (
+                <div className="rounded-lg border bg-white shadow-sm mb-4">
+                  <div className="border-b p-3">
+                    <h6 className="font-medium">Create New Post</h6>
+                  </div>
+                  <div className="p-3">
+                    <form onSubmit={handleSubmitPost}>
+                      <div className="mb-3">
+                        <textarea
+                          className="w-full p-2 border rounded text-sm sm:text-base"
+                          rows="3"
+                          placeholder="What's on your mind?"
+                          value={postContent}
+                          onChange={(e) => setPostContent(e.target.value)}
+                        ></textarea>
+                      </div>
 
-                    {/* Multiple image preview */}
-                    {imagePreviews.length > 0 && (
-                      <div className="mb-3 grid grid-cols-2 gap-2">
-                        {imagePreviews.map((preview, index) => (
-                          <div key={index} className="relative aspect-square">
-                            <img
-                              src={preview.url}
-                              alt={`Preview ${index + 1}`}
-                              className="w-full h-full object-cover rounded"
+                      {/* Multiple image preview */}
+                      {imagePreviews.length > 0 && (
+                        <div className="mb-3 grid grid-cols-2 gap-2">
+                          {imagePreviews.map((preview, index) => (
+                            <div key={index} className="relative aspect-square">
+                              <img
+                                src={preview.url}
+                                alt={`Preview ${index + 1}`}
+                                className="w-full h-full object-cover rounded"
+                              />
+                              <button
+                                type="button"
+                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"
+                                onClick={() => removeImage(index)}
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
+                        <div className="flex gap-3 w-full sm:w-auto">
+                          <label
+                            htmlFor="post-image"
+                            className="text-blue-500 cursor-pointer flex items-center text-sm"
+                          >
+                            <Image size={16} className="mr-1" /> Photo
+                            <input
+                              type="file"
+                              id="post-image"
+                              multiple
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handleImageUpload}
                             />
-                            <button
-                              type="button"
-                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"
-                              onClick={() => removeImage(index)}
-                            >
-                              <X size={12} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                          </label>
+                        </div>
 
-                    <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
-                      <div className="flex gap-3 w-full sm:w-auto">
-                        <label
-                          htmlFor="post-image"
-                          className="text-blue-500 cursor-pointer flex items-center text-sm"
+                        <button
+                          type="submit"
+                          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full sm:w-auto"
+                          disabled={
+                            !postContent.trim() && imageFiles.length === 0
+                          }
                         >
-                          <Image size={16} className="mr-1" /> Photo
-                          <input
-                            type="file"
-                            id="post-image"
-                            multiple
-                            accept="image/*"
-                            className="hidden"
-                            onChange={handleImageUpload}
-                          />
-                        </label>
+                          Post
+                        </button>
                       </div>
-
-                      <button
-                        type="submit"
-                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full sm:w-auto"
-                        disabled={
-                          !postContent.trim() && imageFiles.length === 0
-                        }
-                      >
-                        Post
-                      </button>
-                    </div>
-                  </form>
+                    </form>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="rounded-lg border bg-white shadow-sm">
                 <div className="border-b p-3">
@@ -1221,6 +1955,8 @@ export default function GroupPage() {
               {/* Comment Modal */}
               {showCommentModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+                  {renderCommentOptionsModal()}
+                  {renderShowcase()}
                   <div className="bg-white rounded-lg w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
                     <div className="p-3 md:p-4 border-b flex justify-between items-center">
                       <h3 className="text-base md:text-lg font-semibold">
@@ -1245,28 +1981,216 @@ export default function GroupPage() {
                         comments[commentModalPostId].map((comment) => (
                           <div key={comment.id} className="mb-4">
                             <div className="flex items-start mb-2">
-                              <img
-                                className="rounded-full w-8 h-8 object-cover mr-2"
-                                src={
-                                  comment.user.profile_photo ||
-                                  "/default-user.png"
-                                }
-                                alt={comment.user.name}
-                              />
+                              {comment.user.profile_photo ? (
+                                <Link
+                                  to={`/user-profile/${comment.user.username}`}
+                                >
+                                  <img
+                                    className="rounded-full w-8 h-8 object-cover mr-2"
+                                    src={
+                                      comment.user.profile_photo.startsWith(
+                                        "http"
+                                      )
+                                        ? comment.user.profile_photo
+                                        : `${apiUrl}/${comment.user.profile_photo}`
+                                    }
+                                    alt={comment.user.name}
+                                  />
+                                </Link>
+                              ) : (
+                                <div className="w-8 h-8 flex items-center justify-center bg-gray-300 rounded-full mr-2">
+                                  <span className="text-xs font-bold text-gray-600">
+                                    {comment.user.initials || "UU"}
+                                  </span>
+                                </div>
+                              )}
                               <div className="flex-1">
                                 <div className="bg-gray-100 rounded-lg p-2 md:p-3">
-                                  <div className="font-semibold text-xs md:text-sm">
-                                    {comment.user.name}
+                                  <div className="flex justify-between items-center">
+                                    <Link
+                                      to={`/user-profile/${comment.user.username}`}
+                                      className="font-semibold text-xs md:text-sm hover:underline"
+                                    >
+                                      {comment.user.name}
+                                    </Link>
+                                    <button
+                                      onClick={(e) =>
+                                        handleOpenCommentOptions(comment, e)
+                                      }
+                                      className="text-gray-500 hover:text-gray-700"
+                                    >
+                                      <MoreHorizontal size={14} />
+                                    </button>
                                   </div>
-                                  <p className="text-xs md:text-sm">
-                                    {comment.content}
-                                  </p>
+                                  {editingCommentId === comment.id ? (
+                                    <div className="mt-2 flex">
+                                      <input
+                                        type="text"
+                                        className="flex-1 border rounded-l-lg p-2 text-xs md:text-sm"
+                                        value={commentText}
+                                        onChange={(e) =>
+                                          setCommentText(e.target.value)
+                                        }
+                                      />
+                                      <button
+                                        className="bg-blue-500 text-white px-2 md:px-3 rounded-r-lg text-xs md:text-sm"
+                                        onClick={() =>
+                                          handleUpdateComment(comment.id)
+                                        }
+                                      >
+                                        Update
+                                      </button>
+                                      <button
+                                        className="bg-gray-500 text-white px-2 md:px-3 rounded-r-lg text-xs md:text-sm ml-1"
+                                        onClick={() => {
+                                          setEditingCommentId(null);
+                                          setCommentText("");
+                                        }}
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <p className="text-xs md:text-sm">
+                                      {comment.content}
+                                    </p>
+                                  )}
                                 </div>
-                                <div className="text-xs text-gray-500 mt-1">
-                                  {formatPostTime(comment.createdAt)}
+                                <div className="flex justify-start items-center mt-1">
+                                  <div className="text-xs mr-2 text-gray-500">
+                                    {formatPostTime(comment.created_at)}
+                                  </div>
+                                  <div className="flex space-x-2">
+                                    <button
+                                      className="text-xs text-blue-500 hover:text-blue-700"
+                                      onClick={() => {
+                                        setReplyingTo(comment.id);
+                                        setReplyToUser(comment.user);
+                                      }}
+                                    >
+                                      Reply
+                                    </button>
+                                    {(comment.repliesCount > 0 ||
+                                      allReplies[comment.id]?.length > 0) && (
+                                      <button
+                                        className="text-xs text-gray-500 hover:text-blue-500"
+                                        onClick={() =>
+                                          toggleReplies(comment.id)
+                                        }
+                                      >
+                                        {expandedReplies[comment.id]
+                                          ? "Hide replies"
+                                          : `Show replies (${comment.repliesCount})`}
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             </div>
+
+                            {replyingTo === comment.id && (
+                              <div className="mt-2 ml-10 flex">
+                                <input
+                                  type="text"
+                                  className="flex-1 border rounded-l-lg p-2 text-xs md:text-sm"
+                                  placeholder={`Reply to ${comment.user.name}...`}
+                                  value={replyText}
+                                  onChange={(e) => setReplyText(e.target.value)}
+                                />
+                                <button
+                                  className="bg-blue-500 text-white px-2 md:px-3 rounded-r-lg text-xs md:text-sm"
+                                  onClick={() =>
+                                    handleReply(comment.id, comment.user)
+                                  }
+                                >
+                                  Post
+                                </button>
+                              </div>
+                            )}
+
+                            {expandedReplies[comment.id] && (
+                              <div className="mt-2 ml-10 pl-2 border-l-2 border-gray-200">
+                                {loadingComments[comment.id] ? (
+                                  <div className="text-center py-2">
+                                    Loading replies...
+                                  </div>
+                                ) : (
+                                  (allReplies[comment.id] || []).map(
+                                    (reply) => (
+                                      <div key={reply.id} className="mb-3">
+                                        <div className="flex items-start">
+                                          {reply.user?.profile_photo ? (
+                                            <Link
+                                              to={`/user-profile/${reply.user.username}`}
+                                            >
+                                              <img
+                                                className="rounded-full w-6 h-6 object-cover mr-2"
+                                                src={
+                                                  reply.user.profile_photo.startsWith(
+                                                    "http"
+                                                  )
+                                                    ? reply.user.profile_photo
+                                                    : `${apiUrl}/${reply.user.profile_photo}`
+                                                }
+                                                alt={reply.user.name}
+                                              />
+                                            </Link>
+                                          ) : (
+                                            <div className="w-6 h-6 flex items-center justify-center bg-gray-300 rounded-full mr-2">
+                                              <span className="text-xs font-bold text-gray-600">
+                                                {reply.user.initials || "UU"}
+                                              </span>
+                                            </div>
+                                          )}
+                                          <div className="flex-1">
+                                            <div className="bg-gray-100 rounded-lg p-1 md:p-2">
+                                              <div className="font-semibold text-xxs md:text-xs flex items-center">
+                                                {reply.user?.name ||
+                                                  "Unknown User"}
+                                                {reply.replyTo && (
+                                                  <span className="text-gray-500 ml-1 flex items-center">
+                                                    <svg
+                                                      xmlns="http://www.w3.org/2000/svg"
+                                                      width="10"
+                                                      height="10"
+                                                      fill="currentColor"
+                                                      className="mr-1"
+                                                      viewBox="0 0 16 16"
+                                                    >
+                                                      <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z" />
+                                                    </svg>
+                                                    {reply.replyTo.name}
+                                                  </span>
+                                                )}
+                                              </div>
+                                              <p className="text-xxs md:text-xs">
+                                                {reply.content}
+                                              </p>
+                                            </div>
+                                            <div className="flex justify-start items-center mt-1">
+                                              <div className="text-xs text-gray-500 mr-2">
+                                                {formatPostTime(
+                                                  reply.created_at
+                                                )}
+                                              </div>
+                                              <button
+                                                className="text-xs text-blue-500 hover:text-blue-700"
+                                                onClick={() => {
+                                                  setReplyingTo(comment.id);
+                                                  setReplyToUser(reply.user);
+                                                }}
+                                              >
+                                                Reply
+                                              </button>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )
+                                  )
+                                )}
+                              </div>
+                            )}
                           </div>
                         ))
                       )}
@@ -1274,11 +2198,27 @@ export default function GroupPage() {
 
                     <div className="p-3 md:p-4 border-t">
                       <div className="flex items-center mb-2">
-                        <img
-                          className="rounded-full w-8 h-8 bg-gray-200 flex items-center justify-center text-xxs md:text-xs mr-2 md:mr-3"
-                          src={currentUser?.photo || "/default-user.png"}
-                          alt="You"
-                        />
+                        {currentUser?.photo ? (
+                          <img
+                            className="rounded-full w-8 h-8 object-cover mr-2"
+                            src={
+                              currentUser.photo.startsWith("http")
+                                ? currentUser.photo
+                                : `${apiUrl}/${currentUser.photo}`
+                            }
+                            alt="You"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 flex items-center justify-center bg-gray-300 rounded-full mr-2">
+                            <span className="text-xs font-bold text-gray-600">
+                              {currentUser?.name
+                                ?.split(" ")
+                                .map((n) => n[0])
+                                .join("")
+                                .slice(0, 2) || "UU"}
+                            </span>
+                          </div>
+                        )}
                         <input
                           type="text"
                           className="flex-1 border rounded-lg p-2 text-xs md:text-sm"
@@ -1308,7 +2248,6 @@ export default function GroupPage() {
                   </div>
                 </div>
               )}
-
               {/* Share Modal */}
               {showShareModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1328,7 +2267,7 @@ export default function GroupPage() {
                       <div className="flex items-center border rounded-lg p-2">
                         <input
                           type="text"
-                          value={`http://localhost:5173/post/${sharePostId}`}
+                          value={`${clientUrl}/post/${sharePostId}`}
                           readOnly
                           className="flex-grow text-sm text-gray-700 mr-2 outline-none"
                         />
@@ -1547,24 +2486,38 @@ export default function GroupPage() {
                   {group?.members?.length > 0 ? (
                     <div className="flex flex-wrap gap-4">
                       {/* Tampilkan maksimal 3 anggota pertama */}
-                      {group.members.slice(0, 3).map((member) => (
-                        <div
-                          key={member.id}
-                          className="flex items-center gap-3"
-                        >
-                          <img
-                            src={
-                              member.user.photo
-                                ? member.user.photo.startsWith("http")
-                                  ? member.user.photo
-                                  : `http://localhost:3000/${member.user.photo}`
-                                : "/default-user.png"
-                            }
-                            className="rounded-full w-10 h-10 object-cover"
-                            alt={member.user.name}
-                          />
-                        </div>
-                      ))}
+                      {group.members.slice(0, 3).map((member) => {
+                        return (
+                          <div
+                            key={member.id}
+                            className="flex items-center gap-3"
+                          >
+                            {member.user.photo ? (
+                              <img
+                                src={
+                                  member.user.photo.startsWith("http")
+                                    ? member.user.photo
+                                    : `${apiUrl}/${member.user.photo}`
+                                }
+                                className="rounded-full w-10 h-10 object-cover"
+                                alt={member.user.name}
+                              />
+                            ) : (
+                              <div
+                                className={`rounded-full w-10 h-10 flex items-center justify-center font-semibold text-base bg-gray-200 uppercase ${
+                                  member.user.id === currentUserId
+                                }`}
+                              >
+                                {member.user.name
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")
+                                  .slice(0, 2)}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
 
                       {/* Jika anggota lebih dari 3, tampilkan angka tambahan */}
                       {group.members.length > 3 && (
@@ -1639,7 +2592,10 @@ export default function GroupPage() {
                               >
                                 <div className="flex items-center gap-3">
                                   <img
-                                    src={friend.photo || "/default-user.png"}
+                                    src={
+                                      apiUrl + "/" + friend.photo ||
+                                      "/default-user.png"
+                                    }
                                     className="w-10 h-10 rounded-full object-cover"
                                     alt={friend.name}
                                   />
@@ -1681,7 +2637,7 @@ export default function GroupPage() {
                   <div className="p-4 text-center">
                     <img
                       src={
-                        "http://localhost:3000/" + group.creator.photo ||
+                        apiUrl + "/" + group.creator.photo ||
                         "/default-user.png"
                       }
                       className="rounded-full w-20 h-20 mx-auto mb-2"
@@ -1779,6 +2735,126 @@ export default function GroupPage() {
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-md">
+            <div className="flex justify-between items-center border-b p-4">
+              <h3 className="text-lg font-semibold">Edit Group</h3>
+              <button onClick={() => setShowEditModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="p-4">
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">
+                  Group Name
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={editFormData.name}
+                  onChange={handleEditInputChange}
+                  className="w-full p-2 border rounded"
+                  required
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">
+                  Description
+                </label>
+                <textarea
+                  name="description"
+                  value={editFormData.description}
+                  onChange={handleEditInputChange}
+                  className="w-full p-2 border rounded"
+                  rows="3"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Rules</label>
+                <textarea
+                  name="rule"
+                  value={editFormData.rule}
+                  onChange={handleEditInputChange}
+                  className="w-full p-2 border rounded"
+                  rows="3"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">
+                  Privacy Level
+                </label>
+                <select
+                  name="privacy_level"
+                  value={editFormData.privacy_level}
+                  onChange={handleEditInputChange}
+                  className="w-full p-2 border rounded"
+                >
+                  <option value="public">Public</option>
+                  <option value="private">Private</option>
+                </select>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">
+                  Invite Policy
+                </label>
+                <select
+                  name="invite_policy"
+                  value={editFormData.invite_policy}
+                  onChange={handleEditInputChange}
+                  className="w-full p-2 border rounded"
+                >
+                  <option value="all_members">All Members</option>
+                  <option value="admins_only">Admins Only</option>
+                </select>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">
+                  Group Image
+                </label>
+                <div className="flex items-center gap-4">
+                  {editFormData.imagePreview && (
+                    <img
+                      src={editFormData.imagePreview}
+                      className="w-16 h-16 rounded-full object-cover"
+                      alt="Group preview"
+                    />
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleEditImageChange}
+                    className="text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="px-4 py-2 border rounded"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-500 text-white rounded"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import Pusher from "pusher-js";
 import EmojiPicker from "emoji-picker-react";
@@ -16,6 +16,9 @@ import {
 } from "lucide-react";
 
 export const Messages = () => {
+  const apiUrl =
+    import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
   const { conversationId } = useParams();
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
@@ -171,7 +174,7 @@ export const Messages = () => {
             formData.append("socket_id", socketId);
             formData.append("channel_name", channel.name);
 
-            fetch("http://localhost:3000/api/pusher/auth", {
+            fetch(apiUrl + "/api/pusher/auth", {
               method: "POST",
               headers: { Authorization: `Bearer ${token}` },
               body: formData,
@@ -263,7 +266,7 @@ export const Messages = () => {
     try {
       const userId = getUserIdFromToken(token);
       const response = await axios.get(
-        `http://localhost:3000/api/users/${userId}/connections?limit=50&offset=0`,
+        `${apiUrl}/api/users/${userId}/connections?limit=50&offset=0`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -285,7 +288,7 @@ export const Messages = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:3000/api/conversations?limit=40&offset=0",
+        apiUrl + "/api/conversations?limit=40&offset=0",
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -314,10 +317,9 @@ export const Messages = () => {
 
   const fetchConversationById = async (id) => {
     try {
-      const response = await axios.get(
-        `http://localhost:3000/api/conversations/${id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await axios.get(`${apiUrl}/api/conversations/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (response.data.data) {
         setActiveConversation(response.data.data);
@@ -502,7 +504,7 @@ export const Messages = () => {
     setMessagesLoading(true);
     try {
       const response = await axios.get(
-        `http://localhost:3000/api/conversations/${
+        `${apiUrl}/api/conversations/${
           activeConversation.id
         }/messages?limit=40&offset=${page * 40}`,
         { headers: { Authorization: `Bearer ${token}` } }
@@ -542,7 +544,7 @@ export const Messages = () => {
   const fetchReplyMessage = async (message) => {
     try {
       const response = await axios.get(
-        `http://localhost:3000/api/messages/${message.reply_to_id}`,
+        `${apiUrl}/api/messages/${message.reply_to_id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -564,7 +566,7 @@ export const Messages = () => {
   const markConversationAsRead = async (conversationId) => {
     try {
       await axios.put(
-        `http://localhost:3000/api/conversations/${conversationId}/read`,
+        `${apiUrl}/api/conversations/${conversationId}/read`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -886,7 +888,7 @@ export const Messages = () => {
           }
 
           return axios.post(
-            `http://localhost:3000/api/conversations/${activeConversation.id}/files`,
+            `${apiUrl}/api/conversations/${activeConversation.id}/files`,
             formData,
             {
               headers: {
@@ -904,7 +906,7 @@ export const Messages = () => {
       // Step 2: Send text message if there is any
       if (textToSend) {
         await axios.post(
-          `http://localhost:3000/api/conversations/${activeConversation.id}/messages`,
+          `${apiUrl}/api/conversations/${activeConversation.id}/messages`,
           {
             content: textToSend,
             message_type: "text",
@@ -936,7 +938,7 @@ export const Messages = () => {
   // Delete message
   const deleteMessage = async (messageId) => {
     try {
-      await axios.delete(`http://localhost:3000/api/messages/${messageId}`, {
+      await axios.delete(`${apiUrl}/api/messages/${messageId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       // Actual state update will happen through Pusher event
@@ -962,7 +964,7 @@ export const Messages = () => {
 
     try {
       await axios.put(
-        `http://localhost:3000/api/messages/${replyTo.id}`,
+        `${apiUrl}/api/messages/${replyTo.id}`,
         {
           content: messageInput,
           message_type: "text",
@@ -1025,8 +1027,34 @@ export const Messages = () => {
   // Start a new conversation
   const startNewConversation = async (userId, initialMessage = "Hello!") => {
     try {
+      // First, check if a conversation with this user already exists
+      const existingConversation = conversations.find((conversation) => {
+        // Make sure the conversation has participants
+        if (
+          !conversation.participants ||
+          !Array.isArray(conversation.participants)
+        ) {
+          return false;
+        }
+
+        // Check if the selected user is a participant in this conversation
+        return conversation.participants.some(
+          (participant) => participant.user_id === userId
+        );
+      });
+
+      // If conversation exists, navigate to it
+      if (existingConversation) {
+        console.log("Conversation already exists, redirecting...");
+        setActiveConversation(existingConversation);
+        navigate(`/messages/${existingConversation.id}`);
+        setShowNewConversationModal(false);
+        return;
+      }
+
+      // Otherwise, create a new conversation
       const response = await axios.post(
-        "http://localhost:3000/api/conversations",
+        apiUrl + "/api/conversations",
         {
           participant_ids: [userId],
           initial_message: initialMessage,
@@ -1072,12 +1100,55 @@ export const Messages = () => {
     },
   };
 
+  useEffect(() => {
+    const handleResize = () => {
+      // On mobile, hide sidebar when conversation is active
+      // On larger screens, always show sidebar
+      if (window.innerWidth < 768 && conversationId) {
+        setShowSidebar(false);
+      } else {
+        setShowSidebar(true);
+      }
+    };
+
+    // Run once on component mount and when conversationId changes
+    handleResize();
+
+    // Also respond to window resize events
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [conversationId]);
+
   return (
     <div className="flex flex-col h-screen bg-gray-100">
       {/* Header */}
-      <div className="bg-[#00AEEF] text-white p-4 shadow-md">
+      <div
+        className={`bg-[#00AEEF] text-white p-4 shadow-md ${
+          window.innerWidth < 768 && conversationId ? "hidden md:block" : ""
+        }`}
+      >
         <div className="container flex items-center justify-between mx-auto">
+            <button
+              onClick={() => navigate("/")}
+              className="p-2 -ml-2 rounded-full hover:bg-blue-600"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M19 12H5"></path>
+                <path d="M12 19l-7-7 7-7"></path>
+              </svg>
+            </button>
           <h1 className="text-xl font-bold">Messages</h1>
+          <div className="w-8"></div> {/* Spacer for alignment */}
         </div>
       </div>
 
@@ -1176,7 +1247,7 @@ export const Messages = () => {
                     <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 overflow-hidden bg-gray-300 rounded-full">
                       {otherParticipant?.photo ? (
                         <img
-                          src={`http://localhost:3000/${otherParticipant.photo}`}
+                          src={`${apiUrl}/${otherParticipant.photo}`}
                           alt={otherParticipant.name || "User"}
                           className="object-cover w-full h-full"
                         />
@@ -1261,14 +1332,14 @@ export const Messages = () => {
                   .filter((p) => p.user_id !== getUserIdFromToken(token))
                   .slice(0, 1)
                   .map((participant) => (
-                    <div
+                    <Link to={`/user-profile/${participant.user.username}`} 
                       key={participant.user_id}
                       className="flex items-center gap-3"
-                    >
+                    > 
                       <div className="flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-300 rounded-full">
                         {participant.user.photo ? (
                           <img
-                            src={`http://localhost:3000/${participant.user.photo}`}
+                            src={`${apiUrl}/${participant.user.photo}`}
                             alt={participant.user.name}
                             className="object-cover w-full h-full"
                           />
@@ -1290,7 +1361,7 @@ export const Messages = () => {
                             : "Online"}
                         </p>
                       </div>
-                    </div>
+                    </Link>
                   ))}
               </div>
 
@@ -1380,7 +1451,7 @@ export const Messages = () => {
                                   // Image message
                                   <div>
                                     <img
-                                      src={`http://localhost:3000/${message.file_path}`}
+                                      src={`${apiUrl}/${message.file_path}`}
                                       alt="Image"
                                       className="max-w-full rounded"
                                     />
@@ -1395,7 +1466,7 @@ export const Messages = () => {
                                   <div className="flex items-center gap-2">
                                     <FileText size={24} />
                                     <a
-                                      href={`http://localhost:3000/${message.file_path}`}
+                                      href={`${apiUrl}/${message.file_path}`}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="text-blue-600 underline"
@@ -1408,7 +1479,7 @@ export const Messages = () => {
                                   <div>
                                     <audio
                                       controls
-                                      src={`http://localhost:3000/${message.file_path}`}
+                                      src={`${apiUrl}/${message.file_path}`}
                                       className="max-w-full"
                                     >
                                       Your browser does not support audio
@@ -1881,7 +1952,7 @@ export const Messages = () => {
                       <div className="flex items-center justify-center w-12 h-12 mr-3 overflow-hidden bg-gray-300 rounded-full">
                         {connection.user.photo ? (
                           <img
-                            src={`http://localhost:3000/${connection.user.photo}`}
+                            src={`${apiUrl}/${connection.user.photo}`}
                             alt={connection.user.name}
                             className="object-cover w-full h-full"
                           />

@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom"; // Import useNavigate
 import axios from "axios";
 
 const ForgotPassword = () => {
+        const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [message, setMessage] = useState("");
@@ -17,7 +19,7 @@ const ForgotPassword = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:3000/api/auth/forgot-password",
+        apiUrl + "/api/auth/forgot-password",
         {
           email,
         }

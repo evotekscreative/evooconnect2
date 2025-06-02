@@ -1,36 +1,44 @@
 import React, { useState, useEffect } from "react";
 import { categories } from "./CategoryStep";
+import { CKEditor } from '@ckeditor/ckeditor5-react';
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 
-// Perbaikan fungsi cleanHTML agar tidak menghapus spasi
-const cleanHTML = (html) => {
-  if (!html) return "";
-  return html
-    .replace(/<p[^>]*>/g, "")
-    .replace(/<\/p>/g, "\n\n") // Ganti </p> dengan double newline untuk mempertahankan paragraf
-    .replace(/<br\s*\/?>/g, "\n") // Ganti <br> dengan newline
-    .replace(/<[^>]+>/g, "")
-    .trim();
-};
-
-// Fungsi untuk memformat teks biasa menjadi HTML sederhana
-const formatToHTML = (text) => {
-  if (!text) return "";
-  return text
-    .split("\n\n") // Pisahkan berdasarkan paragraf (double newline)
-    .map(paragraph => `<p>${paragraph.replace(/\n/g, "<br>")}</p>`) // Ubah newline menjadi <br>
-    .join("");
-};
+const MAX_CHARACTERS = 1500;
 
 const EditBlog = ({ article, setArticle, onClose, onSuccess, showToast }) => {
+          const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
   const [loading, setLoading] = useState(false);
   const [imageFile, setImageFile] = useState(null);
   const [content, setContent] = useState("");
+  const [charCount, setCharCount] = useState(0);
   
+  // Tambahkan style untuk menyembunyikan "Powered by CKEditor"
   useEffect(() => {
+    // Tambahkan style untuk menyembunyikan "Powered by CKEditor"
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .ck-powered-by {
+        display: none !important;
+      }
+      .ck-editor__editable {
+        min-height: 200px;
+      }
+    `;
+    document.head.appendChild(style);
+    
     if (article) {
-      // Inisialisasi content dengan konten artikel yang sudah dibersihkan
-      setContent(cleanHTML(article.content));
+      setContent(article.content || "");
+      // Hitung jumlah karakter awal
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = article.content || "";
+      setCharCount(tempDiv.textContent.length);
     }
+    
+    // Cleanup style saat komponen unmount
+    return () => {
+      document.head.removeChild(style);
+    };
   }, [article]);
 
   const handleUploadImagePreview = (e) => {
@@ -46,6 +54,12 @@ const EditBlog = ({ article, setArticle, onClose, onSuccess, showToast }) => {
   };
 
   const handleSave = async () => {
+    // Validasi jumlah karakter sebelum menyimpan
+    if (charCount > MAX_CHARACTERS) {
+      showToast(`Content exceeds maximum ${MAX_CHARACTERS} characters limit.`, "error");
+      return;
+    }
+
     const token = localStorage.getItem("token");
     setLoading(true);
 
@@ -54,15 +68,14 @@ const EditBlog = ({ article, setArticle, onClose, onSuccess, showToast }) => {
       formData.append("title", article.title);
       formData.append("category", article.category);
       
-      // Format konten teks menjadi HTML sebelum mengirim
-      const formattedContent = formatToHTML(content);
-      formData.append("content", formattedContent);
+      // Gunakan konten langsung dari CKEditor
+      formData.append("content", content);
 
       if (imageFile) {
         formData.append("image", imageFile);
       }
 
-      const res = await fetch(`http://localhost:3000/api/blogs/${article.id}`, {
+      const res = await fetch(`${apiUrl}/api/blogs/${article.id}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -82,6 +95,13 @@ const EditBlog = ({ article, setArticle, onClose, onSuccess, showToast }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Fungsi untuk menghitung jumlah karakter dari HTML
+  const countCharacters = (html) => {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    return tempDiv.textContent.length;
   };
 
   return (
@@ -147,18 +167,48 @@ const EditBlog = ({ article, setArticle, onClose, onSuccess, showToast }) => {
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Content</label>
-            <textarea
-              rows={6}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="w-full border px-3 py-2 rounded"
-            />
+            <div className="border rounded">
+              <CKEditor
+                editor={ClassicEditor}
+                data={content}
+                onChange={(event, editor) => {
+                  const data = editor.getData();
+                  const count = countCharacters(data);
+                  setCharCount(count);
+                  setContent(data);
+                  
+                  // Tampilkan peringatan jika melebihi batas
+                  if (count > MAX_CHARACTERS) {
+                    showToast(`Content exceeds maximum ${MAX_CHARACTERS} characters limit.`, "warning");
+                  }
+                }}
+                config={{
+                  toolbar: [
+                    'heading',
+                    '|',
+                    'bold',
+                    'italic',
+                    'link',
+                    'bulletedList',
+                    'numberedList',
+                    '|',
+                    'blockQuote',
+                    '|',
+                    'undo',
+                    'redo'
+                  ]
+                }}
+              />
+            </div>
+            <div className={`text-sm mt-1 text-right ${charCount > MAX_CHARACTERS ? 'text-red-500 font-medium' : 'text-gray-500'}`}>
+              {charCount}/{MAX_CHARACTERS} characters
+            </div>
           </div>
         </div>
         <div className="text-right mt-6">
           <button
             onClick={handleSave}
-            disabled={loading}
+            disabled={loading || charCount > MAX_CHARACTERS}
             className="bg-sky-500 hover:bg-sky-400 text-white px-6 py-2 rounded disabled:opacity-50"
           >
             {loading ? "Saving..." : "Save Changes"}

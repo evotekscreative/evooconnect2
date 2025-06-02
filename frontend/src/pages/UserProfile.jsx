@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Link, useParams  } from "react-router-dom";
+import { useState, useEffect, useCallback, use } from "react";
+import { Link, useParams } from "react-router-dom";
 import Case from "../components/Case";
 import {
   Briefcase,
@@ -20,8 +20,16 @@ import {
   ThumbsUp,
   MessageCircle,
   Share2,
+  Mail,
+  Phone,
+  MapPin,
+  Building,
+  Link2,
+  X,
+  UserPlus,
+  Check,
 } from "lucide-react";
-import { Toaster, toast } from "sonner";
+import Alert from "../components/Auth/alert";
 import axios from "axios";
 
 const socialPlatforms = [
@@ -49,6 +57,10 @@ const socialPlatforms = [
 ];
 
 export default function UserProfile() {
+  const apiUrl =
+    import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
+  const [showContactModal, setShowContactModal] = useState(false);
   const [showEditEducationModal, setEditShowEducationModal] = useState(false);
   const [editingEducation, setEditingEducation] = useState(null);
   const [showExperienceModal, setShowExperienceModal] = useState(false);
@@ -61,8 +73,18 @@ export default function UserProfile() {
   const [profileImage, setProfileImage] = useState(null);
   const { username } = useParams(); // Get username from URL
   const [userData, setUserData] = useState(null);
+  const [connections, setConnections] = useState([]);
+  const [connectionsCount, setConnectionsCount] = useState(0);
+  const [profileViews, setProfileViews] = useState({
+    thisWeek: 0,
+    lastWeek: 0,
+    percentageChange: 0,
+    dailyViews: [],
+  });
+  const [isConnected, setIsConnected] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState(null);
+  const [loadingConnection, setLoadingConnection] = useState(false);
 
-  // Initialize user state with empty values
   const [user, setUser] = useState({
     id: "",
     name: "",
@@ -71,6 +93,13 @@ export default function UserProfile() {
     skills: [],
     socials: {},
     photo: null,
+    email: "",
+    phone: "",
+    location: "",
+    organization: "",
+    website: "",
+    birthdate: "",
+    gender: "",
   });
 
   // Education Form State
@@ -116,46 +145,157 @@ export default function UserProfile() {
     "December",
   ];
 
+  const [alert, setAlert] = useState({
+    show: false,
+    type: "success",
+    message: "",
+  });
+
+  const showAlert = (type, message) => {
+    setAlert({
+      show: true,
+      type,
+      message,
+    });
+    setTimeout(() => {
+      setAlert({ ...alert, show: false });
+    }, 5000); // Auto-hide after 5 seconds
+  };
+
   const years = [
     "Year",
     ...Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i),
   ];
 
-  const fetchUserPosts = async () => {
-  const token = localStorage.getItem("token");
-  setIsLoading(true);
+  const handleConnectWithUser = async () => {
+    if (!user.id) return;
 
-  try {
-    const user = JSON.parse(localStorage.getItem("user"));
-    const userId = user.id;
-    const response = await axios.get(
-      `http://localhost:3000/api/users/${userId}/posts?limit=10&offset=0`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+    setLoadingConnection(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.post(
+        `${apiUrl}/api/users/${user.id}/connect`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Periksa response untuk menentukan status baru
+      const newStatus = response.data.data?.status || "connected";
+      // setIsConnected(newStatus === "connected");
+      setConnectionStatus(newStatus);
+
+      // Refresh data koneksi
+      await fetchConnections();
+
+      showAlert(
+        "success",
+        newStatus === "connected"
+          ? "Connected successfully!"
+          : "Connection request sent!"
+      );
+    } catch (error) {
+      console.error("Failed to connect:", error);
+      setIsConnected(false);
+      setConnectionStatus(null);
+      showAlert(
+        "error",
+        error.response?.data?.data || "Users are already connected"
+      );
+    } finally {
+      setLoadingConnection(false);
+    }
+  };
+
+  const fetchConnections = useCallback(async () => {
+    if (!user.id) return;
+
+    const token = localStorage.getItem("token");
+    try {
+      const response = await axios.get(
+        `${apiUrl}/api/users/${user.id}/connections`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const connectionsData = response.data.data.connections || [];
+      setConnections(connectionsData);
+      setConnectionsCount(response.data.data.total || 0);
+
+      // Periksa status koneksi yang lebih akurat
+      const connectionStatus = response.data.data.connection_status;
+      // setIsConnected(connectionStatus === "connected");
+      setConnectionStatus(connectionStatus);
+    } catch (error) {
+      console.error("Failed to fetch connections:", error);
+      setIsConnected(false);
+      setConnectionStatus(null);
+    }
+  }, [user.id, apiUrl]);
+
+  const fetchProfileViews = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const [thisWeekResponse, lastWeekResponse] = await Promise.all([
+        axios.get(`${apiUrl}/api/user/profile/views/this-week`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`${apiUrl}/api/user/profile/views/last-week`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      const thisWeekData = thisWeekResponse.data.data || {};
+      const lastWeekData = lastWeekResponse.data.data || {};
+
+      const days = [];
+      const dailyCounts = [];
+
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const formattedDate = date.toISOString().split("T")[0];
+        days.push(formattedDate);
+
+        const dailyViews =
+          thisWeekData.viewers?.filter(
+            (viewer) =>
+              new Date(viewer.viewed_at).toISOString().split("T")[0] ===
+              formattedDate
+          ) || [];
+
+        dailyCounts.push(dailyViews.length);
       }
-    );
 
-    // Ensure we always set an array, even if response.data.data is null/undefined
-    setUserPosts(response.data.data || []);
-  } catch (error) {
-    console.error("Failed to fetch user posts:", error);
-    toast.error("Failed to load posts");
-    setUserPosts([]); // Set to empty array on error
-  } finally {
-    setIsLoading(false);
-  }
-};
+      const thisWeekTotal = thisWeekData.count || 0;
+      const lastWeekTotal = lastWeekData.count || 0;
 
-  // Fetch user profile data
-  const fetchProfile = async () => {
+      let percentageChange = 0;
+      if (lastWeekTotal > 0) {
+        percentageChange =
+          ((thisWeekTotal - lastWeekTotal) / lastWeekTotal) * 100;
+      } else if (thisWeekTotal > 0) {
+        percentageChange = 100;
+      }
+
+      setProfileViews({
+        thisWeek: thisWeekTotal,
+        lastWeek: lastWeekTotal,
+        percentageChange: Math.round(percentageChange),
+        dailyViews: thisWeekData.viewers || [],
+      });
+    } catch (error) {
+      console.error("Failed to fetch profile views:", error);
+      showAlert("error", "Failed to load profile data");
+    }
+  };
+
+  const fetchUserPosts = async () => {
     const token = localStorage.getItem("token");
     setIsLoading(true);
 
     try {
+      const userId = user.id;
       const response = await axios.get(
-        `http://localhost:3000/api/user-profile/${username}`,
+        `${apiUrl}/api/users/${userId}/posts?limit=10&offset=0`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -163,49 +303,80 @@ export default function UserProfile() {
         }
       );
 
-      // Convert socials array to object
-      const socialsObject = {};
-      if (
-        response.data.data.socials &&
-        Array.isArray(response.data.data.socials)
-      ) {
-        response.data.data.socials.forEach((social) => {
-          socialsObject[social.platform] = social.username;
-        });
-      }
-
-      // Handle skills data
-      let userSkills = [];
-      if (response.data.data.skills && response.data.data.skills.Valid) {
-        userSkills = Array.isArray(response.data.data.skills.String)
-          ? response.data.data.skills.String
-          : response.data.data.skills.String
-          ? [response.data.data.skills.String]
-          : [];
-      }
-
-      setUser({
-        id: response.data.data.id || "",
-        name: response.data.data.name || "",
-        headline: response.data.data.headline || "",
-        about: response.data.data.about || "",
-        skills: userSkills,
-        socials: socialsObject,
-        photo: response.data.data.photo || null,
-      });
-
-      // Set profile image separately if needed
-      setProfileImage(response.data.data.photo || null);
+      // Ensure we always set an array, even if response.data.data is null/undefined
+      setUserPosts(response.data.data || []);
     } catch (error) {
-      console.error("Failed to fetch profile:", error);
-      toast.error("Failed to load profile data");
+      console.error("Failed to fetch user posts:", error);
+      showAlert("error", "Failed to load posts");
+      setUserPosts([]); // Set to empty array on error
     } finally {
       setIsLoading(false);
     }
   };
 
-   
   useEffect(() => {
+    const fetchProfile = async () => {
+      const token = localStorage.getItem("token");
+      setIsLoading(true);
+
+      try {
+        const response = await axios.get(
+          apiUrl + "/api/user-profile/" + username,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = response.data.data;
+
+        // Convert socials array to object
+        const socialsObject = {};
+        if (data.socials && Array.isArray(data.socials)) {
+          data.socials.forEach((social) => {
+            socialsObject[social.platform] = social.username;
+          });
+        }
+
+        // Handle skills data
+        let userSkills = [];
+        if (data.skills) {
+          if (Array.isArray(data.skills)) {
+            userSkills = data.skills;
+          } else if (data.skills.String) {
+            userSkills = [data.skills.String];
+          }
+        }
+
+        setUser({
+          id: data.id || "",
+          name: data.name || "",
+          headline: data.headline || "",
+          about: data.about || "",
+          skills: userSkills,
+          socials: socialsObject,
+          photo: data.photo || null,
+          email: data.email || "",
+          phone: data.phone || "",
+          location: data.location || "",
+          organization: data.organization || "",
+          website: data.website || "",
+          birthdate: data.birthdate || "",
+          gender: data.gender || "",
+        });
+
+        setProfileImage(data.photo || null);
+
+        setIsConnected(data.is_connected);
+      } catch (error) {
+        console.error("Failed to fetch profile:", error);
+        showAlert("error", "Failed to load profile views");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     fetchProfile();
   }, [username]);
 
@@ -215,7 +386,7 @@ export default function UserProfile() {
 
     try {
       const response = await axios.get(
-        `http://localhost:3000/api/users/${user.id}/education`,
+        `${apiUrl}/api/users/${user.id}/education`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -226,7 +397,7 @@ export default function UserProfile() {
       setEducation(response.data.data.educations);
     } catch (error) {
       console.error("Failed to fetch education:", error);
-      toast.error("Failed to load education data");
+      showAlert("error", "Failed to load education data");
     } finally {
       setIsLoading(false);
     }
@@ -238,7 +409,7 @@ export default function UserProfile() {
 
     try {
       const response = await axios.get(
-        `http://localhost:3000/api/users/${user.id}/experience?limit=10&offset=0`,
+        `${apiUrl}/api/users/${user.id}/experience?limit=10&offset=0`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -253,260 +424,20 @@ export default function UserProfile() {
       );
     } catch (error) {
       console.error("Failed to fetch experience:", error);
-      toast.error("Failed to load experience data");
+      showAlert("error", "Failed to load experience data");
     } finally {
       setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchProfile();
-  }, []);
 
   useEffect(() => {
     if (user.id) {
+      fetchConnections();
+      fetchUserPosts();
       fetchEducations();
       fetchExperiences();
-      fetchUserPosts();
     }
   }, [user.id]);
-
-  // Handle Education Form Submission
-  // Handle Experience Form Submission
-  const handleExperienceSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      const token = localStorage.getItem("token");
-
-      // Create FormData to handle file upload
-      const formData = new FormData();
-      formData.append("job_title", experienceForm.job_title);
-      formData.append("company_name", experienceForm.company_name);
-      formData.append("location", experienceForm.location);
-      formData.append("start_month", experienceForm.start_month);
-      formData.append("start_year", experienceForm.start_year);
-      formData.append("end_month", experienceForm.end_month);
-      formData.append("end_year", experienceForm.end_year);
-      formData.append("caption", experienceForm.caption);
-
-      if (experienceForm.photo instanceof File) {
-        formData.append("photo", experienceForm.photo);
-      }
-
-      // If editing, make PUT request
-      if (editingExperience) {
-        const response = await axios.put(
-          `http://localhost:3000/api/experience/${editingExperience.id}`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        setExperiences((prev) =>
-          prev.map((exp) =>
-            exp.id === editingExperience.id ? response.data.data : exp
-          )
-        );
-        toast.success("Experience updated successfully!");
-        setEditingExperience(null);
-      } else {
-        // If adding new, make POST request
-        const response = await axios.post(
-          "http://localhost:3000/api/experience",
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        setExperiences((prev) => [...prev, response.data.data]);
-        toast.success("Experience added successfully!");
-      }
-
-      // Reset form and close modal
-      setShowExperienceModal(false);
-      setExperienceForm({
-        job_title: "",
-        company_name: "",
-        location: "",
-        start_month: "Month",
-        start_year: "Year",
-        end_month: "Month",
-        end_year: "Year",
-        caption: "",
-        photo: null,
-      });
-    } catch (error) {
-      console.error("Failed to add/update experience:", error);
-      toast.error(
-        `Failed to ${
-          editingExperience ? "update" : "add"
-        } experience. Please try again.`
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handle Education Form Submission
-  const handleEducationSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      const token = localStorage.getItem("token");
-      const formData = new FormData();
-      formData.append("major", educationForm.major);
-      formData.append("institute_name", educationForm.institute_name);
-      formData.append("location", educationForm.location);
-      formData.append("start_month", educationForm.start_month);
-      formData.append("start_year", educationForm.start_year);
-      formData.append("end_month", educationForm.end_month);
-      formData.append("end_year", educationForm.end_year);
-      formData.append("caption", educationForm.caption);
-
-      if (educationForm.schoolLogo instanceof File) {
-        formData.append("photo", educationForm.schoolLogo);
-      }
-
-      if (editingEducation) {
-        // Edit existing education
-        const response = await axios.put(
-          `http://localhost:3000/api/education/${editingEducation.id}`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        setEducation((prev) =>
-          prev.map((edu) =>
-            edu.id === editingEducation.id ? response.data.data : edu
-          )
-        );
-        toast.success("Education updated successfully!");
-        setEditingEducation(null);
-      } else {
-        // Add new education
-        const response = await axios.post(
-          "http://localhost:3000/api/education",
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        setEducation((prev) => [...prev, response.data.data]);
-        toast.success("Education added successfully!");
-      }
-
-      setShowEducationModal(false);
-      setEducationForm({
-        major: "",
-        institute_name: "",
-        location: "",
-        start_month: "Month",
-        start_year: "Year",
-        end_month: "Month",
-        end_year: "Year",
-        caption: "",
-        schoolLogo: null,
-      });
-    } catch (error) {
-      console.error("Failed to add/update education:", error);
-      toast.error(
-        `Failed to ${
-          editingEducation ? "update" : "add"
-        } education. Please try again.`
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  const handleEditEducation = (education) => {
-    setEditingEducation(education);
-
-    // Parse start date
-    let startMonth = "Month";
-    let startYear = "Year";
-    if (education.start_date) {
-      const startParts = education.start_date.split(" ");
-      if (startParts.length === 2) {
-        startMonth = startParts[0];
-        startYear = startParts[1];
-      }
-    }
-
-    // Parse end date
-    let endMonth = "Month";
-    let endYear = "Year";
-    if (education.end_date && education.end_date !== "Present") {
-      const endParts = education.end_date.split(" ");
-      if (endParts.length === 2) {
-        endMonth = endParts[0];
-        endYear = endParts[1];
-      }
-    }
-
-    setEducationForm({
-      major: education.major || "",
-      institute_name: education.institute_name || "",
-      location: education.location || "",
-      start_month: startMonth,
-      start_year: startYear,
-      end_month: endMonth,
-      end_year: endYear,
-      caption: education.caption || "",
-      schoolLogo: education.photo || null,
-    });
-
-    setShowEducationModal(true);
-  };
-
-  const deleteEducation = async (educationId) => {
-    setIsLoading(true);
-    try {
-      const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:3000/api/education/${educationId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      setEducation((prev) =>
-        Array.isArray(prev) ? prev.filter((edu) => edu.id !== educationId) : []
-      );
-      toast.success("Education deleted successfully!");
-    } catch (error) {
-      console.error("Failed to delete education:", error);
-      toast.error("Failed to delete education. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  // Handle Form Changes
-  const handleExperienceChange = (e) => {
-    const { name, value } = e.target;
-    setExperienceForm({
-      ...experienceForm,
-      [name]: value,
-    });
-  };
 
   const handleEducationChange = (e) => {
     const { name, value } = e.target;
@@ -549,66 +480,23 @@ export default function UserProfile() {
       .scrollBy({ left: 300, behavior: "smooth" });
   };
 
-  const handleEditExperience = (experience) => {
-    setEditingExperience(experience);
-
-    // Parse start date
-    let startMonth = "Month";
-    let startYear = "Year";
-    if (experience.start_date) {
-      const startParts = experience.start_date.split(" ");
-      if (startParts.length === 2) {
-        startMonth = startParts[0];
-        startYear = startParts[1];
-      }
-    }
-
-    // // Parse end date
-    let endMonth = "Month";
-    let endYear = "Year";
-    if (experience.end_date && experience.end_date !== "Present") {
-      const endParts = experience.end_date.split(" ");
-      if (endParts.length === 2) {
-        endMonth = endParts[0];
-        endYear = endParts[1];
-      }
-    }
-
-    setExperienceForm({
-      job_title: experience.job_title || "",
-      company_name: experience.company_name || "",
-      location: experience.location || "",
-      start_month: startMonth,
-      start_year: startYear,
-      end_month: endMonth,
-      end_year: endYear,
-      caption: experience.caption || "",
-      photo: experience.photo || null,
-    });
-
-    setShowExperienceModal(true);
-  };
-
   const deleteExperience = async (experienceId) => {
     setIsLoading(true);
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(
-        `http://localhost:3000/api/experience/${experienceId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await axios.delete(`${apiUrl}/api/experience/${experienceId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       setExperiences((prev) =>
         Array.isArray(prev) ? prev.filter((exp) => exp.id !== experienceId) : []
       );
-      toast.success("Experience deleted successfully!");
+      showAlert("success", "Experience deleted successfully!");
     } catch (error) {
       console.error("Failed to delete experience:", error);
-      toast.error("Failed to delete experience. Please try again.");
+      showAlert("error", "Failed to delete experience. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -616,7 +504,7 @@ export default function UserProfile() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="flex items-center justify-center h-screen">
         Loading...
       </div>
     );
@@ -624,23 +512,30 @@ export default function UserProfile() {
 
   return (
     <div className="bg-[#EDF3F7] min-h-screen">
-      <Toaster position="top-right" richColors />
       <Case />
 
-      <div className="w-full mx-auto py-6 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-6 justify-center">
+      <div className="w-full px-4 py-6 mx-auto sm:px-6">
+        <div className="flex flex-col justify-center max-w-6xl gap-6 mx-auto md:flex-row">
+          <div className="fixed top-4 right-4 z-50">
+            <Alert
+              type={alert.type}
+              message={alert.message}
+              isVisible={alert.show}
+              onClose={() => setAlert({ ...alert, show: false })}
+            />
+          </div>
           {/* Left Sidebar */}
-          <div className="w-full md:w-1/3 space-y-4">
-            <div className="bg-white rounded-lg shadow-md p-6 text-center">
-              <div className="relative w-28 h-28 mx-auto bg-gray-200 rounded-full overflow-hidden flex items-center justify-center">
+          <div className="w-full space-y-4 md:w-1/3">
+            <div className="p-6 text-center bg-white rounded-lg shadow-md">
+              <div className="relative flex items-center justify-center mx-auto overflow-hidden bg-gray-200 rounded-full w-28 h-28">
                 {profileImage ? (
                   <img
-                    src={"http://localhost:3000/" + profileImage}
+                    src={apiUrl + "/" + profileImage}
                     alt="Profile"
-                    className="w-full h-full object-cover"
+                    className="object-cover w-full h-full"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-300">
+                  <div className="flex items-center justify-center w-full h-full bg-gray-300">
                     <span className="text-lg font-bold text-gray-600">
                       {user.name
                         .split(" ")
@@ -650,42 +545,70 @@ export default function UserProfile() {
                   </div>
                 )}
               </div>
-              <h2 className="font-bold text-xl mt-4">{user.name}</h2>
+              <h2 className="mt-4 text-xl font-bold">{user.name}</h2>
               <p className="text-base text-gray-500">
                 {user.headline || "No headline yet"}
               </p>
+              <div className="mt-2">
+                <button
+                  onClick={() => setShowContactModal(true)}
+                  className="text-sm text-blue-600 hover:underline"
+                >
+                  Contact Information
+                </button>
+              </div>
               <div className="mt-5 space-y-2 text-left">
                 <Link
-                  to="/list-connection"
-                  className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md"
+                  to={`/list-connection/${username}`}
+                  className="flex items-center justify-between p-2 rounded-md hover:bg-gray-50"
                 >
                   <span className="flex items-center gap-2 text-base">
                     <Users size={18} /> Connections
                   </span>
-                  <span className="font-bold text-lg">358</span>
+                  <span className="text-lg font-bold">{connectionsCount}</span>
                 </Link>
-                <div className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md">
-                  <span className="flex items-center gap-2 text-base">
-                    <Eye size={18} /> Views
-                  </span>
-                  <span className="font-bold text-lg">85</span>
-                </div>
-                {/* </Link> */}
-                <Link
-                  to="/job-saved"
-                  className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md"
+              </div>
+
+              {/* Replace the existing button with this one */}
+              <div className="mt-2">
+                <button
+                  onClick={handleConnectWithUser}
+                  disabled={
+                    isConnected ||
+                    connectionStatus === "pending" ||
+                    loadingConnection
+                  }
+                  className={`w-full py-2 rounded-md text-sm font-medium transition-colors ${
+                    isConnected
+                      ? "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 text-white"
+                      : connectionStatus === "pending"
+                      ? "bg-blue-100 text-blue-800 cursor-default"
+                      : "border border-blue-500 text-blue-500 <hover:bg-sky-5></hover:bg-sky-5>00"
+                  } flex items-center justify-center`}
                 >
-                  <span className="flex items-center gap-2 text-base">
-                    <Bookmark size={18} /> Job Saved
-                  </span>
-                  <span className="font-bold text-lg">120</span>
-                </Link>
+                  {loadingConnection ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" />
+                      Processing...
+                    </>
+                  ) : isConnected ? (
+                    <>
+                      <Check className="w-4 h-4 mr-1" /> Connected
+                    </>
+                  ) : connectionStatus === "pending" ? (
+                    "Request Sent"
+                  ) : (
+                    <>
+                      <UserPlus className="w-4 h-4 mr-1" /> Connect
+                    </>
+                  )}
+                </button>
               </div>
             </div>
 
             {/* Skills Section */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="font-semibold text-lg">Skills</h3>
+            <div className="p-6 bg-white rounded-lg shadow-md">
+              <h3 className="text-lg font-semibold">Skills</h3>
               {user.skills && user.skills.length > 0 ? (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {user.skills.map((skill, index) => (
@@ -705,8 +628,8 @@ export default function UserProfile() {
             </div>
 
             {/* Social Media Section */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="font-semibold text-lg mb-2">Social Media</h3>
+            <div className="p-6 bg-white rounded-lg shadow-md">
+              <h3 className="mb-2 text-lg font-semibold">Social Media</h3>
               {Object.keys(user.socials).length > 0 ? (
                 <div className="space-y-2">
                   {Object.entries(user.socials).map(([platform, username]) => {
@@ -716,7 +639,7 @@ export default function UserProfile() {
                     return (
                       <div
                         key={platform}
-                        className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-md"
+                        className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-50"
                       >
                         {platformInfo && (
                           <div
@@ -725,7 +648,7 @@ export default function UserProfile() {
                             {platformInfo.icon}
                           </div>
                         )}
-                        <span className="text-base">@{username}</span>
+                        <span className="text-base truncate">@{username}</span>
                       </div>
                     );
                   })}
@@ -739,23 +662,22 @@ export default function UserProfile() {
           </div>
 
           {/* Right Main Section */}
-          <div className="w-full md:w-2/3 space-y-4">
+          <div className="w-full space-y-4 md:w-2/3">
             {/* About Section */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="font-semibold text-lg">About You</h3>
-              <p className="text-base text-gray-600 mt-3">
+            <div className="p-6 bg-white rounded-lg shadow-md">
+              <h3 className="text-lg font-semibold">About You</h3>
+              <p className="mt-3 text-base text-gray-600">
                 {user.about || "No information provided yet."}
               </p>
             </div>
 
             {/* Experience Section */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex justify-between items-center mb-4">
+            <div className="p-6 bg-white rounded-lg shadow-md">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Briefcase size={20} className="text-[#00AEEF]" />
-                  <h3 className="font-semibold text-lg">Experience</h3>
+                  <h3 className="text-lg font-semibold">Experience</h3>
                 </div>
-
               </div>
 
               {experiences?.length > 0 ? (
@@ -763,29 +685,28 @@ export default function UserProfile() {
                   {experiences.map((exp) => (
                     <div
                       key={exp.id}
-                      className="border-b pb-6 last:border-b-0 last:pb-0"
+                      className="pb-6 border-b last:border-b-0 last:pb-0"
                     >
                       <div className="flex gap-4">
                         {exp.photo ? (
                           <img
-                            src={"http://localhost:3000/" + exp.photo}
+                            src={apiUrl + "/" + exp.photo}
                             alt="Company logo"
-                            className="w-12 h-12 rounded-md object-cover"
+                            className="object-cover w-12 h-12 rounded-md"
                           />
                         ) : (
-                          <div className="w-12 h-12 rounded-md bg-gray-100 flex items-center justify-center">
+                          <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-md">
                             <Briefcase className="text-gray-400" />
                           </div>
                         )}
                         <div className="flex-1">
                           <h4 className="font-semibold">{exp.jobTitle}</h4>
                           <p className="text-gray-600">{exp.companyName}</p>
-                          <div className="flex justify-between items-start">
+                          <div className="flex items-start justify-between">
                             <h4 className="font-semibold">{exp.job_title}</h4>
-                          
                           </div>
                           <p className="text-gray-600">{exp.company_name}</p>
-                          <p className="text-gray-500 text-sm">
+                          <p className="text-sm text-gray-500">
                             {formatDate(exp.start_month, exp.start_year)} -{" "}
                             {exp.end_month === "Month" ||
                             exp.end_year === "Year"
@@ -793,12 +714,12 @@ export default function UserProfile() {
                               : formatDate(exp.end_month, exp.end_year)}
                           </p>
                           {exp.location && (
-                            <p className="text-gray-500 text-sm">
+                            <p className="text-sm text-gray-500">
                               {exp.location}
                             </p>
                           )}
                           {exp.caption && (
-                            <p className="text-gray-600 mt-2">{exp.caption}</p>
+                            <p className="mt-2 text-gray-600">{exp.caption}</p>
                           )}
                         </div>
                       </div>
@@ -806,8 +727,8 @@ export default function UserProfile() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 bg-gray-50 rounded-md border border-dashed border-gray-300 mt-4">
-                  <Briefcase size={40} className="mx-auto text-gray-300 mb-3" />
+                <div className="py-8 mt-4 text-center border border-gray-300 border-dashed rounded-md bg-gray-50">
+                  <Briefcase size={40} className="mx-auto mb-3 text-gray-300" />
                   <p className="text-base text-gray-500">
                     No experience added yet.
                   </p>
@@ -816,14 +737,13 @@ export default function UserProfile() {
             </div>
 
             {/* Education Section */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex justify-between items-center mb-4">
+            <div className="p-6 bg-white rounded-lg shadow-md">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <GraduationCap size={20} className="text-[#00AEEF]" />
-                  <h3 className="font-semibold text-lg">Education</h3>
+                  <h3 className="text-lg font-semibold">Education</h3>
                 </div>
-                <div className="flex items-center gap-3">
-                </div>
+                <div className="flex items-center gap-3"></div>
               </div>
 
               {educations?.length > 0 ? (
@@ -831,27 +751,26 @@ export default function UserProfile() {
                   {educations.map((edu) => (
                     <div
                       key={edu.id}
-                      className="border-b pb-6 last:border-b-0 last:pb-0"
+                      className="pb-6 border-b last:border-b-0 last:pb-0"
                     >
                       <div className="flex gap-4">
                         {edu.photo ? (
                           <img
-                            src={"http://localhost:3000/" + edu.photo}
+                            src={apiUrl + "/" + edu.photo}
                             alt="School logo"
-                            className="w-12 h-12 rounded-md object-cover"
+                            className="object-cover w-12 h-12 rounded-md"
                           />
                         ) : (
-                          <div className="w-12 h-12 rounded-md bg-gray-100 flex items-center justify-center">
+                          <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-md">
                             <GraduationCap className="text-gray-400" />
                           </div>
                         )}
                         <div className="flex-1">
-                          <div className="flex justify-between items-start">
+                          <div className="flex items-start justify-between">
                             <h4 className="font-semibold">{edu.major}</h4>
-                            
                           </div>
                           <p className="text-gray-600">{edu.institute_name}</p>
-                          <p className="text-gray-500 text-sm">
+                          <p className="text-sm text-gray-500">
                             {formatDate(edu.start_month, edu.start_year)} -{" "}
                             {edu.end_month === "Month" ||
                             edu.end_year === "Year"
@@ -859,12 +778,12 @@ export default function UserProfile() {
                               : formatDate(edu.end_month, edu.end_year)}
                           </p>
                           {edu.location && (
-                            <p className="text-gray-500 text-sm">
+                            <p className="text-sm text-gray-500">
                               {edu.location}
                             </p>
                           )}
                           {edu.caption && (
-                            <p className="text-gray-600 mt-2">{edu.caption}</p>
+                            <p className="mt-2 text-gray-600">{edu.caption}</p>
                           )}
                         </div>
                       </div>
@@ -872,10 +791,10 @@ export default function UserProfile() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 bg-gray-50 rounded-md border border-dashed border-gray-300 mt-4">
+                <div className="py-8 mt-4 text-center border border-gray-300 border-dashed rounded-md bg-gray-50">
                   <GraduationCap
                     size={40}
-                    className="mx-auto text-gray-300 mb-3"
+                    className="mx-auto mb-3 text-gray-300"
                   />
                   <p className="text-base text-gray-500">
                     No education added yet.
@@ -885,23 +804,23 @@ export default function UserProfile() {
             </div>
 
             {/* post Section */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex justify-between items-center mb-4">
+            <div className="p-6 bg-white rounded-lg shadow-md">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Clock size={20} className="text-[#00AEEF]" />
-                  <h3 className="font-semibold text-lg">POST</h3>
+                  <h3 className="text-lg font-semibold">POST</h3>
                 </div>
                 <div className="flex space-x-2">
                   <button
                     onClick={scrollLeft}
-                    className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 transition"
+                    className="p-1 transition bg-gray-100 rounded-full hover:bg-gray-200"
                     aria-label="Scroll left"
                   >
                     <ChevronLeft size={20} />
                   </button>
                   <button
                     onClick={scrollRight}
-                    className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 transition"
+                    className="p-1 transition bg-gray-100 rounded-full hover:bg-gray-200"
                     aria-label="Scroll right"
                   >
                     <ChevronRight size={20} />
@@ -912,26 +831,26 @@ export default function UserProfile() {
               {/* Scrollable container */}
               <div
                 id="post-container"
-                className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide"
+                className="flex gap-4 pb-4 overflow-x-auto scrollbar-hide"
               >
                 {userPosts?.length > 0 ? (
                   userPosts.map((post) => (
                     <div
                       key={post.id}
-                      className="flex-shrink-0 w-64 border rounded-lg overflow-hidden bg-white shadow-sm"
+                      className="flex-shrink-0 w-64 overflow-hidden bg-white border rounded-lg shadow-sm"
                     >
                       {/* Post header */}
                       <div className="p-4 border-b">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                          <div className="flex-shrink-0 w-10 h-10 overflow-hidden bg-gray-200 rounded-full">
                             {profileImage ? (
                               <img
-                                src={"http://localhost:3000/" + profileImage}
+                                src={apiUrl + "/" + profileImage}
                                 alt="Profile"
-                                className="w-full h-full object-cover"
+                                className="object-cover w-full h-full"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-gray-300">
+                              <div className="flex items-center justify-center w-full h-full bg-gray-300">
                                 <span className="text-lg font-bold text-gray-600">
                                   {user.name
                                     .split(" ")
@@ -942,7 +861,7 @@ export default function UserProfile() {
                             )}
                           </div>
                           <div>
-                            <h4 className="font-semibold text-sm">
+                            <h4 className="text-sm font-semibold">
                               {user.name}
                             </h4>
                             <p className="text-xs text-gray-500">
@@ -964,23 +883,29 @@ export default function UserProfile() {
 
                       {/* Post content */}
                       <div className="p-4">
-                        <p className="text-sm text-gray-700 mb-3">
-                          {post.content || "No content"}
-                        </p>
+                        <Link
+                          to={`/post/${post.id}`}
+                          className="mb-3 text-sm text-gray-700"
+                        >
+                          <div
+                            className="prose max-w-none text-gray-700"
+                            dangerouslySetInnerHTML={{ __html: post.content }}
+                          />
 
-                        {/* Only show image if exists */}
-                        {post.images && post.images.length > 0 && (
-                          <div className="mb-3">
-                            <img
-                              src={"http://localhost:3000/" + post.images[0]}
-                              alt={`Post ${post.id}`}
-                              className="w-full rounded-md"
-                            />
-                          </div>
-                        )}
+                          {/* Only show image if exists */}
+                          {post.images && post.images.length > 0 && (
+                            <div className="mb-3">
+                              <img
+                                src={apiUrl + "/" + post.images[0]}
+                                alt={`Post ${post.id}`}
+                                className="w-full rounded-md"
+                              />
+                            </div>
+                          )}
+                        </Link>
 
                         {/* Post footer */}
-                        <div className="flex justify-between items-center text-xs text-gray-500">
+                        <div className="flex items-center justify-between text-xs text-gray-500">
                           <div className="flex items-center gap-1">
                             <ThumbsUp size={14} />
                             <span>{post.likes_count || 0}</span>
@@ -992,22 +917,24 @@ export default function UserProfile() {
                         </div>
 
                         {/* Action buttons */}
-                        <div className="flex border-t mt-3 pt-2">
-                          <button className="flex-1 flex items-center justify-center gap-1 py-1 hover:bg-gray-50 rounded text-gray-600 text-sm">
-                            <ThumbsUp size={16} /> Like
-                          </button>
-                          <button className="flex-1 flex items-center justify-center gap-1 py-1 hover:bg-gray-50 rounded text-gray-600 text-sm">
-                            <MessageCircle size={16} /> Comment
-                          </button>
-                          <button className="flex-1 flex items-center justify-center gap-1 py-1 hover:bg-gray-50 rounded text-gray-600 text-sm">
-                            <Share2 size={16} /> Share
-                          </button>
-                        </div>
+                        <Link to={`/post-page/${username}`}>
+                          <div className="flex pt-2 mt-3 border-t">
+                            <button className="flex items-center justify-center flex-1 gap-1 py-1 text-sm text-gray-600 rounded hover:bg-gray-50">
+                              <ThumbsUp size={16} /> Like
+                            </button>
+                            <button className="flex items-center justify-center flex-1 gap-1 py-1 text-sm text-gray-600 rounded hover:bg-gray-50">
+                              <MessageCircle size={16} /> Comment
+                            </button>
+                            <button className="flex items-center justify-center flex-1 gap-1 py-1 text-sm text-gray-600 rounded hover:bg-gray-50">
+                              <Share2 size={16} /> Share
+                            </button>
+                          </div>
+                        </Link>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-8 w-full">
+                  <div className="w-full py-8 text-center">
                     <p className="text-gray-500">No posts yet</p>
                   </div>
                 )}
@@ -1024,7 +951,7 @@ export default function UserProfile() {
   `}</style>
               <div className="flex justify-center mt-4">
                 <button className="text-[#00AEEF] text-asmibold font-semibold hover:underline">
-                  <Link to="/post-page"> See All Post </Link>
+                  <Link to={`/post-page/${username}`}> See All Post </Link>
                 </button>
               </div>
             </div>
@@ -1034,8 +961,8 @@ export default function UserProfile() {
 
       {/* Experience Modal */}
       {showExperienceModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl p-6 bg-white rounded-lg shadow-lg">
             <div className="flex items-center gap-2 mb-4">
               <Briefcase size={20} className="text-[#00AEEF]" />
               <h2 className="text-xl font-bold">
@@ -1075,7 +1002,7 @@ export default function UserProfile() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">
+                    <label className="block mb-1 text-sm font-medium">
                       Start Date *
                     </label>
                     <div className="flex gap-2">
@@ -1108,7 +1035,7 @@ export default function UserProfile() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">
+                    <label className="block mb-1 text-sm font-medium">
                       End Date
                     </label>
                     <div className="flex gap-2">
@@ -1152,7 +1079,7 @@ export default function UserProfile() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block mb-1 text-sm font-medium">
                     Company Logo
                   </label>
                   <input
@@ -1165,9 +1092,9 @@ export default function UserProfile() {
                       <div className="mt-2">
                         <p className="text-sm text-gray-500">Current logo:</p>
                         <img
-                          src={"http://localhost:3000/" + experienceForm.photo}
+                          src={apiUrl + "/" + experienceForm.photo}
                           alt="Company logo"
-                          className="w-20 h-20 object-contain mt-1"
+                          className="object-contain w-20 h-20 mt-1"
                         />
                       </div>
                     )}
@@ -1188,11 +1115,11 @@ export default function UserProfile() {
                         setShowExperienceModal(false);
                       }
                     }}
-                    className="px-4 py-2 rounded text-red-500 transition flex items-center gap-1"
+                    className="flex items-center gap-1 px-4 py-2 text-red-500 transition rounded"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4"
+                      className="w-4 h-4"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -1214,7 +1141,7 @@ export default function UserProfile() {
                 <div className="flex gap-3">
                   <button
                     type="button"
-                    className="px-4 py-2 rounded border hover:bg-gray-50 transition"
+                    className="px-4 py-2 transition border rounded hover:bg-gray-50"
                     onClick={() => {
                       setShowExperienceModal(false);
                       setEditingExperience(null);
@@ -1242,8 +1169,8 @@ export default function UserProfile() {
 
       {/* Add Education Modal */}
       {showEducationModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl p-6 bg-white rounded-lg shadow-lg">
             <div className="flex items-center gap-2 mb-4">
               <GraduationCap size={20} className="text-[#00AEEF]" />
               <h2 className="text-xl font-bold">
@@ -1283,7 +1210,7 @@ export default function UserProfile() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">
+                    <label className="block mb-1 text-sm font-medium">
                       Start Date *
                     </label>
                     <div className="flex gap-2">
@@ -1316,7 +1243,7 @@ export default function UserProfile() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">
+                    <label className="block mb-1 text-sm font-medium">
                       End Date
                     </label>
                     <div className="flex gap-2">
@@ -1360,7 +1287,7 @@ export default function UserProfile() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block mb-1 text-sm font-medium">
                     School Logo
                   </label>
                   <input
@@ -1385,11 +1312,11 @@ export default function UserProfile() {
                         setShowEducationModal(false);
                       }
                     }}
-                    className="px-4 py-2 rounded text-red-500 transition flex items-center gap-1"
+                    className="flex items-center gap-1 px-4 py-2 text-red-500 transition rounded"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4"
+                      className="w-4 h-4"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -1410,7 +1337,7 @@ export default function UserProfile() {
                 <div className="flex gap-3">
                   <button
                     type="button"
-                    className="px-4 py-2 rounded border hover:bg-gray-50 transition"
+                    className="px-4 py-2 transition border rounded hover:bg-gray-50"
                     onClick={() => {
                       setShowEducationModal(false);
                       setEditingEducation(null);
@@ -1438,8 +1365,8 @@ export default function UserProfile() {
 
       {/* Edit Education Modal */}
       {showEditEducationModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl p-6 bg-white rounded-lg shadow-lg">
             <div className="flex items-center gap-2 mb-4">
               <GraduationCap size={20} className="text-[#00AEEF]" />
               <h2 className="text-xl font-bold">Edit Education</h2>
@@ -1477,7 +1404,7 @@ export default function UserProfile() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">
+                    <label className="block mb-1 text-sm font-medium">
                       Start Date *
                     </label>
                     <div className="flex gap-2">
@@ -1510,7 +1437,7 @@ export default function UserProfile() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">
+                    <label className="block mb-1 text-sm font-medium">
                       End Date
                     </label>
                     <div className="flex gap-2">
@@ -1554,7 +1481,7 @@ export default function UserProfile() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block mb-1 text-sm font-medium">
                     School Logo
                   </label>
                   <input
@@ -1566,7 +1493,7 @@ export default function UserProfile() {
                     <div className="mt-2">
                       <p className="text-sm text-gray-500">Current logo:</p>
                       <img
-                        src={"http://localhost:3000/" + editingEducation.photo}
+                        src={apiUrl + "/" + editingEducation.photo}
                         alt="Current school logo"
                         className="h-12 mt-1"
                       />
@@ -1578,7 +1505,7 @@ export default function UserProfile() {
               <div className="flex justify-between mt-6">
                 <button
                   type="button"
-                  className="px-4 py-2 rounded border hover:bg-gray-50 transition text-red-500 hover:text-red-700"
+                  className="px-4 py-2 text-red-500 transition border rounded hover:bg-gray-50 hover:text-red-700"
                   onClick={() => {
                     if (editingEducation?.id) {
                       if (
@@ -1598,7 +1525,7 @@ export default function UserProfile() {
                 <div className="flex justify-end gap-3">
                   <button
                     type="button"
-                    className="px-4 py-2 rounded border hover:bg-gray-50 transition"
+                    className="px-4 py-2 transition border rounded hover:bg-gray-50"
                     onClick={() => {
                       setEditShowEducationModal(false);
                       setEditingEducation(null);
@@ -1616,6 +1543,124 @@ export default function UserProfile() {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {showContactModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-2xl p-8 transition-all duration-300 ease-in-out transform scale-100 bg-white shadow-2xl rounded-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-5 border-b border-gray-200">
+              <h2 className="text-2xl font-semibold text-gray-800">
+                Contact Information
+              </h2>
+              <button
+                onClick={() => setShowContactModal(false)}
+                className="p-2 text-gray-400 transition rounded-md hover:bg-gray-100 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="grid grid-cols-1 gap-8 mt-6 text-base text-gray-700 md:grid-cols-2">
+              {/* Contact Details */}
+              <section>
+                <h3 className="flex items-center gap-2 mb-4 text-lg font-medium text-gray-600">
+                  <Mail size={18} className="text-blue-600" />
+                  Contact Details
+                </h3>
+                <div className="pl-6 space-y-3">
+                  {user.email ? (
+                    <div className="flex items-center gap-2">
+                      <Mail size={16} className="text-gray-400" />
+                      <a
+                        href={`mailto:${user.email}`}
+                        className="text-blue-600 hover:underline"
+                      >
+                        {user.email}
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-gray-400">No email provided</p>
+                  )}
+
+                  {user.phone ? (
+                    <div className="flex items-center gap-2">
+                      <Phone size={16} className="text-gray-400" />
+                      <a
+                        href={`tel:${user.phone.replace(/[^0-9]/g, "")}`}
+                        className="text-blue-600 hover:underline"
+                      >
+                        {user.phone}
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-gray-400">No phone number provided</p>
+                  )}
+
+                  {user.location ? (
+                    <div className="flex items-center gap-2">
+                      <MapPin size={16} className="text-gray-400" />
+                      <span>{user.location}</span>
+                    </div>
+                  ) : (
+                    <p className="text-gray-400">No location provided</p>
+                  )}
+                </div>
+              </section>
+
+              {/* Professional Details */}
+              <section>
+                <h3 className="flex items-center gap-2 mb-4 text-lg font-medium text-gray-600">
+                  <Building size={18} className="text-blue-600" />
+                  Professional Details
+                </h3>
+                <div className="pl-6 space-y-3">
+                  {user.organization ? (
+                    <div className="flex items-center gap-2">
+                      <Building size={16} className="text-gray-400" />
+                      <span>{user.organization}</span>
+                    </div>
+                  ) : (
+                    <p className="text-gray-400">No organization provided</p>
+                  )}
+
+                  {user.website ? (
+                    <div className="flex items-center gap-2">
+                      <Link2
+                        size={16}
+                        className="flex-shrink-0 mt-1 text-gray-400"
+                      />
+                      <a
+                        href={
+                          user.website.startsWith("http")
+                            ? user.website
+                            : `https://${user.website}`
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 break-all hover:underline"
+                      >
+                        {user.website.replace(/^https?:\/\//, "")}
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-gray-400">No website provided</p>
+                  )}
+                </div>
+              </section>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end mt-8">
+              <button
+                onClick={() => setShowContactModal(false)}
+                className="rounded-md bg-blue-600 px-5 py-2.5 text-base font-medium text-white transition hover:bg-blue-700"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

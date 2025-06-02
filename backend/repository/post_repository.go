@@ -22,5 +22,4 @@ type PostRepository interface {
 	GetLikesCount(ctx context.Context, tx *sql.Tx, postId uuid.UUID) int
 	CreatePostGroup(ctx context.Context, tx *sql.Tx, post domain.Post, groupId uuid.UUID) domain.Post
 	Search(ctx context.Context, tx *sql.Tx, query string, limit int, offset int) []domain.Post
-
 }

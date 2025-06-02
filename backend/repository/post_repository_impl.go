@@ -7,8 +7,8 @@ import (
 	"errors"
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/domain"
-	"time"
 	"fmt"
+	"time"
 	"github.com/google/uuid"
 )
 
@@ -504,7 +504,7 @@ func (repository *PostRepositoryImpl) CreatePostGroup(ctx context.Context, tx *s
 }
 
 func (repository *PostRepositoryImpl) Search(ctx context.Context, tx *sql.Tx, query string, limit int, offset int) []domain.Post {
-    SQL := `SELECT 
+	SQL := `SELECT
         p.id, p.user_id, p.content, p.images, p.likes_count, p.visibility, p.created_at, p.updated_at,
         u.id, u.name, u.email, u.username, COALESCE(u.photo, ''), COALESCE(u.headline, '')
         FROM posts p
@@ -513,48 +513,48 @@ func (repository *PostRepositoryImpl) Search(ctx context.Context, tx *sql.Tx, qu
         AND p.visibility = 'public'
         ORDER BY p.created_at DESC
         LIMIT $2 OFFSET $3`
-    
-    searchPattern := "%" + query + "%"
-    fmt.Printf("Executing SQL: %s with pattern: %s\n", SQL, searchPattern)
-    
-    rows, err := tx.QueryContext(ctx, SQL, searchPattern, limit, offset)
-    if err != nil {
-        fmt.Printf("Error executing search query: %v\n", err)
-        return []domain.Post{}
-    }
-    defer rows.Close()
-    
-    var posts []domain.Post
-    for rows.Next() {
-        post := domain.Post{}
-        user := domain.User{}
-        
-        err := rows.Scan(
-            &post.Id,
-            &post.UserId,
-            &post.Content,
-            &post.Images,
-            &post.LikesCount,
-            &post.Visibility,
-            &post.CreatedAt,
-            &post.UpdatedAt,
-            &user.Id,
-            &user.Name,
-            &user.Email,
-            &user.Username,
-            &user.Photo,
-            &user.Headline,
-        )
-        
-        if err != nil {
-            fmt.Printf("Error scanning post: %v\n", err)
-            continue
-        }
-        
-        post.User = &user
-        posts = append(posts, post)
-        fmt.Printf("Found post: %s by %s\n", post.Id, user.Name)
-    }
-    
-    return posts
+
+	searchPattern := "%" + query + "%"
+	fmt.Printf("Executing SQL: %s with pattern: %s\n", SQL, searchPattern)
+
+	rows, err := tx.QueryContext(ctx, SQL, searchPattern, limit, offset)
+	if err != nil {
+		fmt.Printf("Error executing search query: %v\n", err)
+		return []domain.Post{}
+	}
+	defer rows.Close()
+
+	var posts []domain.Post
+	for rows.Next() {
+		post := domain.Post{}
+		user := domain.User{}
+
+		err := rows.Scan(
+			&post.Id,
+			&post.UserId,
+			&post.Content,
+			&post.Images,
+			&post.LikesCount,
+			&post.Visibility,
+			&post.CreatedAt,
+			&post.UpdatedAt,
+			&user.Id,
+			&user.Name,
+			&user.Email,
+			&user.Username,
+			&user.Photo,
+			&user.Headline,
+		)
+
+		if err != nil {
+			fmt.Printf("Error scanning post: %v\n", err)
+			continue
+		}
+
+		post.User = &user
+		posts = append(posts, post)
+		fmt.Printf("Found post: %s by %s\n", post.Id, user.Name)
+	}
+
+	return posts
 }

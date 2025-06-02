@@ -33,7 +33,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-require (
-	github.com/gabriel-vasile/mimetype v1.4.9 // indirect
-	github.com/pusher/pusher-http-go/v5 v5.1.1 // indirect
-)
+require github.com/golang-jwt/jwt/v4 v4.5.2

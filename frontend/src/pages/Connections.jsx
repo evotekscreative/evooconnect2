@@ -3,6 +3,7 @@ import Case from "../components/Case";
 import { Link, useNavigate } from "react-router-dom";
 import Profile from "../assets/img/logo-evo-2.png";
 import axios from "axios";
+import NetworkManager from "../components/NetworkManager";
 import {
   Briefcase,
   MapPin,
@@ -14,6 +15,7 @@ import {
   UserCheck,
   AlertCircle,
 } from "lucide-react";
+import Alert from "../components/Auth/Alert";
 
 // Komponen Avatar: Menampilkan foto jika ada, jika tidak tampilkan inisial
 function Avatar({ src, name, size = 64 }) {
@@ -24,7 +26,12 @@ function Avatar({ src, name, size = 64 }) {
         .join("")
         .toUpperCase()
     : "?";
-  if (src && !src.includes("undefined") && !src.includes("null") && src !== Profile) {
+  if (
+    src &&
+    !src.includes("undefined") &&
+    !src.includes("null") &&
+    src !== Profile
+  ) {
     return (
       <img
         src={src}
@@ -40,7 +47,7 @@ function Avatar({ src, name, size = 64 }) {
   }
   return (
     <div
-      className="flex items-center justify-center rounded font-semibold"
+      className="flex items-center justify-center rounded font-semibold bg-gray-200"
       style={{ width: size, height: size, fontSize: size / 3 }}
     >
       {initials}
@@ -48,8 +55,7 @@ function Avatar({ src, name, size = 64 }) {
   );
 }
 
-const apiUrl =
-  import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
 const LoadingSpinner = ({ size = 16 }) => (
   <div className="animate-spin">
@@ -69,21 +75,30 @@ const LoadingSpinner = ({ size = 16 }) => (
 );
 
 // Modal Component
-const CancelRequestModal = ({ isOpen, onClose, onConfirm, userName }) => {
+// Update the CancelRequestModal component
+const CancelRequestModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  userName,
+  title = "Cancel Connection Request",
+  description = "Are you sure you want to cancel your connection request to",
+  confirmText = "Yes, cancel request",
+  cancelText = "No, keep request",
+}) => {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 transform transition-all">
         <div className="flex items-center mb-4 text-blue-600">
-          <AlertCircle className="mr-2" size={24} />
-          <h3 className="text-lg font-medium">Cancel Connection Request</h3>
+          <AlertCircle className="mr-2" />
+          <h3 className="text-lg font-medium">{title}</h3>
         </div>
 
         <p className="mb-6 text-gray-600">
-          Are you sure you want to cancel your connection request to{" "}
-          <span className="font-medium">{userName}</span>? This action cannot be
-          undone.
+          {description} <span className="font-medium">{userName}</span>? This
+          action cannot be undone.
         </p>
 
         <div className="flex justify-end space-x-3">
@@ -91,13 +106,13 @@ const CancelRequestModal = ({ isOpen, onClose, onConfirm, userName }) => {
             onClick={onClose}
             className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
           >
-            No, keep request
+            {cancelText}
           </button>
           <button
             onClick={onConfirm}
             className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
           >
-            Yes, cancel request
+            {confirmText}
           </button>
         </div>
       </div>
@@ -115,7 +130,11 @@ export default function Connection() {
   const [connectedUsers, setConnectedUsers] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [connectionCount, setConnectionCount] = useState(0);
+  const [alertInfo, setAlertInfo] = useState({
+    show: false,
+    type: "", // 'success' or 'error'
+    message: "",
+  });
 
   const fetchInvitations = async () => {
     const token = localStorage.getItem("token");
@@ -156,69 +175,63 @@ export default function Connection() {
     }
   };
 
+  const fetchPeoples = async () => {
+    const token = localStorage.getItem("token");
+    const currentUserId = parseInt(localStorage.getItem("userId"));
+    try {
+      const response = await axios.get(apiUrl + "/api/user-peoples", {
+        params: { limit: 9999, offset: 0 },
+        headers: {
+          Authorization: "Bearer " + token,
+        },
+      });
+
+      const pendingIds =
+        JSON.parse(localStorage.getItem("pendingConnections")) || [];
+
+      const mappedConnections = response.data.data
+        .filter((person) => person.id !== currentUserId)
+        .map((person) => ({
+          id: person.id,
+          name: person.name,
+          headline: person.headline || "No headline",
+          status: person.is_connected
+            ? "connected"
+            : pendingIds.includes(person.id)
+            ? "pending"
+            : "connect",
+          profile: person.photo || "",
+          username: person.username || "",
+          verified: person.verified,
+        }));
+
+      setConnections(mappedConnections);
+
+      // Set connected users
+      const connected = mappedConnections.filter(
+        (conn) => conn.status === "connected"
+      );
+      setConnectedUsers(connected);
+    } catch (error) {
+      console.error("Gagal mengambil data user-peoples:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchConnections = async () => {
-      fetchConnectionCount();
-      fetchInvitation();
-      const token = localStorage.getItem("token");
-      const currentUserId = parseInt(localStorage.getItem("userId"));
-      try {
-        const response = await axios.get(apiUrl + "/api/user-peoples", {
-          headers: {
-            Authorization: "Bearer " + token,
-          },
-        });
-
-        const pendingIds =
-          JSON.parse(localStorage.getItem("pendingConnections")) || [];
-
-        const mappedConnections = response.data.data
-          .filter((person) => person.id !== currentUserId)
-          .map((person) => ({
-            id: person.id,
-            name: person.name,
-            headline: person.headline || "No headline",
-            status: person.is_connected
-              ? "connected"
-              : pendingIds.includes(person.id)
-              ? "pending"
-              : "connect",
-            profile: person.photo || "",
-            username: person.username || "",
-            verified: person.verified,
-          }));
-
-        setConnections(mappedConnections);
-
-        // Set connected users
-        const connected = mappedConnections.filter(
-          (conn) => conn.status === "connected"
-        );
-        setConnectedUsers(connected);
-      } catch (error) {
-        console.error("Gagal mengambil data user-peoples:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchConnections();
+    fetchPeoples();
     fetchInvitations();
-  }, []);
+  }, [activeTab]);
 
   const handleConnect = async (id) => {
     const token = localStorage.getItem("token");
-    const pendingIds =
-      JSON.parse(localStorage.getItem("pendingConnections")) || [];
-
     const person = connections.find((conn) => conn.id === id);
-    if (person && person.status === "pending") {
-      setSelectedUser(person);
-      setModalOpen(true);
-      return;
-    }
+
+    if (!person) return;
 
     try {
+      // Update UI immediately
       setConnections(
         connections.map((conn) =>
           conn.id === id ? { ...conn, status: "processing" } : conn
@@ -231,61 +244,42 @@ export default function Connection() {
         { headers: { Authorization: "Bearer " + token } }
       );
 
-      if (response.data?.connected) {
-        const connectedUser = connections.find((conn) => conn.id === id);
-        if (connectedUser) {
-          setConnectedUsers((prev) => [
-            ...prev,
-            { ...connectedUser, status: "connected" },
-          ]);
-        }
-      }
-
-      const updatedPending = [...pendingIds, id];
-      localStorage.setItem(
-        "pendingConnections",
-        JSON.stringify(updatedPending)
-      );
+      // Update status based on response
+      const newStatus = response.data?.connected ? "connected" : "pending";
 
       setConnections(
         connections.map((conn) =>
-          conn.id === id
-            ? {
-                ...conn,
-                status: response.data?.connected ? "connected" : "pending",
-              }
-            : conn
+          conn.id === id ? { ...conn, status: newStatus } : conn
         )
       );
 
-      if (!response.data?.connected) {
-        const newConnection = connections.find((conn) => conn.id === id);
-        if (newConnection) {
-          setInvitations((prev) => [
-            {
-              id: id,
-              name: newConnection.name,
-              headline: newConnection.headline,
-              status: "pending",
-              profile: newConnection.profile,
-              username: newConnection.username,
-            },
-            ...prev,
-          ]);
-        }
+      if (newStatus === "connected") {
+        setConnectedUsers((prev) => [
+          ...prev,
+          { ...person, status: "connected" },
+        ]);
       }
+
+      setAlertInfo({
+        show: true,
+        type: "success",
+        message:
+          newStatus === "connected"
+            ? "Connected successfully!"
+            : "Connection request sent!",
+      });
     } catch (error) {
-      console.error("Connection action failed:", error);
       setConnections(
         connections.map((conn) =>
-          conn.id === id
-            ? {
-                ...conn,
-                status: "connect",
-              }
-            : conn
+          conn.id === id ? { ...conn, status: person.status } : conn
         )
       );
+
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: error.response?.data?.data || "Failed to connect",
+      });
     }
   };
 
@@ -305,11 +299,11 @@ export default function Connection() {
         headers: { Authorization: "Bearer " + token },
       });
 
-      const updatedPending = pendingIds.filter((pid) => pid !== id);
-      localStorage.setItem(
-        "pendingConnections",
-        JSON.stringify(updatedPending)
-      );
+      // const updatedPending = pendingIds.filter((pid) => pid !== id);
+      // localStorage.setItem(
+      //   "pendingConnections",
+      //   JSON.stringify(updatedPending)
+      // );
 
       setConnections(
         connections.map((conn) =>
@@ -321,8 +315,12 @@ export default function Connection() {
 
       setModalOpen(false);
       setSelectedUser(null);
+      setAlertInfo({
+        show: true,
+        type: "success",
+        message: "Connection request cancelled",
+      });
     } catch (error) {
-      console.error("Cancel request failed:", error);
       setConnections(
         connections.map((conn) =>
           conn.id === id
@@ -335,6 +333,11 @@ export default function Connection() {
       );
       setModalOpen(false);
       setSelectedUser(null);
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: error.response?.data?.message || "Connection request not found",
+      });
     }
   };
 
@@ -348,30 +351,27 @@ export default function Connection() {
         )
       );
 
-      await axios.put(
+      const response = await axios.put(
         `${apiUrl}/api/connections/requests/${id}/accept`,
         {},
         { headers: { Authorization: "Bearer " + token } }
       );
 
-      const acceptedUser = invitations.find((inv) => inv.id === id);
-      if (acceptedUser) {
-        setConnectedUsers((prev) => [
-          ...prev,
-          { ...acceptedUser, status: "connected" },
-        ]);
-
-        setConnections((prev) =>
-          prev.map((conn) =>
+      if (response.data.success) {
+        // Perbarui status di semua tempat
+        setInvitations(invitations.filter((inv) => inv.id !== id));
+        setConnections(
+          connections.map((conn) =>
             conn.id === id ? { ...conn, status: "connected" } : conn
           )
         );
+        setConnectedUsers([
+          ...connectedUsers,
+          { ...invitations.find((inv) => inv.id === id), status: "connected" },
+        ]);
       }
-
-      setInvitations((prev) => prev.filter((inv) => inv.id !== id));
-      await fetchInvitations();
     } catch (error) {
-      console.error("Gagal menerima undangan:", error);
+      // Kembalikan ke status semula jika gagal
       setInvitations(
         invitations.map((inv) =>
           inv.id === id ? { ...inv, status: "pending" } : inv
@@ -391,24 +391,19 @@ export default function Connection() {
       );
 
       setInvitations(invitations.filter((inv) => inv.id !== id));
+      setAlertInfo({
+        show: true,
+        type: "success",
+        message: "Invitation rejected",
+      });
     } catch (error) {
-      console.error("Gagal menolak undangan:", error);
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: error.response?.data?.message || "Failed to reject invitation",
+      });
     }
   };
-
-  const fetchConnectionCount = async () => {
-  const token = localStorage.getItem("token");
-  try {
-    const response = await axios.get(`${apiUrl}/api/user/connections/count`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    setConnectionCount(response.data.data.count || 0);
-  } catch (error) {
-    console.error("Failed to fetch connection count:", error);
-  }
-};
 
   if (loading) {
     return (
@@ -424,6 +419,16 @@ export default function Connection() {
     <Case>
       <div className="p-4 sm:p-6 bg-gray-100 min-h-screen">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
+          <div className="fixed top-5 right-5 z-50">
+            <Alert
+              type={alertInfo.type}
+              message={alertInfo.message}
+              onClose={() => setAlertInfo({ ...alertInfo, show: false })}
+              isVisible={alertInfo.show}
+              autoClose={true}
+              duration={5000}
+            />
+          </div>
           {/* Left side - People suggestions */}
           <div className="lg:col-span-3 space-y-4 bg-white rounded-xl shadow p-4 sm:p-6">
             <div className="flex items-center border-b pb-4">
@@ -464,7 +469,7 @@ export default function Connection() {
             </div>
 
             {activeTab === "people" ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {connections.map((person) => (
                   <div
                     key={person.id}
@@ -506,8 +511,19 @@ export default function Connection() {
                         {person.headline}
                       </p>
 
+                      {/* Replace the existing button in the people tab with this: */}
                       <button
-                        onClick={() => handleConnect(person.id)}
+                        onClick={() => {
+                          if (person.status === "pending") {
+                            setSelectedUser({
+                              id: person.id,
+                              name: person.name,
+                            });
+                            setModalOpen(true);
+                          } else {
+                            handleConnect(person.id);
+                          }
+                        }}
                         className={`w-full mt-10 py-2 rounded-md flex items-center justify-center text-sm font-medium ${
                           person.status === "connected"
                             ? "bg-blue-500 text-white"
@@ -639,103 +655,9 @@ export default function Connection() {
 
           {/* Right side - Manage network */}
           <div className="space-y-4">
-            <div className="bg-white rounded-xl shadow p-5">
-              <h3 className="font-semibold mb-4 border-b pb-3 text-base sm:text-lg">
-                Manage my network
-              </h3>
-              <ul className="text-sm sm:text-base text-gray-800 space-y-2">
-                <li className="border-b pb-3">
-                  <Link
-                    to="/list-connection"
-                    className="flex justify-between items-center hover:text-blue-600 transition"
-                  >
-                    <span className="font-medium">Connections</span>
-                    <span className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm">
-                      {
-                        [...connections, ...invitations].filter(
-                          (c) => c.status === "connected"
-                        ).length
-                      }
-                    </span>
-                  </Link>
-                </li>
-                <li className="border-b pb-3">
-                  <Link
-                    to="/messages"
-                    className="flex justify-between items-center hover:text-blue-600 transition"
-                  >
-                    <span className="font-medium">Contacts</span>
-                    <span className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm">
-                      869
-                    </span>
-                  </Link>
-                </li>
-                <li className="border-b pb-3">
-                  <Link
-                    to="/groups"
-                    className="flex justify-between items-center hover:text-blue-600 transition"
-                  >
-                    <span className="font-medium">Groups</span>
-                    <span className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm">
-                      0
-                    </span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/hashtags"
-                    className="flex justify-between items-center hover:text-blue-600 transition"
-                  >
-                    <span className="font-medium">Hashtag</span>
-                    <span className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm">
-                      8
-                    </span>
-                  </Link>
-                </li>
-              </ul>
-            </div>
+            <NetworkManager />
 
-            <div className="bg-white rounded-xl shadow p-4">
-              <h3 className="font-medium mb-3 border-b pb-3">
-                Recently Connected
-              </h3>
-              <div className="space-y-3">
-                {connectedUsers.slice(0, 3).map((user) => (
-                  <div key={user.id} className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200">
-                      <Avatar
-                        src={
-                          user.profile
-                            ? apiUrl + "/" + user.profile
-                            : ""
-                        }
-                        name={user.name}
-                        size={40}
-                      />
-                    </div>
-                    <div>
-                      <Link to={`/user-profile/${user.username}`}>
-                        <h4 className="text-sm font-medium">{user.name}</h4>
-                      </Link>
-                      <p className="text-xs text-gray-500">{user.headline}</p>
-                    </div>
-                  </div>
-                ))}
-                {connectedUsers.length > 3 && (
-                  <Link
-                    to="/list-connection"
-                    className="text-blue-500 text-sm block text-center mt-2"
-                  >
-                    View all ({connectedUsers.length})
-                  </Link>
-                )}
-                {connectedUsers.length === 0 && (
-                  <p className="text-gray-500 text-sm text-center py-2">
-                    No recent connections
-                  </p>
-                )}
-              </div>
-            </div>
+            
             <div className="bg-white rounded-xl shadow p-4 text-center">
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-2 overflow-hidden">
                 <Avatar src={Profile} name="Gurdeep" size={80} />
@@ -754,11 +676,18 @@ export default function Connection() {
           </div>
         </div>
       </div>
-
+      {/* Add this right before the closing </Case> tag */}
       <CancelRequestModal
         isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onConfirm={() => selectedUser && handleCancelRequest(selectedUser.id)}
+        onClose={() => {
+          setModalOpen(false);
+          setSelectedUser(null);
+        }}
+        onConfirm={() => {
+          if (selectedUser) {
+            handleCancelRequest(selectedUser.id);
+          }
+        }}
         userName={selectedUser?.name || ""}
       />
     </Case>

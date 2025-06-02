@@ -8,6 +8,8 @@ import ContentStep from '../../components/Blog/ContentStep';
 import PreviewStep from '../../components/Blog/PreviewStep';
 
 function CreateBlog() {
+            const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -56,7 +58,7 @@ function CreateBlog() {
       }
       
       const response = await axios.post(
-        'http://localhost:3000/api/blogs',
+        apiUrl + '/api/blogs',
         formDataToSend,
         {
           headers: {
@@ -72,9 +74,17 @@ function CreateBlog() {
         state: { showPublishedToast: true }
       });
       window.scrollTo(0, 0);
+    setAlertInfo({
+        show: true,
+        type: "success",
+        message: "Successfully created blog!",
+      });
     } catch (error) {
-      console.error('Error creating blog post:', error);
-      alert('Failed to create blog post: ' + (error.response?.data?.message || error.message));
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: "Failed to create blog!",
+      });
     } finally {
       setIsSubmitting(false);
     }

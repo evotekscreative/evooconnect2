@@ -338,36 +338,131 @@ func (repository *NotificationRepositoryImpl) DeleteByUserIdAndCategory(ctx cont
 	return int(rowsAffected)
 }
 
-func (repository *NotificationRepositoryImpl) DeleteSelectedByUserId(ctx context.Context, tx *sql.Tx, userId uuid.UUID, notificationIds []uuid.UUID, category string) int {
-	// Buat placeholder untuk query IN
-	placeholders := make([]string, len(notificationIds))
-	args := make([]interface{}, len(notificationIds)+1)
-	args[0] = userId
-	
-	for i := 0; i < len(notificationIds); i++ {
-		placeholders[i] = fmt.Sprintf("$%d", i+2)
-		args[i+1] = notificationIds[i]
-	}
-	
-	// Buat query dasar
-	var query string
-	if category == "" {
-		// Tanpa filter kategori
-		query = fmt.Sprintf("DELETE FROM notifications WHERE user_id = $1 AND id IN (%s)", strings.Join(placeholders, ", "))
-	} else {
-		// Dengan filter kategori
-		query = fmt.Sprintf("DELETE FROM notifications WHERE user_id = $1 AND id IN (%s) AND category = $%d", 
-			strings.Join(placeholders, ", "), len(notificationIds)+2)
-		args = append(args, category)
-	}
-	
-	result, err := tx.ExecContext(ctx, query, args...)
-	helper.PanicIfError(err)
-	
-	rowsAffected, err := result.RowsAffected()
-	helper.PanicIfError(err)
-	
-	return int(rowsAffected)
+func (repository *NotificationRepositoryImpl) DeleteSelected(ctx context.Context, tx *sql.Tx, userId uuid.UUID, notificationIds []uuid.UUID) (int64, error) {
+    if len(notificationIds) == 0 {
+        return 0, nil
+    }
+    
+    // Buat placeholder untuk query IN
+    placeholders := make([]string, len(notificationIds))
+    args := make([]interface{}, len(notificationIds)+1)
+    args[0] = userId
+    
+    for i, id := range notificationIds {
+        placeholders[i] = fmt.Sprintf("$%d", i+2)
+        args[i+1] = id
+    }
+    
+    // Buat query dengan placeholder
+    query := fmt.Sprintf(
+        "DELETE FROM notifications WHERE user_id = $1 AND id IN (%s)",
+        strings.Join(placeholders, ","),
+    )
+    
+    // Eksekusi query
+    result, err := tx.ExecContext(ctx, query, args...)
+    if err != nil {
+        return 0, err
+    }
+    
+    // Dapatkan jumlah baris yang dihapus
+    rowsAffected, err := result.RowsAffected()
+    if err != nil {
+        return 0, err
+    }
+    
+    return rowsAffected, nil
+}
+
+func (repository *NotificationRepositoryImpl) FindSimilarNotification(ctx context.Context, tx *sql.Tx, userId uuid.UUID, category string, notificationType string, referenceId *uuid.UUID, actorId *uuid.UUID) (domain.Notification, error) {
+    query := `
+        SELECT 
+            n.id, n.user_id, n.category, n.type, n.title, n.message, n.status, n.reference_id, n.reference_type, n.actor_id, n.created_at, n.updated_at,
+            u.id, u.name, u.username, u.email, u.headline, u.photo
+        FROM notifications n
+        LEFT JOIN users u ON n.actor_id = u.id
+        WHERE n.user_id = $1 
+        AND n.category = $2 
+        AND n.type = $3
+    `
+    
+    args := []interface{}{userId, category, notificationType}
+    argCount := 4
+    
+    if referenceId != nil {
+        query += " AND n.reference_id = $" + fmt.Sprintf("%d", argCount)
+        args = append(args, *referenceId)
+        argCount++
+    }
+    
+    if actorId != nil {
+        query += " AND n.actor_id = $" + fmt.Sprintf("%d", argCount)
+        args = append(args, *actorId)
+    }
+    
+    query += " ORDER BY n.created_at DESC LIMIT 1"
+    
+    var notification domain.Notification
+    var user domain.User
+    var headline, photo sql.NullString
+    var referenceIdStr, actorIdStr sql.NullString
+    var referenceType sql.NullString
+    
+    row := tx.QueryRowContext(ctx, query, args...)
+    err := row.Scan(
+        &notification.Id,
+        &notification.UserId,
+        &notification.Category,
+        &notification.Type,
+        &notification.Title,
+        &notification.Message,
+        &notification.Status,
+        &referenceIdStr,
+        &referenceType,
+        &actorIdStr,
+        &notification.CreatedAt,
+        &notification.UpdatedAt,
+        &user.Id,
+        &user.Name,
+        &user.Username,
+        &user.Email,
+        &headline,
+        &photo,
+    )
+    
+    if err == sql.ErrNoRows {
+        return domain.Notification{}, err
+    }
+    
+    if err != nil {
+        return domain.Notification{}, err
+    }
+    
+    if referenceIdStr.Valid {
+        refId, _ := uuid.Parse(referenceIdStr.String)
+        notification.ReferenceId = &refId
+    }
+    
+    if referenceType.Valid {
+        notification.ReferenceType = &referenceType.String
+    }
+    
+    if actorIdStr.Valid {
+        aId, _ := uuid.Parse(actorIdStr.String)
+        notification.ActorId = &aId
+    }
+    
+    if headline.Valid {
+        user.Headline = headline.String
+    }
+    
+    if photo.Valid {
+        user.Photo = photo.String
+    }
+    
+    notification.Actor = &user
+    
+    return notification, nil
 }
 
 func (repository *NotificationRepositoryImpl) DeleteSelected(ctx context.Context, tx *sql.Tx, userId uuid.UUID, notificationIds []uuid.UUID) (int64, error) {

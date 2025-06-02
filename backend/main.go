@@ -3,6 +3,7 @@ package main
 import (
 	"evoconnect/backend/app"
 	"evoconnect/backend/controller"
+	"evoconnect/backend/db/seeder"
 	"evoconnect/backend/helper"
 	"evoconnect/backend/middleware"
 	"evoconnect/backend/repository"
@@ -22,6 +23,10 @@ func main() {
 	// ===== Server initialization =====
 	helper.LoadEnv()
 	db := app.NewDB()
+	if db == nil {
+		log.Fatal("Failed to connect to the database")
+		return
+	}
 	validate := validator.New()
 	utils.InitPusherClient()
 	jwtSecret := helper.GetEnv("JWT_SECRET_KEY", "your-secret-key")
@@ -29,7 +34,7 @@ func main() {
 	// ===== Repositories =====
 	// User-related repositories
 	userRepository := repository.NewUserRepository()
-	connectionRepository := repository.NewConnectionRepository()
+	connectionRepository := repository.NewConnectionRepository(db)
 	profileViewRepository := repository.NewProfileViewRepository()
 
 	// Content-related repositories
@@ -38,7 +43,7 @@ func main() {
 
 	// Post repository
 	postRepository := repository.NewPostRepository()
-	
+
 	// Comment repository
 	commentRepository := repository.NewCommentRepository()
 
@@ -53,10 +58,10 @@ func main() {
 
 	// Chat repository
 	chatRepository := repository.NewChatRepository()
-	
+
 	// Report repository
 	reportRepository := repository.NewReportRepository(db)
-	
+
 	// Notification repository
 	notificationRepository := repository.NewNotificationRepository()
 
@@ -67,6 +72,8 @@ func main() {
 		db,
 		validate,
 	)
+
+	adminRepository := repository.NewAdminRepository()
 
 	// ===== Services =====
 	// User-related services
@@ -82,7 +89,7 @@ func main() {
 		connectionRepository,
 		notificationService,
 	)
-	
+
 	commentBlogService := service.NewCommentBlogService(
 		commentBlogRepository,
 		blogRepository,
@@ -92,20 +99,19 @@ func main() {
 		validate,
 	)
 
-// Post service
-postService := service.NewPostService(
-    userRepository,
-    postRepository,
-    commentRepository,
-    connectionRepository,
-    groupRepository,
-    groupMemberRepository,
-    notificationService,
-    db,
-    validate,
-)
+	// Post service
+	postService := service.NewPostService(
+		userRepository,
+		postRepository,
+		commentRepository,
+		connectionRepository,
+		groupRepository,
+		groupMemberRepository,
+		notificationService,
+		db,
+		validate,
+	)
 
-	
 	// Comment service
 	commentService := service.NewCommentService(
 		commentRepository,
@@ -127,6 +133,7 @@ postService := service.NewPostService(
 		groupMemberRepository,
 		groupInvitationRepository,
 		userRepository,
+		connectionRepository,
 		notificationService,
 		validate,
 	)
@@ -147,13 +154,15 @@ postService := service.NewPostService(
 
 	// Search service
 	searchService := service.NewSearchService(
-    db,
-    userRepository,
-    postRepository,
-    blogRepository,
-    groupRepository,
-    connectionRepository,
-)
+		db,
+		userRepository,
+		postRepository,
+		blogRepository,
+		groupRepository,
+		connectionRepository,
+	)
+
+	adminAuthService := service.NewAdminAuthService(adminRepository, db, validate)
 
 	// ===== Controllers =====
 	// User-related controllers
@@ -181,7 +190,6 @@ postService := service.NewPostService(
 	// Chat controller
 	chatController := controller.NewChatController(chatService)
 
-
 	// ✅ Inject all controllers into router including reportController
 	// Report controller
 	reportController := controller.NewReportController(reportService)
@@ -194,6 +202,8 @@ postService := service.NewPostService(
 
 	// Search controller
 	searchController := controller.NewSearchController(searchService)
+
+	adminAuthController := controller.NewAdminAuthController(adminAuthService)
 
 	// ===== Router and Middleware =====
 	// Initialize router with all controllers
@@ -213,20 +223,26 @@ postService := service.NewPostService(
 		profileViewController,
 		notificationController,
 		searchController,
+		adminAuthController,
 	)
+
+	seeder.SeedAdmin(db)
 
 	// Create middleware chain
 	var handler http.Handler = router
 	handler = middleware.NewAuthMiddleware(handler, jwtSecret)
 	handler = middleware.CORSMiddleware(handler)
+	handler = middleware.NewAdminAuthMiddleware(handler)
+
+	addres := helper.GetEnv("APP_SERVER", "localhost:3000")
 
 	// ===== Start Server =====
 	server := http.Server{
-		Addr:    "localhost:3000",
+		Addr:    addres,
 		Handler: handler,
 	}
-
-	fmt.Println("\nServer starting on http://localhost:3000")
+	// http://localhost:5173/
+	fmt.Println("\nServer starting on ", addres)
 	err := server.ListenAndServe()
 	helper.PanicIfError(err)
 }

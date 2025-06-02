@@ -9,6 +9,8 @@ import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import Cookies from 'js-cookie';
 
 function Register() {
+        const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
@@ -23,7 +25,7 @@ function Register() {
       console.log("Google credential:", credentialResponse.credential);
 
       const response = await axios.post(
-        "http://localhost:3000/api/auth/google",
+        apiUrl + "/api/auth/google",
         {
           token: credentialResponse.credential,
         }
@@ -133,7 +135,7 @@ function Register() {
 
     // In your Register component's handleSubmit:
     try {
-      const response = await axios.post('http://localhost:3000/api/auth/register', formData);
+      const response = await axios.post(apiUrl + '/api/auth/register', formData);
       const token = response.data.data.token;
       localStorage.setItem('token', token);
 

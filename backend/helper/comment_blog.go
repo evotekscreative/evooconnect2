@@ -7,31 +7,32 @@ import (
 )
 
 func ToCommentBlogResponse(comment domain.CommentBlog) web.CommentBlogResponse {
-	var userResponse web.CommentBlogUserInfo
-	if comment.User != nil {
-		userResponse = web.CommentBlogUserInfo{
-			Id:       comment.User.Id,
-			Name:     comment.User.Name,
-			Username: comment.User.Username,
-			Photo:    comment.User.Photo,
-		}
-	}
+    var userResponse web.CommentBlogUserInfo
+    if comment.User != nil {
+        userResponse = web.CommentBlogUserInfo{
+            Id:       comment.User.Id,
+            Name:     comment.User.Name,
+            Username: comment.User.Username,
+            Photo:    comment.User.Photo,
+        }
+    }
 
-	var repliesResponse []web.CommentBlogResponse
-	if len(comment.Replies) > 0 {
-		repliesResponse = ToCommentBlogResponses(comment.Replies)
-	}
+    var repliesResponse []web.CommentBlogResponse
+    if len(comment.Replies) > 0 {
+        repliesResponse = ToCommentBlogResponses(comment.Replies)
+    }
 
-	return web.CommentBlogResponse{
-		Id:        comment.Id,
-		BlogId:    comment.BlogId,
-		Content:   comment.Content,
-		CreatedAt: comment.CreatedAt,
-		UpdatedAt: comment.UpdatedAt,
-		ParentId:  comment.ParentId,
-		User:      userResponse,
-		Replies:   repliesResponse,
-	}
+    return web.CommentBlogResponse{
+        Id:           comment.Id,
+        BlogId:       comment.BlogId,
+        Content:      comment.Content,
+        CreatedAt:    comment.CreatedAt,
+        UpdatedAt:    comment.UpdatedAt,
+        ParentId:     comment.ParentId,
+        User:         userResponse,
+        Replies:      repliesResponse,
+        RepliesCount: len(comment.Replies), // Tambahkan ini untuk menghitung jumlah replies
+    }
 }
 
 func ToCommentBlogResponses(comments []domain.CommentBlog) []web.CommentBlogResponse {

@@ -21,6 +21,9 @@ import {
   Image as ImageIcon,
   Menu,
   Ellipsis,
+  UserPlus,
+  Check,
+  RefreshCw,
 } from "lucide-react";
 import {
   Chart as ChartJS,
@@ -30,6 +33,7 @@ import {
   LineElement,
   Legend,
 } from "chart.js";
+import { toast } from "sonner";
 
 ChartJS.register(
   CategoryScale,
@@ -41,6 +45,10 @@ ChartJS.register(
 );
 
 export default function SocialNetworkFeed() {
+  const apiUrl =
+    import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+  const clientUrl =
+    import.meta.env.VITE_APP_CLIENT_URL || "http://localhost:5173";
   const [postContent, setPostContent] = useState("");
   const [articleContent, setArticleContent] = useState("");
   const [selectedPost, setSelectedPost] = useState(null);
@@ -52,7 +60,6 @@ export default function SocialNetworkFeed() {
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState({});
   const [loadingComments, setLoadingComments] = useState({});
-
   const [commentError, setCommentError] = useState(null);
   const [expandedReplies, setExpandedReplies] = useState({});
   const [replyText, setReplyText] = useState("");
@@ -83,14 +90,182 @@ export default function SocialNetworkFeed() {
   const [showcaseReplies, setShowcaseReplies] = useState([]);
   const [showShowcase, setShowShowcase] = useState(false);
   const [allReplies, setAllReplies] = useState({});
+  const [connections, setConnections] = useState([]);
+  const [connectionsCount, setConnectionsCount] = useState(0);
+  const [profileImage, setProfileImage] = useState(null);
+  const [suggestedConnections, setSuggestedConnections] = useState([]);
+  const [loadingSuggested, setLoadingSuggested] = useState(false);
+  const [user, setUser] = useState(null);
+  const [profileViews, setProfileViews] = useState({
+    thisWeek: 0,
+    lastWeek: 0,
+    percentageChange: 0,
+    dailyViews: [],
+  });
 
+  // Fetch suggested connections
+  const fetchSuggestedConnections = async () => {
+    try {
+      setLoadingSuggested(true);
+      const userToken = localStorage.getItem("token");
+      const response = await axios.get(apiUrl + "/api/user-peoples", {
+        headers: { Authorization: `Bearer ${userToken}` },
+      });
+
+      if (response.data?.data) {
+        const connectedIds = connections.map((conn) => conn.id);
+        const filtered = response.data.data.filter(
+          (person) => !connectedIds.includes(person.id)
+        );
+
+        const shuffled = [...filtered].sort(() => 0.5 - Math.random());
+        const suggestions = shuffled.slice(0, 3).map((person) => ({
+          id: person.id,
+          name: person.name || "Unknown User",
+          username: person.username || "unknown",
+          initials: person.name
+            ? person.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+            : "UU",
+          photo: person.photo || null,
+          headline: person.headline || "No headline specified",
+        }));
+
+        setSuggestedConnections(suggestions);
+      }
+    } catch (error) {
+      console.error("Failed to fetch suggested connections:", error);
+      toast.error("Failed to load suggested connections");
+    } finally {
+      setLoadingSuggested(false);
+    }
+  };
+
+  // Handle connecting with a user
+  const handleConnectWithUser = async (userId) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.post(
+        `${apiUrl}/api/users/${currentUserId}/connections/${userId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      toast.success("Connection request sent successfully");
+      fetchConnections();
+      fetchSuggestedConnections();
+    } catch (error) {
+      console.error("Failed to connect with user:", error);
+      toast.error("Failed to send connection request");
+    }
+  };
+
+  // Fetch user connections
+  const fetchConnections = async () => {
+    const token = localStorage.getItem("token");
+    setIsLoading(true);
+    try {
+      const response = await axios.get(
+        `${apiUrl}/api/users/${currentUserId}/connections`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      const connectionsData = response.data.data.connections || [];
+      setConnections(connectionsData);
+      setConnectionsCount(response.data.data.total || 0);
+    } catch (error) {
+      console.error("Failed to fetch connections:", error);
+      toast.error("Failed to load connections");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch profile views
+  const fetchProfileViews = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const [thisWeekResponse, lastWeekResponse] = await Promise.all([
+        axios.get(`${apiUrl}/api/user/profile/views/this-week`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`${apiUrl}/api/user/profile/views/last-week`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      const thisWeekData = thisWeekResponse.data.data || {};
+      const lastWeekData = lastWeekResponse.data.data || {};
+
+      const days = [];
+      const dailyCounts = [];
+
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const formattedDate = date.toISOString().split("T")[0];
+        days.push(formattedDate);
+
+        const dailyViews =
+          thisWeekData.viewers?.filter(
+            (viewer) =>
+              new Date(viewer.viewed_at).toISOString().split("T")[0] ===
+              formattedDate
+          ) || [];
+
+        dailyCounts.push(dailyViews.length);
+      }
+
+      const thisWeekTotal = thisWeekData.count || 0;
+      const lastWeekTotal = lastWeekData.count || 0;
+
+      let percentageChange = 0;
+      if (lastWeekTotal > 0) {
+        percentageChange =
+          ((thisWeekTotal - lastWeekTotal) / lastWeekTotal) * 100;
+      } else if (thisWeekTotal > 0) {
+        percentageChange = 100;
+      }
+
+      setProfileViews({
+        thisWeek: thisWeekTotal,
+        lastWeek: lastWeekTotal,
+        percentageChange: Math.round(percentageChange),
+        dailyViews: thisWeekData.viewers || [],
+      });
+    } catch (error) {
+      console.error("Failed to fetch profile views:", error);
+      toast.error("Failed to load profile views");
+    }
+  };
+
+  // Initialize user data and fetch connections/views
   useEffect(() => {
-    const userData = localStorage.getItem("userData");
+    const userData = localStorage.getItem("user");
     if (userData) {
       const parsedUser = JSON.parse(userData);
       setCurrentUserId(parsedUser.id);
+      setUser(parsedUser);
     }
   }, []);
+
+  // Fetch data when currentUserId changes
+  useEffect(() => {
+    if (currentUserId) {
+      fetchConnections();
+  
+      fetchSuggestedConnections();
+    }
+  }, [currentUserId]);
 
   const handleOpenPostOptions = (postId) => {
     setSelectedPostId(postId);
@@ -103,17 +278,16 @@ export default function SocialNetworkFeed() {
   };
 
   const getLast7DaysData = () => {
-    const views = JSON.parse(localStorage.getItem("profileViews")) || {};
-    const labels = [];
-    const data = [];
-
-    for (let i = 6; i >= 0; i--) {
-      const date = dayjs().subtract(i, "day").format("YYYY-MM-DD");
-      labels.push(dayjs(date).format("ddd"));
-      data.push(views[date] || 0);
+    const { labels, data } = profileViews.chartData || { labels: [], data: [] };
+    if (labels.length > 0 && data.length > 0) {
+      return { labels, data };
     }
 
-    return { labels, data };
+    // Fallback to default data
+    return {
+      labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      data: [0, 0, 0, 0, 0, 0, 0],
+    };
   };
 
   const { labels, data } = getLast7DaysData();
@@ -126,6 +300,7 @@ export default function SocialNetworkFeed() {
         data,
         fill: false,
         borderColor: "#06b6d4",
+        backgroundColor: "#06b6d4",
         tension: 0.4,
       },
     ],
@@ -135,9 +310,21 @@ export default function SocialNetworkFeed() {
     responsive: true,
     plugins: {
       legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: function (context) {
+            return `${context.dataset.label}: ${context.raw}`;
+          },
+        },
+      },
     },
     scales: {
-      y: { beginAtZero: true },
+      y: {
+        beginAtZero: true,
+        ticks: {
+          precision: 0,
+        },
+      },
     },
   };
 
@@ -168,16 +355,11 @@ export default function SocialNetworkFeed() {
       try {
         setLoadingPosts(true);
         const userToken = localStorage.getItem("token");
-        const response = await axios.get(
-          `http://localhost:3000/api/posts/${postId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${userToken}`,
-            },
-          }
-        );
-
-        console.log("Full API Response:", response.data); // Debugging
+        const response = await axios.get(`${apiUrl}/api/posts/${postId}`, {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        });
 
         if (response.data?.data) {
           const postData = response.data.data;
@@ -194,7 +376,6 @@ export default function SocialNetworkFeed() {
             },
           ]);
 
-          // Pastikan currentPostId di-set sebelum fetch comments
           setCurrentPostId(postData.id);
           fetchComments(postData.id);
         } else {
@@ -246,7 +427,7 @@ export default function SocialNetworkFeed() {
   };
 
   const formatPostTime = (timestamp) => {
-    if (!timestamp) return "Baru saja";
+    if (!timestamp) return "Just now";
     const now = dayjs();
     const postTime = dayjs(timestamp);
     const diffInSeconds = now.diff(postTime, "second");
@@ -254,11 +435,11 @@ export default function SocialNetworkFeed() {
     const diffInHours = now.diff(postTime, "hour");
     const diffInDays = now.diff(postTime, "day");
 
-    if (diffInSeconds < 60) return `${diffInSeconds} detik lalu`;
-    if (diffInMinutes < 60) return `${diffInMinutes} menit lalu`;
-    if (diffInHours < 24) return `${diffInHours} jam lalu`;
-    if (diffInDays < 7) return `${diffInDays} hari lalu`;
-    return postTime.format("D MMM YYYY");
+    if (diffInSeconds < 60) return `${diffInSeconds}s ago`;
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    if (diffInDays < 7) return `${diffInDays}d ago`;
+    return postTime.format("MMM D, YYYY");
   };
 
   const fetchComments = async (postId) => {
@@ -266,16 +447,9 @@ export default function SocialNetworkFeed() {
       setLoadingComments((prev) => ({ ...prev, [postId]: true }));
       setCommentError(null);
 
-      // Coba muat dari cache terlebih dahulu
-      const cachedComments = localStorage.getItem(`comments_${postId}`);
-      if (cachedComments) {
-        const parsedComments = JSON.parse(cachedComments);
-        setComments((prev) => ({ ...prev, [postId]: parsedComments }));
-      }
-
       const userToken = localStorage.getItem("token");
       const response = await axios.get(
-        `http://localhost:3000/api/post-comments/${postId}?limit=10&offset=0&includeReplies=true`,
+        `${apiUrl}/api/post-comments/${postId}?limit=10&offset=0&includeReplies=true`,
         {
           headers: {
             Authorization: `Bearer ${userToken}`,
@@ -283,33 +457,27 @@ export default function SocialNetworkFeed() {
         }
       );
 
-      const commentsWithReplies = (response.data?.data?.comments || []).map(
-        (comment) => {
-          // Muat replies dari cache jika ada
-          const cachedReplies = localStorage.getItem(`replies_${comment.id}`);
-          const replies = cachedReplies
-            ? JSON.parse(cachedReplies)
-            : Array.isArray(comment.replies)
-            ? comment.replies
-            : [];
-
-          return {
-            ...comment,
-            user: comment.user || {
-              name: "Unknown User",
-              initials: "UU",
-            },
-            replies: replies,
-            repliesCount: comment.repliesCount || replies.length,
-          };
-        }
+      // Separate top-level comments and replies
+      const commentsData = response.data?.data?.comments || [];
+      const topLevelComments = commentsData.filter(
+        (comment) => !comment.parent_id
       );
+      const replies = commentsData.filter((comment) => comment.parent_id);
 
-      // Simpan ke localStorage
-      localStorage.setItem(
-        `comments_${postId}`,
-        JSON.stringify(commentsWithReplies)
-      );
+      // Organize replies under their parent comments
+      const commentsWithReplies = topLevelComments.map((comment) => {
+        return {
+          ...comment,
+          user: comment.user || {
+            name: "Unknown User",
+            initials: "UU",
+            username: "unknown",
+            profile_photo: null,
+          },
+          replies: replies.filter((reply) => reply.parent_id === comment.id),
+          repliesCount: comment.replies_count || 0,
+        };
+      });
 
       setComments((prev) => ({
         ...prev,
@@ -322,23 +490,18 @@ export default function SocialNetworkFeed() {
       setLoadingComments((prev) => ({ ...prev, [postId]: false }));
     }
   };
-
   const fetchAllReplies = async (commentId) => {
     try {
       setLoadingComments((prev) => ({ ...prev, [commentId]: true }));
 
       const userToken = localStorage.getItem("token");
       const response = await axios.get(
-        `http://localhost:3000/api/comments/${commentId}/replies?limit=100`,
-        {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-          },
-        }
+        `${apiUrl}/api/comments/${commentId}/replies?limit=100`,
+        { headers: { Authorization: `Bearer ${userToken}` } }
       );
 
-      const replies = Array.isArray(response.data?.data)
-        ? response.data.data
+      const replies = Array.isArray(response.data?.data?.comments)
+        ? response.data.data.comments
         : [];
 
       setAllReplies((prev) => ({
@@ -346,111 +509,48 @@ export default function SocialNetworkFeed() {
         [commentId]: replies,
       }));
 
-      localStorage.setItem(`replies_${commentId}`, JSON.stringify(replies));
-
-      // Update comment replies count
+      // Update the replies count in the main comments
       setComments((prev) => {
-        const updatedComments = { ...prev };
-        if (updatedComments[currentPostId]) {
-          updatedComments[currentPostId] = updatedComments[currentPostId].map(
-            (comment) => {
-              if (comment.id === commentId) {
-                return {
-                  ...comment,
-                  repliesCount: replies.length,
-                };
-              }
-              return comment;
-            }
+        const updated = { ...prev };
+        if (updated[currentPostId]) {
+          updated[currentPostId] = updated[currentPostId].map((c) =>
+            c.id === commentId ? { ...c, repliesCount: replies.length } : c
           );
         }
-        return updatedComments;
+        return updated;
       });
     } catch (error) {
       console.error("Failed to fetch replies:", error);
-      setCommentError(
-        error.response?.data?.message || "Failed to load replies"
-      );
+      setAllReplies((prev) => ({
+        ...prev,
+        [commentId]: [],
+      }));
     } finally {
       setLoadingComments((prev) => ({ ...prev, [commentId]: false }));
     }
   };
 
-  useEffect(() => {
-    // Muat cache replies saat komponen dimount
-    const loadCachedReplies = () => {
-      const cachedReplies = {};
-      Object.keys(localStorage).forEach((key) => {
-        if (key.startsWith("replies_")) {
-          const commentId = key.replace("replies_", "");
-          try {
-            cachedReplies[commentId] = JSON.parse(localStorage.getItem(key));
-          } catch (e) {
-            console.error("Failed to parse cached replies", e);
-          }
-        }
-      });
-      setAllReplies(cachedReplies);
-    };
-
-    loadCachedReplies();
-  }, []);
-
-  const fetchReplies = async (commentId) => {
-    try {
-      setLoadingComments((prev) => ({ ...prev, [commentId]: true }));
-      setCommentError(null);
-
-      const userToken = localStorage.getItem("token");
-      const response = await axios.get(
-        `http://localhost:3000/api/comments/${commentId}/replies`,
-        {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-          },
-        }
-      );
-
-      setComments((prev) => {
-        const updatedComments = { ...prev };
-        if (updatedComments[currentPostId]) {
-          updatedComments[currentPostId] = updatedComments[currentPostId].map(
-            (comment) => {
-              if (comment.id === commentId) {
-                return {
-                  ...comment,
-                  replies: response.data.data || [],
-                  repliesCount: response.data.data?.length || 0,
-                };
-              }
-              return comment;
-            }
-          );
-        }
-        return updatedComments;
-      });
-
-      setExpandedReplies((prev) => ({ ...prev, [commentId]: true }));
-    } catch (error) {
-      console.error("Failed to fetch replies:", error);
-      setCommentError(
-        error.response?.data?.message || "Failed to load replies"
-      );
-    } finally {
-      setLoadingComments((prev) => ({ ...prev, [commentId]: false }));
+  const toggleReplies = async (commentId) => {
+    if (!allReplies[commentId] || allReplies[commentId].length === 0) {
+      await fetchAllReplies(commentId);
     }
+
+    setExpandedReplies((prev) => ({
+      ...prev,
+      [commentId]: !prev[commentId],
+    }));
   };
 
   const handleAddComment = async () => {
     if (!commentText.trim()) {
-      setCommentError("Komentar tidak boleh kosong");
+      setCommentError("Comment cannot be empty");
       return;
     }
 
     try {
       const userToken = localStorage.getItem("token");
       await axios.post(
-        `http://localhost:3000/api/post-comments/${currentPostId}`,
+        `${apiUrl}/api/post-comments/${currentPostId}`,
         { content: commentText },
         {
           headers: {
@@ -475,11 +575,12 @@ export default function SocialNetworkFeed() {
       fetchComments(currentPostId);
       setCommentText("");
       setCommentError(null);
+      toast.success("Comment added successfully");
     } catch (error) {
-      console.error("Gagal menambahkan komentar:", error);
+      console.error("Failed to add comment:", error);
       setCommentError(
         error.response?.data?.message ||
-          "Terjadi kesalahan saat menambahkan komentar. Silakan coba lagi."
+          "Failed to add comment. Please try again."
       );
     }
   };
@@ -490,7 +591,7 @@ export default function SocialNetworkFeed() {
     try {
       const userToken = localStorage.getItem("token");
       const response = await axios.post(
-        `http://localhost:3000/api/comments/${commentId}/replies`,
+        `${apiUrl}/api/comments/${commentId}/replies`,
         {
           content: replyText,
           replyTo: replyToUser?.id,
@@ -509,49 +610,31 @@ export default function SocialNetworkFeed() {
           name: "Current User",
           initials: "CU",
         },
+        replyTo: replyToUser,
       };
-
-      // Update state dan cache
-      const updatedReplies = [...(allReplies[commentId] || []), newReply];
 
       setAllReplies((prev) => ({
         ...prev,
-        [commentId]: updatedReplies,
+        [commentId]: [...(prev[commentId] || []), newReply],
       }));
 
-      // Update localStorage cache
-      localStorage.setItem(
-        `replies_${commentId}`,
-        JSON.stringify(updatedReplies)
-      );
-
-      // Update replies count in comments state
       setComments((prev) => {
-        const updatedComments = { ...prev };
-        if (updatedComments[currentPostId]) {
-          updatedComments[currentPostId] = updatedComments[currentPostId].map(
-            (comment) => {
-              if (comment.id === commentId) {
-                return {
-                  ...comment,
-                  repliesCount: (comment.repliesCount || 0) + 1,
-                };
-              }
-              return comment;
-            }
+        const updated = { ...prev };
+        if (updated[currentPostId]) {
+          updated[currentPostId] = updated[currentPostId].map((c) =>
+            c.id === commentId
+              ? { ...c, repliesCount: (c.repliesCount || 0) + 1 }
+              : c
           );
         }
-        return updatedComments;
+        return updated;
       });
 
-      // Reset form
       setReplyText("");
       setReplyingTo(null);
       setReplyToUser(null);
-      setCommentError(null);
-
-      // Pastikan replies expanded
       setExpandedReplies((prev) => ({ ...prev, [commentId]: true }));
+      toast.success("Reply added successfully");
     } catch (error) {
       console.error("Failed to add reply:", error);
       setCommentError(
@@ -567,7 +650,7 @@ export default function SocialNetworkFeed() {
     try {
       const userToken = localStorage.getItem("token");
       const response = await axios.get(
-        `http://localhost:3000/api/comments/${commentId}/replies?limit=100`,
+        `${apiUrl}/api/comments/${commentId}/replies?limit=100`,
         {
           headers: {
             Authorization: `Bearer ${userToken}`,
@@ -620,8 +703,7 @@ export default function SocialNetworkFeed() {
   const renderCommentOptionsModal = () => {
     if (!showCommentOptions || !selectedComment) return null;
 
-    const isCurrentUserComment =
-      selectedComment.user && selectedComment.user.id === currentUserId;
+    const isCurrentUserComment = selectedComment?.user?.id === currentUserId;
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -629,54 +711,55 @@ export default function SocialNetworkFeed() {
           <div className="p-4">
             <h3 className="font-medium text-lg mb-3">Comment Options</h3>
 
-            <>
-              <button
-                className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
-                onClick={() => {
-                  setEditingCommentId(selectedComment.id);
-                  setCommentText(selectedComment.content);
-                  setShowCommentOptions(false);
-                }}
-              >
-                <SquarePen size={16} className="mr-2" />
-                Edit Comment
-              </button>
-
+            {isCurrentUserComment ? (
+              <>
+                <button
+                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
+                  onClick={() => {
+                    setEditingCommentId(selectedComment.id);
+                    setCommentText(selectedComment.content);
+                    setShowCommentOptions(false);
+                  }}
+                >
+                  <SquarePen size={16} className="mr-2" />
+                  Edit Comment
+                </button>
+                <button
+                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
+                  onClick={() => {
+                    handleDeleteComment(selectedComment.id);
+                    setShowCommentOptions(false);
+                  }}
+                >
+                  <X size={16} className="mr-2" />
+                  Delete Comment
+                </button>
+              </>
+            ) : (
               <button
                 className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
                 onClick={() => {
-                  handleDeleteComment(selectedComment.id);
+                  console.log("Report comment");
                   setShowCommentOptions(false);
                 }}
               >
-                <X size={16} className="mr-2" />
-                Delete Comment
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+                Report Comment
               </button>
-            </>
-
-            <button
-              className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
-              onClick={() => {
-                console.log("Report comment");
-                setShowCommentOptions(false);
-              }}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
-              Report Comment
-            </button>
+            )}
           </div>
 
           <div className="border-t p-3">
@@ -695,9 +778,9 @@ export default function SocialNetworkFeed() {
   const ReplyItem = ({ reply }) => {
     return (
       <div className="flex items-start group">
-        {reply.user?.photo ? (
+        {reply.user?.profile_photo ? (
           <img
-            src={reply.user.photo}
+            src={getImageUrl(reply.user.profile_photo)}
             className="rounded-full mr-2 w-6 h-6"
             alt={reply.user?.name || "User"}
           />
@@ -713,7 +796,7 @@ export default function SocialNetworkFeed() {
                 <h4 className="font-semibold text-xs">
                   {reply.user?.name || "Unknown User"}
                 </h4>
-                {reply.replyTo && (
+                {reply.parent_id && (
                   <span className="text-gray-500 text-xxs ml-1 flex items-center">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -725,26 +808,26 @@ export default function SocialNetworkFeed() {
                     >
                       <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z" />
                     </svg>
-                    {reply.replyTo.name}
+                    Replying to{" "}
                   </span>
                 )}
               </div>
-              <span className="text-gray-500 text-xxs">
-                {formatPostTime(reply.createdAt)}
-              </span>
+              <small className="text-gray-500 text-xs">
+                {formatPostTime(reply.createdAt || new Date().toISOString())}
+              </small>
             </div>
             <p className="text-xs mt-1">{reply.content}</p>
           </div>
           <div className="flex justify-between items-center mt-1">
-            <button
+            {/* <button
               className="text-blue-500 text-xxs hover:underline"
               onClick={() => {
                 setReplyingTo(reply.parentCommentId);
                 setReplyToUser(reply.user);
               }}
             >
-              Balas
-            </button>
+              Reply
+            </button> */}
             <button
               className="opacity-0 group-hover:opacity-100 text-gray-500 text-xxs"
               onClick={(e) => {
@@ -764,13 +847,12 @@ export default function SocialNetworkFeed() {
   const handleDeleteComment = async (commentId) => {
     try {
       const userToken = localStorage.getItem("token");
-      await axios.delete(`http://localhost:3000/api/comments/${commentId}`, {
+      await axios.delete(`${apiUrl}/api/comments/${commentId}`, {
         headers: {
           Authorization: `Bearer ${userToken}`,
         },
       });
 
-      // Update comments state
       setComments((prev) => {
         const updatedComments = { ...prev };
         if (updatedComments[currentPostId]) {
@@ -781,7 +863,6 @@ export default function SocialNetworkFeed() {
         return updatedComments;
       });
 
-      // Update post comments count
       setPosts((prevPosts) =>
         prevPosts.map((post) => {
           if (post.id === currentPostId) {
@@ -796,6 +877,7 @@ export default function SocialNetworkFeed() {
 
       setShowCommentOptions(false);
       setSelectedComment(null);
+      toast.success("Comment deleted successfully");
     } catch (error) {
       console.error("Failed to delete comment:", error);
       setCommentError("Failed to delete comment. Please try again.");
@@ -803,73 +885,45 @@ export default function SocialNetworkFeed() {
   };
 
   const handleUpdateComment = async (commentId) => {
-      if (!commentId || !commentText.trim()) return;
-  
-      try {
-        const userToken = localStorage.getItem("token");
-        await axios.put(
-          `http://localhost:3000/api/comments/${commentId}`,
-          { content: commentText },
-          {
-            headers: {
-              Authorization: `Bearer ${userToken}`,
-            },
-          }
-        );
-  
-        // Update comments state
-        setComments((prev) => {
-          const updatedComments = { ...prev };
-          if (updatedComments[currentPostId]) {
-            updatedComments[currentPostId] = updatedComments[currentPostId].map(
-              (comment) => {
-                if (comment.id === commentId) {
-                  return {
-                    ...comment,
-                    content: commentText,
-                  };
-                }
-                return comment;
-              }
-            );
-          }
-          return updatedComments;
-        });
-  
-        // Reset state
-        setEditingCommentId(null);
-        setCommentText("");
-      } catch (error) {
-        console.error("Failed to update comment:", error);
-        setCommentError("Failed to update comment. Please try again.");
-      }
-    };
+    if (!commentId || !commentText.trim()) return;
 
-  const toggleReplies = async (commentId) => {
-    if (!commentId) return;
-
-    // Jika belum ada data di state atau cache, fetch dari API
-    if (!allReplies[commentId] || allReplies[commentId].length === 0) {
-      const cachedReplies = localStorage.getItem(`replies_${commentId}`);
-      if (cachedReplies) {
-        try {
-          setAllReplies((prev) => ({
-            ...prev,
-            [commentId]: JSON.parse(cachedReplies),
-          }));
-        } catch (e) {
-          console.error("Failed to parse cached replies", e);
-          await fetchAllReplies(commentId);
+    try {
+      const userToken = localStorage.getItem("token");
+      await axios.put(
+        `${apiUrl}/api/comments/${commentId}`,
+        { content: commentText },
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
         }
-      } else {
-        await fetchAllReplies(commentId);
-      }
-    }
+      );
 
-    setExpandedReplies((prev) => ({
-      ...prev,
-      [commentId]: !prev[commentId],
-    }));
+      setComments((prev) => {
+        const updatedComments = { ...prev };
+        if (updatedComments[currentPostId]) {
+          updatedComments[currentPostId] = updatedComments[currentPostId].map(
+            (comment) => {
+              if (comment.id === commentId) {
+                return {
+                  ...comment,
+                  content: commentText,
+                };
+              }
+              return comment;
+            }
+          );
+        }
+        return updatedComments;
+      });
+
+      setEditingCommentId(null);
+      setCommentText("");
+      toast.success("Comment updated successfully");
+    } catch (error) {
+      console.error("Failed to update comment:", error);
+      setCommentError("Failed to update comment. Please try again.");
+    }
   };
 
   const handleLikePost = async (postId, isCurrentlyLiked) => {
@@ -877,17 +931,14 @@ export default function SocialNetworkFeed() {
       const userToken = localStorage.getItem("token");
 
       if (isCurrentlyLiked) {
-        await axios.delete(
-          `http://localhost:3000/api/post-actions/${postId}/like`,
-          {
-            headers: {
-              Authorization: `Bearer ${userToken}`,
-            },
-          }
-        );
+        await axios.delete(`${apiUrl}/api/post-actions/${postId}/like`, {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        });
       } else {
         await axios.post(
-          `http://localhost:3000/api/post-actions/${postId}/like`,
+          `${apiUrl}/api/post-actions/${postId}/like`,
           {},
           {
             headers: {
@@ -920,7 +971,7 @@ export default function SocialNetworkFeed() {
   const handleDeletePost = async (postId) => {
     try {
       const userToken = localStorage.getItem("token");
-      await axios.delete(`http://localhost:3000/api/posts/${postId}`, {
+      await axios.delete(`${apiUrl}/api/posts/${postId}`, {
         headers: {
           Authorization: `Bearer ${userToken}`,
         },
@@ -934,6 +985,7 @@ export default function SocialNetworkFeed() {
         setPostContent("");
         setArticleImages([]);
       }
+      toast.success("Post deleted successfully");
     } catch (error) {
       console.error("Failed to delete post:", error);
       setError("Failed to delete post. Please try again.");
@@ -947,7 +999,6 @@ export default function SocialNetworkFeed() {
     try {
       const userToken = localStorage.getItem("token");
 
-      // Upload new images first
       let uploadedImageUrls = [];
       if (newImages.length > 0) {
         const formData = new FormData();
@@ -955,29 +1006,24 @@ export default function SocialNetworkFeed() {
           formData.append("images", file);
         });
 
-        const uploadResponse = await axios.post(
-          "http://localhost:3000/api/posts/images",
-          formData,
-          {
-            headers: {
-              Authorization: `Bearer ${userToken}`,
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
+        const uploadResponse = await axios.post(apiUrl + "/images", formData, {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+            "Content-Type": "multipart/form-data",
+          },
+        });
         uploadedImageUrls = uploadResponse.data.data.filenames || [];
       }
 
-      // Prepare the updated post data
       const updatedPost = {
         content: postContent,
-        images: [...articleImages, ...uploadedImageUrls], // Keep existing + new images
-        removedImages: removedImages, // Images to be removed
+        images: [...articleImages, ...uploadedImageUrls],
+        removedImages: removedImages,
         visibility: postVisibility,
       };
 
       const response = await axios.put(
-        `http://localhost:3000/api/posts/${editingPost.id}`,
+        `${apiUrl}/api/posts/${editingPost.id}`,
         updatedPost,
         {
           headers: {
@@ -996,6 +1042,7 @@ export default function SocialNetworkFeed() {
       setEditingPost(null);
       setNewImages([]);
       setRemovedImages([]);
+      toast.success("Post updated successfully");
     } catch (error) {
       console.error("Failed to update post:", error);
       setError("Failed to update post. Please try again.");
@@ -1110,7 +1157,7 @@ export default function SocialNetworkFeed() {
       return (
         <div className="mb-3 rounded-lg overflow-hidden border">
           <img
-            src={"http://localhost:3000/" + images[0]}
+            src={apiUrl + "/" + images[0]}
             className="w-full h-48 md:h-64 lg:h-96 object-cover cursor-pointer"
             alt="Post"
             onClick={() => openImageModal({ images }, 0)}
@@ -1124,7 +1171,7 @@ export default function SocialNetworkFeed() {
             {images.map((photo, index) => (
               <div key={index} className="relative aspect-square">
                 <img
-                  src={"http://localhost:3000/" + photo}
+                  src={apiUrl + "/" + photo}
                   className="w-full h-full object-cover cursor-pointer"
                   alt={`Post ${index + 1}`}
                   onClick={() => openImageModal({ images }, index)}
@@ -1140,7 +1187,7 @@ export default function SocialNetworkFeed() {
           <div className="grid grid-cols-2 gap-1">
             <div className="relative aspect-square row-span-2">
               <img
-                src={"http://localhost:3000/" + images[0]}
+                src={apiUrl + "/" + images[0]}
                 className="w-full h-full object-cover cursor-pointer"
                 alt="Post 1"
                 onClick={() => openImageModal({ images }, 0)}
@@ -1148,7 +1195,7 @@ export default function SocialNetworkFeed() {
             </div>
             <div className="relative aspect-square">
               <img
-                src={"http://localhost:3000/" + images[1]}
+                src={apiUrl + "/" + images[1]}
                 className="w-full h-full object-cover cursor-pointer"
                 alt="Post 2"
                 onClick={() => openImageModal({ images }, 1)}
@@ -1156,7 +1203,7 @@ export default function SocialNetworkFeed() {
             </div>
             <div className="relative aspect-square">
               <img
-                src={"http://localhost:3000/" + images[2]}
+                src={apiUrl + "/" + images[2]}
                 className="w-full h-full object-cover cursor-pointer"
                 alt="Post 3"
                 onClick={() => openImageModal({ images }, 2)}
@@ -1172,7 +1219,7 @@ export default function SocialNetworkFeed() {
             {images.slice(0, 4).map((photo, index) => (
               <div key={index} className="relative aspect-square">
                 <img
-                  src={"http://localhost:3000/" + photo}
+                  src={apiUrl + "/" + photo}
                   className="w-full h-full object-cover cursor-pointer"
                   alt={`Post ${index + 1}`}
                   onClick={() => openImageModal({ images }, index)}
@@ -1204,31 +1251,54 @@ export default function SocialNetworkFeed() {
     setSharePostId(null);
   };
 
-  const copyToClipboard = () => {
-    const urlToCopy = `http://localhost:5173/post/${sharePostId}`;
-    navigator.clipboard.writeText(urlToCopy);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copyToClipboard = async () => {
+    try {
+      const urlToCopy = `${clientUrl}/post/${sharePostId}`;
+
+      // Fallback untuk browser yang tidak support Clipboard API
+      if (!navigator.clipboard) {
+        const textArea = document.createElement("textarea");
+        textArea.value = urlToCopy;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      } else {
+        await navigator.clipboard.writeText(urlToCopy);
+      }
+
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+      // Fallback manual
+      const input = document.createElement("input");
+      input.value = `${clientUrl}/post/${sharePostId}`;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      document.body.removeChild(input);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const shareToWhatsApp = () => {
     const url = `https://wa.me/?text=${encodeURIComponent(
-      `Check out this post: http://localhost:5173/post/${sharePostId}`
+      `Check out this post: ${clientUrl}/post/${sharePostId}`
     )}`;
     window.open(url, "_blank");
   };
 
   const shareToTwitter = () => {
     const url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(
-      `http://localhost:5173/post/${sharePostId}`
+      `${clientUrl}/post/${sharePostId}`
     )}`;
     window.open(url, "_blank");
   };
 
   const copyToClipboar = () => {
-    navigator.clipboard.writeText(
-      "http://localhost:3000/post/" + currentPostId
-    );
+    navigator.clipboard.writeText(apiUrl + "/post/" + currentPostId);
     setShowNotification(true);
     setTimeout(() => setShowNotification(false), 2000);
   };
@@ -1239,6 +1309,12 @@ export default function SocialNetworkFeed() {
 
   const saveExpandedRepliesToLocalStorage = (replies) => {
     localStorage.setItem("expandedReplies", JSON.stringify(replies));
+  };
+
+  const getImageUrl = (path) => {
+    if (!path) return "/placeholder-user.png";
+    if (path.startsWith("http")) return path;
+    return `${apiUrl}/${path}`;
   };
 
   // Fungsi untuk memuat expanded replies dari localStorage
@@ -1264,20 +1340,6 @@ export default function SocialNetworkFeed() {
         {renderCommentOptionsModal()}
         {renderShowcase()}
         {/* Mobile Menu Button */}
-        <div className="md:hidden flex justify-between items-center mb-4 bg-white p-3 rounded-lg shadow">
-          <div className="flex items-center">
-            <div className="rounded-full bg-gray-200 w-10 h-10 flex items-center justify-center text-lg text-gray-600 mr-3">
-              PE
-            </div>
-            <h2 className="font-bold">PPLG EVOTEKS</h2>
-          </div>
-          <button
-            onClick={toggleMobileMenu}
-            className="p-2 rounded-md hover:bg-gray-100"
-          >
-            <Menu size={24} />
-          </button>
-        </div>
 
         {/* Notification Alert */}
         {showNotification && (
@@ -1287,58 +1349,40 @@ export default function SocialNetworkFeed() {
         )}
 
         {/* Left Sidebar - Profile Section */}
-        <div
-          className={`${
-            showMobileMenu ? "block" : "hidden"
-          } md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pr-2 lg:pr-4`}
-        >
+        <div className=" md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pr-2 lg:pr-4">
           <div className="bg-white rounded-lg shadow mb-4 p-4 text-center">
             <div className="flex justify-center mb-3">
-              <div className="rounded-full bg-gray-200 w-16 md:w-20 h-16 md:h-20 flex items-center justify-center text-2xl md:text-3xl text-gray-600">
-                PE
+              <div className="relative w-28 h-28 mx-auto bg-gray-200 rounded-full overflow-hidden flex items-center justify-center">
+                {posts[0]?.user?.photo ? (
+                  <img
+                    src={apiUrl + "/" + posts[0].user.photo}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-300">
+                    <span className="text-lg font-bold text-gray-600">
+                      {posts[0]?.user?.name
+                        ? posts[0].user.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                        : "UU"}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
-            <h2 className="text-lg font-bold mb-4">PPLG EVOTEKS</h2>
+            <h2 className="text-lg font-bold mb-4">
+              {posts[0]?.user?.name || "Unknown User"}
+            </h2>
 
-            <div className="flex border-t pt-3">
-              <div className="flex-1 text-center border-r">
-                <div className="text-base font-semibold">358</div>
-                <div className="text-gray-500 text-xs">Connections</div>
-              </div>
-              <div className="flex-1 text-center">
-                <div className="text-base font-semibold">85</div>
-                <div className="text-gray-500 text-xs">Views</div>
-              </div>
-            </div>
-
-            <Link to="/profile">
+            <Link to={`/profile/${posts[0]?.user?.username}`}>
               <button className="mt-3 text-blue-500 text-sm font-medium">
-                View my profile
+                View profile
               </button>
             </Link>
-          </div>
-
-          {/* chart */}
-          <div className="bg-white rounded-lg shadow p-3">
-            <h3 className="font-medium text-sm mb-3">Profile Views</h3>
-
-            <div className="flex justify-between mb-2">
-              <div className="text-center">
-                <div className="text-xl font-semibold text-cyan-400">
-                  {data.reduce((a, b) => a + b, 0)}
-                </div>
-                <div className="text-gray-500 text-xs">last 7 days</div>
-              </div>
-              <div className="text-center">
-                <div className="text-xl font-semibold text-green-500">+43%</div>
-                <div className="text-gray-500 text-xs">Since last week</div>
-              </div>
-            </div>
-
-            <div className="h-32 md:h-40 mt-2">
-              <Line data={chartData} options={chartOptions} />
-            </div>
           </div>
         </div>
 
@@ -1364,7 +1408,11 @@ export default function SocialNetworkFeed() {
                   <div className="border-b pb-3 flex items-center mb-3">
                     {post.user?.photo ? (
                       <img
-                        src={post.user.photo}
+                        src={getImageUrl(post.user.photo)}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "/placeholder-user.png";
+                        }}
                         className="rounded-full mr-2 w-8 md:w-10 h-8 md:h-10"
                         alt={post.user?.name || "User"}
                       />
@@ -1441,278 +1489,218 @@ export default function SocialNetworkFeed() {
                     </button>
                   </div>
 
-                  <div
-                    id="comments-section"
-                    className="bg-white rounded-lg shadow-md p-4"
-                  >
-                    {/* Add Comment dengan Button Kirim */}
-                    <div className="flex items-start mb-6">
-                      <div className="rounded-full bg-gray-200 w-8 h-8 flex items-center justify-center text-xs mr-3">
-                        {currentUserId ? "ME" : "UU"}
-                      </div>
-                      <div
-                        className="flex-1 flex"
-                        onClick={() => {
-                          setCurrentPostId(post.id);
-                          if (
-                            !comments[post.id] ||
-                            comments[post.id].length === 0
-                          ) {
-                            fetchComments(post.id);
-                          }
-                        }}
-                      >
-                        <input
-                          type="text"
-                          className="flex-1 border rounded-l-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Write a comment..."
-                          value={commentText}
-                          onChange={(e) => setCommentText(e.target.value)}
-                          onKeyPress={(e) =>
-                            e.key === "Enter" && handleAddComment()
-                          }
-                        />
-                        <button
-                          className="bg-blue-500 text-white px-4 py-2 rounded-r-lg text-sm"
-                          onClick={handleAddComment}
-                        >
-                          Kirim
-                        </button>
-                      </div>
+                  {/* Add Comment dengan Button Kirim */}
+                  <div id="comments-section" className="flex items-start mb-6">
+                    <div className="rounded-full bg-gray-200 w-8 h-8 flex items-center justify-center text-xs mr-3">
+                      {currentUserId ? "ME" : "UU"}
                     </div>
-                    {commentError && (
-                      <p className="text-red-500 text-xs mt-1 mb-4">
-                        {commentError}
+                    <div
+                      className="flex-1 flex"
+                      onClick={() => {
+                        setCurrentPostId(post.id);
+                        if (
+                          !comments[post.id] ||
+                          comments[post.id].length === 0
+                        ) {
+                          fetchComments(post.id);
+                        }
+                      }}
+                    >
+                      <input
+                        type="text"
+                        className="flex-1 border rounded-l-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Write a comment..."
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        onKeyPress={(e) =>
+                          e.key === "Enter" && handleAddComment()
+                        }
+                      />
+                      <button
+                        className="bg-blue-500 text-white px-4 py-2 rounded-r-lg text-sm"
+                        onClick={handleAddComment}
+                      >
+                        Kirim
+                      </button>
+                    </div>
+                  </div>
+                  {commentError && (
+                    <p className="text-red-500 text-xs mt-1 mb-4">
+                      {commentError}
+                    </p>
+                  )}
+
+                  {/* Comments List - Selalu Tampil */}
+                  <div className="mt-4 border-t pt-4">
+                    {loadingComments[post.id] ? (
+                      <div className="flex justify-center py-4">
+                        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+                      </div>
+                    ) : !comments[post.id] || comments[post.id].length === 0 ? (
+                      <p className="text-gray-500 text-center py-4">
+                        No comments yet. Be the first to comment!
                       </p>
-                    )}
-
-                    {/* Comments List - Selalu Tampil */}
-                    <div className="mt-4 border-t pt-4">
-                      {loadingComments[post.id] ? (
-                        <div className="flex justify-center py-4">
-                          <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
-                        </div>
-                      ) : !comments[post.id] ||
-                        comments[post.id].length === 0 ? (
-                        <p className="text-gray-500 text-center py-4">
-                          No comments yet. Be the first to comment!
-                        </p>
-                      ) : (
-                        <div className="space-y-4">
-                          {comments[post.id].map((comment) => (
-                            <div key={comment.id} className="flex items-start">
-                              {comment.user?.photo ? (
-                                <img
-                                  src={comment.user.photo}
-                                  className="rounded-full mr-3 w-8 h-8"
-                                  alt={comment.user?.name || "User"}
-                                />
-                              ) : (
-                                <div className="rounded-full bg-gray-200 w-8 h-8 flex items-center justify-center text-xs mr-3">
-                                  {comment.user?.initials || "UU"}
+                    ) : (
+                      <div className="space-y-4">
+                        {comments[post.id].map((comment) => (
+                          <div key={comment.id} className="flex items-start">
+                            {comment.user?.photo ? (
+                              <img
+                                src={comment.user.photo}
+                                className="rounded-full mr-3 w-8 h-8"
+                                alt={comment.user?.name || "User"}
+                              />
+                            ) : (
+                              <div className="rounded-full bg-gray-200 w-8 h-8 flex items-center justify-center text-xs mr-3">
+                                {comment.user?.initials || "UU"}
+                              </div>
+                            )}
+                            <div className="flex-1">
+                              <div className="bg-gray-100 rounded-lg p-3">
+                                <div className="flex justify-between items-start">
+                                  <h4 className="font-semibold text-sm">
+                                    {comment.user?.name || "Unknown User"}
+                                  </h4>
+                                  <span className="text-gray-500 text-xs">
+                                    {formatPostTime(comment.createdAt)}
+                                  </span>
                                 </div>
-                              )}
-                              <div className="flex-1">
-                                <div className="bg-gray-100 rounded-lg p-3">
-                                  <div className="flex justify-between items-start">
-                                    <h4 className="font-semibold text-sm">
-                                      {comment.user?.name || "Unknown User"}
-                                    </h4>
-                                    <span className="text-gray-500 text-xs">
-                                      {formatPostTime(comment.createdAt)}
-                                    </span>
+
+                                {editingCommentId === comment.id ? (
+                                  <div className="mt-2 flex">
+                                    <input
+                                      type="text"
+                                      className="flex-1 border rounded-l-lg px-3 py-2 text-sm"
+                                      value={commentText}
+                                      onChange={(e) =>
+                                        setCommentText(e.target.value)
+                                      }
+                                    />
+                                    <button
+                                      className="bg-blue-500 text-white px-3 py-2 rounded-r-lg text-sm"
+                                      onClick={() =>
+                                        handleUpdateComment(comment.id)
+                                      }
+                                    >
+                                      Update
+                                    </button>
+                                    <button
+                                      className="bg-gray-500 text-white px-3 py-2 rounded-r-lg text-sm ml-1"
+                                      onClick={() => {
+                                        setEditingCommentId(null);
+                                        setCommentText("");
+                                      }}
+                                    >
+                                      Cancel
+                                    </button>
                                   </div>
+                                ) : (
+                                  <p className="text-sm mt-1">
+                                    {comment.content}
+                                  </p>
+                                )}
+                              </div>
 
-                                  {editingCommentId === comment.id ? (
-                                    <div className="mt-2 flex">
-                                      <input
-                                        type="text"
-                                        className="flex-1 border rounded-l-lg px-3 py-2 text-sm"
-                                        value={commentText}
-                                        onChange={(e) =>
-                                          setCommentText(e.target.value)
-                                        }
-                                      />
-                                      <button
-                                        className="bg-blue-500 text-white px-3 py-2 rounded-r-lg text-sm"
-                                        onClick={() =>
-                                          handleUpdateComment(comment.id)
-                                        }
-                                      >
-                                        Update
-                                      </button>
-                                      <button
-                                        className="bg-gray-500 text-white px-3 py-2 rounded-r-lg text-sm ml-1"
-                                        onClick={() => {
-                                          setEditingCommentId(null);
-                                          setCommentText("");
-                                        }}
-                                      >
-                                        Cancel
-                                      </button>
-                                    </div>
-                                  ) : (
-                                    <p className="text-sm mt-1">
-                                      {comment.content}
-                                    </p>
-                                  )}
-                                </div>
+                              {/* Comment Actions */}
+                              <div className="flex items-center mt-2 space-x-4">
+                                <button
+                                  className="text-blue-500 text-xs hover:underline"
+                                  onClick={() => {
+                                    setReplyingTo(comment.id);
+                                    setReplyToUser(comment.user);
+                                  }}
+                                >
+                                  Reply
+                                </button>
 
-                                {/* Comment Actions */}
-                                <div className="flex items-center mt-2 space-x-4">
-                                  <button
-                                    className="text-blue-500 text-xs hover:underline"
-                                    onClick={() => {
-                                      setReplyingTo(comment.id);
-                                      setReplyToUser(comment.user);
-                                    }}
-                                  >
-                                    Reply
-                                  </button>
+                                <button
+                                  className="text-gray-500 text-xs hover:underline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedComment(comment);
+                                    setShowCommentOptions(true);
+                                  }}
+                                >
+                                  <Ellipsis size={14} />
+                                </button>
 
+                                {(comment.repliesCount > 0 ||
+                                  allReplies[comment.id]?.length > 0) && (
                                   <button
                                     className="text-gray-500 text-xs hover:underline"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedComment(comment);
-                                      setShowCommentOptions(true);
-                                    }}
+                                    onClick={() => toggleReplies(comment.id)}
                                   >
-                                    <Ellipsis size={14} />
+                                    {expandedReplies[comment.id]
+                                      ? "Hide replies"
+                                      : `View replies (${
+                                          comment.repliesCount ||
+                                          allReplies[comment.id]?.length ||
+                                          0
+                                        })`}
                                   </button>
+                                )}
+                              </div>
 
-                                  {(comment.repliesCount > 0 ||
-                                    allReplies[comment.id]?.length > 0) && (
+                              {/* Reply Form */}
+                              {replyingTo === comment.id && (
+                                <div className="mt-3 flex items-start">
+                                  <div className="rounded-full bg-gray-200 w-6 h-6 flex items-center justify-center text-xxs mr-2">
+                                    {currentUserId ? "ME" : "UU"}
+                                  </div>
+                                  <div className="flex-1 flex">
+                                    <input
+                                      type="text"
+                                      className="flex-1 border rounded-l-lg px-3 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      placeholder={`Reply to ${
+                                        comment.user?.name || "user"
+                                      }...`}
+                                      value={replyText}
+                                      onChange={(e) =>
+                                        setReplyText(e.target.value)
+                                      }
+                                    />
                                     <button
-                                      className="text-gray-500 text-xs hover:underline"
-                                      onClick={() => toggleReplies(comment.id)}
+                                      className="bg-blue-500 text-white px-3 py-1 rounded-r-lg text-xs"
+                                      onClick={() =>
+                                        handleReply(comment.id, replyToUser)
+                                      }
                                     >
-                                      {expandedReplies[comment.id]
-                                        ? "Hide replies"
-                                        : `View replies (${
-                                            comment.repliesCount ||
-                                            allReplies[comment.id]?.length ||
-                                            0
-                                          })`}
+                                      Post
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Replies Section */}
+                              {expandedReplies[comment.id] && (
+                                <div className="mt-3 ml-6 pl-4 border-l-2 border-gray-200 space-y-3">
+                                  {(Array.isArray(allReplies[comment.id])
+                                    ? allReplies[comment.id]
+                                    : comment.replies || []
+                                  ).map((reply) => (
+                                    <ReplyItem key={reply.id} reply={reply} />
+                                  ))}
+
+                                  {comment.repliesCount >
+                                    (allReplies[comment.id]?.length ||
+                                      comment.replies?.length ||
+                                      0) && (
+                                    <button
+                                      className="text-blue-500 text-xs"
+                                      onClick={() =>
+                                        fetchAllReplies(comment.id)
+                                      }
+                                    >
+                                      Load more replies...
                                     </button>
                                   )}
                                 </div>
-
-                                {/* Reply Form */}
-                                {replyingTo === comment.id && (
-                                  <div className="mt-3 flex items-start">
-                                    <div className="rounded-full bg-gray-200 w-6 h-6 flex items-center justify-center text-xxs mr-2">
-                                      {currentUserId ? "ME" : "UU"}
-                                    </div>
-                                    <div className="flex-1 flex">
-                                      <input
-                                        type="text"
-                                        className="flex-1 border rounded-l-lg px-3 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        placeholder={`Reply to ${
-                                          comment.user?.name || "user"
-                                        }...`}
-                                        value={replyText}
-                                        onChange={(e) =>
-                                          setReplyText(e.target.value)
-                                        }
-                                      />
-                                      <button
-                                        className="bg-blue-500 text-white px-3 py-1 rounded-r-lg text-xs"
-                                        onClick={() =>
-                                          handleReply(comment.id, replyToUser)
-                                        }
-                                      >
-                                        Post
-                                      </button>
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Replies Section */}
-                                {expandedReplies[comment.id] && (
-                                  <div className="mt-3 ml-6 pl-4 border-l-2 border-gray-200 space-y-3">
-                                    {(comment.replies || []).map((reply) => (
-                                      <div
-                                        key={reply.id}
-                                        className="flex items-start group"
-                                      >
-                                        {reply.user?.photo ? (
-                                          <img
-                                            src={reply.user.photo}
-                                            className="rounded-full mr-2 w-6 h-6"
-                                            alt={reply.user?.name || "User"}
-                                          />
-                                        ) : (
-                                          <div className="rounded-full bg-gray-200 w-6 h-6 flex items-center justify-center text-xxs mr-2">
-                                            {reply.user?.initials || "UU"}
-                                          </div>
-                                        )}
-                                        <div className="flex-1">
-                                          <div className="bg-gray-100 rounded-lg p-2">
-                                            <div className="flex justify-between items-start">
-                                              <div className="flex items-center">
-                                                <h4 className="font-semibold text-xs">
-                                                  {reply.user?.name ||
-                                                    "Unknown User"}
-                                                </h4>
-                                                {reply.replyTo && (
-                                                  <span className="text-gray-500 text-xxs ml-1 flex items-center">
-                                                    <svg
-                                                      xmlns="http://www.w3.org/2000/svg"
-                                                      width="8"
-                                                      height="8"
-                                                      fill="currentColor"
-                                                      className="mr-1"
-                                                      viewBox="0 0 16 16"
-                                                    >
-                                                      <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z" />
-                                                    </svg>
-                                                    {reply.replyTo.name}
-                                                  </span>
-                                                )}
-                                              </div>
-                                              <span className="text-gray-500 text-xxs">
-                                                {formatPostTime(
-                                                  reply.createdAt
-                                                )}
-                                              </span>
-                                            </div>
-                                            <p className="text-xs mt-1">
-                                              {reply.content}
-                                            </p>
-                                          </div>
-                                          <div className="flex justify-between items-center mt-1">
-                                            <button
-                                              className="text-blue-500 text-xxs hover:underline"
-                                              onClick={() => {
-                                                setReplyingTo(comment.id);
-                                                setReplyToUser(reply.user);
-                                              }}
-                                            >
-                                              Reply
-                                            </button>
-                                            <button
-                                              className="opacity-0 group-hover:opacity-100 text-gray-500 text-xxs"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                setSelectedComment(reply);
-                                                setShowCommentOptions(true);
-                                              }}
-                                            >
-                                              <Ellipsis size={12} />
-                                            </button>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
+                              )}
                             </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))
@@ -1738,7 +1726,7 @@ export default function SocialNetworkFeed() {
                 <div className="flex items-center border rounded-lg p-2">
                   <input
                     type="text"
-                    value={`http://localhost:5173/post/${sharePostId}`}
+                    value={`${clientUrl}/post/${sharePostId}`}
                     readOnly
                     className="flex-grow text-sm text-gray-700 mr-2 outline-none"
                   />
@@ -1854,39 +1842,116 @@ export default function SocialNetworkFeed() {
           } md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pl-2 lg:pr-4`}
         >
           {/* People You Might Know */}
-          <div className="bg-white rounded-lg shadow mb-4 p-3">
-            <h3 className="font-medium text-sm mb-3">People you might know</h3>
-
-            <div className="flex items-center mb-3">
-              <div className="w-8 md:w-10 h-8 md:h-10 rounded-full bg-gray-200 overflow-hidden mr-2">
-                <img
-                  src="/api/placeholder/40/40"
-                  alt="Profile"
-                  className="w-full h-full object-cover"
+          <div className="bg-white rounded-xl shadow-sm border p-4 mb-6 transition-all duration-300">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-100">
+              <h3 className="font-semibold text-gray-800 text-base flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                People you might know
+              </h3>
+              <button
+                onClick={fetchSuggestedConnections}
+                disabled={loadingSuggested}
+                className="flex items-center gap-1 text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors duration-200 disabled:opacity-50"
+              >
+                <RefreshCw
+                  className={`w-4 h-4 ${
+                    loadingSuggested ? "animate-spin" : ""
+                  }`}
                 />
-              </div>
-              <div className="flex-1">
-                <div className="font-medium text-xs md:text-sm">
-                  Bintang Asydqi
-                </div>
-                <div className="text-gray-500 text-xs">
-                  Student at Alexander
-                </div>
-              </div>
-              <div className="text-blue-500">
-                <svg
-                  className="w-4 md:w-5 h-4 md:h-5"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z"
-                    clipRule="evenodd"
-                  ></path>
-                </svg>
-              </div>
+              </button>
             </div>
+
+            {/* Content */}
+            {loadingSuggested ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="flex items-center gap-2 text-gray-500">
+                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-sm">Finding suggestions...</span>
+                </div>
+              </div>
+            ) : suggestedConnections.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <UserPlus className="w-6 h-6 text-gray-400" />
+                </div>
+                <p className="text-gray-500 text-sm">
+                  No suggestions available at the moment
+                </p>
+                <p className="text-gray-400 text-xs mt-1">
+                  Check back later for new connections
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {suggestedConnections.map((person, index) => (
+                  <div
+                    key={person.id}
+                    className="group flex items-center p-3 rounded-lg hover:bg-gray-50 transition-all duration-200 border border-transparent hover:border-gray-200"
+                    style={{
+                      animationDelay: `${index * 100}ms`,
+                      animation: "fadeInUp 0.5s ease-out forwards",
+                    }}
+                  >
+                    {/* Profile Picture */}
+                    <div className="relative mr-3 flex-shrink-0">
+                      <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden ring-2 ring-white shadow-md">
+                        {person.photo ? (
+                          <img
+                            src={
+                              person.photo.startsWith("http")
+                                ? person.photo
+                                : `${apiUrl}/${person.photo}`
+                            }
+                            alt="Profile"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = "";
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <span className="text-sm font-semibold text-gray-500">
+                              {person.initials}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* User Info */}
+                    <div className="flex-1 min-w-0">
+                      <Link to={`/user-profile/${person.username}`}>
+                        <h4 className="font-semibold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors duration-200">
+                          {person.name}
+                        </h4>
+                      </Link>
+                      <p className="text-gray-600 text-xs truncate mt-0.5">
+                        {person.headline}
+                      </p>
+                    </div>
+
+                    {/* Connect Button */}
+                    <button
+                      className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 hover:scale-110 transition-all duration-200 group-hover:shadow-md"
+                      onClick={() => handleConnectWithUser(person.id)}
+                      disabled={
+                        connections.some((conn) => conn.id === person.id) ||
+                        loadingSuggested
+                      }
+                      title={`Connect with ${person.name}`}
+                    >
+                      {connections.some((conn) => conn.id === person.id) ? (
+                        <Check size={16} className="text-green-500" />
+                      ) : (
+                        <UserPlus size={16} />
+                      )}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Premium Banner */}
@@ -2091,10 +2156,7 @@ export default function SocialNetworkFeed() {
 
               <div className="relative">
                 <img
-                  src={
-                    "http://localhost:3000/" +
-                    selectedPost.images[selectedImageIndex]
-                  }
+                  src={apiUrl + "/" + selectedPost.images[selectedImageIndex]}
                   className="w-full max-h-[80vh] object-contain"
                   alt={`Post ${selectedImageIndex + 1}`}
                 />

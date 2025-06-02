@@ -21,9 +21,9 @@ type NotificationResponse struct {
 }
 
 type NotificationListResponse struct {
-	Notifications []NotificationResponse `json:"notifications"`
-	Total         int                    `json:"total"`
-	UnreadCount   int                    `json:"unread_count"`
+    Notifications []NotificationResponse `json:"notifications"`
+    Total         int                   `json:"total"`
+    UnreadCount   int                   `json:"unread_count"`
 }
 
 type MarkNotificationReadRequest struct {

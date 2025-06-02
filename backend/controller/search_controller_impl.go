@@ -1,26 +1,31 @@
 package controller
 
+
 import (
-	"evoconnect/backend/helper"
-	"evoconnect/backend/model/web"
-	"evoconnect/backend/service"
-	"github.com/google/uuid"
-	"github.com/julienschmidt/httprouter"
-	"net/http"
-	"strconv"
-	"fmt"
+    "evoconnect/backend/helper"
+    "evoconnect/backend/model/web"
+    "evoconnect/backend/service"
+    "github.com/google/uuid"
+    "github.com/julienschmidt/httprouter"
+    "net/http"
+    "strconv"
+    "fmt"
 )
 
 
+
+
 type SearchControllerImpl struct {
-	SearchService service.SearchService
+    SearchService service.SearchService
 }
 
+
 func NewSearchController(searchService service.SearchService) SearchController {
-	return &SearchControllerImpl{
-		SearchService: searchService,
-	}
+    return &SearchControllerImpl{
+        SearchService: searchService,
+    }
 }
+
 
 func (controller *SearchControllerImpl) Search(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
     // Get user ID from context
@@ -33,7 +38,7 @@ func (controller *SearchControllerImpl) Search(writer http.ResponseWriter, reque
         })
         return
     }
-    
+   
     userId, err := uuid.Parse(userIdStr)
     if err != nil {
         helper.WriteToResponseBody(writer, web.WebResponse{
@@ -44,12 +49,13 @@ func (controller *SearchControllerImpl) Search(writer http.ResponseWriter, reque
         return
     }
 
+
     // Get query parameters
     query := request.URL.Query().Get("q")
-    
+   
     // Tambahkan log untuk debugging
     fmt.Printf("Search query: %s\n", query)
-    
+   
     if query == "" {
         helper.WriteToResponseBody(writer, web.WebResponse{
             Code:   400,
@@ -58,11 +64,12 @@ func (controller *SearchControllerImpl) Search(writer http.ResponseWriter, reque
         })
         return
     }
-    
+   
     searchType := request.URL.Query().Get("type")
     if searchType == "" {
         searchType = "all"
     }
+
 
     limitStr := request.URL.Query().Get("limit")
     limit := 10 // Default limit
@@ -73,6 +80,7 @@ func (controller *SearchControllerImpl) Search(writer http.ResponseWriter, reque
         }
     }
 
+
     offsetStr := request.URL.Query().Get("offset")
     offset := 0 // Default offset
     if offsetStr != "" {
@@ -82,11 +90,13 @@ func (controller *SearchControllerImpl) Search(writer http.ResponseWriter, reque
         }
     }
 
+
     // Perform search
     searchResponse := controller.SearchService.Search(request.Context(), query, searchType, limit, offset, userId)
-    
+   
     // Log hasil pencarian untuk debugging
     fmt.Printf("Search results: %+v\n", searchResponse)
+
 
     // Return response
     webResponse := web.WebResponse{
@@ -94,6 +104,7 @@ func (controller *SearchControllerImpl) Search(writer http.ResponseWriter, reque
         Status: "OK",
         Data:   searchResponse,
     }
+
 
     helper.WriteToResponseBody(writer, webResponse)
 }

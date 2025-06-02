@@ -241,3 +241,4 @@ func (controller *NotificationControllerImpl) DeleteSelectedNotifications(writer
     
     helper.WriteToResponseBody(writer, webResponse)
 }
+

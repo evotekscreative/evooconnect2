@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
-import { toast } from "sonner";
+import Alert from "../components/Auth/alert";
 import Case from "../components/Case";
 import {
   MoreHorizontal,
@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 
 export default function MemberList() {
+      const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
   const { groupId } = useParams();
   const [members, setMembers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,12 +26,24 @@ export default function MemberList() {
   const [selectedMember, setSelectedMember] = useState(null);
   const [selectedRole, setSelectedRole] = useState("member");
   const [showOptionsMenu, setShowOptionsMenu] = useState(null);
+  const [group, setGroup] = useState({});
+  const [alert, setAlert] = useState({
+    show: false,
+    type: "success",
+    message: "",
+  });
+
+  const showAlert = (type, message) => {
+    setAlert({ show: true, type, message });
+    setTimeout(() => setAlert({ ...alert, show: false }), 5000);
+  };
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (user) {
       setCurrentUserId(user.id);
     }
+    fetchGroup();
     fetchMembers();
   }, [groupId]);
 
@@ -38,7 +52,7 @@ export default function MemberList() {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(
-        `http://localhost:3000/api/groups/${groupId}/members`,
+        `${apiUrl}/api/groups/${groupId}/members`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -63,13 +77,29 @@ export default function MemberList() {
     }
   };
 
+  const fetchGroup = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${apiUrl}/api/groups/${groupId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setGroup(response.data.data);
+    } catch (error) {
+      console.error("Error fetching group:", error);
+      setError("Failed to load group");
+      toast.error("Failed to load group");
+    }
+  };
+
   const handleUpdateRole = async () => {
     if (!selectedMember) return;
 
     try {
       const token = localStorage.getItem("token");
       await axios.put(
-        `http://localhost:3000/api/groups/${groupId}/members/${selectedMember.user.id}/role`,
+        `${apiUrl}/api/groups/${groupId}/members/${selectedMember.user.id}/role`,
         { role: selectedRole },
         {
           headers: {
@@ -85,11 +115,11 @@ export default function MemberList() {
             : member
         )
       );
-      toast.success("Role updated successfully");
+      showAlert("success", "Role updated successfully");
       setShowRoleModal(false);
     } catch (error) {
       console.error("Error updating role:", error);
-      toast.error("Failed to update role");
+      showAlert("error", "Failed to update role");
     }
   };
 
@@ -99,7 +129,7 @@ export default function MemberList() {
     try {
       const token = localStorage.getItem("token");
       await axios.delete(
-        `http://localhost:3000/api/groups/${groupId}/members/${selectedMember.user.id}`,
+        `${apiUrl}/api/groups/${groupId}/members/${selectedMember.user.id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -110,11 +140,11 @@ export default function MemberList() {
       setMembers((prev) =>
         prev.filter((member) => member.user.id !== selectedMember.user.id)
       );
-      toast.success("Member removed successfully");
+      showAlert("success", "Member removed successfully");
       setShowRemoveModal(false);
     } catch (error) {
       console.error("Error removing member:", error);
-      toast.error("Failed to remove member");
+      showAlert("error", "Failed to remove member");
     }
   };
 
@@ -150,19 +180,27 @@ export default function MemberList() {
   return (
     <Case>
     <div className="bg-gray-100 min-h-screen pb-20"> {/* Tambahkan pb-20 untuk padding bottom yang besar */}
+      {alert.show && (
+          <div className="fixed top-4 right-4 z-50">
+            <Alert
+              type={alert.type}
+              message={alert.message}
+              onClose={() => setAlert({ ...alert, show: false })}
+            />
+          </div>
+        )}
         <div className="container mx-auto px-4 py-6">
           <div className="bg-white rounded-lg shadow-sm overflow-hidden min-h-[70vh]">
           {/* Header */}
-          <div className="border-b p-4 flex items-center justify-between">
+          <div className="border-b p-4  ">
             <Link
               to={`/groups/${groupId}`}
-              className="flex items-center text-blue-600 hover:text-blue-800"
+              className="flex items-center text-gray-600 hover:text-gray-800"
             >
               <ArrowLeft size={20} className="mr-2" />
-              Back to Group
+              <h2 className="font-bold">{group.name}</h2>
             </Link>
-            <h2 className="text-xl font-bold text-gray-800">Group Members</h2>
-            <div className="w-8"></div> {/* Spacer for alignment */}
+            <h2 className="text-lg mt-5 font-semibold">{members.length} Members</h2>
           </div>
 
           {/* Member List */}
@@ -178,25 +216,40 @@ export default function MemberList() {
                   className="p-4 flex items-center justify-between hover:bg-gray-50"
                 >
                   <div className="flex items-center space-x-4">
-                    <img
-                      src={
-                        member.user.photo
-                          ? member.user.photo.startsWith("http")
+                    {member.user.photo ? (
+                      <img
+                        src={
+                          member.user.photo.startsWith("http")
                             ? member.user.photo
-                            : `http://localhost:3000/${member.user.photo}`
-                          : "/default-user.png"
-                      }
-                      className="w-12 h-12 rounded-full object-cover"
-                      alt={member.user.name}
-                    />
+                            : `${apiUrl}/${member.user.photo}`
+                        }
+                        className="w-12 h-12 rounded-full object-cover"
+                        alt={member.user.name}
+                      />
+                    ) : (
+                      <div
+                        className={`w-12 h-12 rounded-full flex items-center justify-center font-sembold text-lg uppercase ${
+                          member.user.id === currentUserId
+                        }`}
+                      >
+                        {member.user.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .slice(0, 2)}
+                      </div>
+                    )}
                     <div>
-                      <h3 className="font-medium text-gray-900">
+                      <Link to={`/user-profile/${member.user.username}`} className="font-medium text-gray-900">
                         {member.user.name}
                         {member.user.id === currentUserId && (
                           <span className="ml-2 text-gray-400">(You)</span>
                         )}
-                      </h3>
-                      <p className="text-sm text-gray-500">
+                      </Link>
+                      <p className="text-sm text-gray-700">
+                        {member.user.headline || "No headline available"}
+                      </p>
+                      <p className="text-xs text-gray-500">
                         {member.role === "admin" ? "Admin" : "Member"}
                       </p>
                     </div>
