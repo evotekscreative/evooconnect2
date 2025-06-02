@@ -77,6 +77,8 @@ func main() {
 	companyRepository := repository.NewCompanyRepository()
 	companySubmissionRepository := repository.NewCompanySubmissionRepository()
 
+	companyEditRequestRepository := repository.NewCompanyEditRequestRepository()
+
 	// ===== Services =====
 	// Notification service (moved up because it's used by many other services)
 	notificationService := service.NewNotificationService(
@@ -175,6 +177,27 @@ func main() {
 	// Admin auth service
 	adminAuthService := service.NewAdminAuthService(adminRepository, db, validate)
 
+	// Company submission service
+	companySubmissionService := service.NewCompanySubmissionService(
+		companySubmissionRepository,
+		companyRepository,
+		userRepository,
+		adminRepository,
+		notificationService,
+		db,
+		validate,
+	)
+
+	companyManagementService := service.NewCompanyManagementService(
+		companyRepository,
+		companyEditRequestRepository,
+		userRepository,
+		adminRepository,
+		notificationService,
+		db,
+		validate,
+	)
+
 	// ===== Controllers =====
 	// User-related controllers
 	userController := controller.NewUserController(
@@ -213,6 +236,12 @@ func main() {
 
 	adminAuthController := controller.NewAdminAuthController(adminAuthService)
 
+	// Company submission controller
+	companySubmissionController := controller.NewCompanySubmissionController(companySubmissionService)
+
+	companyManagementController := controller.NewCompanyManagementController(companyManagementService)
+	adminCompanyEditController := controller.NewAdminCompanyEditController(companyManagementService)
+
 	// ===== Router and Middleware =====
 	// Initialize router with all controllers and JWT secret
 	router := app.NewRouter(
@@ -232,11 +261,14 @@ func main() {
 		notificationController,
 		searchController,
 		adminAuthController,
+		companySubmissionController,
+		companyManagementController,
+		adminCompanyEditController,
 	)
 
 	// Seed admin data
 	seeder.SeedAdmin(db)
-	seeder.SeedAllData(db)
+	// seeder.SeedAllData(db)
 
 	// Create middleware chain (only CORS needed now since auth is handled per route)
 	var handler http.Handler = router

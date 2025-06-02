@@ -15,6 +15,7 @@ import (
 func NewUserAuthMiddleware() func(httprouter.Handle) httprouter.Handle {
 	return func(next httprouter.Handle) httprouter.Handle {
 		return func(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+
 			// Get Authorization header
 			authHeader := request.Header.Get("Authorization")
 			if authHeader == "" {
