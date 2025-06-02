@@ -10,6 +10,7 @@ import (
 	"evoconnect/backend/model/domain"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
+	"evoconnect/backend/utils"
 	"fmt"
 	"math/rand"
 	"regexp"
@@ -17,7 +18,7 @@ import (
 
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	// "github.com/dgrijalva/jwt-go"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -41,20 +42,20 @@ func NewAuthService(userRepository repository.UserRepository, db *sql.DB, valida
 	}
 }
 
-func (service *AuthServiceImpl) generateToken(user domain.User) string {
-	var expIn int = helper.GetEnvInt("JWT_EXPIRES_IN", 24)
-	claims := jwt.MapClaims{
-		"user_id": user.Id.String(),
-		"email":   user.Email,
-		"exp":     time.Now().Add(time.Duration(expIn) * time.Hour).Unix(),
-	}
+// func (service *AuthServiceImpl) generateToken(user domain.User) string {
+// 	var expIn int = helper.GetEnvInt("JWT_EXPIRES_IN", 24)
+// 	claims := jwt.MapClaims{
+// 		"user_id": user.Id.String(),
+// 		"email":   user.Email,
+// 		"exp":     time.Now().Add(time.Duration(expIn) * time.Hour).Unix(),
+// 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedToken, err := token.SignedString([]byte(service.JWTSecret))
-	helper.PanicIfError(err)
+// 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+// 	signedToken, err := token.SignedString([]byte(service.JWTSecret))
+// 	helper.PanicIfError(err)
 
-	return signedToken
-}
+// 	return signedToken
+// }
 
 // generateRandomToken creates a random token for verification/reset
 func generateRandomToken() string {
@@ -102,7 +103,17 @@ func (service *AuthServiceImpl) GoogleAuth(ctx context.Context, request web.Goog
 	existingUser, err := service.UserRepository.FindByEmail(ctx, tx, email)
 	if err == nil {
 		// User exists, generate token and return
-		jwtToken := service.generateToken(existingUser)
+		jwtToken, err := utils.GenerateToken(
+			existingUser.Id.String(),
+			existingUser.Email,
+			"user",
+			time.Hour*24*7, // 7 days
+		)
+		if err != nil {
+			fmt.Printf("Error generating token: %v\n", err)
+			return web.RegisterResponse{}, err
+		}
+
 		return web.RegisterResponse{
 			Token: jwtToken,
 			User:  existingUser,
@@ -133,7 +144,16 @@ func (service *AuthServiceImpl) GoogleAuth(ctx context.Context, request web.Goog
 
 	// Save new user to database
 	savedUser := service.UserRepository.Save(ctx, tx, newUser)
-	jwtToken := service.generateToken(savedUser)
+	jwtToken, err := utils.GenerateToken(
+		savedUser.Id.String(),
+		savedUser.Email,
+		"user",
+		time.Hour*24*7, // 7 days
+	)
+	if err != nil {
+		fmt.Printf("Error generating token: %v\n", err)
+		return web.RegisterResponse{}, err
+	}
 
 	return web.RegisterResponse{
 		Token: jwtToken,
@@ -215,39 +235,6 @@ func generateRandomString(length int) string {
 	return string(b)
 }
 
-func (service *AuthServiceImpl) Login(ctx context.Context, request web.LoginRequest) web.LoginResponse {
-	err := service.Validate.Struct(request)
-	helper.PanicIfError(err)
-
-	tx, err := service.DB.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
-
-	user, err := service.UserRepository.FindByEmail(ctx, tx, request.Email)
-	if err != nil {
-		panic(exception.NewNotFoundError(err.Error()))
-	}
-
-	// Check if email is verified
-	// if !user.IsVerified {
-	// 	panic(exception.NewUnauthorizedError("Email not verified. Please check your email for verification instructions."))
-	// }
-
-	// Verify password
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password))
-	if err != nil {
-		panic(exception.NewUnauthorizedError("Invalid credentials"))
-	}
-
-	// Generate JWT token
-	token := service.generateToken(user)
-
-	return web.LoginResponse{
-		Token: token,
-		User:  user,
-	}
-}
-
 func (service *AuthServiceImpl) Register(ctx context.Context, request web.RegisterRequest) web.RegisterResponse {
 	err := service.Validate.Struct(request)
 	helper.PanicIfError(err)
@@ -272,11 +259,12 @@ func (service *AuthServiceImpl) Register(ctx context.Context, request web.Regist
 	helper.PanicIfError(err)
 
 	user := domain.User{
+		Id:         uuid.New(),
 		Name:       request.Name,
 		Email:      request.Email,
 		Username:   request.Username,
 		Password:   string(hashedPassword),
-		IsVerified: false, // Set to false for new registrations
+		IsVerified: false,
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
 	}
@@ -285,7 +273,7 @@ func (service *AuthServiceImpl) Register(ctx context.Context, request web.Regist
 
 	// Generate verification token
 	token := generateRandomToken()
-	expires := time.Now().Add(24 * time.Hour) // Token valid for 24 hours
+	expires := time.Now().Add(24 * time.Hour)
 
 	// Save token to user record
 	err = service.UserRepository.SaveVerificationToken(ctx, tx, user.Id, token, expires)
@@ -297,7 +285,7 @@ func (service *AuthServiceImpl) Register(ctx context.Context, request web.Regist
         <h1>Welcome to EvoConnect!</h1>
         <p>Hello %s,</p>
         <p>Thank you for registering. Please click the link below to verify your email:</p>
-		<p>Your verification token is:  <b>%s</b></p>
+        <p>Your verification token is:  <b>%s</b></p>
         <p>Or, <a href="%s">click here</a> to verify</p>
         <p>This link will expire in 24 hours.</p>
         <p>Thank you!</p>
@@ -305,15 +293,52 @@ func (service *AuthServiceImpl) Register(ctx context.Context, request web.Regist
 
 	err = helper.EmailSender(user.Email, "Welcome to EvoConnect - Verify Your Email", emailBody)
 	if err != nil {
-		// Log the error but don't fail the registration
 		fmt.Printf("Failed to send verification email: %v\n", err)
 	}
 
-	// Generate JWT token
-	jwtToken := service.generateToken(user)
+	// Generate JWT token using the new utility function
+	jwtToken, err := utils.GenerateUserToken(
+		user.Id.String(),
+		user.Email,
+		time.Hour*24*7, // 7 days
+	)
+	helper.PanicIfError(err)
 
 	return web.RegisterResponse{
 		Token: jwtToken,
+		User:  user,
+	}
+}
+
+func (service *AuthServiceImpl) Login(ctx context.Context, request web.LoginRequest) web.LoginResponse {
+	err := service.Validate.Struct(request)
+	helper.PanicIfError(err)
+
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	user, err := service.UserRepository.FindByEmail(ctx, tx, request.Email)
+	if err != nil {
+		panic(exception.NewNotFoundError(err.Error()))
+	}
+
+	// Verify password
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password))
+	if err != nil {
+		panic(exception.NewUnauthorizedError("Invalid credentials"))
+	}
+
+	// Generate JWT token using the new utility function
+	token, err := utils.GenerateUserToken(
+		user.Id.String(),
+		user.Email,
+		time.Hour*24*7, // 7 days
+	)
+	helper.PanicIfError(err)
+
+	return web.LoginResponse{
+		Token: token,
 		User:  user,
 	}
 }

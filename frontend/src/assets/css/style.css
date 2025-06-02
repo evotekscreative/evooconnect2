@@ -30,6 +30,13 @@
   text-decoration: underline;
 }
 
+
+.prose a,
+.blog-content a {
+  color: #007bff !important;
+  text-decoration: underline;
+}
+
 .ck-editor-mode ul li a {
     color: #007bff;
     text-decoration: none;
@@ -71,6 +78,39 @@
     list-style-type: disc;
     padding-left: 1.5em;
   }
+
+  .ck-editor-mode ul,
+.prose ul,
+.blog-content ul,
+.ck-editor-content ul {
+    list-style-type: disc !important;
+    padding-left: 1.5em !important;
+}
+
+.ck-editor-mode ol,
+.prose ol,
+.blog-content ol,
+.ck-editor-content ol {
+    list-style-type: decimal !important;
+    padding-left: 1.5em !important;
+}
+
+  .scrollbar-hide {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.checkbox-white {
+  accent-color: #108cc6;
+
+  /* warna biru sky-500, tetap pakai ini untuk background */
+}
+
+
+
 
   .ck-editor-mode ul,
 .prose ul,

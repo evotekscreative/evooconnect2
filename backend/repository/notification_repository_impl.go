@@ -464,4 +464,3 @@ func (repository *NotificationRepositoryImpl) FindSimilarNotification(ctx contex
     
     return notification, nil
 }
- 

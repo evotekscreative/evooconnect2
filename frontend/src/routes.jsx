@@ -27,10 +27,10 @@ import VerifyEmail from "./pages/Auth/VerifyEmail.jsx";
 import ResetPassword from "./pages/Auth/ResetPassword.jsx";
 import IsGuest from "./components/Auth/IsGuest.jsx";
 import SinglePost from "./pages/SinglePost.jsx";
-import UserListConnection from "./pages/UserListConnection.jsx";
+import UserProfile from "./pages/userProfile.jsx";
 import UserPostPage from "./pages/UserPostPage.jsx";
-import UserProfile from "./pages/UserProfile.jsx";
 import MemberList from "./pages/MemberList.jsx";
+import UserListConnection from "./pages/UserListConnection.jsx";
 // Admin
 import LoginAdmin from "./pages/Admin/AuthAdmin/LoginAdmin.jsx";
 import Dashboard from "./pages/Admin/Admin1/Dashboard.jsx";
@@ -59,9 +59,19 @@ const router = createBrowserRouter([
         <Login />
       </IsGuest>
     ),
+    element: (
+      <IsGuest>
+        <Login />
+      </IsGuest>
+    ),
   },
   {
     path: "/register",
+    element: (
+      <IsGuest>
+        <Register />
+      </IsGuest>
+    ),
     element: (
       <IsGuest>
         <Register />
@@ -190,7 +200,23 @@ const router = createBrowserRouter([
     ),
   },
   {
+    path: "/list-connection/:username",
+    element: (
+      <ProtectedRoute>
+        <UserListConnection />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: "/messages",
+    element: (
+      <ProtectedRoute>
+        <Messages />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/messages/:conversationId",
     element: (
       <ProtectedRoute>
         <Messages />
@@ -268,9 +294,27 @@ const router = createBrowserRouter([
         <UserPostPage />
       </ProtectedRoute>
     ),
+    element: (
+      <ProtectedRoute>
+        <PostPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/post-page/:username",
+    element:(
+      <ProtectedRoute>
+        <UserPostPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/verify-email",
+    element: (
+      <ProtectedRoute>
+        <VerifyEmail />
+      </ProtectedRoute>
+    ),
     element: (
       <ProtectedRoute>
         <VerifyEmail />
@@ -299,10 +343,45 @@ const router = createBrowserRouter([
   },
   {
     path: "/search",
-    element: (
-        <ResetPassword />
-    )
+    element: <ResetPassword />,
   },
+  {
+    path: "/user-profile/:username",
+    element: (
+      <ProtectedRoute>
+        <UserProfile />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/groups/:groupId/members",
+    element: (
+      <ProtectedRoute>
+        <MemberList />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/search",
+    element: (
+      <ProtectedRoute>
+        <SearchResults />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/post/:postId",
+    element: <SinglePost />,
+  },
+
+  {
+  path: "/create-company",
+  element: (
+    <ProtectedRoute>
+      <CreateCompany />
+    </ProtectedRoute>
+  ),
+},
 {
   path : "/post/:postId",
    element : <SinglePost />
