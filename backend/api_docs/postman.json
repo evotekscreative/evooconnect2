@@ -7136,6 +7136,334 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Company Management",
+      "description": "Endpoints for viewing and managing user's own companies",
+      "item": [
+        {
+          "name": "Get My Companies",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/my-companies",
+              "host": ["{{base_url}}"],
+              "path": ["api", "my-companies"]
+            },
+            "description": "Get all companies owned by the current user with management information including pending edit requests"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/my-companies",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "my-companies"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": [\n        {\n            \"id\": \"company-uuid-here\",\n            \"name\": \"Tech Innovators Inc\",\n            \"linkedin_url\": \"tech-innovators\",\n            \"website\": \"https://techinnovators.com\",\n            \"industry\": \"Information Technology\",\n            \"size\": \"51-200 employees\",\n            \"type\": \"Privately Held\",\n            \"logo\": \"company-logos/user-id/logo.jpg\",\n            \"tagline\": \"Innovating for a better tomorrow\",\n            \"is_verified\": true,\n            \"created_at\": \"2023-10-15T10:30:00Z\",\n            \"updated_at\": \"2023-10-16T09:00:00Z\",\n            \"has_pending_edit\": true,\n            \"pending_edit_id\": \"edit-request-uuid\"\n        },\n        {\n            \"id\": \"company-uuid-2\",\n            \"name\": \"Digital Solutions Ltd\",\n            \"linkedin_url\": \"digital-solutions\",\n            \"website\": \"https://digitalsolutions.com\",\n            \"industry\": \"Software Development\",\n            \"size\": \"11-50 employees\",\n            \"type\": \"Private Company\",\n            \"logo\": \"company-logos/user-id/logo2.jpg\",\n            \"tagline\": \"Your digital transformation partner\",\n            \"is_verified\": true,\n            \"created_at\": \"2023-09-20T14:20:00Z\",\n            \"updated_at\": \"2023-09-20T14:20:00Z\",\n            \"has_pending_edit\": false,\n            \"pending_edit_id\": \"\"\n        }\n    ]\n}"
+            },
+            {
+              "name": "No Companies Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/my-companies",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "my-companies"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Company Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/companies/{{company_id}}/details",
+              "host": ["{{base_url}}"],
+              "path": ["api", "companies", "{{company_id}}", "details"]
+            },
+            "description": "Get detailed information about a specific company including edit requests history"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/companies/company-uuid-here/details",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "companies", "company-uuid-here", "details"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"company-uuid-here\",\n        \"name\": \"Tech Innovators Inc\",\n        \"linkedin_url\": \"tech-innovators\",\n        \"website\": \"https://techinnovators.com\",\n        \"industry\": \"Information Technology\",\n        \"size\": \"51-200 employees\",\n        \"type\": \"Privately Held\",\n        \"logo\": \"company-logos/user-id/logo.jpg\",\n        \"tagline\": \"Innovating for a better tomorrow\",\n        \"is_verified\": true,\n        \"created_at\": \"2023-10-15T10:30:00Z\",\n        \"updated_at\": \"2023-10-16T09:00:00Z\",\n        \"has_pending_edit\": true,\n        \"pending_edit_id\": \"edit-request-uuid\",\n        \"edit_requests\": [\n            {\n                \"id\": \"edit-request-uuid\",\n                \"company_id\": \"company-uuid-here\",\n                \"user_id\": \"user-uuid\",\n                \"status\": \"pending\",\n                \"requested_changes\": {\n                    \"name\": \"Tech Innovators Inc\",\n                    \"linkedin_url\": \"tech-innovators-updated\",\n                    \"website\": \"https://techinnovators.com\",\n                    \"industry\": \"Information Technology\",\n                    \"size\": \"201-500 employees\",\n                    \"type\": \"Privately Held\",\n                    \"logo\": \"company-logos/user-id/new-logo.jpg\",\n                    \"tagline\": \"Leading innovation for tomorrow's world\"\n                },\n                \"current_data\": {\n                    \"name\": \"Tech Innovators Inc\",\n                    \"linkedin_url\": \"tech-innovators\",\n                    \"website\": \"https://techinnovators.com\",\n                    \"industry\": \"Information Technology\",\n                    \"size\": \"51-200 employees\",\n                    \"type\": \"Privately Held\",\n                    \"logo\": \"company-logos/user-id/logo.jpg\",\n                    \"tagline\": \"Innovating for a better tomorrow\"\n                },\n                \"created_at\": \"2023-10-20T11:30:00Z\",\n                \"updated_at\": \"2023-10-20T11:30:00Z\"\n            }\n        ]\n    }\n}"
+            },
+            {
+              "name": "Company Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/companies/invalid-uuid/details",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "companies", "invalid-uuid", "details"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n    \"code\": 404,\n    \"status\": \"NOT FOUND\",\n    \"data\": \"Company not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Request Company Edit",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "data",
+                  "value": "{\n    \"name\": \"Tech Innovators Inc\",\n    \"linkedin_url\": \"tech-innovators-updated\",\n    \"website\": \"https://techinnovators.com\",\n    \"industry\": \"Information Technology\",\n    \"size\": \"201-500 employees\",\n    \"type\": \"Privately Held\",\n    \"tagline\": \"Leading innovation for tomorrow's world\"\n}",
+                  "type": "text",
+                  "description": "JSON data containing the requested changes"
+                },
+                {
+                  "key": "logo",
+                  "type": "file",
+                  "description": "New company logo (optional, JPG/JPEG/PNG, recommended 300x300px)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/companies/{{company_id}}/request-edit",
+              "host": ["{{base_url}}"],
+              "path": ["api", "companies", "{{company_id}}", "request-edit"]
+            },
+            "description": "Submit a request to edit company information. The request will be reviewed by admin before changes are applied."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "data",
+                      "value": "{\n    \"name\": \"Tech Innovators Inc\",\n    \"linkedin_url\": \"tech-innovators-updated\",\n    \"website\": \"https://techinnovators.com\",\n    \"industry\": \"Information Technology\",\n    \"size\": \"201-500 employees\",\n    \"type\": \"Privately Held\",\n    \"tagline\": \"Leading innovation for tomorrow's world\"\n}",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/companies/company-uuid-here/request-edit",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "companies",
+                    "company-uuid-here",
+                    "request-edit"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n    \"code\": 201,\n    \"status\": \"CREATED\",\n    \"data\": {\n        \"id\": \"edit-request-uuid\",\n        \"company_id\": \"company-uuid-here\",\n        \"user_id\": \"user-uuid\",\n        \"status\": \"pending\",\n        \"requested_changes\": {\n            \"name\": \"Tech Innovators Inc\",\n            \"linkedin_url\": \"tech-innovators-updated\",\n            \"website\": \"https://techinnovators.com\",\n            \"industry\": \"Information Technology\",\n            \"size\": \"201-500 employees\",\n            \"type\": \"Privately Held\",\n            \"logo\": \"company-logos/user-id/new-logo.jpg\",\n            \"tagline\": \"Leading innovation for tomorrow's world\"\n        },\n        \"current_data\": {\n            \"name\": \"Tech Innovators Inc\",\n            \"linkedin_url\": \"tech-innovators\",\n            \"website\": \"https://techinnovators.com\",\n            \"industry\": \"Information Technology\",\n            \"size\": \"51-200 employees\",\n            \"type\": \"Privately Held\",\n            \"logo\": \"company-logos/user-id/logo.jpg\",\n            \"tagline\": \"Innovating for a better tomorrow\"\n        },\n        \"created_at\": \"2023-10-20T11:30:00Z\",\n        \"updated_at\": \"2023-10-20T11:30:00Z\"\n    }\n}"
+            },
+            {
+              "name": "Already Has Pending Edit",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "data",
+                      "value": "{\n    \"name\": \"Tech Innovators Inc\",\n    \"linkedin_url\": \"tech-innovators-updated\",\n    \"website\": \"https://techinnovators.com\",\n    \"industry\": \"Information Technology\",\n    \"size\": \"201-500 employees\",\n    \"type\": \"Privately Held\",\n    \"tagline\": \"Leading innovation for tomorrow's world\"\n}",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/companies/company-uuid-here/request-edit",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "companies",
+                    "company-uuid-here",
+                    "request-edit"
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n    \"code\": 400,\n    \"status\": \"BAD REQUEST\",\n    \"data\": \"You already have a pending edit request for this company\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get My Edit Requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/my-company-edit-requests",
+              "host": ["{{base_url}}"],
+              "path": ["api", "my-company-edit-requests"]
+            },
+            "description": "Get all edit requests made by the current user across all their companies"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/my-company-edit-requests",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "my-company-edit-requests"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": [\n        {\n            \"id\": \"edit-request-uuid-1\",\n            \"company_id\": \"company-uuid-1\",\n            \"user_id\": \"user-uuid\",\n            \"status\": \"approved\",\n            \"requested_changes\": {\n                \"name\": \"Tech Innovators Inc\",\n                \"linkedin_url\": \"tech-innovators-updated\",\n                \"website\": \"https://techinnovators.com\",\n                \"industry\": \"Information Technology\",\n                \"size\": \"201-500 employees\",\n                \"type\": \"Privately Held\",\n                \"logo\": \"company-logos/user-id/new-logo.jpg\",\n                \"tagline\": \"Leading innovation for tomorrow's world\"\n            },\n            \"current_data\": {\n                \"name\": \"Tech Innovators Inc\",\n                \"linkedin_url\": \"tech-innovators\",\n                \"website\": \"https://techinnovators.com\",\n                \"industry\": \"Information Technology\",\n                \"size\": \"51-200 employees\",\n                \"type\": \"Privately Held\",\n                \"logo\": \"company-logos/user-id/logo.jpg\",\n                \"tagline\": \"Innovating for a better tomorrow\"\n            },\n            \"reviewed_by\": \"admin-uuid\",\n            \"reviewed_at\": \"2023-10-21T09:15:00Z\",\n            \"created_at\": \"2023-10-20T11:30:00Z\",\n            \"updated_at\": \"2023-10-21T09:15:00Z\",\n            \"company\": {\n                \"name\": \"Tech Innovators Inc\"\n            }\n        },\n        {\n            \"id\": \"edit-request-uuid-2\",\n            \"company_id\": \"company-uuid-2\",\n            \"user_id\": \"user-uuid\",\n            \"status\": \"rejected\",\n            \"requested_changes\": {\n                \"name\": \"Digital Solutions Ltd\",\n                \"linkedin_url\": \"digital-solutions-updated\",\n                \"website\": \"https://digitalsolutions.com\",\n                \"industry\": \"Software Development\",\n                \"size\": \"51-200 employees\",\n                \"type\": \"Private Company\",\n                \"logo\": \"company-logos/user-id/logo2.jpg\",\n                \"tagline\": \"Your complete digital transformation partner\"\n            },\n            \"current_data\": {\n                \"name\": \"Digital Solutions Ltd\",\n                \"linkedin_url\": \"digital-solutions\",\n                \"website\": \"https://digitalsolutions.com\",\n                \"industry\": \"Software Development\",\n                \"size\": \"11-50 employees\",\n                \"type\": \"Private Company\",\n                \"logo\": \"company-logos/user-id/logo2.jpg\",\n                \"tagline\": \"Your digital transformation partner\"\n            },\n            \"rejection_reason\": \"The requested changes to company size require additional verification documents.\",\n            \"reviewed_by\": \"admin-uuid\",\n            \"reviewed_at\": \"2023-10-19T16:45:00Z\",\n            \"created_at\": \"2023-10-18T14:20:00Z\",\n            \"updated_at\": \"2023-10-19T16:45:00Z\",\n            \"company\": {\n                \"name\": \"Digital Solutions Ltd\"\n            }\n        }\n    ]\n}"
+            },
+            {
+              "name": "No Edit Requests",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/my-company-edit-requests",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "my-company-edit-requests"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": []\n}"
+            }
+          ]
+        }
+      ]
     }
   ],
   "variable": [
@@ -7194,6 +7522,11 @@
     {
       "key": "submissionId",
       "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    },
+    {
+      "key": "company_id",
+      "value": "company-uuid-here",
+      "type": "string"
     }
   ]
 }

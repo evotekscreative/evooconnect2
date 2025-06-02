@@ -28,6 +28,8 @@ func NewRouter(
 	searchController controller.SearchController,
 	adminAuthController controller.AdminAuthController,
 	companySubmissionController controller.CompanySubmissionController,
+	companyManagementController controller.CompanyManagementController,
+	adminCompanyEditController controller.AdminCompanyEditController,
 ) *httprouter.Router {
 	router := httprouter.New()
 
@@ -50,6 +52,7 @@ func NewRouter(
 		notificationController,
 		searchController,
 		companySubmissionController,
+		companyManagementController,
 	)
 
 	// Setup admin routes
@@ -57,6 +60,7 @@ func NewRouter(
 		router,
 		adminAuthController,
 		companySubmissionController,
+		adminCompanyEditController,
 	)
 
 	// Static file servers

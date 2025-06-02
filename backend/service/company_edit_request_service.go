@@ -1,0 +1,23 @@
+package service
+
+import (
+	"context"
+	"evoconnect/backend/model/web"
+	"github.com/google/uuid"
+	"mime/multipart"
+)
+
+type CompanyManagementService interface {
+	// User Company Management
+	GetMyCompanies(ctx context.Context, userId uuid.UUID) []web.CompanyManagementResponse
+	GetCompanyDetail(ctx context.Context, companyId uuid.UUID, userId uuid.UUID) web.CompanyManagementResponse
+	RequestEdit(ctx context.Context, companyId uuid.UUID, userId uuid.UUID, request web.CreateCompanyEditRequestRequest, logoFile *multipart.FileHeader) web.CompanyEditRequestResponse
+	GetMyEditRequests(ctx context.Context, userId uuid.UUID) []web.CompanyEditRequestResponse
+
+	// Admin Management
+	GetAllEditRequests(ctx context.Context, limit, offset int) []web.CompanyEditRequestResponse
+	GetEditRequestsByStatus(ctx context.Context, status string, limit, offset int) []web.CompanyEditRequestResponse
+	GetEditRequestDetail(ctx context.Context, requestId uuid.UUID) web.CompanyEditRequestResponse
+	ReviewEditRequest(ctx context.Context, requestId uuid.UUID, reviewerId uuid.UUID, request web.ReviewCompanyEditRequestRequest) web.CompanyEditRequestResponse
+	GetEditRequestStats(ctx context.Context) map[string]int
+}

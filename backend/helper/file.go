@@ -29,6 +29,7 @@ const (
 	DirExperience = "experience"
 	DirEducation  = "education"
 	DirBlogs      = "blogs"
+	DirCompanies  = "companies"
 )
 
 // FileUploadOptions provides configuration options for file uploads

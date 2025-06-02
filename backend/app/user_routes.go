@@ -2,7 +2,6 @@ package app
 
 import (
 	"evoconnect/backend/controller"
-	// "evoconnect/backend/helper"
 	"evoconnect/backend/middleware"
 
 	"github.com/julienschmidt/httprouter"
@@ -26,9 +25,8 @@ func setupUserRoutes(
 	notificationController controller.NotificationController,
 	searchController controller.SearchController,
 	companySubmissionController controller.CompanySubmissionController,
+	companyManagementController controller.CompanyManagementController,
 ) {
-	// jwtSecret := helper.GetEnv("JWT_SECRET_KEY", "your-secret-key")
-
 	// Create user middleware
 	userAuth := middleware.NewUserAuthMiddleware()
 
@@ -174,4 +172,11 @@ func setupUserRoutes(
 	router.POST("/api/company/submissions", userAuth(companySubmissionController.Create))
 	router.GET("/api/company/submissions/my", userAuth(companySubmissionController.FindByUserId))
 	router.GET("/api/company/submission/:submissionId", userAuth(companySubmissionController.FindById))
+
+	// Company Management Routes - using different route structure to avoid conflicts
+	// All specific routes first, then wildcard routes
+	router.GET("/api/my-companies", userAuth(companyManagementController.GetMyCompanies))
+	router.GET("/api/my-company-edit-requests", userAuth(companyManagementController.GetMyEditRequests))
+	router.GET("/api/companies/:companyId/details", userAuth(companyManagementController.GetCompanyDetail))
+	router.POST("/api/companies/:companyId/request-edit", userAuth(companyManagementController.RequestEdit))
 }
