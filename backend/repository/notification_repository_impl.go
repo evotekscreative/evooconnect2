@@ -465,38 +465,4 @@ func (repository *NotificationRepositoryImpl) FindSimilarNotification(ctx contex
     return notification, nil
 }
 
-func (repository *NotificationRepositoryImpl) DeleteSelected(ctx context.Context, tx *sql.Tx, userId uuid.UUID, notificationIds []uuid.UUID) (int64, error) {
-    if len(notificationIds) == 0 {
-        return 0, nil
-    }
-    
-    // Buat placeholder untuk query IN
-    placeholders := make([]string, len(notificationIds))
-    args := make([]interface{}, len(notificationIds)+1)
-    args[0] = userId
-    
-    for i, id := range notificationIds {
-        placeholders[i] = fmt.Sprintf("$%d", i+2)
-        args[i+1] = id
-    }
-    
-    // Buat query dengan placeholder
-    query := fmt.Sprintf(
-        "DELETE FROM notifications WHERE user_id = $1 AND id IN (%s)",
-        strings.Join(placeholders, ","),
-    )
-    
-    // Eksekusi query
-    result, err := tx.ExecContext(ctx, query, args...)
-    if err != nil {
-        return 0, err
-    }
-    
-    // Dapatkan jumlah baris yang dihapus
-    rowsAffected, err := result.RowsAffected()
-    if err != nil {
-        return 0, err
-    }
-    
-    return rowsAffected, nil
-}
+
