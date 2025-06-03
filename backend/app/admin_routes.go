@@ -18,7 +18,7 @@ func setupAdminRoutes(
 
 	// Public admin auth routes (no middleware needed)
 	router.POST("/api/admin/auth/login", adminAuthController.Login)
-	router.POST("/api/admin/auth/register", adminAuthController.Register)
+	// router.POST("/api/admin/auth/register", adminAuthController.Register)
 
 	// Protected admin routes (require admin authentication)
 	// Company submission management routes - IMPORTANT: More specific routes first!
