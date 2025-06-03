@@ -34,7 +34,7 @@ const ProtectedAdminRoute = ({ redirectPath = '/login-admin' }) => {
   }, []);
 
   if (isAuthorized === null) {
-    return <div className="text-center py-20 text-gray-500">Checking access...</div>; // loading
+    return <div className="py-20 text-center text-gray-500">Checking access...</div>; // loading
   }
 
   if (isAuthorized === false) {
