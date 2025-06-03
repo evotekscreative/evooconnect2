@@ -66,38 +66,13 @@ func NewRouter(
 	// Static file servers
 	setupStaticRoutes(router)
 
-	// Chat routes
-	router.POST("/api/conversations", chatController.CreateConversation)
-	router.GET("/api/conversations", chatController.GetConversations)
-	router.GET("/api/conversations/:conversationId", chatController.GetConversation)
-	router.PUT("/api/conversations/:conversationId/read", chatController.MarkConversationAsRead)
+	// Setup error handlers
+	setupErrorHandlers(router)
 
-	router.POST("/api/conversations/:conversationId/messages", chatController.SendMessage)
-	router.POST("/api/conversations/:conversationId/files", chatController.SendFileMessage)
-	router.GET("/api/conversations/:conversationId/messages", chatController.GetMessages)
-	router.PUT("/api/messages/:messageId", chatController.UpdateMessage)
-	router.DELETE("/api/messages/:messageId", chatController.DeleteMessage)
+	return router
+}
 
-	// Pusher authentication endpoint
-	router.POST("/api/pusher/auth", chatController.AuthPusher)
-
-	router.GET("/api/user/profile/views/this-week", profileViewController.GetViewsThisWeek)
-	router.GET("/api/user/profile/views/last-week", profileViewController.GetViewsLastWeek)
-
-	// notifikasi
-	router.GET("/api/notifications", notificationController.GetNotifications)
-	router.POST("/api/notifications/mark-read", notificationController.MarkAsRead)
-	router.POST("/api/notifications/mark-all-read", notificationController.MarkAllAsRead)
-	router.DELETE("/api/notifications", notificationController.DeleteNotifications)
-	router.DELETE("/api/notifications/selected", notificationController.DeleteSelectedNotifications)
-
-	// search
-	router.GET("/api/search", searchController.Search)
-
-	// Admin auth routes
-	router.POST("/api/admin/auth/login", adminAuthController.Login)
-	router.POST("/api/admin/auth/register", adminAuthController.Register)
-
+func setupStaticRoutes(router *httprouter.Router) {
 	uploadFS := http.FileServer(http.Dir("uploads"))
 	publicFS := http.FileServer(http.Dir("public"))
 
