@@ -12,7 +12,7 @@ export default function CompanyCards() {
     const fetchCompanies = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await axios.get(`${apiUrl}/api/companies`, {
+        const response = await axios.get(`${apiUrl}/api/my-companies`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setCompanies(response.data.data || []);
@@ -47,7 +47,7 @@ export default function CompanyCards() {
               <div className="relative bg-gray-100 rounded-2xl p-6 pt-16 w-80 text-center shadow-md hover:shadow-lg cursor-pointer">
                 <div className="absolute -top-12 left-1/2 transform -translate-x-1/2">
                   <img
-                    src={company.logo || "https://via.placeholder.com/100"}
+                    src={'http://localhost:3000/' + company.logo || "https://via.placeholder.com/100"}
                     alt="Company"
                     className="w-24 h-24 rounded-full border-4 border-white shadow"
                   />

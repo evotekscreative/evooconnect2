@@ -61,12 +61,13 @@ export default function CreateCompany() {
 
         const existingSubmissions = await checkRes.json();
         if (Array.isArray(existingSubmissions) && existingSubmissions.length > 0) {
-            const pending = existingSubmissions.find(
-                (sub) => sub.status === "PENDING"
+            // Cek submission yang masih dalam proses (PENDING atau IN_REVIEW)
+            const inProgressSubmission = existingSubmissions.find(
+                (sub) => sub.status === "PENDING" || sub.status === "IN_REVIEW"
             );
 
-            if (pending) {
-                toast.error("You already have a pending company submission.");
+            if (inProgressSubmission) {
+                toast.error("You have an existing submission that is still being processed. Please wait for admin approval.");
                 return;
             }
         }
