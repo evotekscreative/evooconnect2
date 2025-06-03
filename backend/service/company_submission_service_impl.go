@@ -292,3 +292,44 @@ func (service *CompanySubmissionServiceImpl) GetSubmissionStats(ctx context.Cont
 
 	return stats
 }
+
+func (service *CompanySubmissionServiceImpl) Delete(ctx context.Context, submissionId, userId uuid.UUID) error {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Find submission
+	submission, err := service.CompanySubmissionRepository.FindById(ctx, tx, submissionId)
+	if err != nil {
+		panic(exception.NewNotFoundError("Company submission not found"))
+	}
+
+	// Check if user is the owner
+	if submission.UserId != userId {
+		panic(exception.NewForbiddenError("You are not allowed to delete this submission"))
+	}
+
+	// check status
+	if submission.Status != domain.CompanySubmissionStatusPending {
+		panic(exception.NewBadRequestError("Only pending submissions can be deleted"))
+	}
+
+	companyLogo := submission.Logo
+
+	err = service.CompanySubmissionRepository.Delete(ctx, tx, submissionId)
+	if err != nil {
+		panic(exception.NewInternalServerError("Failed to delete company submission"))
+	}
+
+	// Delete logo file if it exists
+	if companyLogo != "" {
+		err = helper.DeleteFile(companyLogo)
+		if err != nil {
+			log.Printf("Failed to delete logo file: %v", err)
+			panic(exception.NewInternalServerError("Failed to delete logo file"))
+		}
+		log.Printf("Logo file deleted successfully: %s", companyLogo)
+	}
+
+	return nil
+}

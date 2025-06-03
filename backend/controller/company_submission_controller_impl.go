@@ -268,3 +268,37 @@ func (controller *CompanySubmissionControllerImpl) GetStats(writer http.Response
 
 	helper.WriteToResponseBody(writer, webResponse)
 }
+
+func (controller *CompanySubmissionControllerImpl) Delete(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	submissionId, err := uuid.Parse(params.ByName("submissionId"))
+	if err != nil {
+		helper.WriteToResponseBody(writer, web.WebResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD_REQUEST",
+			Data:   "Invalid submission ID",
+		})
+		return
+	}
+
+	// Get user ID from context (set by auth middleware)
+	userIdStr := request.Context().Value("user_id").(string)
+	userId, err := uuid.Parse(userIdStr)
+	if err != nil {
+		helper.WriteToResponseBody(writer, web.WebResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD_REQUEST",
+			Data:   "Invalid user ID",
+		})
+		return
+	}
+
+	controller.CompanySubmissionService.Delete(request.Context(), submissionId, userId)
+
+	webResponse := web.WebResponse{
+		Code:   http.StatusNoContent,
+		Status: "NO_CONTENT",
+		Data:   nil,
+	}
+
+	helper.WriteToResponseBody(writer, webResponse)
+}

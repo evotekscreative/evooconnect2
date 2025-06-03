@@ -344,3 +344,14 @@ func (repository *CompanySubmissionRepositoryImpl) HasPendingSubmission(ctx cont
 
 	return count > 0
 }
+
+func (repository *CompanySubmissionRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx, submissionId uuid.UUID) error {
+	SQL := `DELETE FROM company_submissions WHERE id = $1`
+
+	_, err := tx.ExecContext(ctx, SQL, submissionId)
+	if err != nil {
+		return fmt.Errorf("failed to delete company submission: %w", err)
+	}
+
+	return nil
+}

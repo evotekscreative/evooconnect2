@@ -17,4 +17,5 @@ type CompanyEditRequestRepository interface {
 	FindAll(ctx context.Context, tx *sql.Tx, limit, offset int) []domain.CompanyEditRequest
 	HasPendingEdit(ctx context.Context, tx *sql.Tx, companyId uuid.UUID) bool
 	GetStatsByStatus(ctx context.Context, tx *sql.Tx) map[string]int
+	Delete(ctx context.Context, tx *sql.Tx, editRequestId uuid.UUID) error
 }

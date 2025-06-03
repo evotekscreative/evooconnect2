@@ -157,3 +157,81 @@ func (controller *CompanyManagementControllerImpl) GetMyEditRequests(writer http
 		Data:   editRequests,
 	})
 }
+
+func (controller *CompanyManagementControllerImpl) DeleteCompany(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	companyIdStr := params.ByName("companyId")
+	companyId, err := uuid.Parse(companyIdStr)
+	if err != nil {
+		helper.WriteJSON(writer, http.StatusBadRequest, web.APIResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD_REQUEST",
+			Error:  "Invalid request ID",
+		})
+		return
+	}
+
+	userIdStr := request.Context().Value("user_id").(string)
+	userId, err := uuid.Parse(userIdStr)
+	if err != nil {
+		helper.WriteJSON(writer, http.StatusBadRequest, web.APIResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD_REQUEST",
+			Error:  "Invalid user ID",
+		})
+		return
+	}
+
+	err = controller.CompanyManagementService.DeleteCompany(request.Context(), companyId, userId)
+	if err != nil {
+		helper.WriteJSON(writer, http.StatusInternalServerError, web.APIResponse{
+			Code:   http.StatusInternalServerError,
+			Status: "INTERNAL_SERVER_ERROR",
+			Error:  err.Error(),
+		})
+		return
+	}
+
+	helper.WriteJSON(writer, http.StatusNoContent, web.APIResponse{
+		Code:   http.StatusNoContent,
+		Status: "NO_CONTENT",
+	})
+}
+
+func (controller *CompanyManagementControllerImpl) DeleteCompanyEditRequest(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	requestIdStr := params.ByName("requestId")
+	requestId, err := uuid.Parse(requestIdStr)
+	if err != nil {
+		helper.WriteJSON(writer, http.StatusBadRequest, web.APIResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD_REQUEST",
+			Error:  "Invalid request ID",
+		})
+		return
+	}
+
+	userIdStr := request.Context().Value("user_id").(string)
+	userId, err := uuid.Parse(userIdStr)
+	if err != nil {
+		helper.WriteJSON(writer, http.StatusBadRequest, web.APIResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD_REQUEST",
+			Error:  "Invalid user ID",
+		})
+		return
+	}
+
+	err = controller.CompanyManagementService.DeleteCompanyEditRequest(request.Context(), requestId, userId)
+	if err != nil {
+		helper.WriteJSON(writer, http.StatusInternalServerError, web.APIResponse{
+			Code:   http.StatusInternalServerError,
+			Status: "INTERNAL_SERVER_ERROR",
+			Error:  err.Error(),
+		})
+		return
+	}
+
+	helper.WriteJSON(writer, http.StatusNoContent, web.APIResponse{
+		Code:   http.StatusNoContent,
+		Status: "NO_CONTENT",
+	})
+}

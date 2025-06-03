@@ -16,4 +16,5 @@ type CompanySubmissionService interface {
 	FindByStatus(ctx context.Context, status string, limit, offset int) []web.CompanySubmissionResponse
 	Review(ctx context.Context, submissionId uuid.UUID, reviewerId uuid.UUID, request web.ReviewCompanySubmissionRequest) web.CompanySubmissionResponse
 	GetSubmissionStats(ctx context.Context) map[string]int
+	Delete(ctx context.Context, submissionId, userId uuid.UUID) error
 }

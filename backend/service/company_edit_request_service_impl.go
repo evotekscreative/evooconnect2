@@ -10,6 +10,7 @@ import (
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
 	"fmt"
+	"log"
 	"mime/multipart"
 	"time"
 
@@ -259,6 +260,93 @@ func (service *CompanyManagementServiceImpl) GetMyEditRequests(ctx context.Conte
 	}
 
 	return responses
+}
+
+func (service *CompanyManagementServiceImpl) DeleteCompany(ctx context.Context, requestId uuid.UUID, userId uuid.UUID) error {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Find edit request
+	company, err := service.CompanyRepository.FindById(ctx, tx, requestId)
+	if err != nil {
+		panic(exception.NewNotFoundError("Company not found"))
+	}
+
+	// Check if user is the owner
+	if company.OwnerId != userId {
+		panic(exception.NewForbiddenError("You don't have permission to delete this company"))
+	}
+
+	// Check if there are pending edit requests
+	hasPendingEdit := service.CompanyEditRequestRepository.HasPendingEdit(ctx, tx, company.Id)
+	if hasPendingEdit {
+		panic(exception.NewBadRequestError("You cannot delete a company with pending edit requests"))
+	}
+
+	// Get the logo file path
+	companyLogo := company.Logo
+
+	// Delete the company
+	err = service.CompanyRepository.Delete(ctx, tx, company.Id)
+	if err != nil {
+		panic(exception.NewInternalServerError("Failed to delete company"))
+	}
+
+	if companyLogo != "" {
+		err = helper.DeleteFile(companyLogo)
+		if err != nil {
+			log.Printf("Failed to delete logo file: %v", err)
+			panic(exception.NewInternalServerError("Failed to delete logo file"))
+		}
+		log.Printf("Logo file deleted successfully: %s", companyLogo)
+	}
+
+	return nil
+}
+
+func (service *CompanyManagementServiceImpl) DeleteCompanyEditRequest(ctx context.Context, requestId uuid.UUID, userId uuid.UUID) error {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Find edit request
+	editRequest, err := service.CompanyEditRequestRepository.FindById(ctx, tx, requestId)
+	if err != nil {
+		panic(exception.NewNotFoundError("Company edit request not found"))
+	}
+	// Check if user is the owner of the request
+	if editRequest.UserId != userId {
+		panic(exception.NewForbiddenError("You don't have permission to delete this edit request"))
+	}
+	// Check if the request is already reviewed
+	if editRequest.Status != domain.CompanyEditRequestStatusPending {
+		panic(exception.NewBadRequestError("You cannot delete a company edit request that has already been reviewed"))
+	}
+
+	// Unmarshal the requested changes JSON string into CompanyEditData struct
+	var requestedData web.CompanyEditData
+	err = json.Unmarshal([]byte(editRequest.RequestedChanges), &requestedData)
+	helper.PanicIfError(err)
+
+	companyLogo := requestedData.Logo
+
+	// Delete the edit request
+	err = service.CompanyEditRequestRepository.Delete(ctx, tx, requestId)
+	if err != nil {
+		panic(exception.NewInternalServerError("Failed to delete company edit request"))
+	}
+
+	if companyLogo != "" {
+		err = helper.DeleteFile(companyLogo)
+		if err != nil {
+			log.Printf("Failed to delete logo file: %v", err)
+			panic(exception.NewInternalServerError("Failed to delete logo file"))
+		}
+		log.Printf("Logo file deleted successfully: %s", companyLogo)
+	}
+
+	return nil
 }
 
 func (service *CompanyManagementServiceImpl) GetAllEditRequests(ctx context.Context, limit, offset int) []web.CompanyEditRequestResponse {

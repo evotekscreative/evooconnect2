@@ -13,6 +13,8 @@ type CompanyManagementService interface {
 	GetCompanyDetail(ctx context.Context, companyId uuid.UUID, userId uuid.UUID) web.CompanyManagementResponse
 	RequestEdit(ctx context.Context, companyId uuid.UUID, userId uuid.UUID, request web.CreateCompanyEditRequestRequest, logoFile *multipart.FileHeader) web.CompanyEditRequestResponse
 	GetMyEditRequests(ctx context.Context, userId uuid.UUID) []web.CompanyEditRequestResponse
+	DeleteCompany(ctx context.Context, requestId, userId uuid.UUID) error
+	DeleteCompanyEditRequest(ctx context.Context, requestId, userId uuid.UUID) error
 
 	// Admin Management
 	GetAllEditRequests(ctx context.Context, limit, offset int) []web.CompanyEditRequestResponse
