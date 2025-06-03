@@ -172,11 +172,14 @@ func setupUserRoutes(
 	router.POST("/api/company/submissions", userAuth(companySubmissionController.Create))
 	router.GET("/api/company/submissions/my", userAuth(companySubmissionController.FindByUserId))
 	router.GET("/api/company/submission/:submissionId", userAuth(companySubmissionController.FindById))
+	router.DELETE("/api/company/submission/:submissionId", userAuth(companySubmissionController.Delete))
 
 	// Company Management Routes - using different route structure to avoid conflicts
 	// All specific routes first, then wildcard routes
 	router.GET("/api/my-companies", userAuth(companyManagementController.GetMyCompanies))
+	router.DELETE("/api/companies/:companyId", userAuth(companyManagementController.DeleteCompany))
 	router.GET("/api/my-company-edit-requests", userAuth(companyManagementController.GetMyEditRequests))
 	router.GET("/api/companies/:companyId/details", userAuth(companyManagementController.GetCompanyDetail))
 	router.POST("/api/companies/:companyId/request-edit", userAuth(companyManagementController.RequestEdit))
+	router.DELETE("/api/companies/:companyId/request-edit", userAuth(companyManagementController.DeleteCompanyEditRequest))
 }

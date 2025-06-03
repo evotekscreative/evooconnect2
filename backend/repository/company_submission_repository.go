@@ -16,4 +16,5 @@ type CompanySubmissionRepository interface {
 	Update(ctx context.Context, tx *sql.Tx, submission domain.CompanySubmission) domain.CompanySubmission
 	CountByStatus(ctx context.Context, tx *sql.Tx, status domain.CompanySubmissionStatus) int
 	HasPendingSubmission(ctx context.Context, tx *sql.Tx, userId uuid.UUID) bool
+	Delete(ctx context.Context, tx *sql.Tx, submissionId uuid.UUID) error
 }

@@ -3,9 +3,11 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"evoconnect/backend/exception"
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/domain"
 	"fmt"
+
 	"github.com/google/uuid"
 )
 
@@ -42,11 +44,15 @@ func (repository *CompanyRepositoryImpl) Update(ctx context.Context, tx *sql.Tx,
 	return company
 }
 
-func (repository *CompanyRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx, companyId uuid.UUID) {
+func (repository *CompanyRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx, companyId uuid.UUID) error {
 	SQL := `DELETE FROM companies WHERE id = $1`
 
 	_, err := tx.ExecContext(ctx, SQL, companyId)
-	helper.PanicIfError(err)
+	if err != nil {
+		panic(exception.NewInternalServerError("Failed to delete company"))
+	}
+
+	return nil
 }
 
 func (repository *CompanyRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, companyId uuid.UUID) (domain.Company, error) {

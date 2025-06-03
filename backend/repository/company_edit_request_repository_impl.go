@@ -398,3 +398,14 @@ func (repository *CompanyEditRequestRepositoryImpl) GetStatsByStatus(ctx context
 
 	return stats
 }
+
+func (repository *CompanyEditRequestRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx, editRequestId uuid.UUID) error {
+	SQL := `DELETE FROM company_edit_requests WHERE id = $1`
+
+	_, err := tx.ExecContext(ctx, SQL, editRequestId)
+	if err != nil {
+		return fmt.Errorf("failed to delete company edit request: %w", err)
+	}
+
+	return nil
+}
