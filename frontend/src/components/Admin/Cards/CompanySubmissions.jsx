@@ -15,6 +15,7 @@ const CompanySubmissions = ({ color = "light" }) => {
   const [rejectionModalOpen, setRejectionModalOpen] = useState(false);
   const [currentSubmissionId, setCurrentSubmissionId] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const rowsPerPage = 10;
 
   const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
@@ -33,15 +34,20 @@ const CompanySubmissions = ({ color = "light" }) => {
         return;
       }
 
-      const response = await fetch(
-        `${apiUrl}/api/admin/company-submissions?limit=${rowsPerPage}&offset=${(currentPage - 1) * rowsPerPage}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+      // URL endpoint berdasarkan filter status
+      let url = `${apiUrl}/api/admin/company-submissions?limit=${rowsPerPage}&offset=${(currentPage - 1) * rowsPerPage}`;
+
+      // Jika status filter bukan 'all', gunakan endpoint status
+      if (statusFilter !== 'all') {
+        url = `${apiUrl}/api/admin/company-submissions/status/${statusFilter}?limit=${rowsPerPage}&offset=${(currentPage - 1) * rowsPerPage}`;
+      }
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-      );
+      });
 
       if (!response.ok) {
         throw new Error(`Failed to fetch submissions: ${response.status} ${response.statusText}`);
@@ -62,6 +68,21 @@ const CompanySubmissions = ({ color = "light" }) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+
+    fetchSubmissions();
+  }, [currentPage, statusFilter]);
+
+  const handleStatusFilterChange = (status) => {
+    setStatusFilter(status);
+    setCurrentPage(1);
   };
 
   const handlePageChange = (page) => {
@@ -186,6 +207,21 @@ const CompanySubmissions = ({ color = "light" }) => {
             Company Submissions ({totalCount})
           </h3>
           <div className="flex flex-col sm:flex-row gap-3">
+            {/* Status Filter */}
+            <div className="flex items-center space-x-2">
+              <select
+                value={statusFilter}
+                onChange={(e) => handleStatusFilterChange(e.target.value)}
+                className="px-3 py-2 border border-gray-900 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+
+            {/* Search Box */}
             <div className="relative flex-grow">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-5 w-5 text-gray-400" />
@@ -198,6 +234,8 @@ const CompanySubmissions = ({ color = "light" }) => {
                 onChange={handleSearchChange}
               />
             </div>
+
+            {/* Refresh Button */}
             <button
               onClick={handleRefresh}
               className="flex items-center justify-center p-2.5 border border-gray-900 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
