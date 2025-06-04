@@ -8,6 +8,7 @@ import (
 	"evoconnect/backend/repository"
 	"fmt"
 	"github.com/google/uuid"
+	"evoconnect/backend/model/domain"
 )
 
 type SearchServiceImpl struct {
@@ -254,8 +255,49 @@ func (service *SearchServiceImpl) searchGroups(ctx context.Context, query string
 	defer helper.CommitOrRollback(tx)
 
 	fmt.Printf("Searching groups with query: '%s'\n", query)
-	groups := service.GroupRepository.Search(ctx, tx, query, limit, offset)
-	fmt.Printf("Group repository returned %d groups\n", len(groups))
+	
+	// Ubah ini untuk menggunakan SQL yang menampilkan semua grup
+	SQL := `SELECT id, name, description, rule, creator_id, image, privacy_level, invite_policy, created_at, updated_at
+            FROM groups
+            WHERE (LOWER(name) LIKE LOWER($1) OR LOWER(description) LIKE LOWER($1))
+            ORDER BY name
+            LIMIT $2 OFFSET $3`
+
+	searchPattern := "%" + query + "%"
+	fmt.Printf("Executing direct group search SQL with pattern: %s\n", searchPattern)
+
+	rows, err := tx.QueryContext(ctx, SQL, searchPattern, limit, offset)
+	if err != nil {
+		fmt.Printf("Error executing group search: %v\n", err)
+		return []web.GroupSearchResult{}
+	}
+	defer rows.Close()
+
+	var groups []domain.Group
+	for rows.Next() {
+		group := domain.Group{}
+		var imagePtr *string
+		err := rows.Scan(
+			&group.Id,
+			&group.Name,
+			&group.Description,
+			&group.Rule,
+			&group.CreatorId,
+			&imagePtr,
+			&group.PrivacyLevel,
+			&group.InvitePolicy,
+			&group.CreatedAt,
+			&group.UpdatedAt,
+		)
+		if err != nil {
+			fmt.Printf("Error scanning group: %v\n", err)
+			continue
+		}
+		group.Image = imagePtr
+		groups = append(groups, group)
+	}
+	
+	fmt.Printf("Direct SQL query returned %d groups\n", len(groups))
 
 	var results []web.GroupSearchResult
 	for _, group := range groups {

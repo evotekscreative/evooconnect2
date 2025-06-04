@@ -5,6 +5,7 @@ import (
 	"evoconnect/backend/model/domain"
 	"evoconnect/backend/model/web"
 	"fmt"
+	"github.com/google/uuid"
 	// "evoconnect/backend/repository"
 )
 
@@ -58,61 +59,58 @@ func ToUserProfileResponse(user domain.User, isConnected ...bool) web.UserProfil
 		birthdate = user.Birthdate.Format("2006-01-02")
 	}
 
-	 connected := false
-    var connectedRequest string = ""
-    
-    if len(isConnected) > 0 {
-        connected = isConnected[0]
-    }
-    
-    // Buat response dengan field baru
-    return web.UserProfileResponse{
-        ID:                user.Id,
-        Name:              user.Name,
-        Email:             user.Email,
-        Username:          user.Username,
-        Birthdate:         birthdate,
-        Gender:            user.Gender,
-        Location:          user.Location,
-        Organization:      user.Organization,
-        Website:           user.Website,
-        Phone:             user.Phone,
-        Headline:          user.Headline,
-        About:             user.About,
-        Skills:            skillsInterface,
-        Socials:           socialsInterface,
-        Photo:             user.Photo,
-        IsVerified:        user.IsVerified,
-        IsConnected:       connected,
-        IsConnectedRequest: connectedRequest,
-        CreatedAt:         user.CreatedAt.Format("2006-01-02T15:04:05Z"),
-        UpdatedAt:         user.UpdatedAt.Format("2006-01-02T15:04:05Z"),
-    }
+	connected := false
+	var connectedRequest string = ""
+
+	if len(isConnected) > 0 {
+		connected = isConnected[0]
+	}
+
+	// Buat response dengan field baru
+	return web.UserProfileResponse{
+		ID:                 user.Id,
+		Name:               user.Name,
+		Email:              user.Email,
+		Username:           user.Username,
+		Birthdate:          birthdate,
+		Gender:             user.Gender,
+		Location:           user.Location,
+		Organization:       user.Organization,
+		Website:            user.Website,
+		Phone:              user.Phone,
+		Headline:           user.Headline,
+		About:              user.About,
+		Skills:             skillsInterface,
+		Socials:            socialsInterface,
+		Photo:              user.Photo,
+		IsVerified:         user.IsVerified,
+		IsConnected:        connected,
+		IsConnectedRequest: connectedRequest,
+		CreatedAt:          user.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		UpdatedAt:          user.UpdatedAt.Format("2006-01-02T15:04:05Z"),
+	}
 }
 
 func ToUserShortResponse(user domain.User, isConnected bool, isConnectedRequest string) web.UserShort {
-    // Tambahkan log untuk debugging
-    fmt.Printf("ToUserShortResponse: user=%s, isConnected=%v, isConnectedRequest=%s\n", 
-               user.Name, isConnected, isConnectedRequest)
-    
-    // Jika isConnectedRequest kosong, berikan nilai default "none"
-    if isConnectedRequest == "" {
-        isConnectedRequest = "none"
-    }
-    
-    return web.UserShort{
-        Id:                 user.Id,
-        Name:               user.Name,
-        Username:           user.Username,
-        Photo:              &user.Photo,
-        Headline:           &user.Headline,
-        IsConnected:        isConnected,
-        IsConnectedRequest: isConnectedRequest,
-    }
+	// Tambahkan log untuk debugging
+	fmt.Printf("ToUserShortResponse: user=%s, isConnected=%v, isConnectedRequest=%s\n",
+		user.Name, isConnected, isConnectedRequest)
+
+	// Jika isConnectedRequest kosong, berikan nilai default "none"
+	if isConnectedRequest == "" {
+		isConnectedRequest = "none"
+	}
+
+	return web.UserShort{
+		Id:                 user.Id,
+		Name:               user.Name,
+		Username:           user.Username,
+		Photo:              &user.Photo,
+		Headline:           &user.Headline,
+		IsConnected:        isConnected,
+		IsConnectedRequest: isConnectedRequest,
+	}
 }
-
-
-
 
 func ToPostResponse(post domain.Post) web.PostResponse {
     postResponse := web.PostResponse{
@@ -127,32 +125,47 @@ func ToPostResponse(post domain.Post) web.PostResponse {
         LikesCount:    post.LikesCount,
         CommentsCount: post.CommentsCount,
         GroupId:       post.GroupId,
+        IsPinned:      post.IsPinned,
+        PinnedAt:      post.PinnedAt,
+        Status:        post.Status,
     }
 
-    if post.User != nil {
+    // Perbaikan: Pastikan user tidak nil dan memiliki data yang valid
+    if post.User != nil && post.User.Id != uuid.Nil {
+        photo := post.User.Photo
+        headline := post.User.Headline
+        
         postResponse.User = web.UserShort{
             Id:                 post.User.Id,
             Name:               post.User.Name,
             Username:           post.User.Username,
-            Photo:              &post.User.Photo,
-            Headline:           &post.User.Headline,
+            Photo:              &photo,
+            Headline:           &headline,
             IsConnected:        post.User.IsConnected,
-            IsConnectedRequest: "", // Tambahkan field ini
+            IsConnectedRequest: "",
         }
     }
 
     if post.Group != nil {
-        group := ToGroupResponse(*post.Group)
-        postResponse.Group = &group
+        // Buat struct baru yang hanya berisi field yang kita inginkan
+        postResponse.Group = &web.GroupResponse{
+            Id:           post.Group.Id,
+            Name:         post.Group.Name,
+            Description:  post.Group.Description,
+            Rule:         post.Group.Rule,
+            PrivacyLevel: post.Group.PrivacyLevel,
+            InvitePolicy: post.Group.InvitePolicy,
+            PostApproval: post.Group.PostApproval,
+            CreatorId:    post.Group.CreatorId,
+        }
+
+        if post.Group.Image != nil && *post.Group.Image != "" {
+            postResponse.Group.Image = post.Group.Image
+        }
     }
 
     return postResponse
 }
-
-
-
-
-
 
 func ToPostResponses(posts []domain.Post) []web.PostResponse {
 	postResponses := make([]web.PostResponse, 0)
@@ -183,6 +196,17 @@ func ToCommentResponse(comment domain.Comment) web.CommentResponse {
 			Name:     comment.User.Name,
 			Username: comment.User.Username,
 			Photo:    comment.User.Photo,
+		}
+	}
+
+	// Tambahkan informasi ReplyTo jika ada ReplyToId
+	if comment.ReplyToId != nil && comment.ReplyTo != nil && comment.ReplyTo.User != nil {
+		commentResponse.ReplyTo = &web.ReplyToInfo{
+			Id:           *comment.ReplyToId,
+			Content:      comment.ReplyTo.Content,
+			Username:     comment.ReplyTo.User.Username,
+			Name:         comment.ReplyTo.User.Name,
+			ProfilePhoto: comment.ReplyTo.User.Photo,
 		}
 	}
 
@@ -267,6 +291,7 @@ func ToGroupResponse(group domain.Group) web.GroupResponse {
 		Image:        group.Image,
 		PrivacyLevel: group.PrivacyLevel,
 		InvitePolicy: group.InvitePolicy,
+		PostApproval: group.PostApproval, // Tambahkan field ini
 		CreatorId:    group.CreatorId,
 		CreatedAt:    group.CreatedAt,
 		UpdatedAt:    group.UpdatedAt,
@@ -280,23 +305,23 @@ func ToGroupResponse(group domain.Group) web.GroupResponse {
 }
 
 func ToUserBriefResponse(user domain.User, isConnected ...bool) web.UserBriefResponse {
-    connected := false
-    if len(isConnected) > 0 {
-        connected = isConnected[0]
-    }
-    
-    return web.UserBriefResponse{
-        Id:          user.Id,
-        Name:        user.Name,
-        Username:    user.Username,
-        Photo:       user.Photo,
-        IsVerified:  user.IsVerified,
-        Email:       user.Email,
-        Headline:    user.Headline,
-        IsConnected: connected, // Gunakan nilai dari parameter
-        CreatedAt:   user.CreatedAt.Format("2006-01-02T15:04:05Z"),
-        UpdatedAt:   user.UpdatedAt.Format("2006-01-02T15:04:05Z"),
-    }
+	connected := false
+	if len(isConnected) > 0 {
+		connected = isConnected[0]
+	}
+
+	return web.UserBriefResponse{
+		Id:          user.Id,
+		Name:        user.Name,
+		Username:    user.Username,
+		Photo:       user.Photo,
+		IsVerified:  user.IsVerified,
+		Email:       user.Email,
+		Headline:    user.Headline,
+		IsConnected: connected, // Gunakan nilai dari parameter
+		CreatedAt:   user.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		UpdatedAt:   user.UpdatedAt.Format("2006-01-02T15:04:05Z"),
+	}
 }
 
 func ToGroupMemberBriefs(members []domain.GroupMember) []web.GroupMemberBrief {
@@ -341,4 +366,49 @@ func ToGroupInvitationResponses(invitations []domain.GroupInvitation) []web.Grou
 		responses = append(responses, ToGroupInvitationResponse(invitation))
 	}
 	return responses
+}
+
+func ToJoinRequestResponse(request domain.GroupJoinRequest) web.JoinRequestResponse {
+	response := web.JoinRequestResponse{
+		Id:        request.Id,
+		GroupId:   request.GroupId,
+		UserId:    request.UserId,
+		Status:    request.Status,
+		Message:   request.Message,
+		CreatedAt: request.CreatedAt,
+		UpdatedAt: request.UpdatedAt,
+	}
+
+	if request.User != nil {
+		response.User = web.UserShort{
+			Id:       request.User.Id,
+			Name:     request.User.Name,
+			Username: request.User.Username,
+		}
+
+		if request.User.Photo != "" {
+			photo := request.User.Photo
+			response.User.Photo = &photo
+		}
+
+		if request.User.Headline != "" {
+			headline := request.User.Headline
+			response.User.Headline = &headline
+		}
+	}
+
+	if request.Group != nil {
+		response.Group = &web.GroupResponse{
+			Id:           request.Group.Id,
+			Name:         request.Group.Name,
+			Description:  request.Group.Description,
+			PrivacyLevel: request.Group.PrivacyLevel,
+		}
+
+		if request.Group.CreatorId != uuid.Nil {
+			response.Group.CreatorId = request.Group.CreatorId
+		}
+	}
+
+	return response
 }

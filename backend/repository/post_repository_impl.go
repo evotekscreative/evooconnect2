@@ -3,13 +3,13 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/domain"
 	"fmt"
 	"time"
 	"github.com/google/uuid"
+	"encoding/json"
 )
 
 type PostRepositoryImpl struct {
@@ -68,43 +68,51 @@ func (repository *PostRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx, po
 }
 
 func (repository *PostRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, postId uuid.UUID) (domain.Post, error) {
-	SQL := `SELECT 
-        p.id, p.user_id, p.content, p.images, p.likes_count, p.visibility, p.created_at, p.updated_at,
-        u.id, u.name, u.email, u.username, COALESCE(u.photo, ''), COALESCE(u.headline, '')
-        FROM posts p
-        JOIN users u ON p.user_id = u.id
-        WHERE p.id = $1`
-
-	rows, err := tx.QueryContext(ctx, SQL, postId)
-	helper.PanicIfError(err)
-	defer rows.Close()
-
-	post := domain.Post{}
-	user := domain.User{}
-
-	if rows.Next() {
-		err := rows.Scan(
-			&post.Id,
-			&post.UserId,
-			&post.Content,
-			&post.Images,
-			&post.LikesCount,
-			&post.Visibility,
-			&post.CreatedAt,
-			&post.UpdatedAt,
-			&user.Id,
-			&user.Name,
-			&user.Email,
-			&user.Username,
-			&user.Photo,
-			&user.Headline)
-		helper.PanicIfError(err)
-
-		post.User = &user
-		return post, nil
-	} else {
-		return post, errors.New("post not found")
-	}
+    SQL := `SELECT p.id, p.user_id, p.content, p.images, p.visibility, p.created_at, p.updated_at, p.group_id
+            FROM posts p
+            WHERE p.id = $1`
+    
+    var post domain.Post
+    var images sql.NullString
+    var groupId sql.NullString // Pastikan ini dihandle dengan benar
+    
+    err := tx.QueryRowContext(ctx, SQL, postId).Scan(
+        &post.Id,
+        &post.UserId,
+        &post.Content,
+        &images,
+        &post.Visibility,
+        &post.CreatedAt,
+        &post.UpdatedAt,
+        &groupId, // Scan group_id ke variabel ini
+    )
+    
+    if err != nil {
+        if err == sql.ErrNoRows {
+            return post, errors.New("post not found")
+        }
+        return post, err
+    }
+    
+    // Handle images
+    if images.Valid {
+        err = json.Unmarshal([]byte(images.String), &post.Images)
+        if err != nil {
+            post.Images = []string{}
+        }
+    } else {
+        post.Images = []string{}
+    }
+    
+    // Handle group_id - pastikan ini diimplementasikan dengan benar
+    if groupId.Valid {
+        groupUUID, err := uuid.Parse(groupId.String)
+        if err == nil {
+            post.GroupId = &groupUUID // Set pointer ke UUID yang valid
+        }
+    }
+    
+    return post, nil
 }
 
 func (repository *PostRepositoryImpl) FindAll(ctx context.Context, tx *sql.Tx, currentUserId uuid.UUID, limit, offset int) []domain.Post {
@@ -229,9 +237,9 @@ func (repository *PostRepositoryImpl) FindAll(ctx context.Context, tx *sql.Tx, c
 
 func (repository *PostRepositoryImpl) FindByUserId(ctx context.Context, tx *sql.Tx, userId uuid.UUID, currentUserId uuid.UUID, limit, offset int) []domain.Post {
 	SQL := `SELECT 
-        p.id, p.user_id, p.content, p.images, p.likes_count, p.visibility, p.created_at, p.updated_at, p.group_id,
+        p.id, p.user_id, p.content, p.images, p.likes_count, p.visibility, p.created_at, p.updated_at, p.group_id, COALESCE(p.status, '') as status,
         u.id, u.name, u.email, u.username, COALESCE(u.photo, ''), COALESCE(u.headline, ''),
-        g.id, g.name, g.description, g.privacy_level, g.created_at, g.updated_at
+        g.id, g.name, g.description, g.rule, g.image, g.privacy_level, g.invite_policy, g.post_approval, g.creator_id, g.created_at, g.updated_at
         FROM posts p
         JOIN users u ON p.user_id = u.id
         LEFT JOIN groups g ON p.group_id = g.id
@@ -242,6 +250,7 @@ func (repository *PostRepositoryImpl) FindByUserId(ctx context.Context, tx *sql.
             p.visibility = 'public' 
             OR $4 = $1  -- currentUserId = userId (viewing own posts)
             OR (p.visibility = 'connections' AND c.id IS NOT NULL)
+            OR p.visibility = 'group'  -- Tambahkan kondisi untuk post grup
         )
         ORDER BY p.created_at DESC
         LIMIT $2 OFFSET $3`
@@ -255,6 +264,7 @@ func (repository *PostRepositoryImpl) FindByUserId(ctx context.Context, tx *sql.
 	for rows.Next() {
 		post := domain.Post{}
 		user := domain.User{}
+		var status sql.NullString
 
 		// Add groupId from post table
 		var postGroupId sql.NullString
@@ -263,7 +273,12 @@ func (repository *PostRepositoryImpl) FindByUserId(ctx context.Context, tx *sql.
 		var groupId sql.NullString
 		var groupName sql.NullString
 		var groupDescription sql.NullString
+		var groupRule sql.NullString
+		var groupImage sql.NullString
 		var groupPrivacyLevel sql.NullString
+		var groupInvitePolicy sql.NullString
+		var groupPostApproval sql.NullBool
+		var groupCreatorId sql.NullString
 		var groupCreatedAt sql.NullTime
 		var groupUpdatedAt sql.NullTime
 
@@ -277,6 +292,7 @@ func (repository *PostRepositoryImpl) FindByUserId(ctx context.Context, tx *sql.
 			&post.CreatedAt,
 			&post.UpdatedAt,
 			&postGroupId,
+			&status,
 			&user.Id,
 			&user.Name,
 			&user.Email,
@@ -286,10 +302,20 @@ func (repository *PostRepositoryImpl) FindByUserId(ctx context.Context, tx *sql.
 			&groupId,
 			&groupName,
 			&groupDescription,
+			&groupRule,
+			&groupImage,
 			&groupPrivacyLevel,
+			&groupInvitePolicy,
+			&groupPostApproval,
+			&groupCreatorId,
 			&groupCreatedAt,
 			&groupUpdatedAt)
 		helper.PanicIfError(err)
+
+		// Set status if not null
+		if status.Valid {
+			post.Status = status.String
+		}
 
 		post.User = &user
 
@@ -320,8 +346,32 @@ func (repository *PostRepositoryImpl) FindByUserId(ctx context.Context, tx *sql.
 				group.Description = groupDescription.String
 			}
 
+			if groupRule.Valid {
+				group.Rule = groupRule.String
+			}
+
+			if groupImage.Valid {
+				imageStr := groupImage.String
+				group.Image = &imageStr
+			}
+
 			if groupPrivacyLevel.Valid {
 				group.PrivacyLevel = groupPrivacyLevel.String
+			}
+
+			if groupInvitePolicy.Valid {
+				group.InvitePolicy = groupInvitePolicy.String
+			}
+
+			if groupPostApproval.Valid {
+				group.PostApproval = groupPostApproval.Bool
+			}
+
+			if groupCreatorId.Valid {
+				creatorUUID, err := uuid.Parse(groupCreatorId.String)
+				if err == nil {
+					group.CreatorId = creatorUUID
+				}
 			}
 
 			if groupCreatedAt.Valid {
@@ -391,93 +441,80 @@ func (repository *PostRepositoryImpl) GetLikesCount(ctx context.Context, tx *sql
 	return count
 }
 
+// Di repository/post_repository_impl.go
 func (repository *PostRepositoryImpl) FindByGroupId(ctx context.Context, tx *sql.Tx, groupId uuid.UUID, currentUserId uuid.UUID, limit, offset int) []domain.Post {
-	SQL := `SELECT p.id, p.user_id, p.content, p.images, p.likes_count, p.visibility, p.created_at, p.updated_at, p.group_id,
+    SQL := `SELECT p.id, p.user_id, p.content, p.images, p.visibility, p.created_at, p.updated_at, p.group_id,
             u.id, u.name, u.email, u.username, COALESCE(u.photo, ''), COALESCE(u.headline, ''),
-            g.id, g.name, g.description, g.privacy_level, g.created_at, g.updated_at
+            gpp.id IS NOT NULL as is_pinned, gpp.pinned_at
             FROM posts p
             JOIN users u ON p.user_id = u.id
-            JOIN groups g ON p.group_id = g.id
-            LEFT JOIN connections c ON (c.user_id_1 = $4 AND c.user_id_2 = p.user_id) 
-                                    OR (c.user_id_1 = p.user_id AND c.user_id_2 = $4)
-            LEFT JOIN group_members gm ON g.id = gm.group_id AND gm.user_id = $4
-            WHERE p.group_id = $1
-            AND (
-                p.visibility = 'public' 
-                OR p.user_id = $4
-                OR (p.visibility = 'connections' AND c.id IS NOT NULL)
-            )
-            AND (
-                g.privacy_level = 'public'
-                OR gm.user_id IS NOT NULL
-            )
-            ORDER BY p.created_at DESC
+            LEFT JOIN group_pinned_posts gpp ON p.id = gpp.post_id AND p.group_id = gpp.group_id
+            WHERE p.group_id = $1 AND p.status = 'approved'
+            ORDER BY gpp.id IS NOT NULL DESC, p.created_at DESC
             LIMIT $2 OFFSET $3`
-
-	rows, err := tx.QueryContext(ctx, SQL, groupId, limit, offset, currentUserId)
-	helper.PanicIfError(err)
-	defer rows.Close()
-
-	var posts []domain.Post
-	for rows.Next() {
-		post := domain.Post{}
-		user := domain.User{}
-		group := domain.Group{}
-
-		// Add variables for scanning
-		var postGroupId sql.NullString
-		var imageJson sql.NullString
-
-		err := rows.Scan(
-			&post.Id,
-			&post.UserId,
-			&post.Content,
-			&imageJson,
-			&post.LikesCount,
-			&post.Visibility,
-			&post.CreatedAt,
-			&post.UpdatedAt,
-			&postGroupId,
-			&user.Id,
-			&user.Name,
-			&user.Email,
-			&user.Username,
-			&user.Photo,
-			&user.Headline,
-			&group.Id,
-			&group.Name,
-			&group.Description,
-			&group.PrivacyLevel,
-			&group.CreatedAt,
-			&group.UpdatedAt,
-		)
-		helper.PanicIfError(err)
-
-		// Parse images JSON
-		if imageJson.Valid {
-			err = json.Unmarshal([]byte(imageJson.String), &post.Images)
-			if err != nil {
-				post.Images = []string{}
-			}
-		} else {
-			post.Images = []string{}
-		}
-
-		// Set post.GroupId if not NULL
-		if postGroupId.Valid {
-			groupUUID, err := uuid.Parse(postGroupId.String)
-			if err == nil {
-				post.GroupId = &groupUUID
-			}
-		}
-
-		post.User = &user
-		post.Group = &group
-		posts = append(posts, post)
-	}
-
-	return posts
+    
+    rows, err := tx.QueryContext(ctx, SQL, groupId, limit, offset)
+    helper.PanicIfError(err)
+    defer rows.Close()
+    
+    var posts []domain.Post
+    for rows.Next() {
+        post := domain.Post{}
+        user := domain.User{}
+        var images sql.NullString
+        var groupIdStr string
+        var isPinned bool
+        var pinnedAt sql.NullTime
+        
+        err := rows.Scan(
+            &post.Id,
+            &post.UserId,
+            &post.Content,
+            &images,
+            &post.Visibility,
+            &post.CreatedAt,
+            &post.UpdatedAt,
+            &groupIdStr,
+            &user.Id,
+            &user.Name,
+            &user.Email,
+            &user.Username,
+            &user.Photo,
+            &user.Headline,
+            &isPinned,
+            &pinnedAt,
+        )
+        helper.PanicIfError(err)
+        
+        // Handle images
+        if images.Valid {
+            err = json.Unmarshal([]byte(images.String), &post.Images)
+            if err != nil {
+                post.Images = []string{}
+            }
+        } else {
+            post.Images = []string{}
+        }
+        
+        // Handle group_id
+        groupUUID, err := uuid.Parse(groupIdStr)
+        if err == nil {
+            post.GroupId = &groupUUID
+        }
+        
+        // Set pinned status
+        post.IsPinned = isPinned
+        if pinnedAt.Valid {
+            post.PinnedAt = &pinnedAt.Time
+        }
+        
+        post.User = &user
+        posts = append(posts, post)
+    }
+    
+    return posts
 }
+
 
 func (repository *PostRepositoryImpl) CreatePostGroup(ctx context.Context, tx *sql.Tx, post domain.Post, groupId uuid.UUID) domain.Post {
 	// Generate a new UUID if not provided
@@ -558,3 +595,82 @@ func (repository *PostRepositoryImpl) Search(ctx context.Context, tx *sql.Tx, qu
 
 	return posts
 }
+
+
+func (repository *PostRepositoryImpl) PinPost(ctx context.Context, tx *sql.Tx, postId uuid.UUID) (domain.Post, error) {
+    // Dapatkan informasi post terlebih dahulu
+    post, err := repository.FindById(ctx, tx, postId)
+    if err != nil {
+        return domain.Post{}, err
+    }
+    
+    // Pastikan post memiliki group_id
+    if post.GroupId == nil {
+        return domain.Post{}, errors.New("post is not associated with any group")
+    }
+    
+    // Dapatkan user_id dari context
+    userIdStr, ok := ctx.Value("user_id").(string)
+    if !ok {
+        return domain.Post{}, errors.New("user_id not found in context")
+    }
+    userId, err := uuid.Parse(userIdStr)
+    if err != nil {
+        return domain.Post{}, err
+    }
+    
+    // Insert ke tabel group_pinned_posts
+    now := time.Now()
+    SQL := `INSERT INTO group_pinned_posts (id, group_id, post_id, pinned_by, pinned_at, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            ON CONFLICT (group_id, post_id) DO NOTHING`
+            
+    _, err = tx.ExecContext(ctx, SQL, 
+        uuid.New(),
+        *post.GroupId,
+        postId,
+        userId,
+        now,
+        now,
+        now)
+    
+    if err != nil {
+        return domain.Post{}, err
+    }
+    
+    // Set flag di post object untuk response
+    post.IsPinned = true
+    pinnedAt := now
+    post.PinnedAt = &pinnedAt
+    
+    return post, nil
+}
+
+func (repository *PostRepositoryImpl) UnpinPost(ctx context.Context, tx *sql.Tx, postId uuid.UUID) error {
+    // Dapatkan informasi post terlebih dahulu
+    post, err := repository.FindById(ctx, tx, postId)
+    if err != nil {
+        return err
+    }
+    
+    // Pastikan post memiliki group_id
+    if post.GroupId == nil {
+        return errors.New("post is not associated with any group")
+    }
+    
+    // Delete dari tabel group_pinned_posts
+    SQL := `DELETE FROM group_pinned_posts WHERE post_id = $1`
+    _, err = tx.ExecContext(ctx, SQL, postId)
+    
+    return err
+}
+
+
+
+func (repository *PostRepositoryImpl) CountPinnedPostsByGroupId(ctx context.Context, tx *sql.Tx, groupId uuid.UUID) (int, error) {
+    SQL := `SELECT COUNT(*) FROM group_pinned_posts WHERE group_id = $1`
+    var count int
+    err := tx.QueryRowContext(ctx, SQL, groupId).Scan(&count)
+    return count, err
+}
+

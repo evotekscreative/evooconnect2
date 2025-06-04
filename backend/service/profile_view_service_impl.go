@@ -63,29 +63,18 @@ func (service *ProfileViewServiceImpl) RecordView(ctx context.Context, profileUs
         viewerName := viewer.Name
         
         // Send notification to profile owner
-        go func() {
-            // Buat context dan transaction baru untuk goroutine
-            newCtx := context.Background()
-            newTx, err := service.DB.Begin()
-            if err != nil {
-                fmt.Printf("Error creating transaction in goroutine: %v\n", err)
-                return
-            }
-            defer newTx.Commit()
-            
-            refType := "profile_visit"
-            service.NotificationService.Create(
-                newCtx,
-                profileUserId,
-                string(domain.NotificationCategoryProfile),
-                string(domain.NotificationTypeProfileVisit),
-                "Profile Visit",
-                fmt.Sprintf("%s viewed your profile", viewerName),
-                nil,
-                &refType,
-                &viewerId,
-            )
-        }()
+        refType := "profile_visit"
+        service.NotificationService.Create(
+            ctx, // Gunakan context yang sama
+            profileUserId,
+            string(domain.NotificationCategoryProfile),
+            string(domain.NotificationTypeProfileVisit),
+            "Profile Visit",
+            fmt.Sprintf("%s viewed your profile", viewerName),
+            nil,
+            &refType,
+            &viewerId,
+        )
     }
     
     return nil

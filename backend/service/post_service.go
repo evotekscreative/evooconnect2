@@ -20,4 +20,12 @@ type PostService interface {
 
 	CreateGroupPost(ctx context.Context, groupId uuid.UUID, userId uuid.UUID, request web.CreatePostRequest, files []*multipart.FileHeader) web.PostResponse
 	FindByGroupId(ctx context.Context, groupId uuid.UUID, userId uuid.UUID, limit, offset int) []web.PostResponse
+
+	FindPendingPostsByGroupId(ctx context.Context, groupId uuid.UUID, userId uuid.UUID, limit, offset int) []web.PendingPostResponse
+	ApprovePost(ctx context.Context, pendingPostId uuid.UUID, userId uuid.UUID) web.PostResponse
+	RejectPost(ctx context.Context, pendingPostId uuid.UUID, userId uuid.UUID)
+	PinPost(ctx context.Context, postId uuid.UUID, userId uuid.UUID) web.PostResponse
+	UnpinPost(ctx context.Context, postId uuid.UUID, userId uuid.UUID) web.PostResponse
+	FindPendingPostsByUserId(ctx context.Context, userId uuid.UUID, limit, offset int) []web.PendingPostResponse
+	FindPendingPostsByUserIdAndGroupId(ctx context.Context, userId uuid.UUID, groupId uuid.UUID, limit, offset int) []web.PendingPostResponse
 }

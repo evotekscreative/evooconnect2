@@ -19,6 +19,7 @@ func NewCommentRepository() CommentRepository {
 	return &CommentRepositoryImpl{}
 }
 
+// Perbarui repository/comment_repository_impl.go - fungsi Save
 func (repository *CommentRepositoryImpl) Save(ctx context.Context, tx *sql.Tx, comment domain.Comment) domain.Comment {
     // Generate UUID jika belum ada
     if comment.Id == uuid.Nil {
@@ -79,6 +80,7 @@ func (repository *CommentRepositoryImpl) Save(ctx context.Context, tx *sql.Tx, c
 
     return comment
 }
+
 
 func (repository *CommentRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, commentId uuid.UUID) (domain.Comment, error) {
     SQL := `SELECT c.id, c.post_id, c.user_id, c.parent_id, c.reply_to_id, c.content, c.created_at, c.updated_at,
