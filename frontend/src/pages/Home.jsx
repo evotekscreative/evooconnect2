@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo,  } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import axios from "axios";
 import dayjs from "dayjs";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
@@ -116,6 +116,11 @@ export default function SocialNetworkFeed() {
   const [suggestedConnections, setSuggestedConnections] = useState([]);
   const [loadingSuggested, setLoadingSuggested] = useState(false);
   const [reportTargetUserId, setReportTargetUserId] = useState(null);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const observerRef = useRef(null);
+  const loadingRef = useRef(null);
   const [user, setUser] = useState({
     name: "",
     username: "",
@@ -535,22 +540,29 @@ export default function SocialNetworkFeed() {
     }
   };
 
-  useEffect(() => {
-    const fetchPosts = async () => {
+  const fetchPosts = useCallback(
+    async (pageNum = 0, append = false) => {
       try {
-        setLoadingPosts(true);
-        const userToken = localStorage.getItem("token");
+        if (pageNum === 0) {
+          setLoadingPosts(true);
+        } else {
+          setIsLoadingMore(true);
+        }
 
-        // Lalu fetch data terbaru dari API
+        const userToken = localStorage.getItem("token");
+        const limit = 10; // Memuat 10 postingan per halaman
+        const offset = pageNum * limit;
+
+        // Fetch data dari API
         const response = await axios.get(
-          apiUrl + "/api/posts?limit=100&offset=0",
+          `${apiUrl}/api/posts?limit=${limit}&offset=${offset}`,
           {
             headers: { Authorization: `Bearer ${userToken}` },
           }
         );
 
         if (response.data?.data) {
-          // Tambahkan transformasi data setelah fetch:
+          // Transformasi data setelah fetch
           const formattedPosts = response.data.data.map((post) => ({
             id: post.id,
             content: post.content,
@@ -564,32 +576,74 @@ export default function SocialNetworkFeed() {
               initials: "UU",
               username: "unknown",
             },
-            group: post.group || null, // Add this line to ensure group exists
+            group: post.group || null,
             likes_count: post.likes_count || 0,
             comments_count: post.comments_count || 0,
             created_at: post.created_at,
             visibility: post.visibility || "public",
             isLiked: post.is_liked || false,
           }));
-          const gtw = response.data.data.filter(
-            (post) => post.is_liked === true
-          );
 
-          setPosts(formattedPosts);
+          // Update state posts
+          if (append) {
+            setPosts((prevPosts) => [...prevPosts, ...formattedPosts]);
+          } else {
+            setPosts(formattedPosts);
+          }
+
+          // Periksa apakah masih ada data yang bisa dimuat
+          setHasMore(formattedPosts.length === limit);
+
+          if (pageNum > 0) {
+            setPage(pageNum);
+          }
         }
       } catch (err) {
         console.error("Failed to fetch posts:", err);
-        // Jangan set error jika ada cache
         if (!localStorage.getItem("cachedPosts")) {
           setError("Failed to load posts. Please try again later.");
         }
       } finally {
         setLoadingPosts(false);
+        setIsLoadingMore(false);
+      }
+    },
+    [apiUrl]
+  );
+
+  // Inisialisasi Intersection Observer untuk infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (
+          entry.isIntersecting &&
+          hasMore &&
+          !isLoadingMore &&
+          !loadingPosts
+        ) {
+          fetchPosts(page + 1, true);
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    if (loadingRef.current) {
+      observer.observe(loadingRef.current);
+    }
+
+    // Cleanup observer
+    return () => {
+      if (loadingRef.current) {
+        observer.unobserve(loadingRef.current);
       }
     };
+  }, [fetchPosts, hasMore, isLoadingMore, loadingPosts, page]);
 
-    fetchPosts();
-  }, []);
+  // Fetch posts pertama kali
+  useEffect(() => {
+    fetchPosts(0, false);
+  }, [fetchPosts]);
 
   const openPremiumModal = () => {
     setShowPremiumModal(true);
@@ -745,7 +799,7 @@ export default function SocialNetworkFeed() {
       setPosts((prevPosts) => [newPost, ...prevPosts]);
       setPostContent("");
       setArticleContent("");
-      setArticleImages([]);
+
       setAlertInfo({
         show: true,
         type: "success",
@@ -755,7 +809,7 @@ export default function SocialNetworkFeed() {
       setAlertInfo({
         show: true,
         type: "error",
-        message: "Failed to create post",
+        message: "Field is required",
       });
       setError(
         error.response?.data?.message ||
@@ -1091,7 +1145,7 @@ export default function SocialNetworkFeed() {
         `${apiUrl}/api/comments/${commentId}/replies`,
         {
           content: replyText,
-          replyTo: replyToUser?.id,
+          reply_to_id: replyingTo, // Include the reply_to_id if this is a reply to another reply
         },
         {
           headers: {
@@ -1101,48 +1155,76 @@ export default function SocialNetworkFeed() {
         }
       );
 
+      // Create the new reply object with all necessary data
       const newReply = {
         ...response.data.data,
+        id: response.data.data.id || Math.random().toString(36).substr(2, 9),
         user: {
-          ...response.data.data.user,
+          ...(response.data.data.user || {
+            id: currentUserId,
+            name: user.name,
+            username: user.username,
+            initials: getInitials(user.name),
+          }),
           initials: response.data.data.user?.name
-            ? response.data.data.user.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
-            : "CU",
+            ? getInitials(response.data.data.user.name)
+            : "UU",
         },
-        replyTo: replyToUser
+        reply_to: replyToUser
           ? {
               id: replyToUser.id,
               name: replyToUser.name,
               username: replyToUser.username,
-              initials: replyToUser.name
-                .split(" ")
-                .map((n) => n[0])
-                .join(""),
             }
           : null,
+        created_at: new Date().toISOString(),
       };
 
-      // Update state
-      setAllReplies((prev) => ({
-        ...prev,
-        [commentId]: [...(prev[commentId] || []), newReply],
-      }));
+      // Update state based on whether this is a reply to a comment or another reply
+      if (replyingTo === commentId) {
+        // This is a direct reply to a comment
+        setAllReplies((prev) => ({
+          ...prev,
+          [commentId]: [...(prev[commentId] || []), newReply],
+        }));
+      } else {
+        // This is a reply to another reply - find and update the parent reply
+        setAllReplies((prev) => {
+          const updatedReplies = { ...prev };
+          const parentCommentId = Object.keys(updatedReplies).find((id) =>
+            updatedReplies[id].some((r) => r.id === replyingTo)
+          );
+
+          if (parentCommentId) {
+            updatedReplies[parentCommentId] = updatedReplies[
+              parentCommentId
+            ].map((reply) => {
+              if (reply.id === replyingTo) {
+                return {
+                  ...reply,
+                  replies: [...(reply.replies || []), newReply],
+                };
+              }
+              return reply;
+            });
+          }
+
+          return updatedReplies;
+        });
+      }
 
       // Update comment replies count
       setComments((prev) => {
         const updated = { ...prev };
         if (updated[currentPostId]) {
-          updated[currentPostId] = updated[currentPostId].map((c) => {
-            if (c.id === commentId) {
+          updated[currentPostId] = updated[currentPostId].map((comment) => {
+            if (comment.id === commentId) {
               return {
-                ...c,
-                repliesCount: (c.repliesCount || 0) + 1,
+                ...comment,
+                repliesCount: (comment.repliesCount || 0) + 1,
               };
             }
-            return c;
+            return comment;
           });
         }
         return updated;
@@ -1154,23 +1236,20 @@ export default function SocialNetworkFeed() {
       setReplyToUser(null);
       setCommentError(null);
 
-      // Pastikan replies expanded
+      // Ensure replies are expanded
       setExpandedReplies((prev) => ({ ...prev, [commentId]: true }));
       setAlertInfo({
         show: true,
         type: "success",
-        message: "Successfully added reply!",
+        message: "Reply posted successfully!",
       });
     } catch (error) {
+      console.error("Failed to add reply:", error);
       setAlertInfo({
         show: true,
         type: "error",
-        message: "Failed to add reply",
+        message: error.response?.data?.message || "Failed to add reply",
       });
-      setCommentError(
-        error.response?.data?.message ||
-          "Failed to add reply. Please try again."
-      );
     }
   };
 
@@ -1264,7 +1343,6 @@ export default function SocialNetworkFeed() {
       if (selectedPostId === postId) {
         setSelectedPostId(null);
         setPostContent("");
-        setArticleImages([]);
       }
       setAlertInfo({
         show: true,
@@ -1296,7 +1374,7 @@ export default function SocialNetworkFeed() {
       // Tambahkan gambar yang sudah ada dan tidak dihapus
       editPostImages.forEach((img) => {
         if (typeof img === "string") {
-          formData.append("existingImages", img);
+          formData.append("existingImages[]", img);
         }
       });
 
@@ -1304,6 +1382,12 @@ export default function SocialNetworkFeed() {
       newEditImages.forEach((img) => {
         formData.append("images", img.file);
       });
+
+      // Tambahkan gambar yang dihapus
+      removedImages.forEach((img) => {
+        formData.append("removedImages[]", img);
+      });
+
       // Kirim permintaan update
       const response = await axios.put(
         `${apiUrl}/api/posts/${editingPost.id}`,
@@ -1319,13 +1403,25 @@ export default function SocialNetworkFeed() {
       // Update state posts dengan data terbaru dari response
       setPosts((prevPosts) =>
         prevPosts.map((post) =>
-          post.id === editingPost.id ? response.data.data : post
+          post.id === editingPost.id
+            ? {
+                ...response.data.data,
+                // Pastikan URL gambar lengkap
+                images: (response.data.data.images || []).map((img) =>
+                  img.startsWith("http") ? img : `${apiUrl}/${img}`
+                ),
+              }
+            : post
         )
       );
 
       // Tutup modal dan reset state
       setShowEditModal(false);
       setEditingPost(null);
+      setEditPostImages([]);
+      setNewEditImages([]);
+      setRemovedImages([]);
+
       setAlertInfo({
         show: true,
         type: "success",
@@ -1342,7 +1438,6 @@ export default function SocialNetworkFeed() {
       setIsLoading(false);
     }
   };
-
   const handleNewImageUpload = (e) => {
     const files = Array.from(e.target.files);
     const imagePreviews = files.map((file) => ({
@@ -1354,9 +1449,15 @@ export default function SocialNetworkFeed() {
 
   const handleRemoveExistingImage = (index) => {
     const removed = editPostImages[index];
-    setRemovedImages([...removedImages, removed]);
+    // Pastikan kita menyimpan path lengkap gambar yang dihapus
+    const fullImagePath = removed.startsWith("http")
+      ? removed
+      : `${apiUrl}/${removed}`;
+
+    setRemovedImages([...removedImages, fullImagePath]);
     setEditPostImages(editPostImages.filter((_, i) => i !== index));
   };
+
   const handleRemoveNewImage = (index) => {
     const newImagesCopy = [...newEditImages];
     URL.revokeObjectURL(newImagesCopy[index].preview);
@@ -1375,20 +1476,6 @@ export default function SocialNetworkFeed() {
     setEditActiveTab("update");
     setShowEditModal(true);
   };
-
-  const renderLikeButton = (post) => (
-    <button
-      className={`px-2 md:px-3 py-1 rounded text-xs md:text-sm flex items-center ${
-        post.isLiked
-          ? "bg-blue-100 text-blue-600"
-          : "bg-sky-100 hover:bg-sky-200 text-blue-500"
-      }`}
-      onClick={() => handleLikePost(post.id, post.isLiked)}
-    >
-      <ThumbsUp size={12} className="mr-1" />
-      <span className="mr-1">Like</span> ({post.likes_count || 0})
-    </button>
-  );
 
   const renderPostOptionsModal = () => {
     // Cari post yang dipilih
@@ -1436,31 +1523,12 @@ export default function SocialNetworkFeed() {
                   onClick={() => {
                     const post = posts.find((p) => p.id === selectedPostId);
                     if (post && post.user) {
-                      handleReportClick(post.user.id, "post", selectedPostId);
-                    } else {
-                      setAlertInfo({
-                        show: true,
-                        type: "error",
-                        message: "Cannot identify post owner. Report failed.",
-                      });
+                      handleReportClick(post.user.id, "post", post.id); // Pass post.id as third parameter
                     }
                     handleClosePostOptions();
                   }}
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 mr-2"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                    />
-                  </svg>
+                  <TriangleAlert size={16} className="mr-2" />
                   Report Post
                 </button>
                 {!isConnected && (
@@ -1761,18 +1829,8 @@ export default function SocialNetworkFeed() {
 
     // Set report target information
     setReportTargetUserId(targetUserId);
-
-    if (targetType === "comment") {
-      setSelectedComment({
-        id: id,
-        userId: targetUserId,
-        targetType: targetType,
-      });
-      setSelectedPostId(null); // Clear post ID when reporting a comment
-    } else if (targetType === "post") {
-      setSelectedPostId(id);
-      setSelectedComment(null); // Clear comment data when reporting a post
-    }
+    setSelectedPostId(id); // Make sure this is set for posts
+    setSelectedComment(null); // Clear comment data when reporting a post
 
     setShowReportModal(true);
     setShowPostOptions(false);
@@ -2657,9 +2715,6 @@ export default function SocialNetworkFeed() {
                   onChange={(e) => setPostContent(e.target.value)}
                 />
               </div>
-              {error && (
-                <div className="text-red-500 text-center py-4">{error}</div>
-              )}
 
               {/* Visibility Options */}
               <div className="flex items-center justify-between px-2">
@@ -2717,7 +2772,7 @@ export default function SocialNetworkFeed() {
           ) : (
             <>
               {/* Editor */}
-              <div className="border rounded-md text-black ck-editor-mode">
+              <div className="ck-editor-container relative z-10">
                 <CKEditor
                   editor={ClassicEditor}
                   data={articleContent}
@@ -2768,9 +2823,6 @@ export default function SocialNetworkFeed() {
                   }}
                 />
               </div>
-              {error && (
-                <div className="text-red-500 text-center py-4">{error}</div>
-              )}
 
               {activeTab === "article" &&
                 newPostImages.length > 0 &&
@@ -2861,196 +2913,232 @@ export default function SocialNetworkFeed() {
 
         {/* Posts */}
         <div className="p-0">
-          {loadingPosts ? (
-            <div className="text-center py-4">Memuat post...</div>
+          {loadingPosts && page === 0 ? (
+            <div className="text-center py-4">Loading post...</div>
           ) : (
-            posts.map((post) => (
-              <div
-                key={post.id}
-                className="bg-white rounded-lg shadow-md mb-6 p-4 space-y-4"
-              >
-                {/* Modified header with overlapping images */}
-                <div className="border-b border-gray-200 pb-3 mb-3 relative">
-                  {/* Group info - now as a background element */}
-
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-start">
-                      {/* Group logo as background with user photo overlaid */}
-                      <div className="relative">
-                        {post?.group && (
-                          <Link to={`/groups/${post.group?.id}`}>
-                            <div className="absolute -left-1 -top-1 z-0">
-                              {post.group?.image ? (
-                                <img
-                                  className="object-cover w-10 h-10"
-                                  src={
-                                    post.group.image.startsWith("http")
-                                      ? post.group.image
-                                      : `${apiUrl}/${post.group.image}`
-                                  }
-                                  alt="Group"
-                                  onError={(e) => {
-                                    e.target.onerror = null;
-                                    e.target.src = "";
-                                  }}
-                                />
-                              ) : (
-                                <div className="rounded-full border-2 border-white ml-3 mt-2 w-10 h-10 relative z-10 bg-gray-300 flex items-center justify-center">
-                                  <span className="text-xs font-bold text-gray-600">
-                                    {post.group?.name?.charAt(0) || "G"}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </Link>
-                        )}
-
-                        {post.user?.photo ? (
-                          <Link to={`/user-profile/${post.user.username}`}>
+            <>
+              {posts.map((post) => (
+                <div
+                  key={post.id}
+                  className="bg-white rounded-lg shadow-md mb-6 p-4 space-y-4"
+                >
+                  {/* Modified header with overlapping images */}
+                  <div className="border-b border-gray-200 pb-3 mb-3 relative">
+                    {/* Group info - as background element */}
+                    {post?.group && (
+                      <Link to={`/groups/${post.group?.id}`}>
+                        {/* Group photo */}
+                        <div className="absolute left-0 top-0 bottom-2 z-0">
+                          {post.group?.image ? (
                             <img
-                              className="rounded-full border-2 border-white ml-3 mt-2 w-10 h-10 relative z-10"
+                              className="rounded-lg object-cover w-12 h-12 border-2 border-gray-300 shadow-md"
                               src={
-                                post.user.photo.startsWith("http")
-                                  ? post.user.photo
-                                  : `${apiUrl}/${post.user.photo}`
+                                post.group.image.startsWith("http")
+                                  ? post.group.image
+                                  : `${apiUrl}/${post.group.image}`
                               }
-                              alt="Profile"
+                              alt="Group"
                               onError={(e) => {
                                 e.target.onerror = null;
                                 e.target.src = "";
-                                e.target.parentElement.classList.add(
-                                  "bg-gray-300"
-                                );
                               }}
                             />
-                          </Link>
-                        ) : (
-                          <div className="w-10 h-10 bg-gray-200 text-xs rounded-full flex items-center justify-center font-semibold text-gray-600">
-                            <span className="text-xs font-bold text-gray-600">
-                              {getInitials(post.user?.name)}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="ml-3 mt-2">
-                        <h6
-                          className="font-bold mb-0 text-sm cursor-pointer hover:underline"
-                          onClick={() =>
-                            fetchUserProfile(post.user.username, post.user.id)
-                          }
-                        >
-                          {post.user?.name || "Unknown User"}
-                        </h6>
-                        <div className="flex items-center">
-                          <small className="text-gray-500 text-xs">
-                            {formatPostTime(
-                              post.created_at || new Date().toISOString()
-                            )}
-                          </small>
-                          <span className="text-gray-400 mx-1 text-xs">•</span>
-                          {post.group && (
-                            <small className="text-gray-500 text-xs">
-                              <div className="flex items-center text-xs text-gray-500">
-                                <a
-                                  href="#"
-                                  className="hover:underline text-blue-500"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    navigate(`/groups/${post.group.id}`);
-                                  }}
-                                >
-                                  Posted in {post.group.name}
-                                </a>
-                              </div>
-                            </small>
+                          ) : (
+                            <div className="rounded-full border-2 border-white w-10 h-10 bg-gray-300 flex items-center justify-center shadow-md">
+                              <span className="text-xs font-bold text-gray-600">
+                                {post.group?.name?.charAt(0) || "G"}
+                              </span>
+                            </div>
                           )}
                         </div>
+                      </Link>
+                    )}
+
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-start">
+                        {/* User photo */}
+                        <div
+                          className={`${
+                            post?.group
+                              ? "relative z-10 ml-4 mt-2 transform translate-y-2"
+                              : ""
+                          }`}
+                        >
+                          {post.user?.photo ? (
+                            <Link to={`/user-profile/${post.user.username}`}>
+                              <img
+                                className="rounded-full border-2 border-gray-300 w-10 h-10 object-cover"
+                                src={
+                                  post.user.photo.startsWith("http")
+                                    ? post.user.photo
+                                    : `${apiUrl}/${post.user.photo}`
+                                }
+                                alt="Profile"
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.src = "";
+                                  e.target.parentElement.classList.add(
+                                    "bg-gray-300"
+                                  );
+                                }}
+                              />
+                            </Link>
+                          ) : (
+                            <div className="w-9 h-9 bg-gray-200 text-xs rounded-full flex items-center justify-center font-semibold text-gray-600">
+                              <span className="text-xs font-bold text-gray-600">
+                                {getInitials(post.user?.name)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div
+                          className={`${post?.group ? "ml-3 mt-2" : "ml-2"}`}
+                        >
+                          <h6
+                            className="font-bold mb-0 text-sm cursor-pointer hover:underline"
+                            onClick={() =>
+                              fetchUserProfile(post.user.username, post.user.id)
+                            }
+                          >
+                            {post.user?.name || "Unknown User"}
+                          </h6>
+                          <div className="flex items-center">
+                            <small className="text-gray-500 text-xs">
+                              {formatPostTime(
+                                post.created_at || new Date().toISOString()
+                              )}
+                            </small>
+                            <span className="text-gray-400 mx-1 text-xs">
+                              •
+                            </span>
+                            {post.group && (
+                              <small className="text-gray-500 text-xs">
+                                <div className="flex items-center text-xs text-gray-500">
+                                  <a
+                                    href="#"
+                                    className="hover:underline text-blue-500"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      navigate(`/groups/${post.group.id}`);
+                                    }}
+                                  >
+                                    Posted in {post.group.name}
+                                  </a>
+                                </div>
+                              </small>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="ml-auto relative group">
+                        <button
+                          className="bg-gray-100 hover:bg-gray-200 rounded-full p-1 mr-2"
+                          onClick={() => handleOpenPostOptions(post.id)}
+                        >
+                          <Ellipsis size={14} />
+                        </button>
+                        <button className="bg-gray-100 hover:bg-gray-200 rounded-full p-1">
+                          {post.visibility === "public" && <Globe size={14} />}
+                          {post.visibility === "private" && (
+                            <LockKeyhole size={14} />
+                          )}
+                          {post.visibility === "connections" && (
+                            <Users size={14} />
+                          )}
+                        </button>
                       </div>
                     </div>
-                    <div className="ml-auto relative group">
-                      <button
-                        className="bg-gray-100 hover:bg-gray-200 rounded-full p-1 mr-2"
-                        onClick={() => handleOpenPostOptions(post.id)}
-                      >
-                        <Ellipsis size={14} />
-                      </button>
-                      <button className="bg-gray-100 hover:bg-gray-200 rounded-full p-1">
-                        {post.visibility === "public" && <Globe size={14} />}
-                        {post.visibility === "private" && (
-                          <LockKeyhole size={14} />
-                        )}
-                        {post.visibility === "connections" && (
-                          <Users size={14} />
-                        )}
-                      </button>
-                    </div>
                   </div>
-                </div>
 
-                {/* Post Content */}
-                {post.content && (
-                  // Tambahkan class khusus untuk konten post
-                  <div
-                    className="prose max-w-none text-gray-700 ck-content custom-post-content"
-                    dangerouslySetInnerHTML={{ __html: post.content }}
-                  />
-                )}
+                  {/* Post Content */}
+                  {post.content && (
+                    // Tambahkan class khusus untuk konten post
+                    <div
+                      className="prose max-w-none text-gray-700 ck-content custom-post-content"
+                      dangerouslySetInnerHTML={{ __html: post.content }}
+                    />
+                  )}
 
-                {renderPhotoGrid(post.images)}
+                  {renderPhotoGrid(post.images)}
 
-                <div>
-                  {/* Likes & Comments Info */}
-                  <div className="flex items-center space-x-4 px-4 py-1 text-xs text-gray-500 justify-between">
-                    <div className="flex items-center space-x-1 pt-1">
-                      <span className="text-black flex">
-                        <ThumbsUp size={14} className="mr-1" />{" "}
-                        {post.likes_count || 0}
-                      </span>
+                  <div>
+                    {/* Likes & Comments Info */}
+                    <div className="flex items-center space-x-4 px-4 py-1 text-xs text-gray-500 justify-between">
+                      <div className="flex items-center space-x-1 pt-1">
+                        <span className="text-black flex">
+                          <ThumbsUp size={14} className="mr-1" />{" "}
+                          {post.likes_count || 0}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-1 cursor-pointer">
+                        <span
+                          className="text-black"
+                          onClick={() => openCommentModal(post.id)}
+                        >
+                          {post.comments_count || 0} Comment
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-1 cursor-pointer">
-                      <span
-                        className="text-black"
+
+                    {/* Post Actions */}
+                    <div className="border-t border-gray-200 px-4 py-2 flex justify-between">
+                      <button
+                        className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${
+                          post.isLiked
+                            ? "text-blue-600 bg-blue-50"
+                            : "text-black hover:bg-gray-100"
+                        }`}
+                        onClick={() => handleLikePost(post.id, post.isLiked)}
+                      >
+                        <ThumbsUp size={14} className="mr-2" />
+                        Like
+                      </button>
+
+                      <button
+                        className="flex items-center justify-center w-1/3 py-2 rounded-lg text-black hover:bg-gray-100"
                         onClick={() => openCommentModal(post.id)}
                       >
-                        {post.comments_count || 0} Comment
-                      </span>
+                        <MessageCircle size={14} className="mr-2" />
+                        Comment
+                      </button>
+
+                      <button
+                        className="flex items-center justify-center w-1/3 py-2 rounded-lg text-black hover:bg-gray-100"
+                        onClick={() => handleOpenShareModal(post.id)}
+                      >
+                        <Share2 size={14} className="mr-2" />
+                        Share
+                      </button>
                     </div>
                   </div>
-
-                  {/* Post Actions */}
-                  <div className="border-t border-gray-200 px-4 py-2 flex justify-between">
-                    <button
-                      className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${
-                        post.isLiked
-                          ? "text-blue-600 bg-blue-50"
-                          : "text-black hover:bg-gray-100"
-                      }`}
-                      onClick={() => handleLikePost(post.id, post.isLiked)}
-                    >
-                      <ThumbsUp size={14} className="mr-2" />
-                      Like
-                    </button>
-
-                    <button
-                      className="flex items-center justify-center w-1/3 py-2 rounded-lg text-black hover:bg-gray-100"
-                      onClick={() => openCommentModal(post.id)}
-                    >
-                      <MessageCircle size={14} className="mr-2" />
-                      Comment
-                    </button>
-
-                    <button
-                      className="flex items-center justify-center w-1/3 py-2 rounded-lg text-black hover:bg-gray-100"
-                      onClick={() => handleOpenShareModal(post.id)}
-                    >
-                      <Share2 size={14} className="mr-2" />
-                      Share
-                    </button>
-                  </div>
                 </div>
-              </div>
-            ))
+              ))}
+              {hasMore && (
+                <div ref={loadingRef} className="text-center py-4">
+                  {isLoadingMore ? (
+                    <div className="flex justify-center items-center">
+                      <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+                      <span className="ml-2 text-gray-600">
+                        Loading more...
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="h-10"></div> // Placeholder untuk observer
+                  )}
+                </div>
+              )}
+              {!hasMore && posts.length > 0 && (
+                <div className="text-center py-4 text-gray-500">
+                  No more posts
+                </div>
+              )}
+              {posts.length === 0 && !loadingPosts && (
+                <div className="text-center py-8 bg-white rounded-lg shadow-md">
+                  <p className="text-gray-500">No posts yet</p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -4066,13 +4154,38 @@ export default function SocialNetworkFeed() {
                                         <div className="bg-gray-50 rounded-lg p-2">
                                           {/* Reply User Info */}
                                           <div className="flex items-center justify-between">
-                                            <Link
-                                              to={`/user-profile/${reply.user.username}`}
-                                              className="text-xs font-semibold text-gray-800 hover:text-blue-600 hover:underline"
-                                            >
-                                              {reply.user?.name ||
-                                                "Unknown User"}
-                                            </Link>
+                                            <div className="flex items-center">
+                                              <Link
+                                                to={`/user-profile/${reply.user.username}`}
+                                                className="text-xs font-semibold text-gray-800 hover:text-blue-600 hover:underline"
+                                              >
+                                                {reply.user?.name ||
+                                                  "Unknown User"}
+                                              </Link>
+                                              {reply.reply_to &&
+                                                reply.parent_id !==
+                                                  reply.reply_to
+                                                    .reply_to_id && (
+                                                  <span className="text-xs text-gray-500 ml-1 flex items-center">
+                                                    <svg
+                                                      xmlns="http://www.w3.org/2000/svg"
+                                                      width="10"
+                                                      height="10"
+                                                      fill="currentColor"
+                                                      className="mr-1"
+                                                      viewBox="0 0 16 16"
+                                                    >
+                                                      <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z" />
+                                                    </svg>
+                                                    <Link
+                                                      to={`/user-profile/${reply.reply_to.username}`}
+                                                      className="text-blue-500 hover:underline"
+                                                    >
+                                                      {reply.reply_to.name}
+                                                    </Link>
+                                                  </span>
+                                                )}
+                                            </div>
 
                                             {/* Reply Actions */}
                                             <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -4158,7 +4271,7 @@ export default function SocialNetworkFeed() {
                                             <button
                                               className="text-xs text-blue-500 hover:text-blue-700"
                                               onClick={() => {
-                                                setReplyingTo(comment.id);
+                                                setReplyingTo(reply.id);
                                                 setReplyToUser(reply.user);
                                               }}
                                             >
@@ -4166,6 +4279,34 @@ export default function SocialNetworkFeed() {
                                             </button>
                                           </div>
                                         </div>
+                                        {replyingTo === reply.id && (
+                                          <div className="mt-3 flex gap-2">
+                                            <input
+                                              type="text"
+                                              className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                              placeholder={`Reply to ${
+                                                replyToUser?.name ||
+                                                reply.user.name
+                                              }...`}
+                                              value={replyText}
+                                              onChange={(e) =>
+                                                setReplyText(e.target.value)
+                                              }
+                                              autoFocus
+                                            />
+                                            <button
+                                              className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-colors"
+                                              onClick={() =>
+                                                handleReply(
+                                                  reply.id,
+                                                  replyToUser || reply.user
+                                                )
+                                              }
+                                            >
+                                              Post
+                                            </button>
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
                                   </div>

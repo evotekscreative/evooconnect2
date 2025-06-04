@@ -20,102 +20,125 @@ func NewCommentRepository() CommentRepository {
 }
 
 func (repository *CommentRepositoryImpl) Save(ctx context.Context, tx *sql.Tx, comment domain.Comment) domain.Comment {
-	// Generate UUID jika belum ada
-	if comment.Id == uuid.Nil {
-		comment.Id = uuid.New()
-	}
+    // Generate UUID jika belum ada
+    if comment.Id == uuid.Nil {
+        comment.Id = uuid.New()
+    }
 
-	// Set created_at dan updated_at ke waktu saat ini
-	now := time.Now()
-	comment.CreatedAt = now
-	comment.UpdatedAt = now
+    // Set created_at dan updated_at ke waktu saat ini
+    now := time.Now()
+    comment.CreatedAt = now
+    comment.UpdatedAt = now
 
-	// Query untuk menyimpan komentar
-	var SQL string
-	var args []interface{}
+    // Query untuk menyimpan komentar
+    var SQL string
+    var args []interface{}
 
-	if comment.ParentId != nil {
-		SQL = `INSERT INTO comments (id, post_id, user_id, parent_id, content, created_at, updated_at)
+    if comment.ParentId != nil && comment.ReplyToId != nil {
+        SQL = `INSERT INTO comments (id, post_id, user_id, parent_id, reply_to_id, content, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+        args = []interface{}{
+            comment.Id,
+            comment.PostId,
+            comment.UserId,
+            comment.ParentId,
+            comment.ReplyToId,
+            comment.Content,
+            comment.CreatedAt,
+            comment.UpdatedAt,
+        }
+    } else if comment.ParentId != nil {
+        SQL = `INSERT INTO comments (id, post_id, user_id, parent_id, content, created_at, updated_at)
             VALUES ($1, $2, $3, $4, $5, $6, $7)`
-		args = []interface{}{
-			comment.Id,
-			comment.PostId,
-			comment.UserId,
-			comment.ParentId,
-			comment.Content,
-			comment.CreatedAt,
-			comment.UpdatedAt,
-		}
-	} else {
-		SQL = `INSERT INTO comments (id, post_id, user_id, content, created_at, updated_at)
+        args = []interface{}{
+            comment.Id,
+            comment.PostId,
+            comment.UserId,
+            comment.ParentId,
+            comment.Content,
+            comment.CreatedAt,
+            comment.UpdatedAt,
+        }
+    } else {
+        SQL = `INSERT INTO comments (id, post_id, user_id, content, created_at, updated_at)
             VALUES ($1, $2, $3, $4, $5, $6)`
-		args = []interface{}{
-			comment.Id,
-			comment.PostId,
-			comment.UserId,
-			comment.Content,
-			comment.CreatedAt,
-			comment.UpdatedAt,
-		}
-	}
+        args = []interface{}{
+            comment.Id,
+            comment.PostId,
+            comment.UserId,
+            comment.Content,
+            comment.CreatedAt,
+            comment.UpdatedAt,
+        }
+    }
 
-	_, err := tx.ExecContext(ctx, SQL, args...)
-	if err != nil {
-		helper.PanicIfError(err)
-	}
+    _, err := tx.ExecContext(ctx, SQL, args...)
+    if err != nil {
+        helper.PanicIfError(err)
+    }
 
-	return comment
+    return comment
 }
 
 func (repository *CommentRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, commentId uuid.UUID) (domain.Comment, error) {
-	SQL := `SELECT c.id, c.post_id, c.user_id, c.parent_id, c.content, c.created_at, c.updated_at,
+    SQL := `SELECT c.id, c.post_id, c.user_id, c.parent_id, c.reply_to_id, c.content, c.created_at, c.updated_at,
            u.id, u.name, COALESCE(u.username, '') as username, COALESCE(u.photo, '') as photo
         FROM comments c
         JOIN users u ON c.user_id = u.id
         WHERE c.id = $1`
 
-	var comment domain.Comment
-	var user domain.User
-	var parentId sql.NullString
+    var comment domain.Comment
+    var user domain.User
+    var parentId sql.NullString
+    var replyToId sql.NullString
 
-	row := tx.QueryRowContext(ctx, SQL, commentId)
-	err := row.Scan(
-		&comment.Id,
-		&comment.PostId,
-		&comment.UserId,
-		&parentId,
-		&comment.Content,
-		&comment.CreatedAt,
-		&comment.UpdatedAt,
-		&user.Id,
-		&user.Name,
-		&user.Username,
-		&user.Photo,
-	)
+    row := tx.QueryRowContext(ctx, SQL, commentId)
+    err := row.Scan(
+        &comment.Id,
+        &comment.PostId,
+        &comment.UserId,
+        &parentId,
+        &replyToId,
+        &comment.Content,
+        &comment.CreatedAt,
+        &comment.UpdatedAt,
+        &user.Id,
+        &user.Name,
+        &user.Username,
+        &user.Photo,
+    )
 
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return comment, errors.New("comment not found")
-		}
-		return comment, err
-	}
+    if err != nil {
+        if err == sql.ErrNoRows {
+            return comment, errors.New("comment not found")
+        }
+        return comment, err
+    }
 
-	// Convert parentId from sql.NullString to *uuid.UUID
-	if parentId.Valid {
-		parentUUID, err := uuid.Parse(parentId.String)
-		if err == nil {
-			comment.ParentId = &parentUUID
-		}
-	}
+    // Convert parentId from sql.NullString to *uuid.UUID
+    if parentId.Valid {
+        parentUUID, err := uuid.Parse(parentId.String)
+        if err == nil {
+            comment.ParentId = &parentUUID
+        }
+    }
 
-	comment.User = &user
+    // Convert replyToId from sql.NullString to *uuid.UUID
+    if replyToId.Valid {
+        replyToUUID, err := uuid.Parse(replyToId.String)
+        if err == nil {
+            comment.ReplyToId = &replyToUUID
+        }
+    }
 
-	// Get comment replies
-	if comment.ParentId == nil { // Only load replies for main comments
-		comment.Replies = repository.FindRepliesByParentId(ctx, tx, comment.Id)
-	}
+    comment.User = &user
 
-	return comment, nil
+    // Get comment replies
+    if comment.ParentId == nil { // Only load replies for main comments
+        comment.Replies = repository.FindRepliesByParentId(ctx, tx, comment.Id)
+    }
+
+    return comment, nil
 }
 
 func (repository *CommentRepositoryImpl) FindByPostId(ctx context.Context, tx *sql.Tx, postId uuid.UUID, parentIdFilter *uuid.UUID, limit, offset int) ([]domain.Comment, error) {
@@ -306,59 +329,69 @@ func (repository *CommentRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx,
 
 // Fungsi yang sama dengan FindRepliesByParentId tetapi dengan penanganan error yang lebih baik
 func (repository *CommentRepositoryImpl) FindRepliesByParentIdSafe(ctx context.Context, tx *sql.Tx, parentId uuid.UUID) ([]domain.Comment, error) {
-	SQL := `SELECT c.id, c.post_id, c.user_id, c.parent_id, c.content, c.created_at, c.updated_at,
+    SQL := `SELECT c.id, c.post_id, c.user_id, c.parent_id, c.reply_to_id, c.content, c.created_at, c.updated_at,
            u.id, u.name, COALESCE(u.username, '') as username, COALESCE(u.photo, '') as photo
         FROM comments c
         JOIN users u ON c.user_id = u.id
         WHERE c.parent_id = $1
         ORDER BY c.created_at ASC`
 
-	rows, err := tx.QueryContext(ctx, SQL, parentId)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+    rows, err := tx.QueryContext(ctx, SQL, parentId)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
 
-	var replies []domain.Comment
-	for rows.Next() {
-		var reply domain.Comment
-		var user domain.User
-		var replyParentId sql.NullString
+    var replies []domain.Comment
+    for rows.Next() {
+        var reply domain.Comment
+        var user domain.User
+        var replyParentId sql.NullString
+        var replyToId sql.NullString
 
-		err := rows.Scan(
-			&reply.Id,
-			&reply.PostId,
-			&reply.UserId,
-			&replyParentId,
-			&reply.Content,
-			&reply.CreatedAt,
-			&reply.UpdatedAt,
-			&user.Id,
-			&user.Name,
-			&user.Username,
-			&user.Photo,
-		)
-		if err != nil {
-			return nil, err
-		}
+        err := rows.Scan(
+            &reply.Id,
+            &reply.PostId,
+            &reply.UserId,
+            &replyParentId,
+            &replyToId,
+            &reply.Content,
+            &reply.CreatedAt,
+            &reply.UpdatedAt,
+            &user.Id,
+            &user.Name,
+            &user.Username,
+            &user.Photo,
+        )
+        if err != nil {
+            return nil, err
+        }
 
-		// Convert parentId from sql.NullString to *uuid.UUID
-		if replyParentId.Valid {
-			parentUUID, err := uuid.Parse(replyParentId.String)
-			if err == nil {
-				reply.ParentId = &parentUUID
-			}
-		}
+        // Convert parentId from sql.NullString to *uuid.UUID
+        if replyParentId.Valid {
+            parentUUID, err := uuid.Parse(replyParentId.String)
+            if err == nil {
+                reply.ParentId = &parentUUID
+            }
+        }
 
-		reply.User = &user
-		replies = append(replies, reply)
-	}
+        // Convert replyToId from sql.NullString to *uuid.UUID
+        if replyToId.Valid {
+            replyToUUID, err := uuid.Parse(replyToId.String)
+            if err == nil {
+                reply.ReplyToId = &replyToUUID
+            }
+        }
 
-	if err = rows.Err(); err != nil {
-		return nil, err
-	}
+        reply.User = &user
+        replies = append(replies, reply)
+    }
 
-	return replies, nil
+    if err = rows.Err(); err != nil {
+        return nil, err
+    }
+
+    return replies, nil
 }
 
 // Tetap mempertahankan fungsi lama untuk kompatibilitas

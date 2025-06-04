@@ -289,6 +289,7 @@ func (service *CommentBlogServiceImpl) Reply(ctx context.Context, commentId uuid
         Id:           parentComment.Id,
         Content:      parentComment.Content,
         Username:     parentUser.Username,
+        Name:         parentUser.Name,
         ProfilePhoto: parentUser.Photo,
     }
 
@@ -337,6 +338,7 @@ func (service *CommentBlogServiceImpl) GetReplies(ctx context.Context, commentId
             Id:           parentComment.Id,
             Content:      parentComment.Content,
             Username:     parentUser.Username,
+            Name:         parentUser.Name,
             ProfilePhoto: parentUser.Photo,
         }
         

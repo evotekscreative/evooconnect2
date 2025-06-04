@@ -163,3 +163,26 @@
 }
 
 
+.ck-editor-container {
+  isolation: isolate; /* Membuat stacking context baru */
+}
+
+.ck-editor-container .ck-toolbar {
+  position: relative;
+  z-index: 10;
+}
+
+.ck-editor-container .ck-dropdown__panel {
+  z-index: 1001;
+}
+
+/* Pastikan navbar memiliki z-index yang lebih tinggi */
+.navbar {
+  z-index: 1100;
+}
+
+.ck-powered-by {
+  display: none !important;
+}
+
+

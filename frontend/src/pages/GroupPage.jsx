@@ -1826,7 +1826,7 @@ export default function GroupPage() {
                   <div className="absolute -bottom-8 left-4">
                     <div className="relative">
                       <img
-                        className="rounded-full object-cover w-16 h-16 border-4 border-white"
+                        className="rounded-lg object-cover w-16 h-16 border-4 border-white"
                         src={
                           group.image
                             ? `${apiUrl}/${group.image}`

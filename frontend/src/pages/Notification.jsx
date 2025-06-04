@@ -13,12 +13,14 @@ import {
   HeartCrack,
   Trash2,
   Eye,
+  Check,
+  X,
 } from "lucide-react";
 import Case from "../components/Case";
 import Alert from "../components/Auth/alert";
 
 const NotificationPage = () => {
-      const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+  const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
   const [notifTab, setNotifTab] = React.useState(() => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -48,6 +50,7 @@ const NotificationPage = () => {
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
   const [pusherChannel, setPusherChannel] = useState(null);
+  const [processingAction, setProcessingAction] = useState(null); // Track which notification is being processed
 
   const [alertInfo, setAlertInfo] = React.useState({
     show: false,
@@ -68,19 +71,15 @@ const NotificationPage = () => {
       label: "Connection",
       icon: <User className="w-4 h-4 mr-1" />,
     },
-    
-    
   ];
 
   useEffect(() => {
-  const searchParams = new URLSearchParams(window.location.search);
-  const tab = searchParams.get('tab') || 'all';
-  if (tab !== notifTab) {
-    setNotifTab(tab);
-  }
-}, [window.location.search]);
-
-
+    const searchParams = new URLSearchParams(window.location.search);
+    const tab = searchParams.get('tab') || 'all';
+    if (tab !== notifTab) {
+      setNotifTab(tab);
+    }
+  }, [window.location.search]);
 
   const getUserIdFromToken = (token) => {
     if (!token) return null;
@@ -94,7 +93,6 @@ const NotificationPage = () => {
     }
   };
 
-  // Function to format time as "X time ago"
   const formatTimeAgo = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -129,7 +127,6 @@ const NotificationPage = () => {
 
     if (!userId) return;
 
-    // Konfigurasi Pusher
     const pusher = new Pusher("a579dc17c814f8b723ea", {
       cluster: "ap1",
       authorizer: (channel) => {
@@ -167,13 +164,14 @@ const NotificationPage = () => {
 
       const newNotification = {
         id: notif.id,
-        type: notif.category, // <-- PENTING!
+        type: notif.category,
         title: notif.title,
         desc: notif.message,
         time: formatTimeAgo(notif.created_at),
         icon: getNotificationIcon(notif.category),
         actor: notif.actor,
         status: notif.status,
+        referenceId: notif.reference_id, // Add reference ID for connection requests
       };
 
       setNotifications((prev) => [newNotification, ...prev]);
@@ -235,6 +233,7 @@ const NotificationPage = () => {
         icon: getNotificationIcon(n.category),
         actor: n.actor,
         status: n.status,
+        referenceId: n.reference_id, // Add reference ID for connection requests
       }));
 
       setNotifications(notifData);
@@ -264,7 +263,6 @@ const NotificationPage = () => {
         }
       );
 
-      // Update status notifikasi di local state
       setNotifications((prev) =>
         prev.map((n) =>
           n.id === notificationId ? { ...n, status: "read" } : n
@@ -289,7 +287,6 @@ const NotificationPage = () => {
         }
       );
 
-      // Update semua notifikasi ke status read
       setNotifications((prev) => prev.map((n) => ({ ...n, status: "read" })));
       setUnreadCount(0);
 
@@ -349,7 +346,7 @@ const NotificationPage = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-      setNotifications([]); // Kosongkan notifikasi di state
+      setNotifications([]);
       setModalOpen(false);
       setSelectedNotifId(null);
       setAlertInfo({
@@ -373,14 +370,12 @@ const NotificationPage = () => {
     setSelectedToDelete([]);
   };
 
-  // Handle checkbox change
   const handleCheckboxChange = (id) => {
     setSelectedToDelete((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
   };
 
-  // ...existing code...
   const handleDeleteByCategory = async (category) => {
     const token = localStorage.getItem("token");
     setLoading(true);
@@ -394,7 +389,6 @@ const NotificationPage = () => {
           },
         }
       );
-      // Hapus notifikasi di state sesuai kategori
       setNotifications((prev) => prev.filter((n) => n.type !== category));
       setAlertInfo({
         show: true,
@@ -411,7 +405,66 @@ const NotificationPage = () => {
       setLoading(false);
     }
   };
-  // ...existing code...
+
+  // Handle accept connection request
+  const handleAcceptConnection = async (notification) => {
+    const token = localStorage.getItem("token");
+    setProcessingAction(notification.id);
+    
+    try {
+      await axios.put(
+        `${apiUrl}/api/connections/requests/${notification.referenceId}/accept`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Update notification status
+      setNotifications(prev => prev.filter(n => n.id !== notification.id));
+      setAlertInfo({
+        show: true,
+        type: "success",
+        message: "Connection request accepted!",
+      });
+    } catch (error) {
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: error.response?.data?.message || "Failed to accept connection",
+      });
+    } finally {
+      setProcessingAction(null);
+    }
+  };
+
+  // Handle reject connection request
+  const handleRejectConnection = async (notification) => {
+    const token = localStorage.getItem("token");
+    setProcessingAction(notification.id);
+    
+    try {
+      await axios.put(
+        `${apiUrl}/api/connections/requests/${notification.referenceId}/reject`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Update notification status
+      setNotifications(prev => prev.filter(n => n.id !== notification.id));
+      setAlertInfo({
+        show: true,
+        type: "success",
+        message: "Connection request rejected",
+      });
+    } catch (error) {
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: error.response?.data?.message || "Failed to reject connection",
+      });
+    } finally {
+      setProcessingAction(null);
+    }
+  };
 
   return (
     <Case>
@@ -662,6 +715,46 @@ const NotificationPage = () => {
                                 )}
                               </div>
                             </div>
+                            
+                            {/* Add Accept/Reject buttons for connection requests */}
+                            {n.type === "connection" && n.referenceId && (
+                              <div className="flex gap-2 mt-2">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAcceptConnection(n);
+                                  }}
+                                  disabled={processingAction === n.id}
+                                  className="flex items-center gap-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs transition disabled:opacity-50"
+                                >
+                                  {processingAction === n.id ? (
+                                    "Processing..."
+                                  ) : (
+                                    <>
+                                      <Check size={14} />
+                                      Accept
+                                    </>
+                                  )}
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRejectConnection(n);
+                                  }}
+                                  disabled={processingAction === n.id}
+                                  className="flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs transition disabled:opacity-50"
+                                >
+                                  {processingAction === n.id ? (
+                                    "Processing..."
+                                  ) : (
+                                    <>
+                                      <X size={14} />
+                                      Reject
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))
@@ -771,8 +864,7 @@ const NotificationPage = () => {
                   React.cloneElement(tab.icon, { size: 20 })
                 ) : (
                   <span className="h-5 w-5" />
-                )}{" "}
-                {/* Placeholder jika tidak ada icon */}
+                )}
                 <span className="text-xs mt-1">{tab.label}</span>
               </button>
             ))}
