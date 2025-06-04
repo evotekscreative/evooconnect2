@@ -381,10 +381,9 @@ const router = createBrowserRouter([
     path: "/company-status",
     element: <CreateCompanyStatus />,
   },
-  // {
-  //   path: "/company-management",
-  //   element: <ProtectedCompanyRoute />,
-  //   children: [
+  {
+    path: "/company-management",
+    children: [
       {
         path: "company-detail",
         element: <CompanyDetail />,
@@ -397,8 +396,8 @@ const router = createBrowserRouter([
         path: "company-edit",
         element: <CompanyEdit />,
       },
-//     ],  
-// },
+    ],  
+},
 ]);
 
 export default router;
