@@ -37,11 +37,16 @@ import Dashboard from "./pages/Admin/Admin1/Dashboard.jsx";
 import Settings from "./pages/Admin/Admin1/Settings.jsx";
 import Tables from "./pages/Admin/Admin1/Tables.jsx";
 import ProtectedAdminRoute from "./components/Auth/ProtectedAdminRoute.jsx";
+
 import ListCompany from "./pages/Admin/Admin1/ListCompany.jsx";
 import ReportPage from "./pages/Admin/Admin1/Index.jsx";
 import ReportUser from "./pages/Admin/Report/ReportUser.jsx";
+
 import CreateCompanyStatus from "./pages/CreateCompanyStatus.jsx";
-import CompanyCards from "./pages/CompanyCards.jsx";
+import CompanyDetail from "./pages/CompanyCard/CompanyDetail.jsx";
+import CompanyPending from "./pages/CompanyCard/CompanyPending.jsx";
+import CompanyEdit from "./pages/CompanyCard/CompanyEdit.jsx"
+// import ProtectedCompanyRoute from "./components/Auth/protectedCompanyRoute.jsx";
 
 const router = createBrowserRouter([
   {
@@ -59,9 +64,19 @@ const router = createBrowserRouter([
         <Login />
       </IsGuest>
     ),
+    element: (
+      <IsGuest>
+        <Login />
+      </IsGuest>
+    ),
   },
   {
     path: "/register",
+    element: (
+      <IsGuest>
+        <Register />
+      </IsGuest>
+    ),
     element: (
       <IsGuest>
         <Register />
@@ -72,6 +87,7 @@ const router = createBrowserRouter([
     path: "/forgot-password",
     element: <ForgotPassword />,
   },
+
   {
     path: "/terms",
     element: <TermsCondition />,
@@ -88,6 +104,7 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+
   {
     path: "/jobs",
     element: (
@@ -96,6 +113,7 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+
   {
     path: "/jobs/:jobId",
     element: (
@@ -104,6 +122,7 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+
   {
     path: "/job-saved",
     element: (
@@ -112,6 +131,16 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+
+  // {
+  //   path: "/help",
+  //   element: (
+  //     <ProtectedRoute>
+  //       <HelpPage />
+  //     </ProtectedRoute>
+  //   ),
+  // },
+
   {
     path: "/profile",
     element: (
@@ -120,6 +149,7 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+
   {
     path: "/edit-profile",
     element: (
@@ -128,6 +158,7 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+
   {
     path: "/faq",
     element: (
@@ -157,6 +188,14 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <ListConnection />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/list-connection/:username",
+    element: (
+      <ProtectedRoute>
+        <UserListConnection />
       </ProtectedRoute>
     ),
   },
@@ -239,9 +278,27 @@ const router = createBrowserRouter([
         <UserPostPage />
       </ProtectedRoute>
     ),
+    element: (
+      <ProtectedRoute>
+        <PostPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/post-page/:username",
+    element: (
+      <ProtectedRoute>
+        <UserPostPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/verify-email",
+    element: (
+      <ProtectedRoute>
+        <VerifyEmail />
+      </ProtectedRoute>
+    ),
     element: (
       <ProtectedRoute>
         <VerifyEmail />
@@ -272,7 +329,7 @@ const router = createBrowserRouter([
     path: "/post/:postId",
     element: <SinglePost />,
   },
-  // Company-related routes
+
   {
     path: "/create-company",
     element: (
@@ -281,23 +338,6 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-  {
-    path: "/create-company/status",
-    element: (
-      <ProtectedRoute>
-        <CreateCompanyStatus />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/company-cards",
-    element: (
-      <ProtectedRoute>
-        <CompanyCards />
-      </ProtectedRoute>
-    ),
-  },
-  // Admin routes
   {
     path: "/login-admin",
     element: <LoginAdmin />,
@@ -334,8 +374,31 @@ const router = createBrowserRouter([
         path: "create-company",
         element: <CreateCompany />,
       }
+
     ],
-  }
+  },
+  {
+    path: "/company-status",
+    element: <CreateCompanyStatus />,
+  },
+  // {
+  //   path: "/company-management",
+  //   element: <ProtectedCompanyRoute />,
+  //   children: [
+      {
+        path: "company-detail",
+        element: <CompanyDetail />,
+      },
+      {
+        path: "company-pending",
+        element: <CompanyPending />,
+      },
+      {
+        path: "company-edit",
+        element: <CompanyEdit />,
+      },
+//     ],  
+// },
 ]);
 
 export default router;
