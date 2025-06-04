@@ -578,13 +578,12 @@ export default function UserProfile() {
                     connectionStatus === "pending" ||
                     loadingConnection
                   }
-                  className={`w-full py-2 rounded-md text-sm font-medium transition-colors ${
-                    isConnected
-                      ? "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 text-white"
-                      : connectionStatus === "pending"
+                  className={`w-full py-2 rounded-md text-sm font-medium transition-colors ${isConnected
+                    ? "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 text-white"
+                    : connectionStatus === "pending"
                       ? "bg-blue-100 text-blue-800 cursor-default"
                       : "border border-blue-500 text-blue-500 <hover:bg-sky-5></hover:bg-sky-5>00"
-                  } flex items-center justify-center`}
+                    } flex items-center justify-center`}
                 >
                   {loadingConnection ? (
                     <>
@@ -665,7 +664,7 @@ export default function UserProfile() {
           <div className="w-full space-y-4 md:w-2/3">
             {/* About Section */}
             <div className="p-6 bg-white rounded-lg shadow-md">
-              <h3 className="text-lg font-semibold">About You</h3>
+              <h3 className="text-lg font-semibold">About</h3>
               <p className="mt-3 text-base text-gray-600">
                 {user.about || "No information provided yet."}
               </p>
@@ -709,7 +708,7 @@ export default function UserProfile() {
                           <p className="text-sm text-gray-500">
                             {formatDate(exp.start_month, exp.start_year)} -{" "}
                             {exp.end_month === "Month" ||
-                            exp.end_year === "Year"
+                              exp.end_year === "Year"
                               ? "Present"
                               : formatDate(exp.end_month, exp.end_year)}
                           </p>
@@ -773,7 +772,7 @@ export default function UserProfile() {
                           <p className="text-sm text-gray-500">
                             {formatDate(edu.start_month, edu.start_year)} -{" "}
                             {edu.end_month === "Month" ||
-                            edu.end_year === "Year"
+                              edu.end_year === "Year"
                               ? "Present"
                               : formatDate(edu.end_month, edu.end_year)}
                           </p>
@@ -941,14 +940,14 @@ export default function UserProfile() {
               </div>
 
               <style>{`
-    .scrollbar-hide::-webkit-scrollbar {
-      display: none;
-    }
-    .scrollbar-hide {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
-  `}</style>
+                .scrollbar-hide::-webkit-scrollbar {
+                  display: none;
+                }
+                .scrollbar-hide {
+                  -ms-overflow-style: none;
+                  scrollbar-width: none;
+                }
+              `}</style>
               <div className="flex justify-center mt-4">
                 <button className="text-[#00AEEF] text-asmibold font-semibold hover:underline">
                   <Link to={`/post-page/${username}`}> See All Post </Link>
@@ -1157,8 +1156,8 @@ export default function UserProfile() {
                     {isLoading
                       ? "Saving..."
                       : editingExperience
-                      ? "Update"
-                      : "Save"}
+                        ? "Update"
+                        : "Save"}
                   </button>
                 </div>
               </div>
@@ -1353,8 +1352,8 @@ export default function UserProfile() {
                     {isLoading
                       ? "Saving..."
                       : editingEducation
-                      ? "Update"
-                      : "Save"}
+                        ? "Update"
+                        : "Save"}
                   </button>
                 </div>
               </div>

@@ -37,6 +37,10 @@ export default function SearchResults() {
   const postsRef = useRef(null);
   const blogsRef = useRef(null);
 
+  // Tambahkan state untuk loading dan requested pada grup
+  const [groupLoading, setGroupLoading] = useState({});
+  const [groupRequested, setGroupRequested] = useState({});
+
   useEffect(() => {
     const fetchSearchResults = async () => {
       if (!query) return;
@@ -87,34 +91,16 @@ export default function SearchResults() {
     }
   };
 
+  // Update handleJoinGroup to only handle API, not UI state
   const handleJoinGroup = async (groupId) => {
-    try {
-      const token = localStorage.getItem("token");
-      await axios.post(
-        `${base_url}/api/groups/${groupId}/join`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      // Update the local state to reflect the change
-      setResults((prev) => ({
-        ...prev,
-        groups: prev.groups.map((group) =>
-          group.id === groupId
-            ? {
-                ...group,
-                is_member: true,
-                member_count: group.member_count + 1,
-              }
-            : group
-        ),
-      }));
-    } catch (error) {
-      console.error("Error joining group:", error);
-      // You might want to show an error message to the user
-    }
+    setGroupLoading((prev) => ({ ...prev, [groupId]: true }));
+    // Simulasi loading 2 detik
+    setTimeout(() => {
+      setGroupLoading((prev) => ({ ...prev, [groupId]: false }));
+      setGroupRequested((prev) => ({ ...prev, [groupId]: true }));
+    }, 2000);
+    // Jika ingin request ke API, bisa tambahkan di sini
+    // await axios.post(...);
   };
 
   const handleConnect = async (userId) => {
@@ -162,10 +148,10 @@ export default function SearchResults() {
                 <Search className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">
+                <h1 className="text-2xl font-bold text-gray-900">
                   Search Results
                 </h1>
-                <p className="text-gray-600 mt-1">
+                <p className="text-gray-600 mt-1 text-s">
                   Found{" "}
                   <span className="font-semibold text-blue-600">
                     {totalResults}
@@ -582,13 +568,28 @@ export default function SearchResults() {
                                     </div>
                                   </Link>
 
-                                  {group.is_member ? (
-                                    <button className="ml-4 px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-500  text-white rounded-lg font-semibold border-2 border-gray-200">
-                                      Joined
+                                  {/* Button logic */}
+                                  {groupRequested[group.id] ? (
+                                    <button
+                                      className="ml-4 px-6 py-2 bg-gray-300 text-gray-600 rounded-lg font-semibold border-2 border-gray-200 cursor-not-allowed"
+                                      disabled
+                                    >
+                                      Requested
+                                    </button>
+                                  ) : groupLoading[group.id] ? (
+                                    <button
+                                      className="ml-4 px-6 py-2 bg-gray-100 text-gray-500 rounded-lg font-semibold border-2 border-gray-200 flex items-center gap-2 cursor-wait"
+                                      disabled
+                                    >
+                                      <svg className="animate-spin h-5 w-5 text-gray-400" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                                      </svg>
+                                      Joining Group...
                                     </button>
                                   ) : (
                                     <button
-                                      className="ml-4 px-6 py-2 bg-gradient-to-r from-blue-500 to-cyan-400  text-white rounded-lg font-semibold hover:from-blue-600 hover:to-cyan-500 transform hover:scale-105 transition-all duration-200 shadow-lg"
+                                      className="ml-4 px-6 py-2 bg-gradient-to-r from-blue-500 to-cyan-400 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-cyan-500 transform hover:scale-105 transition-all duration-200 shadow-lg"
                                       onClick={(e) => {
                                         e.preventDefault();
                                         handleJoinGroup(group.id);

@@ -1,3 +1,5 @@
+import React, { useState } from "react";
+
 export default function CreateGroupModal({
   showModal,
   setShowModal,
@@ -8,10 +10,26 @@ export default function CreateGroupModal({
   handleFileChange,
   handleCreateGroup
 }) {
+  // Tambahkan state untuk preview gambar
+  const [imagePreview, setImagePreview] = useState(null);
+
+  // Handler baru untuk file change agar bisa preview
+  const onFileChange = (e) => {
+    handleFileChange(e);
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setImagePreview(reader.result);
+      reader.readAsDataURL(file);
+    } else {
+      setImagePreview(null);
+    }
+  };
+
   return (
     showModal && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 sm:p-8 space-y-6">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 sm:p-8 space-y-6 max-h-[95vh] overflow-y-auto">
           <h3 className="text-xl font-bold text-gray-800">Create New Group</h3>
 
           {error && (
@@ -90,11 +108,18 @@ export default function CreateGroupModal({
               <input
                 type="file"
                 name="image"
-                onChange={handleFileChange}
+                onChange={onFileChange}
                 accept="image/*"
                 className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 required
               />
+              {imagePreview && (
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="mt-3 w-32 h-32 object-cover rounded-lg border"
+                />
+              )}
             </div>
             <div className="flex justify-end space-x-3">
               <button

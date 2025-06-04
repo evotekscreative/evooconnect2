@@ -10,11 +10,11 @@ export default function ProfileSocialMedia({ socials, socialPlatforms }) {
               (p) => p.name.toLowerCase() === platformKey
             );
             let url = "#";
-            if (platformKey === "instagram") url = `${username}`;
-            else if (platformKey === "facebook") url = `${username}`;
-            else if (platformKey === "twitter") url = `${username}`;
-            else if (platformKey === "linkedin") url = `/${username}`;
-            else if (platformKey === "github") url = `${username}`;
+            if (platformKey === "instagram") url = `https://www.instagram.com/${username}`;
+            else if (platformKey === "facebook") url = `https://www.facebook.com/${username}`;
+            else if (platformKey === "twitter") url = `https://x.com/${username}`;
+            else if (platformKey === "linkedin") url = `https://www.linkedin.com/in/${username}`;
+            else if (platformKey === "github") url = `https://github.com/${username}`;
 
             return (
               <a
