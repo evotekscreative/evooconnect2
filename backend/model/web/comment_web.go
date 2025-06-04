@@ -43,8 +43,8 @@ type CommentResponse struct {
 
 type ReplyToInfo struct {
     Id          uuid.UUID `json:"reply_to_id"`
-    Content     string    `json:"content"`
-    Username    string    `json:"username"`
+    Content     string     `json:"content"`
+    Username    string      `json:"username"`
     Name        string    `json:"name"`
     ProfilePhoto string    `json:"profile_photo"`
 }
