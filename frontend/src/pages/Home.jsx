@@ -67,13 +67,9 @@ export default function SocialNetworkFeed() {
   const [editActiveTab, setEditActiveTab] = useState("update");
   const [editPostContent, setEditPostContent] = useState("");
   const [editArticleContent, setEditArticleContent] = useState("");
-<<<<<<< HEAD
-  const [articleImages, setArticleImages] = useState([]);
-=======
   const [newPostImages, setNewPostImages] = useState([]); // Untuk create post
   const [editPostImages, setEditPostImages] = useState([]); // Untuk gambar yang sudah ada di edit post
   const [newEditImages, setNewEditImages] = useState([]);
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [currentPostId, setCurrentPostId] = useState(null);
   const [commentText, setCommentText] = useState("");
@@ -711,12 +707,6 @@ export default function SocialNetworkFeed() {
       newPostImages.forEach((img) => {
         if (img.file) {
           formData.append("images", img.file);
-<<<<<<< HEAD
-        } else if (typeof img === "string") {
-          // Jika ini URL gambar yang sudah ad
-          formData.append("existingImages", img);
-=======
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
         }
       });
 
@@ -942,17 +932,6 @@ export default function SocialNetworkFeed() {
             replyTo: reply.reply_to_id
               ? response.data.data.find((r) => r.id === reply.reply_to_id)?.user
                 ? {
-<<<<<<< HEAD
-                    id: response.data.data.find((r) => r.id === reply.reply_to_id).user.id,
-                    name:
-                      response.data.data.find((r) => r.id === reply.reply_to_id).user.name ||
-                      "Unknown User",
-                    username:
-                      response.data.data.find((r) => r.id === reply.reply_to_id).user
-                        .username || "unknown",
-                    initials: response.data.data.find((r) => r.id === reply.reply_to_id).user
-                      .name
-=======
                     id: response.data.data.find(
                       (r) => r.id === reply.reply_to_id
                     ).user.id,
@@ -965,7 +944,6 @@ export default function SocialNetworkFeed() {
                     initials: response.data.data.find(
                       (r) => r.id === reply.reply_to_id
                     ).user.name
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
                       ? response.data.data
                           .find((r) => r.id === reply.reply_to_id)
                           .user.name.split(" ")
@@ -1113,7 +1091,7 @@ export default function SocialNetworkFeed() {
         `${apiUrl}/api/comments/${commentId}/replies`,
         {
           content: replyText,
-          replyTo: replyToUser?.id, // Kirim ID user yang direply
+          replyTo: replyToUser?.id,
         },
         {
           headers: {
@@ -1134,21 +1112,7 @@ export default function SocialNetworkFeed() {
                 .join("")
             : "CU",
         },
-<<<<<<< HEAD
-        replyTo: replyToUser
-          ? {
-              id: replyToUser.id,
-              name: replyToUser.name,
-              username: replyToUser.username,
-              initials: replyToUser.name
-                .split(" ")
-                .map((n) => n[0])
-                .join(""),
-            }
-          : null,
-=======
         reply_to: response.data.data.reply_to, // Pastikan ini disimpan
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
       };
 
       // Update state
@@ -1157,8 +1121,6 @@ export default function SocialNetworkFeed() {
         [commentId]: [...(prev[commentId] || []), newReply],
       }));
 
-<<<<<<< HEAD
-=======
       // Update comment replies count
       setComments((prev) => {
         const updated = { ...prev };
@@ -1176,7 +1138,6 @@ export default function SocialNetworkFeed() {
         return updated;
       });
 
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
       // Reset form
       setReplyText("");
       setReplyingTo(null);
@@ -1322,29 +1283,16 @@ export default function SocialNetworkFeed() {
       formData.append("visibility", postVisibility);
 
       // Tambahkan gambar yang sudah ada dan tidak dihapus
-<<<<<<< HEAD
-      articleImages.forEach((img) => {
-        if (typeof img === "string") {
-          // Hanya URL string yang sudah ada
-=======
       editPostImages.forEach((img) => {
         if (typeof img === "string") {
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
           formData.append("existingImages", img);
         }
       });
 
       // Tambahkan gambar baru
-<<<<<<< HEAD
-      newImages.forEach((file) => {
-        formData.append("images", file);
-      });
-
-=======
       newEditImages.forEach((img) => {
         formData.append("images", img.file);
       });
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
       // Kirim permintaan update
       const response = await axios.put(
         `${apiUrl}/api/posts/${editingPost.id}`,
@@ -1409,13 +1357,8 @@ export default function SocialNetworkFeed() {
     setEditingPost(post);
     setEditPostContent(post.content);
     setEditArticleContent(post.content);
-<<<<<<< HEAD
-    setArticleImages(post.images || []);
-    setNewImages([]);
-=======
     setEditPostImages(post.images || []); // Set gambar yang sudah ada
     setNewEditImages([]); // Reset gambar baru
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
     setRemovedImages([]);
     setPostVisibility(post.visibility || "public");
     setEditActiveTab("update");
@@ -2478,17 +2421,9 @@ export default function SocialNetworkFeed() {
           name: userData.name,
           username: userData.username,
           initials: userData.name
-<<<<<<< HEAD
-            ? userData.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
-            : "UU",
-=======
             .split(" ")
             .map((n) => n[0])
             .join(""),
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
           photo: userData.photo,
         });
         setProfileImage(userData.photo);
@@ -3228,11 +3163,7 @@ export default function SocialNetworkFeed() {
               <textarea
                 className="w-full border rounded-lg p-2 mb-4"
                 rows="4"
-<<<<<<< HEAD
-                value={editPostContent}
-=======
                 value={editPostContent.replace(/<[^>]+>/g, "")}
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
                 onChange={(e) => setEditPostContent(e.target.value)}
               />
             ) : (
@@ -3256,8 +3187,6 @@ export default function SocialNetworkFeed() {
                       "undo",
                       "redo",
                     ],
-<<<<<<< HEAD
-=======
                     heading: {
                       options: [
                         {
@@ -3285,7 +3214,6 @@ export default function SocialNetworkFeed() {
                         },
                       ],
                     },
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
                   }}
                 />
               </div>
@@ -4078,11 +4006,8 @@ export default function SocialNetworkFeed() {
                           )}
 
                           {/* Replies Section */}
-<<<<<<< HEAD
-=======
 
                           {/* Replies Section */}
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
                           {expandedReplies[comment.id] && (
                             <div className="mt-3 ml-4 pl-4 border-l-2 border-gray-200 space-y-3">
                               {loadingComments[comment.id] ? (
@@ -4128,46 +4053,6 @@ export default function SocialNetworkFeed() {
                                       </div>
 
                                       {/* Reply Content */}
-<<<<<<< HEAD
-                                      <div className="flex-1 min-w-0">
-                                        <div className="bg-gray-50 rounded-lg p-2">
-                                          {/* Reply User Info */}
-                                          <div className="flex items-center">
-                                            <Link
-                                              to={`/user-profile/${reply.user.username}`}
-                                              className="text-xs font-semibold text-gray-800 hover:text-blue-600 hover:underline"
-                                            >
-                                              {reply.user?.name ||
-                                                "Unknown User"}
-                                            </Link>
-
-                                            {reply.replyTo && (
-                                              <div className="flex items-center ml-2 text-gray-500">
-                                                <svg
-                                                  xmlns="http://www.w3.org/2000/svg"
-                                                  width="10"
-                                                  height="10"
-                                                  fill="currentColor"
-                                                  className="mr-1"
-                                                  viewBox="0 0 16 16"
-                                                >
-                                                  <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z" />
-                                                </svg>
-                                                <Link
-                                                  to={`/user-profile/${reply.replyTo.username}`}
-                                                  className="text-xs hover:underline"
-                                                >
-                                                  {reply.replyTo.name}
-                                                </Link>
-                                              </div>
-                                            )}
-                                          </div>
-
-                                          {/* Reply Text */}
-                                          <p className="text-xs text-gray-700 mt-1">
-                                            {reply.content}
-                                          </p>
-=======
                                       <div className="flex-1  min-w-0">
                                         <div className="bg-gray-50 rounded-lg p-2">
                                           {/* Reply User Info */}
@@ -4275,7 +4160,6 @@ export default function SocialNetworkFeed() {
                                               {reply.content}
                                             </p>
                                           )}
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
                                         </div>
 
                                         {/* Reply Meta */}
@@ -4294,28 +4178,6 @@ export default function SocialNetworkFeed() {
                                             >
                                               Reply
                                             </button>
-<<<<<<< HEAD
-
-                                            {reply.user?.id !==
-                                              currentUserId && (
-                                              <button
-                                                className="text-xs text-gray-500 hover:text-red-500"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  if (reply.user?.id) {
-                                                    handleReportClick(
-                                                      reply.user.id,
-                                                      "comment",
-                                                      reply.id
-                                                    );
-                                                  }
-                                                }}
-                                              >
-                                                <TriangleAlert size={14} />
-                                              </button>
-                                            )}
-=======
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
                                           </div>
                                         </div>
                                       </div>
@@ -4334,10 +4196,7 @@ export default function SocialNetworkFeed() {
             </div>
 
             {/* Comment Options Modal */}
-<<<<<<< HEAD
-=======
             {renderReplyOptionsModal()}
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
             {renderCommentOptionsModal()}
 
             {/* Add Comment Section */}

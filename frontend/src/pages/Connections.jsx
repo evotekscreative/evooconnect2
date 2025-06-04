@@ -176,30 +176,6 @@ export default function Connection() {
   };
 
   const fetchPeoples = async () => {
-<<<<<<< HEAD
-    const token = localStorage.getItem("token");
-    const currentUserId = parseInt(localStorage.getItem("userId"));
-    try {
-      const response = await axios.get(apiUrl + "/api/user-peoples", {
-        params: { limit: 9999, offset: 0 },
-        headers: {
-          Authorization: "Bearer " + token,
-        },
-      });
-
-      const pendingIds =
-        JSON.parse(localStorage.getItem("pendingConnections")) || [];
-
-      const mappedConnections = response.data.data
-        .filter((person) => person.id !== currentUserId)
-        .map((person) => ({
-          id: person.id,
-          name: person.name,
-          headline: person.headline || "No headline",
-          status: person.is_connected
-            ? "connected"
-            : pendingIds.includes(person.id)
-=======
   const token = localStorage.getItem("token");
   const currentUserId = localStorage.getItem("userId"); // Perhatikan ini menggunakan string bukan parseInt
   
@@ -220,7 +196,6 @@ export default function Connection() {
         status: person.is_connected 
           ? "connected" 
           : person.is_connected_request === "pending"
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
             ? "pending"
             : "connect",
         profile: person.photo || "",
@@ -248,20 +223,6 @@ export default function Connection() {
   }, [activeTab]);
 
   const handleConnect = async (id) => {
-<<<<<<< HEAD
-    const token = localStorage.getItem("token");
-    const person = connections.find((conn) => conn.id === id);
-
-    if (!person) return;
-
-    try {
-      // Update UI immediately
-      setConnections(
-        connections.map((conn) =>
-          conn.id === id ? { ...conn, status: "processing" } : conn
-        )
-      );
-=======
   const token = localStorage.getItem("token");
   const person = connections.find((conn) => conn.id === id);
 
@@ -274,7 +235,6 @@ export default function Connection() {
         conn.id === id ? { ...conn, status: "processing" } : conn
       )
     );
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
 
     const response = await axios.post(
       `${apiUrl}/api/users/${id}/connect`,
@@ -282,46 +242,6 @@ export default function Connection() {
       { headers: { Authorization: "Bearer " + token } }
     );
 
-<<<<<<< HEAD
-      // Update status based on response
-      const newStatus = response.data?.connected ? "connected" : "pending";
-
-      setConnections(
-        connections.map((conn) =>
-          conn.id === id ? { ...conn, status: newStatus } : conn
-        )
-      );
-
-      if (newStatus === "connected") {
-        setConnectedUsers((prev) => [
-          ...prev,
-          { ...person, status: "connected" },
-        ]);
-      }
-
-      setAlertInfo({
-        show: true,
-        type: "success",
-        message:
-          newStatus === "connected"
-            ? "Connected successfully!"
-            : "Connection request sent!",
-      });
-    } catch (error) {
-      setConnections(
-        connections.map((conn) =>
-          conn.id === id ? { ...conn, status: person.status } : conn
-        )
-      );
-
-      setAlertInfo({
-        show: true,
-        type: "error",
-        message: error.response?.data?.data || "Failed to connect",
-      });
-    }
-  };
-=======
     // Setelah berhasil connect, fetch ulang data
     await fetchPeoples();
 
@@ -338,7 +258,6 @@ export default function Connection() {
         conn.id === id ? { ...conn, status: person.status } : conn
       )
     );
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
 
     setAlertInfo({
       show: true,
@@ -361,50 +280,6 @@ export default function Connection() {
       headers: { Authorization: "Bearer " + token },
     });
 
-<<<<<<< HEAD
-      // const updatedPending = pendingIds.filter((pid) => pid !== id);
-      // localStorage.setItem(
-      //   "pendingConnections",
-      //   JSON.stringify(updatedPending)
-      // );
-
-      setConnections(
-        connections.map((conn) =>
-          conn.id === id ? { ...conn, status: "connect" } : conn
-        )
-      );
-
-      setInvitations((prev) => prev.filter((inv) => inv.id !== id));
-
-      setModalOpen(false);
-      setSelectedUser(null);
-      setAlertInfo({
-        show: true,
-        type: "success",
-        message: "Connection request cancelled",
-      });
-    } catch (error) {
-      setConnections(
-        connections.map((conn) =>
-          conn.id === id
-            ? {
-                ...conn,
-                status: "pending",
-              }
-            : conn
-        )
-      );
-      setModalOpen(false);
-      setSelectedUser(null);
-      setAlertInfo({
-        show: true,
-        type: "error",
-        message: error.response?.data?.message || "Connection request not found",
-      });
-    }
-  };
-
-=======
     // Setelah berhasil cancel, fetch ulang data
     await fetchPeoples();
 
@@ -431,7 +306,6 @@ export default function Connection() {
     });
   }
 };
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
   const handleAccept = async (id) => {
   const token = localStorage.getItem("token");
 
@@ -448,36 +322,6 @@ export default function Connection() {
       { ...invitations.find((inv) => inv.id === id), status: "connected" },
     ]);
 
-<<<<<<< HEAD
-      const response = await axios.put(
-        `${apiUrl}/api/connections/requests/${id}/accept`,
-        {},
-        { headers: { Authorization: "Bearer " + token } }
-      );
-
-      if (response.data.success) {
-        // Perbarui status di semua tempat
-        setInvitations(invitations.filter((inv) => inv.id !== id));
-        setConnections(
-          connections.map((conn) =>
-            conn.id === id ? { ...conn, status: "connected" } : conn
-          )
-        );
-        setConnectedUsers([
-          ...connectedUsers,
-          { ...invitations.find((inv) => inv.id === id), status: "connected" },
-        ]);
-      }
-    } catch (error) {
-      // Kembalikan ke status semula jika gagal
-      setInvitations(
-        invitations.map((inv) =>
-          inv.id === id ? { ...inv, status: "pending" } : inv
-        )
-      );
-    }
-  };
-=======
     // Then make the API call
     await axios.put(
       `${apiUrl}/api/connections/requests/${id}/accept`,
@@ -501,7 +345,6 @@ export default function Connection() {
     });
   }
 };
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
 
   const handleReject = async (id) => {
     const token = localStorage.getItem("token");

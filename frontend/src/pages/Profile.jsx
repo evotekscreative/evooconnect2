@@ -484,14 +484,7 @@ const hideAlert = () => {
       });
     } catch (error) {
       console.error("Failed to add/update experience:", error);
-<<<<<<< HEAD
       showAlert('error', `Failed to ${editingExperience ? "update" : "add"} experience. Please try again.`);
-=======
-      toast.error(
-        `Failed to ${editingExperience ? "update" : "add"
-        } experience. Please try again.`
-      );
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
     } finally {
       setIsLoading(false);
     }
@@ -565,14 +558,7 @@ const hideAlert = () => {
       });
     } catch (error) {
       console.error("Failed to add/update education:", error);
-<<<<<<< HEAD
       showAlert('error', `Failed to ${editingEducation ? "update" : "add"} education. Please try again.`);
-=======
-      toast.error(
-        `Failed to ${editingEducation ? "update" : "add"
-        } education. Please try again.`
-      );
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
     } finally {
       setIsLoading(false);
     }

@@ -30,13 +30,8 @@ import SinglePost from "./pages/SinglePost.jsx";
 import UserProfile from "./pages/userProfile.jsx";
 import UserPostPage from "./pages/UserPostPage.jsx";
 import MemberList from "./pages/MemberList.jsx";
-<<<<<<< HEAD
 import CreateCompany from "./pages/Jobs/CreateCompany.jsx";
 import UserListConnection from "./pages/UserListConnection.jsx";
-=======
-import UserListConnection from "./pages/UserListConnection.jsx";
-// Admin
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
 import LoginAdmin from "./pages/Admin/AuthAdmin/LoginAdmin.jsx";
 import Dashboard from "./pages/Admin/Admin1/Dashboard.jsx";
 import Settings from "./pages/Admin/Admin1/Settings.jsx";
@@ -46,14 +41,12 @@ import ProtectedAdminRoute from "./components/Auth/ProtectedAdminRoute.jsx";
 import ListCompany from "./pages/Admin/Admin1/ListCompany.jsx";
 import ReportPage from "./pages/Admin/Admin1/Index.jsx";
 import ReportUser from "./pages/Admin/Report/ReportUser.jsx";
-<<<<<<< HEAD
 
 import CreateCompanyStatus from "./pages/CreateCompanyStatus.jsx";
-import CompanyCards from "./pages/CompanyCards.jsx";
-=======
-import CreateCompany from "./pages/CreateCompany.jsx";
-import ListCompany from "./pages/Admin/Admin1/ListCompany.jsx";
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
+import CompanyDetail from "./pages/CompanyCard/CompanyDetail.jsx";
+import CompanyPending from "./pages/CompanyCard/CompanyPending.jsx";
+import CompanyEdit from "./pages/CompanyCard/CompanyEdit.jsx"
+// import ProtectedCompanyRoute from "./components/Auth/protectedCompanyRoute.jsx";
 
 const router = createBrowserRouter([
   {
@@ -231,27 +224,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-<<<<<<< HEAD
     path: "/groups/:groupId",
-=======
-    path: "/messages/:conversationId",
-    element: (
-      <ProtectedRoute>
-        <Messages />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/messages/:conversationId",
-    element: (
-      <ProtectedRoute>
-        <Messages />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/group-page",
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
     element: (
       <ProtectedRoute>
         <GroupPage />
@@ -313,7 +286,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/post-page/:username",
-    element:(
+    element: (
       <ProtectedRoute>
         <UserPostPage />
       </ProtectedRoute>
@@ -334,29 +307,6 @@ const router = createBrowserRouter([
   },
   {
     path: "/reset-password",
-<<<<<<< HEAD
-=======
-    element: <ResetPassword />,
-  },
-  {
-    path: "/user-profile/:username",
-    element: (
-      <ProtectedRoute>
-        <UserProfile />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/groups/:groupId/members",
-    element: (
-      <ProtectedRoute>
-        <MemberList />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/search",
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
     element: <ResetPassword />,
   },
   {
@@ -381,7 +331,6 @@ const router = createBrowserRouter([
   },
 
   {
-<<<<<<< HEAD
     path: "/create-company",
     element: (
       <ProtectedRoute>
@@ -390,21 +339,6 @@ const router = createBrowserRouter([
     ),
   },
   {
-=======
-  path: "/create-company",
-  element: (
-    <ProtectedRoute>
-      <CreateCompany />
-    </ProtectedRoute>
-  ),
-},
-{
-  path : "/post/:postId",
-   element : <SinglePost />
-},
-
-{
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
     path: "/login-admin",
     element: <LoginAdmin />,
   },
@@ -443,18 +377,28 @@ const router = createBrowserRouter([
 
     ],
   },
-<<<<<<< HEAD
   {
     path: "/company-status",
     element: <CreateCompanyStatus />,
   },
-  {
-    path: "/company-cards",
-    element: <CompanyCards />,
-  }
-=======
-
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
+  // {
+  //   path: "/company-management",
+  //   element: <ProtectedCompanyRoute />,
+  //   children: [
+      {
+        path: "company-detail",
+        element: <CompanyDetail />,
+      },
+      {
+        path: "company-pending",
+        element: <CompanyPending />,
+      },
+      {
+        path: "company-edit",
+        element: <CompanyEdit />,
+      },
+//     ],  
+// },
 ]);
 
 export default router;
