@@ -8,7 +8,7 @@ import (
 	"evoconnect/backend/model/domain"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
-	"fmt"
+	// "fmt"
 	"log"
 	"mime/multipart"
 	"time"
@@ -136,10 +136,7 @@ func (service *CompanySubmissionServiceImpl) FindByUserId(ctx context.Context, u
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
-	submissions, err := service.CompanySubmissionRepository.FindByUserId(ctx, tx, userId)
-	if err != nil {
-		return []web.CompanySubmissionResponse{}
-	}
+	submissions := service.CompanySubmissionRepository.FindByUserId(ctx, tx, userId)
 
 	var responses []web.CompanySubmissionResponse
 	for _, submission := range submissions {
@@ -249,34 +246,34 @@ func (service *CompanySubmissionServiceImpl) Review(ctx context.Context, submiss
 	}
 
 	// Send notification to user
-	if service.NotificationService != nil {
-		go func() {
-			var title, message string
-			refType := "company_submission_reviewed"
+	// if service.NotificationService != nil {
+	// 	go func() {
+	// 		var title, message string
+	// 		refType := "company_submission_reviewed"
 
-			if submission.Status == domain.CompanySubmissionStatusApproved {
-				title = "Company Submission Approved"
-				message = fmt.Sprintf("Congratulations! Your company submission for '%s' has been approved", submission.Name)
-			} else {
-				title = "Company Submission Rejected"
-				message = fmt.Sprintf("Your company submission for '%s' has been rejected. Reason: %s", submission.Name, submission.RejectionReason)
-			}
+	// 		if submission.Status == domain.CompanySubmissionStatusApproved {
+	// 			title = "Company Submission Approved"
+	// 			message = fmt.Sprintf("Congratulations! Your company submission for '%s' has been approved", submission.Name)
+	// 		} else {
+	// 			title = "Company Submission Rejected"
+	// 			message = fmt.Sprintf("Your company submission for '%s' has been rejected. Reason: %s", submission.Name, submission.RejectionReason)
+	// 		}
 
-			// Fix: Jangan kirim reviewerId sebagai actor_id karena itu admin ID, bukan user ID
-			// Kirim nil untuk actor_id atau buat sistem admin notification terpisah
-			service.NotificationService.Create(
-				context.Background(),
-				submission.UserId,
-				string(domain.NotificationCategoryCompany),
-				"company_submission_reviewed",
-				title,
-				message,
-				&submission.Id,
-				&refType,
-				nil, // Set actor_id ke nil karena admin bukan user
-			)
-		}()
-	}
+	// 		// Fix: Jangan kirim reviewerId sebagai actor_id karena itu admin ID, bukan user ID
+	// 		// Kirim nil untuk actor_id atau buat sistem admin notification terpisah
+	// 		service.NotificationService.Create(
+	// 			context.Background(),
+	// 			submission.UserId,
+	// 			string(domain.NotificationCategoryCompany),
+	// 			"company_submission_reviewed",
+	// 			title,
+	// 			message,
+	// 			&submission.Id,
+	// 			&refType,
+	// 			nil, // Set actor_id ke nil karena admin bukan user
+	// 		)
+	// 	}()
+	// }
 
 	log.Printf("Review process completed successfully")
 	return helper.ToCompanySubmissionResponse(submission)
@@ -294,4 +291,45 @@ func (service *CompanySubmissionServiceImpl) GetSubmissionStats(ctx context.Cont
 	stats["total"] = stats["pending"] + stats["approved"] + stats["rejected"]
 
 	return stats
+}
+
+func (service *CompanySubmissionServiceImpl) Delete(ctx context.Context, submissionId, userId uuid.UUID) error {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Find submission
+	submission, err := service.CompanySubmissionRepository.FindById(ctx, tx, submissionId)
+	if err != nil {
+		panic(exception.NewNotFoundError("Company submission not found"))
+	}
+
+	// Check if user is the owner
+	if submission.UserId != userId {
+		panic(exception.NewForbiddenError("You are not allowed to delete this submission"))
+	}
+
+	// check status
+	if submission.Status != domain.CompanySubmissionStatusPending {
+		panic(exception.NewBadRequestError("Only pending submissions can be deleted"))
+	}
+
+	companyLogo := submission.Logo
+
+	err = service.CompanySubmissionRepository.Delete(ctx, tx, submissionId)
+	if err != nil {
+		panic(exception.NewInternalServerError("Failed to delete company submission"))
+	}
+
+	// Delete logo file if it exists
+	if companyLogo != "" {
+		err = helper.DeleteFile(companyLogo)
+		if err != nil {
+			log.Printf("Failed to delete logo file: %v", err)
+			panic(exception.NewInternalServerError("Failed to delete logo file"))
+		}
+		log.Printf("Logo file deleted successfully: %s", companyLogo)
+	}
+
+	return nil
 }

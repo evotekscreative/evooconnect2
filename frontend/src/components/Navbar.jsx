@@ -15,61 +15,66 @@ const Navbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMsgOpen, setIsMsgOpen] = useState(false);
+  const [isBellOpen, setIsBellOpen] = useState(false);
   const navigate = useNavigate();
   const [user, setUser] = useState({
     name: "",
     photo: null,
   });
   const dropdownRef = useRef(null);
-      const mobileMenuRef = useRef(null);
+  const mobileMenuRef = useRef(null);
+  const msgRef = useRef(null);
+  const bellRef = useRef(null);
+
   const [notifications, setNotifications] = useState([]);
 
 
   // ... (keep all your existing useEffect hooks and helper functions)
 
- 
-   useEffect(() => {
-      // Fetch user data from localStorage
-      const fetchUserData = () => {
-        const userData = JSON.parse(localStorage.getItem("user"));
-        if (userData) {
-          setUser({
-            name: userData.name || "",
-            photo: userData.photo || null,
-          });
-        }
-      };
-  
-      fetchUserData();
-  
-      const handleClickOutside = (event) => {
-        if (!msgRef.current?.contains(event.target)) setIsMsgOpen(false);
-        if (!bellRef.current?.contains(event.target)) setIsBellOpen(false);
-        if (!dropdownRef.current?.contains(event.target))
-          setIsDropdownOpen(false);
-        if (!mobileMenuRef.current?.contains(event.target))
-          setIsMobileMenuOpen(false);
-      };
-  
-      const handleScroll = () => {
-        if (window.scrollY > 10) {
-          setIsScrolled(true);
-        } else {
-          setIsScrolled(false);
-        }
-      };
-  
-      document.addEventListener("mousedown", handleClickOutside);
-      window.addEventListener("scroll", handleScroll);
-  
-      return () => {
-        document.removeEventListener("mousedown", handleClickOutside);
-        window.removeEventListener("scroll", handleScroll);
-      };
-    }, []);
-  
-  
- const handleLogout = () => {
+
+  useEffect(() => {
+    // Fetch user data from localStorage
+    const fetchUserData = () => {
+      const userData = JSON.parse(localStorage.getItem("user"));
+      if (userData) {
+        setUser({
+          name: userData.name || "",
+          photo: userData.photo || null,
+        });
+      }
+    };
+
+    fetchUserData();
+
+    const handleClickOutside = (event) => {
+      if (!msgRef.current?.contains(event.target)) setIsMsgOpen(false);
+      if (!bellRef.current?.contains(event.target)) setIsBellOpen(false);
+      if (!dropdownRef.current?.contains(event.target))
+        setIsDropdownOpen(false);
+      if (!mobileMenuRef.current?.contains(event.target))
+        setIsMobileMenuOpen(false);
+    };
+
+    const handleScroll = () => {
+      if (window.scrollY > 10) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+
+  const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     window.location.href = "/login";
@@ -126,9 +131,8 @@ const Navbar = () => {
 
   return (
     <nav
-      className={`flex items-center justify-between px-4 sm:px-8 md:px-16 py-[13px] bg-sky-500 text-white shadow-sm font-sans sticky top-0 z-50 transition-all duration-300 ${
-        isScrolled ? "shadow-lg" : ""
-      }`}
+      className={`flex items-center justify-between px-4 sm:px-8 md:px-16 py-[13px] bg-sky-500 text-white shadow-sm font-sans sticky top-0 z-50 transition-all duration-300 ${isScrolled ? "shadow-lg" : ""
+        }`}
     >
       {/* Left: Logo + Hamburger Menu (mobile) */}
       <div className="flex items-center gap-3">
@@ -146,18 +150,18 @@ const Navbar = () => {
         <SearchBar />
       </div>
 
-      
+
 
       <div className="flex items-center gap-4">
         <NavLinks />
 
         <div className="flex items-center gap-4 sm:gap-6">
-          {/* Message Dropdown */}  <MessageDropdown/>  
+          {/* Message Dropdown */}  <MessageDropdown />
 
           {/* Notification Dropdown */}
-         
+
           <NotificationDropdown />
-     
+
 
           {/* User Dropdown */}
           <div ref={dropdownRef} className="relative">

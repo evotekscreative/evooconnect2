@@ -13,4 +13,5 @@ type CompanySubmissionController interface {
 	FindByStatus(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	Review(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	GetStats(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+	Delete(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 }

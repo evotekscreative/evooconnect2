@@ -77,6 +77,8 @@ func main() {
 	companyRepository := repository.NewCompanyRepository()
 	companySubmissionRepository := repository.NewCompanySubmissionRepository()
 
+	companyEditRequestRepository := repository.NewCompanyEditRequestRepository()
+
 	// ===== Services =====
 	// Notification service (moved up because it's used by many other services)
 	notificationService := service.NewNotificationService(
@@ -174,8 +176,6 @@ func main() {
 
 	// Admin auth service
 	adminAuthService := service.NewAdminAuthService(adminRepository, db, validate)
-<<<<<<< HEAD
-=======
 
 	// Company submission service
 	companySubmissionService := service.NewCompanySubmissionService(
@@ -187,7 +187,16 @@ func main() {
 		db,
 		validate,
 	)
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
+
+	companyManagementService := service.NewCompanyManagementService(
+		companyRepository,
+		companyEditRequestRepository,
+		userRepository,
+		adminRepository,
+		notificationService,
+		db,
+		validate,
+	)
 
 	// ===== Controllers =====
 	// User-related controllers
@@ -225,17 +234,14 @@ func main() {
 	// Search controller
 	searchController := controller.NewSearchController(searchService)
 
-<<<<<<< HEAD
-	adminAuthController := controller.NewAdminAuthController(adminAuthService)
-
-=======
-	// Admin controllers
 	adminAuthController := controller.NewAdminAuthController(adminAuthService)
 
 	// Company submission controller
 	companySubmissionController := controller.NewCompanySubmissionController(companySubmissionService)
 
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
+	companyManagementController := controller.NewCompanyManagementController(companyManagementService)
+	adminCompanyEditController := controller.NewAdminCompanyEditController(companyManagementService)
+
 	// ===== Router and Middleware =====
 	// Initialize router with all controllers and JWT secret
 	router := app.NewRouter(
@@ -255,15 +261,14 @@ func main() {
 		notificationController,
 		searchController,
 		adminAuthController,
-<<<<<<< HEAD
-=======
 		companySubmissionController,
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248
+		companyManagementController,
+		adminCompanyEditController,
 	)
 
 	// Seed admin data
 	seeder.SeedAdmin(db)
-	seeder.SeedAllData(db)
+	// seeder.SeedAllData(db)
 
 	// Create middleware chain (only CORS needed now since auth is handled per route)
 	var handler http.Handler = router
