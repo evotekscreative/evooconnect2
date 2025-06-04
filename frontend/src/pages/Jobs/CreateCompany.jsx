@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState } from "react"; 
 import { useNavigate } from "react-router-dom";
 import Case from "../../components/Case.jsx";
 import CompanyForm from "../../components/CreateCompany/CompanyForm.jsx";
@@ -7,7 +7,7 @@ import { toast } from "react-toastify";
 
 export default function CreateCompany() {
     const navigate = useNavigate();
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false); 
     const [form, setForm] = useState({
         name: "",
         url: "",
@@ -34,7 +34,7 @@ export default function CreateCompany() {
             setForm({ ...form, [name]: value });
         }
     };
-
+ 
     const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -112,18 +112,18 @@ export default function CreateCompany() {
     } finally {
         setIsSubmitting(false);
     }
-};
+}; 
 
     return (
         <Case>
             <form onSubmit={handleSubmit} className="bg-gray-100 p-6">
-                <div className="max-w-6xl mx-auto flex gap-8">
+                <div className="max-w-6xl mx-auto flex gap-8"> 
                     <CompanyForm
                         form={form}
                         logoPreview={logoPreview}
                         handleChange={handleChange}
                         isSubmitting={isSubmitting}
-                    />
+                    /> 
                     <CompanyPreview form={form} logoPreview={logoPreview} />
                 </div>
             </form>
