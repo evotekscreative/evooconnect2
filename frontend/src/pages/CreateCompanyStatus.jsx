@@ -149,4 +149,4 @@ export default function CreateCompanyStatus() {
       </div>
     </div>
   );
-}
+} 
