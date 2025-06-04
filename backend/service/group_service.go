@@ -32,4 +32,13 @@ type GroupService interface {
 	RejectInvitation(ctx context.Context, invitationId, userId uuid.UUID)
 	GetMyInvitations(ctx context.Context, userId uuid.UUID) []web.GroupInvitationResponse
 	CancelInvitation(ctx context.Context, invitationId, userId uuid.UUID) web.GroupInvitationResponse
+	IsGroupModeratorOrAdmin(ctx context.Context, groupId, userId uuid.UUID) bool
+	
+	// Join request management
+	CreateJoinRequest(ctx context.Context, userId uuid.UUID, groupId uuid.UUID, request web.CreateJoinRequestRequest) web.JoinRequestResponse
+	FindJoinRequestsByGroupId(ctx context.Context, groupId uuid.UUID, userId uuid.UUID, limit, offset int) []web.JoinRequestResponse
+	AcceptJoinRequest(ctx context.Context, requestId uuid.UUID, userId uuid.UUID) web.JoinRequestResponse
+	RejectJoinRequest(ctx context.Context, requestId uuid.UUID, userId uuid.UUID)
+	CancelJoinRequest(ctx context.Context, requestId uuid.UUID, userId uuid.UUID)
+	RemoveMemberWithBlock(ctx context.Context, groupId, userId, memberId uuid.UUID, block bool, reason string)
 }

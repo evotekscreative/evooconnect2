@@ -13,6 +13,7 @@ type CreateGroupRequest struct {
 	Image        string `json:"image"`
 	PrivacyLevel string `json:"privacy_level" validate:"required,oneof=public private"`
 	InvitePolicy string `json:"invite_policy" validate:"required,oneof=admin all_members"`
+	PostApproval bool   `json:"post_approval"` // Tambahkan field ini
 }
 
 type UpdateGroupRequest struct {
@@ -22,6 +23,7 @@ type UpdateGroupRequest struct {
 	Image        string `json:"image"`
 	PrivacyLevel string `json:"privacy_level" validate:"required,oneof=public private"`
 	InvitePolicy string `json:"invite_policy" validate:"required,oneof=admin all_members"`
+	PostApproval bool   `json:"post_approval"` // Tambahkan field ini
 }
 
 type GroupBrief struct {
@@ -42,9 +44,10 @@ type GroupResponse struct {
 	Image        *string            `json:"image"`
 	PrivacyLevel string             `json:"privacy_level"`
 	InvitePolicy string             `json:"invite_policy"`
+	PostApproval bool               `json:"post_approval"` // Tambahkan field ini
 	CreatorId    uuid.UUID          `json:"creator_id"`
-	Creator      UserBriefResponse  `json:"creator"`
-	Members      []GroupMemberBrief `json:"members"`
+	Creator      UserBriefResponse  `json:"creator,omitempty"`
+	Members      []GroupMemberBrief `json:"members,omitempty"`
 	MembersCount int                `json:"members_count"`
 	CreatedAt    time.Time          `json:"created_at"`
 	UpdatedAt    time.Time          `json:"updated_at"`
@@ -94,4 +97,9 @@ type LeaveGroupResponse struct {
 	GroupId uuid.UUID `json:"group_id"`
 	UserId  uuid.UUID `json:"user_id"`
 	LeftAt  time.Time `json:"left_at"`
+}
+
+type RemoveMemberRequest struct {
+	Block  bool   `json:"block"`
+	Reason string `json:"reason"`
 }

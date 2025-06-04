@@ -17,6 +17,7 @@ import (
 type GroupControllerImpl struct {
 	GroupService service.GroupService
 	PostService  service.PostService
+	
 }
 
 func NewGroupController(groupService service.GroupService, postService service.PostService) GroupController {
@@ -210,45 +211,48 @@ func (controller *GroupControllerImpl) CreatePost(writer http.ResponseWriter, re
 }
 
 func (controller *GroupControllerImpl) GetGroupPosts(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	userId, err := helper.GetUserIdFromToken(request)
-	helper.PanicIfError(err)
+    userId, err := helper.GetUserIdFromToken(request)
+    helper.PanicIfError(err)
 
-	// Parse group ID from URL
-	groupId, err := uuid.Parse(params.ByName("groupId"))
-	helper.PanicIfError(err)
+    // Parse group ID from URL
+    groupId, err := uuid.Parse(params.ByName("groupId"))
+    helper.PanicIfError(err)
+    
+    fmt.Printf("DEBUG: Getting posts for group %s by user %s\n", groupId, userId)
 
-	// Parse query params for pagination
-	limit := 10 // Default
-	offset := 0 // Default
+    // Parse query params for pagination
+    limit := 10 // Default
+    offset := 0 // Default
 
-	limitParam := request.URL.Query().Get("limit")
-	if limitParam != "" {
-		parsedLimit, err := strconv.Atoi(limitParam)
-		if err == nil && parsedLimit > 0 {
-			limit = parsedLimit
-		}
-	}
+    limitParam := request.URL.Query().Get("limit")
+    if limitParam != "" {
+        parsedLimit, err := strconv.Atoi(limitParam)
+        if err == nil && parsedLimit > 0 {
+            limit = parsedLimit
+        }
+    }
 
-	offsetParam := request.URL.Query().Get("offset")
-	if offsetParam != "" {
-		parsedOffset, err := strconv.Atoi(offsetParam)
-		if err == nil && parsedOffset >= 0 {
-			offset = parsedOffset
-		}
-	}
+    offsetParam := request.URL.Query().Get("offset")
+    if offsetParam != "" {
+        parsedOffset, err := strconv.Atoi(offsetParam)
+        if err == nil && parsedOffset >= 0 {
+            offset = parsedOffset
+        }
+    }
 
-	// Get posts for group
-	posts := controller.PostService.FindByGroupId(request.Context(), groupId, userId, limit, offset)
+    // Get posts for group
+    posts := controller.PostService.FindByGroupId(request.Context(), groupId, userId, limit, offset)
+    
+    fmt.Printf("DEBUG: Found %d posts for group %s\n", len(posts), groupId)
 
-	// Send response
-	webResponse := web.WebResponse{
-		Code:   http.StatusOK,
-		Status: "OK",
-		Data:   posts,
-	}
-	helper.WriteToResponseBody(writer, webResponse)
+    // Send response
+    webResponse := web.WebResponse{
+        Code:   http.StatusOK,
+        Status: "OK",
+        Data:   posts,
+    }
+    helper.WriteToResponseBody(writer, webResponse)
 }
-
 func (controller *GroupControllerImpl) AddMember(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Get user ID from token
 	userId, err := helper.GetUserIdFromToken(request)
@@ -287,8 +291,17 @@ func (controller *GroupControllerImpl) RemoveMember(writer http.ResponseWriter, 
 	memberId, err := uuid.Parse(params.ByName("userId"))
 	helper.PanicIfError(err)
 
-	// Remove member
-	controller.GroupService.RemoveMember(request.Context(), groupId, userId, memberId)
+	// Parse request body untuk mendapatkan block dan reason
+	var requestBody web.RemoveMemberRequest
+	err = json.NewDecoder(request.Body).Decode(&requestBody)
+	if err != nil {
+		// Jika body kosong, gunakan default values
+		requestBody.Block = false
+		requestBody.Reason = ""
+	}
+
+	// Remove member with block option
+	controller.GroupService.RemoveMemberWithBlock(request.Context(), groupId, userId, memberId, requestBody.Block, requestBody.Reason)
 
 	// Send response
 	webResponse := web.WebResponse{
@@ -510,4 +523,221 @@ func (controller *GroupControllerImpl) CancelInvitation(writer http.ResponseWrit
 		Status: "OK",
 	}
 	helper.WriteToResponseBody(writer, webResponse)
+}
+
+// Tambahkan di controller/group_controller_impl.go
+
+func (controller *GroupControllerImpl) GetPendingPosts(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+    // Get user ID from token
+    userId, err := helper.GetUserIdFromToken(request)
+    helper.PanicIfError(err)
+    
+    // Parse group ID from URL
+    groupId, err := uuid.Parse(params.ByName("groupId"))
+    helper.PanicIfError(err)
+    
+    // Parse pagination params
+    limit := 10
+    offset := 0
+    
+    limitParam := request.URL.Query().Get("limit")
+    if limitParam != "" {
+        limit, _ = strconv.Atoi(limitParam)
+    }
+    
+    offsetParam := request.URL.Query().Get("offset")
+    if offsetParam != "" {
+        offset, _ = strconv.Atoi(offsetParam)
+    }
+    
+    // Get pending posts
+    pendingPosts := controller.PostService.FindPendingPostsByGroupId(request.Context(), groupId, userId, limit, offset)
+    
+    // Send response
+    webResponse := web.WebResponse{
+        Code:   http.StatusOK,
+        Status: "OK",
+        Data:   pendingPosts,
+    }
+    helper.WriteToResponseBody(writer, webResponse)
+}
+
+func (controller *GroupControllerImpl) ApprovePost(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+    postIdStr := params.ByName("postId")
+    postId, err := uuid.Parse(postIdStr)
+    if err != nil {
+        panic(exception.NewBadRequestError("Invalid post ID"))
+    }
+
+    userId := request.Context().Value("user_id").(string)
+    userUUID, _ := uuid.Parse(userId)
+
+    postResponse := controller.PostService.ApprovePost(request.Context(), postId, userUUID)
+
+    webResponse := web.WebResponse{
+        Code:   200,
+        Status: "OK",
+        Data:   postResponse,
+    }
+
+    helper.WriteToResponseBody(writer, webResponse)
+}
+
+func (controller *GroupControllerImpl) RejectPost(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+    postIdStr := params.ByName("postId")
+    postId, err := uuid.Parse(postIdStr)
+    if err != nil {
+        panic(exception.NewBadRequestError("Invalid post ID"))
+    }
+
+    userId := request.Context().Value("user_id").(string)
+    userUUID, _ := uuid.Parse(userId)
+
+    controller.PostService.RejectPost(request.Context(), postId, userUUID)
+
+    webResponse := web.WebResponse{
+        Code:   200,
+        Status: "OK",
+        Data:   "Post rejected successfully",
+    }
+
+    helper.WriteToResponseBody(writer, webResponse)
+}
+
+func (controller *GroupControllerImpl) CreateJoinRequest(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+    groupId := params.ByName("groupId")
+    groupUUID, err := uuid.Parse(groupId)
+    if err != nil {
+        panic(exception.NewBadRequestError("Invalid group ID"))
+    }
+
+    // Ini bagian yang bermasalah - kita perlu menangani kasus body kosong
+    createRequest := web.CreateJoinRequestRequest{}
+    err = helper.ReadFromRequestBody(request, &createRequest)
+    if err != nil {
+        // Tangani error dengan lebih baik
+        panic(exception.NewBadRequestError("Invalid request body: " + err.Error()))
+    }
+
+    // Jika message kosong, isi dengan default
+    if createRequest.Message == "" {
+        createRequest.Message = "I would like to join this group."
+    }
+
+    userId := request.Context().Value("user_id").(string)
+    userUUID, _ := uuid.Parse(userId)
+
+    joinRequestResponse := controller.GroupService.CreateJoinRequest(request.Context(), userUUID, groupUUID, createRequest)
+
+    webResponse := web.WebResponse{
+        Code:   200,
+        Status: "OK",
+        Data:   joinRequestResponse,
+    }
+
+    helper.WriteToResponseBody(writer, webResponse)
+}
+
+
+func (controller *GroupControllerImpl) FindJoinRequestsByGroupId(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	groupId := params.ByName("groupId")
+	groupUUID, err := uuid.Parse(groupId)
+	if err != nil {
+		panic(exception.NewBadRequestError("Invalid group ID"))
+	}
+
+	limit := 10
+	offset := 0
+
+	limitParam := request.URL.Query().Get("limit")
+	if limitParam != "" {
+		limitInt, err := strconv.Atoi(limitParam)
+		if err == nil && limitInt > 0 {
+			limit = limitInt
+		}
+	}
+
+	offsetParam := request.URL.Query().Get("offset")
+	if offsetParam != "" {
+		offsetInt, err := strconv.Atoi(offsetParam)
+		if err == nil && offsetInt >= 0 {
+			offset = offsetInt
+		}
+	}
+
+	userId := request.Context().Value("user_id").(string)
+	userUUID, _ := uuid.Parse(userId)
+
+	joinRequests := controller.GroupService.FindJoinRequestsByGroupId(request.Context(), groupUUID, userUUID, limit, offset)
+
+	webResponse := web.WebResponse{
+		Code:   200,
+		Status: "OK",
+		Data:   joinRequests,
+	}
+
+	helper.WriteToResponseBody(writer, webResponse)
+}
+
+func (controller *GroupControllerImpl) AcceptJoinRequest(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	requestId := params.ByName("requestId")
+	requestUUID, err := uuid.Parse(requestId)
+	if err != nil {
+		panic(exception.NewBadRequestError("Invalid request ID"))
+	}
+
+	userId := request.Context().Value("user_id").(string)
+	userUUID, _ := uuid.Parse(userId)
+
+	joinRequestResponse := controller.GroupService.AcceptJoinRequest(request.Context(), requestUUID, userUUID)
+
+	webResponse := web.WebResponse{
+		Code:   200,
+		Status: "OK",
+		Data:   joinRequestResponse,
+	}
+
+	helper.WriteToResponseBody(writer, webResponse)
+}
+
+func (controller *GroupControllerImpl) RejectJoinRequest(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	requestId := params.ByName("requestId")
+	requestUUID, err := uuid.Parse(requestId)
+	if err != nil {
+		panic(exception.NewBadRequestError("Invalid request ID"))
+	}
+
+	userId := request.Context().Value("user_id").(string)
+	userUUID, _ := uuid.Parse(userId)
+
+	controller.GroupService.RejectJoinRequest(request.Context(), requestUUID, userUUID)
+
+	webResponse := web.WebResponse{
+		Code:   200,
+		Status: "OK",
+		Data:   "Join request rejected successfully",
+	}
+
+	helper.WriteToResponseBody(writer, webResponse)
+}
+
+func (controller *GroupControllerImpl) CancelJoinRequest(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+    requestId := params.ByName("requestId")
+    requestUUID, err := uuid.Parse(requestId)
+    if err != nil {
+        panic(exception.NewBadRequestError("Invalid request ID"))
+    }
+
+    userId := request.Context().Value("user_id").(string)
+    userUUID, _ := uuid.Parse(userId)
+
+    controller.GroupService.CancelJoinRequest(request.Context(), requestUUID, userUUID)
+
+    webResponse := web.WebResponse{
+        Code:   200,
+        Status: "OK",
+        Data:   "Join request cancelled successfully",
+    }
+
+    helper.WriteToResponseBody(writer, webResponse)
 }
