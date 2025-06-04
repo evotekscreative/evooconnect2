@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"evoconnect/backend/exception"
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/service"
@@ -82,12 +83,7 @@ func (controller *CompanySubmissionControllerImpl) Create(writer http.ResponseWr
 func (controller *CompanySubmissionControllerImpl) FindById(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	submissionId, err := uuid.Parse(params.ByName("submissionId"))
 	if err != nil {
-		helper.WriteToResponseBody(writer, web.WebResponse{
-			Code:   http.StatusBadRequest,
-			Status: "BAD_REQUEST",
-			Data:   "Invalid submission ID",
-		})
-		return
+		panic(exception.NewBadRequestError("Invalid submission ID format"))
 	}
 
 	response := controller.CompanySubmissionService.FindById(request.Context(), submissionId)
@@ -228,18 +224,14 @@ func (controller *CompanySubmissionControllerImpl) Review(writer http.ResponseWr
 		return
 	}
 
+	fmt.Printf("Review called for submission ID: %s\n", submissionId)
 	// Get reviewer ID from context (set by auth middleware)
-	reviewerIdStr := request.Context().Value("user_id").(string)
-	reviewerId, err := uuid.Parse(reviewerIdStr)
+	reviewerId, err := helper.GetAdminIdFromToken(request)
 	if err != nil {
-		helper.WriteToResponseBody(writer, web.WebResponse{
-			Code:   http.StatusBadRequest,
-			Status: "BAD_REQUEST",
-			Data:   "Invalid reviewer ID",
-		})
-		return
+		helper.PanicIfError(err)
 	}
 
+	fmt.Printf("Reviewer ID: %s\n", reviewerId)
 	var reviewRequest web.ReviewCompanySubmissionRequest
 	decoder := json.NewDecoder(request.Body)
 	err = decoder.Decode(&reviewRequest)
@@ -252,7 +244,9 @@ func (controller *CompanySubmissionControllerImpl) Review(writer http.ResponseWr
 		return
 	}
 
+	fmt.Printf("Review request: %+v\n", reviewRequest)
 	response := controller.CompanySubmissionService.Review(request.Context(), submissionId, reviewerId, reviewRequest)
+	fmt.Printf("Review response: %+v\n", response)
 
 	webResponse := web.WebResponse{
 		Code:   http.StatusOK,
@@ -270,6 +264,40 @@ func (controller *CompanySubmissionControllerImpl) GetStats(writer http.Response
 		Code:   http.StatusOK,
 		Status: "OK",
 		Data:   stats,
+	}
+
+	helper.WriteToResponseBody(writer, webResponse)
+}
+
+func (controller *CompanySubmissionControllerImpl) Delete(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	submissionId, err := uuid.Parse(params.ByName("submissionId"))
+	if err != nil {
+		helper.WriteToResponseBody(writer, web.WebResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD_REQUEST",
+			Data:   "Invalid submission ID",
+		})
+		return
+	}
+
+	// Get user ID from context (set by auth middleware)
+	userIdStr := request.Context().Value("user_id").(string)
+	userId, err := uuid.Parse(userIdStr)
+	if err != nil {
+		helper.WriteToResponseBody(writer, web.WebResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD_REQUEST",
+			Data:   "Invalid user ID",
+		})
+		return
+	}
+
+	controller.CompanySubmissionService.Delete(request.Context(), submissionId, userId)
+
+	webResponse := web.WebResponse{
+		Code:   http.StatusNoContent,
+		Status: "NO_CONTENT",
+		Data:   nil,
 	}
 
 	helper.WriteToResponseBody(writer, webResponse)

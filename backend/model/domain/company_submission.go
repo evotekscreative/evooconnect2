@@ -28,6 +28,7 @@ type CompanySubmission struct {
 	RejectionReason string                  `db:"rejection_reason"`
 	ReviewedBy      *uuid.UUID              `db:"reviewed_by"`
 	ReviewedAt      *time.Time              `db:"reviewed_at"`
+	DeletedAt       *time.Time              `db:"deleted_at"` // Added for soft delete
 	CreatedAt       time.Time               `db:"created_at"`
 	UpdatedAt       time.Time               `db:"updated_at"`
 
