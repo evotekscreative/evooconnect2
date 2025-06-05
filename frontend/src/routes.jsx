@@ -44,6 +44,7 @@ import ReportUser from "./pages/Admin/Report/ReportUser.jsx";
 
 import CreateCompanyStatus from "./pages/CreateCompanyStatus.jsx";
 import CompanyDetail from "./pages/CompanyCard/CompanyDetail.jsx";
+import MyCompanies from "./pages/CompanyCard/MyCompanies.jsx";
 import CompanyPending from "./pages/CompanyCard/CompanyPending.jsx";
 import CompanyEdit from "./pages/CompanyCard/CompanyEdit.jsx"
 // import ProtectedCompanyRoute from "./components/Auth/protectedCompanyRoute.jsx";
@@ -385,7 +386,11 @@ const router = createBrowserRouter([
     path: "/company-management",
     children: [
       {
-        path: "company-detail",
+        path: "my-company",
+        element: <MyCompanies />,
+      },
+      {
+        path: "company-detail/:companyId",
         element: <CompanyDetail />,
       },
       {

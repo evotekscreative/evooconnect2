@@ -2,6 +2,7 @@
 import { Link } from "react-router-dom";
 
 export default function CompanyCard({ company }) {
+    
     return (
         <div className="border border-gray-200 rounded-lg p-4 shadow-sm bg-white">
             <div className="flex justify-between items-start">

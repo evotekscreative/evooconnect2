@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Case from "../../components/Case.jsx";
 import CompanyForm from "../../components/CreateCompany/CompanyForm.jsx";
 import CompanyPreview from "../../components/CreateCompany/CompanyPreview.jsx";
 import { toast } from "react-toastify";
 
 export default function CreateCompany() {
+  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({
     name: "",
@@ -22,6 +24,7 @@ export default function CreateCompany() {
   const [submissionStatus, setSubmissionStatus] = useState(null);
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
   const [readyToRenderForm, setReadyToRenderForm] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
@@ -66,6 +69,16 @@ export default function CreateCompany() {
 
     fetchSubmission();
   }, []);
+
+  // Handle redirect after successful creation
+  useEffect(() => {
+    if (isSuccess) {
+      const timer = setTimeout(() => {
+        navigate('/company-management/company-pending'); 
+      }, 3000); // 3 seconds delay before redirect
+      return () => clearTimeout(timer);
+    }
+  }, [isSuccess, navigate]);
 
   // Trigger delay before form render if status approved or rejected
   useEffect(() => {
@@ -154,6 +167,7 @@ export default function CreateCompany() {
       }
 
       toast.success("Company submitted successfully!");
+      setIsSuccess(true);
       setSubmissionStatus("pending");
       setReadyToRenderForm(false);
     } catch (error) {
@@ -163,6 +177,21 @@ export default function CreateCompany() {
       setIsSubmitting(false);
     }
   };
+
+  // Success state - shows loading and redirects
+  if (isSuccess) {
+    return (
+      <Case>
+        <div className="flex flex-col items-center justify-center h-[75vh] px-4 text-center space-y-6">
+          <h2 className="text-2xl font-bold text-gray-800">Company Submitted Successfully!</h2>
+          <p className="text-gray-600 max-w-xl text-base leading-relaxed">
+            Your company submission has been received. You'll be redirected to your pending submissions shortly.
+          </p>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      </Case>
+    );
+  }
 
   // Loading status
   if (isLoadingStatus) {
