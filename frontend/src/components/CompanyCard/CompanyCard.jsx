@@ -348,7 +348,3 @@ const CompanyCards = () => {
 };
 
 export default CompanyCards;
-            )}
-        </>
-    );
-}

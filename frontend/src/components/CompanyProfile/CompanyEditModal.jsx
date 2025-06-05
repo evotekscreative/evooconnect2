@@ -15,7 +15,11 @@ const CompanyPreview = ({ form, logoPreview }) => (
           {logoPreview ? (
             <img src={logoPreview} alt="Logo Preview" className="object-contain h-full" />
           ) : form.logo ? (
-            <img src={form.logo} alt="Company Logo" className="object-contain h-full" />
+            <img
+              src={`http://localhost:3000/${form.logo}` || '/default-company-logo.png'}
+              alt="Company Logo"
+              className="object-contain h-full"
+            />
           ) : (
             <span className="text-gray-400 text-sm">Logo preview</span>
           )}
@@ -34,16 +38,18 @@ const CompanyPreview = ({ form, logoPreview }) => (
   </div>
 );
 
-const CompanyEditModal = ({ 
-  isOpen, 
-  onClose, 
-  formData, 
-  logoPreview, 
-  handleInputChange, 
-  handleLogoChange, 
-  handleSubmit 
+const CompanyEditModal = ({
+  isOpen,
+  onClose,
+  formData,
+  logoPreview,
+  handleInputChange,
+  handleLogoChange,
+  handleSubmit,
 }) => {
   if (!isOpen) return null;
+
+  console.log("Form Data:", formData); // cek isi data saat modal dibuka
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -51,14 +57,9 @@ const CompanyEditModal = ({
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">Edit Company Profile</h2>
-            <button 
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              ✕
-            </button>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✕</button>
           </div>
-          
+
           <div className="flex flex-col md:flex-row gap-6">
             <div className="w-full md:w-1/1">
               <form onSubmit={handleSubmit}>
@@ -68,13 +69,13 @@ const CompanyEditModal = ({
                     <input
                       type="text"
                       name="name"
-                      value={formData.name}
+                      value={formData.name || ''}
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 border rounded-md"
                       required
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">LinkedIn URL</label>
                     <div className="flex">
@@ -84,40 +85,40 @@ const CompanyEditModal = ({
                       <input
                         type="text"
                         name="linkedin"
-                        value={formData.linkedin}
+                        value={formData.linkedin || ''}
                         onChange={handleInputChange}
                         className="flex-1 min-w-0 block w-full px-3 py-2 rounded-r-md border"
                       />
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
                     <input
                       type="url"
                       name="website"
-                      value={formData.website}
+                      value={formData.website || ''}
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 border rounded-md"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Industry</label>
                     <input
                       type="text"
                       name="industry"
-                      value={formData.industry}
+                      value={formData.industry || ''}
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 border rounded-md"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Organization Size</label>
                     <select
                       name="size"
-                      value={formData.size}
+                      value={formData.size || ''}
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 border rounded-md"
                     >
@@ -133,12 +134,12 @@ const CompanyEditModal = ({
                       <option value="10,000+">10,000+ employees</option>
                     </select>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Organization Type</label>
                     <select
                       name="type"
-                      value={formData.type}
+                      value={formData.type || ''}
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 border rounded-md"
                     >
@@ -152,7 +153,7 @@ const CompanyEditModal = ({
                       <option value="Partnership">Partnership</option>
                     </select>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Company Logo</label>
                     <input
@@ -162,19 +163,19 @@ const CompanyEditModal = ({
                       className="w-full px-3 py-2 border rounded-md"
                     />
                   </div>
-                  
+
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Tagline</label>
                     <textarea
                       name="tagline"
-                      value={formData.tagline}
+                      value={formData.tagline || ''}
                       onChange={handleInputChange}
                       rows={2}
                       className="w-full px-3 py-2 border rounded-md"
                     />
                   </div>
                 </div>
-                
+
                 <div className="flex justify-end space-x-3">
                   <button
                     type="button"
@@ -192,7 +193,7 @@ const CompanyEditModal = ({
                 </div>
               </form>
             </div>
-            
+
             <div className="w-full md:w-1/2">
               <CompanyPreview form={formData} logoPreview={logoPreview} />
             </div>
