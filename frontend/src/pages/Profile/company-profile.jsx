@@ -16,7 +16,28 @@ export default function CompanyProfile() {
   const [isFollowingAmazon, setIsFollowingAmazon] = useState(false);
   const [isConnectedSophia, setIsConnectedSophia] = useState(false);
 
-  const tabs = ["About", "Jobs", "Reviews"];
+  const tabs = ["About", "Posts", "Jobs", "Reviews"];
+
+  const [posts, setPosts] = useState([
+    {
+      id: 1,
+      author: "EvoConnect",
+      content: "We're excited to announce our new product launch next week! Stay tuned for updates.",
+      date: "2023-05-15",
+      likes: 42,
+      comments: 5,
+      shares: 3
+    },
+    {
+      id: 2,
+      author: "EvoConnect",
+      content: "Join us for our annual developer conference on June 10th. Register now!",
+      date: "2023-05-10",
+      likes: 28,
+      comments: 3,
+      shares: 7
+    }
+  ]);
 
   const data = [
     {
@@ -41,7 +62,7 @@ export default function CompanyProfile() {
     }
   ];
 
-  const jobs = [
+  const [jobs, setJobs] = useState([
     {
       id: 1,
       title: "Software Engineer",
@@ -53,12 +74,12 @@ export default function CompanyProfile() {
     {
       id: 2,
       title: "UI/UX Designer",
-      company: "Envato",
+      company: "EvoConnect",
       location: "India, Punjab",
       employmentType: "Full-time",
       description: "Seeking a talented UI/UX Designer.",
     },
-  ];
+  ]);
 
   const [userReviews, setUserReviews] = useState([]);
 
@@ -77,6 +98,36 @@ export default function CompanyProfile() {
 
     setUserReviews([...userReviews, newReview]);
     setNewComment("");
+  };
+
+  const handleAddPost = (newPostContent) => {
+    if (!newPostContent.trim()) return;
+
+    const newPost = {
+      id: Date.now(),
+      author: data[0].name,
+      content: newPostContent,
+      date: new Date().toLocaleString(),
+      likes: 0,
+      comments: 0,
+      shares: 0
+    };
+
+    setPosts([newPost, ...posts]);
+  };
+
+  const handleJobPost = (newJob) => {
+    const jobWithId = {
+      ...newJob,
+      id: Date.now(),
+      title: newJob.jobTitle,
+      company: data[0].name, // Using the company name from the company data
+      location: newJob.location,
+      employmentType: newJob.employmentType,
+      description: newJob.description
+    };
+    
+    setJobs([jobWithId, ...jobs]);
   };
 
   const company = data.find((item) => item.id === parseInt(companyId));
@@ -107,11 +158,14 @@ export default function CompanyProfile() {
             <CompanyMainContent 
               activeTab={activeTab}
               company={company}
+              posts={posts}
               jobs={jobs}
               userReviews={userReviews}
               newComment={newComment}
               setNewComment={setNewComment}
               handleCommentSubmit={handleCommentSubmit}
+              onAddPost={handleAddPost}
+              onJobPost={handleJobPost}
             />
             
             <CompanyRightSidebar 
