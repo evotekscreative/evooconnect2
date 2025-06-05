@@ -27,6 +27,7 @@ func main() {
 		log.Fatal("Failed to connect to the database")
 		return
 	}
+	helper.InitTimezone("Asia/Jakarta")
 	validate := validator.New()
 	utils.InitPusherClient()
 
