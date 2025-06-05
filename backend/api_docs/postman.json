@@ -7824,10 +7824,46 @@
               "mode": "formdata",
               "formdata": [
                 {
-                  "key": "data",
-                  "value": "{\n    \"name\": \"Tech Innovators Inc\",\n    \"linkedin_url\": \"tech-innovators-updated\",\n    \"website\": \"https://techinnovators.com\",\n    \"industry\": \"Information Technology\",\n    \"size\": \"201-500 employees\",\n    \"type\": \"Privately Held\",\n    \"tagline\": \"Leading innovation for tomorrow's world\"\n}",
+                  "key": "name",
+                  "value": "Tech Innovators Inc",
                   "type": "text",
-                  "description": "JSON data containing the requested changes"
+                  "description": "Company name"
+                },
+                {
+                  "key": "linkedin_url",
+                  "value": "tech-innovators-updated",
+                  "type": "text",
+                  "description": "LinkedIn URL slug"
+                },
+                {
+                  "key": "website",
+                  "value": "https://techinnovators.com",
+                  "type": "text",
+                  "description": "Company website URL"
+                },
+                {
+                  "key": "industry",
+                  "value": "Information Technology",
+                  "type": "text",
+                  "description": "Company industry"
+                },
+                {
+                  "key": "size",
+                  "value": "201-500 employees",
+                  "type": "text",
+                  "description": "Company size"
+                },
+                {
+                  "key": "type",
+                  "value": "Privately Held",
+                  "type": "text",
+                  "description": "Company type"
+                },
+                {
+                  "key": "tagline",
+                  "value": "Leading innovation for tomorrow's world",
+                  "type": "text",
+                  "description": "Company tagline"
                 },
                 {
                   "key": "logo",
@@ -7841,7 +7877,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "companies", "{{company_id}}", "request-edit"]
             },
-            "description": "Submit a request to edit company information. The request will be reviewed by admin before changes are applied."
+            "description": "Submit a request to edit company information using form fields. The request will be reviewed by admin before changes are applied. All fields are optional - only include fields you want to change."
           },
           "response": [
             {
@@ -7859,8 +7895,38 @@
                   "mode": "formdata",
                   "formdata": [
                     {
-                      "key": "data",
-                      "value": "{\n    \"name\": \"Tech Innovators Inc\",\n    \"linkedin_url\": \"tech-innovators-updated\",\n    \"website\": \"https://techinnovators.com\",\n    \"industry\": \"Information Technology\",\n    \"size\": \"201-500 employees\",\n    \"type\": \"Privately Held\",\n    \"tagline\": \"Leading innovation for tomorrow's world\"\n}",
+                      "key": "name",
+                      "value": "Tech Innovators Inc",
+                      "type": "text"
+                    },
+                    {
+                      "key": "linkedin_url",
+                      "value": "tech-innovators-updated",
+                      "type": "text"
+                    },
+                    {
+                      "key": "website",
+                      "value": "https://techinnovators.com",
+                      "type": "text"
+                    },
+                    {
+                      "key": "industry",
+                      "value": "Information Technology",
+                      "type": "text"
+                    },
+                    {
+                      "key": "size",
+                      "value": "201-500 employees",
+                      "type": "text"
+                    },
+                    {
+                      "key": "type",
+                      "value": "Privately Held",
+                      "type": "text"
+                    },
+                    {
+                      "key": "tagline",
+                      "value": "Leading innovation for tomorrow's world",
                       "type": "text"
                     }
                   ]
@@ -7898,8 +7964,18 @@
                   "mode": "formdata",
                   "formdata": [
                     {
-                      "key": "data",
-                      "value": "{\n    \"name\": \"Tech Innovators Inc\",\n    \"linkedin_url\": \"tech-innovators-updated\",\n    \"website\": \"https://techinnovators.com\",\n    \"industry\": \"Information Technology\",\n    \"size\": \"201-500 employees\",\n    \"type\": \"Privately Held\",\n    \"tagline\": \"Leading innovation for tomorrow's world\"\n}",
+                      "key": "name",
+                      "value": "Tech Innovators Inc",
+                      "type": "text"
+                    },
+                    {
+                      "key": "linkedin_url",
+                      "value": "tech-innovators-updated",
+                      "type": "text"
+                    },
+                    {
+                      "key": "tagline",
+                      "value": "Leading innovation for tomorrow's world",
                       "type": "text"
                     }
                   ]
