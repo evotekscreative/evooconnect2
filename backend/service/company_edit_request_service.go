@@ -9,6 +9,7 @@ import (
 
 type CompanyManagementService interface {
 	// User Company Management
+	GetAllCompanies(ctx context.Context, userId uuid.UUID, limit, offset int) []web.CompanyManagementResponse
 	GetMyCompanies(ctx context.Context, userId uuid.UUID) []web.CompanyManagementResponse
 	GetCompanyDetail(ctx context.Context, companyId uuid.UUID, userId uuid.UUID) web.CompanyManagementResponse
 	RequestEdit(ctx context.Context, companyId uuid.UUID, userId uuid.UUID, request web.CreateCompanyEditRequestRequest, logoFile *multipart.FileHeader) web.CompanyEditRequestResponse

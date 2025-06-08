@@ -96,23 +96,20 @@ func ToUserShortResponse(user domain.User, isConnected bool) web.UserShort {
 	}
 }
 
-
-
-
 func ToPostResponse(post domain.Post) web.PostResponse {
-    postResponse := web.PostResponse{
-        Id:            post.Id,
-        UserId:        post.UserId,
-        Content:       post.Content,
-        Images:        post.Images,
-        Visibility:    post.Visibility,
-        CreatedAt:     post.CreatedAt,
-        UpdatedAt:     post.UpdatedAt,
-        IsLiked:       post.IsLiked,
-        LikesCount:    post.LikesCount,
-        CommentsCount: post.CommentsCount,
-        GroupId:       post.GroupId,
-    }
+	postResponse := web.PostResponse{
+		Id:            post.Id,
+		UserId:        post.UserId,
+		Content:       post.Content,
+		Images:        post.Images,
+		Visibility:    post.Visibility,
+		CreatedAt:     post.CreatedAt,
+		UpdatedAt:     post.UpdatedAt,
+		IsLiked:       post.IsLiked,
+		LikesCount:    post.LikesCount,
+		CommentsCount: post.CommentsCount,
+		GroupId:       post.GroupId,
+	}
 
 	if post.User != nil {
 		postResponse.User = web.UserShort{
@@ -125,17 +122,13 @@ func ToPostResponse(post domain.Post) web.PostResponse {
 		}
 	}
 
-    if post.Group != nil {
-        group := ToGroupResponse(*post.Group)
-        postResponse.Group = &group
-    }
+	if post.Group != nil {
+		group := ToGroupResponse(*post.Group)
+		postResponse.Group = &group
+	}
 
-    return postResponse
+	return postResponse
 }
-
-
-
-
 
 func ToPostResponses(posts []domain.Post) []web.PostResponse {
 	postResponses := make([]web.PostResponse, 0)
@@ -401,4 +394,52 @@ func ToAdminResponse(admin domain.Admin) web.AdminResponse {
 		Email:     admin.Email,
 		CreatedAt: admin.CreatedAt,
 	}
+}
+
+func ToCompanyJoinRequestResponse(request domain.CompanyJoinRequest) web.CompanyJoinRequestResponse {
+	response := web.CompanyJoinRequestResponse{
+		Id:              request.Id,
+		UserId:          request.UserId,
+		CompanyId:       request.CompanyId,
+		Message:         request.Message,
+		Status:          request.Status,
+		RequestedAt:     request.RequestedAt,
+		ResponsedAt:     request.ResponsedAt,
+		ResponseBy:      request.ResponseBy,
+		RejectionReason: request.RejectionReason,
+		CreatedAt:       request.CreatedAt,
+		UpdatedAt:       request.UpdatedAt,
+	}
+
+	if request.User != nil {
+		response.User = &web.UserBriefResponse{
+			Id:       request.User.Id,
+			Name:     request.User.Name,
+			Username: request.User.Username,
+			Photo:    request.User.Photo,
+			Headline: request.User.Headline,
+		}
+	}
+
+	if request.Company != nil {
+		response.Company = &web.CompanyBriefResponse{
+			Id:       request.Company.Id,
+			Name:     request.Company.Name,
+			Logo:     &request.Company.Logo,
+			Industry: request.Company.Industry,
+			Website:  &request.Company.Website,
+		}
+	}
+
+	if request.Responder != nil {
+		response.Responder = &web.UserBriefResponse{
+			Id:       request.Responder.Id,
+			Name:     request.Responder.Name,
+			Username: request.Responder.Username,
+			Photo:    request.Responder.Photo,
+			Headline: request.Responder.Headline,
+		}
+	}
+
+	return response
 }

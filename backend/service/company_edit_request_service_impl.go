@@ -21,6 +21,8 @@ import (
 type CompanyManagementServiceImpl struct {
 	CompanyRepository            repository.CompanyRepository
 	CompanyEditRequestRepository repository.CompanyEditRequestRepository
+	CompanyJoinRequestRepository repository.CompanyJoinRequestRepository
+	MemberCompanyRepository      repository.MemberCompanyRepository
 	UserRepository               repository.UserRepository
 	AdminRepository              repository.AdminRepository
 	NotificationService          NotificationService
@@ -31,6 +33,8 @@ type CompanyManagementServiceImpl struct {
 func NewCompanyManagementService(
 	companyRepository repository.CompanyRepository,
 	companyEditRequestRepository repository.CompanyEditRequestRepository,
+	companyJoinRequestRepository repository.CompanyJoinRequestRepository,
+	memberCompanyRepository repository.MemberCompanyRepository,
 	userRepository repository.UserRepository,
 	adminRepository repository.AdminRepository,
 	notificationService NotificationService,
@@ -39,12 +43,65 @@ func NewCompanyManagementService(
 	return &CompanyManagementServiceImpl{
 		CompanyRepository:            companyRepository,
 		CompanyEditRequestRepository: companyEditRequestRepository,
+		CompanyJoinRequestRepository: companyJoinRequestRepository,
+		MemberCompanyRepository:      memberCompanyRepository,
 		UserRepository:               userRepository,
 		AdminRepository:              adminRepository,
 		NotificationService:          notificationService,
 		DB:                           db,
 		Validate:                     validate,
 	}
+}
+
+func (service *CompanyManagementServiceImpl) GetAllCompanies(ctx context.Context, userId uuid.UUID, limit, offset int) []web.CompanyManagementResponse {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	companies := service.CompanyRepository.FindAll(ctx, tx, limit, offset)
+	var responses []web.CompanyManagementResponse
+	for _, company := range companies {
+		// Check for pending edit requests
+		hasPendingEdit := service.CompanyEditRequestRepository.HasPendingEdit(ctx, tx, company.Id)
+		isPendingJoinRequest := service.CompanyJoinRequestRepository.IsPendingJoinRequest(ctx, tx, userId, company.Id)
+		fmt.Printf("User ID: %s, Company ID: %s, Is Pending Join Request: %t\n", userId, company.Id, isPendingJoinRequest)
+		isMemberOfCompany, err := service.MemberCompanyRepository.IsUserMemberOfCompany(ctx, tx, userId, company.Id)
+		if err != nil {
+			log.Printf("Error checking membership for user %s in company %s: %v", userId, company.Id, err)
+		}
+		response := web.CompanyManagementResponse{
+			Id:          company.Id.String(),
+			Name:        company.Name,
+			LinkedinUrl: company.LinkedinUrl,
+			Website:     company.Website,
+			Industry:    company.Industry,
+			Size:        company.Size,
+			Type:        company.Type,
+			Logo:        company.Logo,
+			Tagline:     company.Tagline,
+
+			IsVerified: company.IsVerified,
+			CreatedAt:  company.CreatedAt,
+			UpdatedAt:  company.UpdatedAt,
+
+			HasPendingEdit: hasPendingEdit,
+
+			IsPendingJoinRequest: isPendingJoinRequest,
+			IsMemberOfCompany:    isMemberOfCompany,
+		}
+		if hasPendingEdit {
+			// Get pending edit request details
+			editRequests := service.CompanyEditRequestRepository.FindByCompanyId(ctx, tx, company.Id)
+			for _, editRequest := range editRequests {
+				if editRequest.Status == domain.CompanyEditRequestStatusPending {
+					response.PendingEditId = editRequest.Id.String()
+					break
+				}
+			}
+		}
+		responses = append(responses, response)
+	}
+	return responses
 }
 
 func (service *CompanyManagementServiceImpl) GetMyCompanies(ctx context.Context, userId uuid.UUID) []web.CompanyManagementResponse {

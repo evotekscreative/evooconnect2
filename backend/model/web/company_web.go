@@ -30,4 +30,8 @@ type CompanyManagementResponse struct {
 	HasPendingEdit bool                         `json:"has_pending_edit"`
 	PendingEditId  string                       `json:"pending_edit_id,omitempty"`
 	EditRequests   []CompanyEditRequestResponse `json:"edit_requests,omitempty"`
+
+	// info for user
+	IsPendingJoinRequest bool `json:"is_pending_join_request"`
+	IsMemberOfCompany    bool `json:"is_member_of_company"`
 }

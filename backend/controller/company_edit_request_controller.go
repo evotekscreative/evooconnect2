@@ -6,6 +6,7 @@ import (
 )
 
 type CompanyManagementController interface {
+	GetAllCompanies(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	GetMyCompanies(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	GetCompanyDetail(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	RequestEdit(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
