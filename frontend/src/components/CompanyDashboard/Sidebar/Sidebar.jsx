@@ -58,16 +58,16 @@ export default function Sidebar() {
                                 <Link
                                     className={
                                         "text-xs uppercase py-3 font-bold block " +
-                                        (window.location.href.indexOf("/admin/dashboard") !== -1
+                                        (window.location.href.indexOf("/company-dashboard/dashboard") !== -1
                                             ? "text-sky-500 hover:text-sky-600"
                                             : "text-gray-700 hover:text-gray-500")
                                     }
-                                    to="#"
+                                    to="/company-dashboard/dashboard"
                                 >
                                     <i
                                         className={
                                             "fas fa-tv mr-2 text-sm " +
-                                            (window.location.href.indexOf("/admin/dashboard") !== -1
+                                            (window.location.href.indexOf("/company-dashboard/dashboard") !== -1
                                                 ? "opacity-75"
                                                 : "text-gray-300")
                                         }
@@ -80,16 +80,16 @@ export default function Sidebar() {
                                 <Link
                                     className={
                                         "text-xs uppercase py-3 font-bold block " +
-                                        (window.location.href.indexOf("/admin/settings") !== -1
+                                        (window.location.href.indexOf("/company-dashboard/manage-post") !== -1
                                             ? "text-sky-500 hover:text-sky-600"
                                             : "text-gray-700 hover:text-gray-500")
                                     }
-                                    to="#"
+                                    to="/company-dashboard/manage-post"
                                 >
                                     <i
                                         className={
                                             "fas fa-tools mr-2 text-sm " +
-                                            (window.location.href.indexOf("#") !== -1
+                                            (window.location.href.indexOf("/company-dashboard/manage-post") !== -1
                                                 ? "opacity-75"
                                                 : "text-gray-300")
                                         }
@@ -102,16 +102,16 @@ export default function Sidebar() {
                                 <Link
                                     className={
                                         "text-xs uppercase py-3 font-bold block " +
-                                        (window.location.href.indexOf("#") !== -1
+                                        (window.location.href.indexOf("/company-dashboard/manage-vacancy") !== -1
                                             ? "text-sky-500 hover:text-sky-600"
                                             : "text-gray-700 hover:text-gray-500")
                                     }
-                                    to="#"
+                                    to="/company-dashboard/manage-vacancy"
                                 >
                                     <i
                                         className={
                                             "fas fa-table mr-2 text-sm " +
-                                            (window.location.href.indexOf("#") !== -1
+                                            (window.location.href.indexOf("/company-dashboard/manage-vacancy") !== -1
                                                 ? "opacity-75"
                                                 : "text-gray-300")
                                         }
@@ -146,16 +146,16 @@ export default function Sidebar() {
                                 <Link
                                     className={
                                         "text-xs uppercase py-3 font-bold block " +
-                                        (window.location.href.indexOf("#") !== -1
+                                        (window.location.href.indexOf("/company-dashboard/company-setting") !== -1
                                             ? "text-sky-500 hover:text-sky-600"
                                             : "text-gray-700 hover:text-gray-500")
                                     }
-                                    to="#"
+                                    to="/company-dashboard/company-setting"
                                 >
                                     <i
                                         className={
                                             "fas fa-table mr-2 text-sm " +
-                                            (window.location.href.indexOf("#") !== -1
+                                            (window.location.href.indexOf("/company-dashboard/company-setting") !== -1
                                                 ? "opacity-75"
                                                 : "text-gray-300")
                                         }

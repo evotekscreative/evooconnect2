@@ -49,6 +49,9 @@ import CompanyEdit from "./pages/CompanyCard/CompanyEdit.jsx"
 // import ProtectedCompanyRoute from "./components/Auth/protectedCompanyRoute.jsx";
 
 import CompanyDashboard from "./pages/CompanyDashboard/CompanyDashboard.jsx";
+import ManagePost from "./pages/CompanyDashboard/ManagePost.jsx";
+import ManageVacancy from "./pages/CompanyDashboard/ManageVacancy.jsx";
+import CompanySetting from "./pages/CompanyDashboard/CompanySetting.jsx";
 
 const router = createBrowserRouter([
   {
@@ -398,13 +401,30 @@ const router = createBrowserRouter([
         path: "company-edit",
         element: <CompanyEdit />,
       },
-    ],  
-},
+    ],
+  },
 
   {
-    path: "company-dashboard",
-    element: <CompanyDashboard />,
-  },
+    path: "/company-dashboard",
+    children: [
+      {
+        path: "dashboard",
+        element: <CompanyDashboard />,
+      },
+      {
+        path: "manage-post",
+        element: <ManagePost />,     
+      },
+      {
+        path: "manage-vacancy",
+        element: <ManageVacancy />,     
+      },
+      {
+        path: "company-setting",
+        element: <CompanySetting />,     
+      }
+    ],
+  }
 ]);
 
 export default router;
