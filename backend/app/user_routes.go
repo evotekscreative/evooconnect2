@@ -26,6 +26,8 @@ func setupUserRoutes(
 	searchController controller.SearchController,
 	companySubmissionController controller.CompanySubmissionController,
 	companyManagementController controller.CompanyManagementController,
+	memberCompanyController controller.MemberCompanyController,
+	companyJoinRequestController controller.CompanyJoinRequestController,
 ) {
 	// Create user middleware
 	userAuth := middleware.NewUserAuthMiddleware()
@@ -176,10 +178,25 @@ func setupUserRoutes(
 
 	// Company Management Routes - using different route structure to avoid conflicts
 	// All specific routes first, then wildcard routes
+	router.GET("/api/companies", userAuth(companyManagementController.GetAllCompanies))
 	router.GET("/api/my-companies", userAuth(companyManagementController.GetMyCompanies))
+	router.GET("/api/companies/:companyId/details", userAuth(companyManagementController.GetCompanyDetail))
+	router.GET("/api/companies/:companyId/member-companies", userAuth(memberCompanyController.GetMembersByCompanyId))
 	router.DELETE("/api/companies/:companyId", userAuth(companyManagementController.DeleteCompany))
 	router.GET("/api/my-company-edit-requests", userAuth(companyManagementController.GetMyEditRequests))
-	router.GET("/api/companies/:companyId/details", userAuth(companyManagementController.GetCompanyDetail))
 	router.POST("/api/companies/:companyId/request-edit", userAuth(companyManagementController.RequestEdit))
 	router.DELETE("/api/companies/:companyId/request-edit", userAuth(companyManagementController.DeleteCompanyEditRequest))
+
+	// Member Company Routes
+	router.GET("/api/member-companies/:memberCompanyId", userAuth(memberCompanyController.GetMemberByID))
+	router.PUT("/api/member-companies/:memberCompanyId/role", userAuth(memberCompanyController.UpdateMemberRole))
+	router.PUT("/api/member-companies/:memberCompanyId/status", userAuth(memberCompanyController.UpdateMemberStatus))
+	router.DELETE("/api/member-companies/:memberCompanyId", userAuth(memberCompanyController.RemoveMember))
+
+	router.POST("/api/companies/:companyId/join-request", userAuth(companyJoinRequestController.Create))
+	router.GET("/api/my-company-join-requests", userAuth(companyJoinRequestController.FindMyRequests))
+	router.GET("/api/companies/:companyId/join-requests", userAuth(companyJoinRequestController.FindByCompanyId))
+	router.PUT("/api/company-join-requests/:requestId/review", userAuth(companyJoinRequestController.Review))
+	router.DELETE("/api/company-join-requests/:requestId", userAuth(companyJoinRequestController.Cancel))
+	router.GET("/api/companies/:companyId/join-requests/pending-count", userAuth(companyJoinRequestController.GetPendingCount))
 }

@@ -77,8 +77,10 @@ func main() {
 	// Company-related repositories
 	companyRepository := repository.NewCompanyRepository()
 	companySubmissionRepository := repository.NewCompanySubmissionRepository()
-
 	companyEditRequestRepository := repository.NewCompanyEditRequestRepository()
+	memberCompanyRepository := repository.NewMemberCompanyRepository()
+
+	companyJoinRequestRepository := repository.NewCompanyJoinRequestRepository()
 
 	// ===== Services =====
 	// Notification service (moved up because it's used by many other services)
@@ -178,11 +180,21 @@ func main() {
 	// Admin auth service
 	adminAuthService := service.NewAdminAuthService(adminRepository, db, validate)
 
+	// Member company service
+	memberCompanyService := service.NewMemberCompanyService(
+		memberCompanyRepository,
+		userRepository,
+		companyRepository,
+		db,
+		validate,
+	)
+
 	// Company submission service
 	companySubmissionService := service.NewCompanySubmissionService(
 		companySubmissionRepository,
 		companyRepository,
 		userRepository,
+		memberCompanyRepository,
 		adminRepository,
 		notificationService,
 		db,
@@ -192,10 +204,22 @@ func main() {
 	companyManagementService := service.NewCompanyManagementService(
 		companyRepository,
 		companyEditRequestRepository,
+		companyJoinRequestRepository,
+		memberCompanyRepository,
 		userRepository,
 		adminRepository,
 		notificationService,
 		db,
+		validate,
+	)
+
+	companyJoinRequestService := service.NewCompanyJoinRequestService(
+		db,
+		companyJoinRequestRepository,
+		companyRepository,
+		userRepository,
+		memberCompanyRepository,
+		notificationService,
 		validate,
 	)
 
@@ -243,6 +267,11 @@ func main() {
 	companyManagementController := controller.NewCompanyManagementController(companyManagementService)
 	adminCompanyEditController := controller.NewAdminCompanyEditController(companyManagementService)
 
+	// Member company controller
+	memberCompanyController := controller.NewMemberCompanyController(memberCompanyService)
+
+	companyJoinRequestController := controller.NewCompanyJoinRequestController(companyJoinRequestService)
+
 	// ===== Router and Middleware =====
 	// Initialize router with all controllers and JWT secret
 	router := app.NewRouter(
@@ -265,6 +294,8 @@ func main() {
 		companySubmissionController,
 		companyManagementController,
 		adminCompanyEditController,
+		memberCompanyController,
+		companyJoinRequestController,
 	)
 
 	// Seed admin data

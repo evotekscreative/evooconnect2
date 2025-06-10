@@ -38,14 +38,10 @@ func (controller *CompanySubmissionControllerImpl) Create(writer http.ResponseWr
 	}
 
 	// Get user ID from context (set by auth middleware)
-	userIdStr := request.Context().Value("user_id").(string)
-	userId, err := uuid.Parse(userIdStr)
-	if err != nil {
-		helper.WriteToResponseBody(writer, web.WebResponse{
-			Code:   http.StatusBadRequest,
-			Status: "BAD_REQUEST",
-			Data:   "Invalid user ID",
-		})
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+	if userId == uuid.Nil {
+		helper.NewBadRequestError("Invalid user ID")
 		return
 	}
 
@@ -99,14 +95,10 @@ func (controller *CompanySubmissionControllerImpl) FindById(writer http.Response
 
 func (controller *CompanySubmissionControllerImpl) FindByUserId(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Get user ID from context (set by auth middleware)
-	userIdStr := request.Context().Value("user_id").(string)
-	userId, err := uuid.Parse(userIdStr)
-	if err != nil {
-		helper.WriteToResponseBody(writer, web.WebResponse{
-			Code:   http.StatusBadRequest,
-			Status: "BAD_REQUEST",
-			Data:   "Invalid user ID",
-		})
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+	if userId == uuid.Nil {
+		helper.NewBadRequestError("Invalid user ID")
 		return
 	}
 
@@ -281,14 +273,10 @@ func (controller *CompanySubmissionControllerImpl) Delete(writer http.ResponseWr
 	}
 
 	// Get user ID from context (set by auth middleware)
-	userIdStr := request.Context().Value("user_id").(string)
-	userId, err := uuid.Parse(userIdStr)
-	if err != nil {
-		helper.WriteToResponseBody(writer, web.WebResponse{
-			Code:   http.StatusBadRequest,
-			Status: "BAD_REQUEST",
-			Data:   "Invalid user ID",
-		})
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+	if userId == uuid.Nil {
+		helper.NewBadRequestError("Invalid user ID")
 		return
 	}
 

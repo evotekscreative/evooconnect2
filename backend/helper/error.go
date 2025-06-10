@@ -11,3 +11,11 @@ func PanicIfError(err error) {
 		panic(err)
 	}
 }
+
+func ValidationError(err error) error {
+	if err != nil {
+		log.Printf("Validation error: %v", err)
+		return err
+	}
+	return nil
+}

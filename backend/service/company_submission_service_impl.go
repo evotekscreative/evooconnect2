@@ -6,8 +6,10 @@ import (
 	"evoconnect/backend/exception"
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/domain"
+	"evoconnect/backend/model/entity"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
+
 	// "fmt"
 	"log"
 	"mime/multipart"
@@ -21,6 +23,7 @@ type CompanySubmissionServiceImpl struct {
 	CompanySubmissionRepository repository.CompanySubmissionRepository
 	CompanyRepository           repository.CompanyRepository
 	UserRepository              repository.UserRepository
+	MemberCompanyRepository     repository.MemberCompanyRepository
 	AdminRepository             repository.AdminRepository
 	NotificationService         NotificationService
 	DB                          *sql.DB
@@ -31,6 +34,7 @@ func NewCompanySubmissionService(
 	companySubmissionRepository repository.CompanySubmissionRepository,
 	companyRepository repository.CompanyRepository,
 	userRepository repository.UserRepository,
+	memberCompanyRepository repository.MemberCompanyRepository,
 	adminRepository repository.AdminRepository,
 	notificationService NotificationService,
 	db *sql.DB,
@@ -39,6 +43,7 @@ func NewCompanySubmissionService(
 		CompanySubmissionRepository: companySubmissionRepository,
 		CompanyRepository:           companyRepository,
 		UserRepository:              userRepository,
+		MemberCompanyRepository:     memberCompanyRepository,
 		AdminRepository:             adminRepository,
 		NotificationService:         notificationService,
 		DB:                          db,
@@ -224,9 +229,10 @@ func (service *CompanySubmissionServiceImpl) Review(ctx context.Context, submiss
 	// If approved, create company and update user role
 	if submission.Status == domain.CompanySubmissionStatusApproved {
 		log.Printf("Creating company for approved submission")
+		companyId := uuid.New()
 		// Create company
 		company := domain.Company{
-			Id:          uuid.New(),
+			Id:          companyId,
 			OwnerId:     submission.UserId,
 			Name:        submission.Name,
 			LinkedinUrl: submission.LinkedinUrl,
@@ -243,6 +249,24 @@ func (service *CompanySubmissionServiceImpl) Review(ctx context.Context, submiss
 
 		service.CompanyRepository.Create(ctx, tx, company)
 		log.Printf("Company created successfully")
+
+		// Update user role to company owner
+		log.Printf("Updating user role to company owner for user ID: %s", submission.UserId)
+		// Create member_company record for the user who submitted (as super_admin)
+		memberCompany := entity.MemberCompany{
+			UserID:    submission.UserId,
+			CompanyID: companyId,
+			Role:      entity.RoleSuperAdmin,
+			Status:    entity.StatusActive,
+			JoinedAt:  now,
+		}
+
+		_, err = service.MemberCompanyRepository.Create(ctx, tx, memberCompany)
+		if err != nil {
+			log.Printf("Failed to create member company record: %v", err)
+			panic(exception.NewInternalServerError("Failed to create member company record"))
+		}
+
 	}
 
 	// Send notification to user
