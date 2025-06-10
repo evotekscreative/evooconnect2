@@ -9,7 +9,7 @@ import CompanyRightSidebar from "../../components/CompanyProfile/CompanyRightSid
 
 export default function CompanyProfile() {
   const params = useParams();
-  const companyId = params.companyId;
+  const company_id = params.company_id;
   const [activeTab, setActiveTab] = useState("About");
   const [newComment, setNewComment] = useState("");
   const [isFollowingMain, setIsFollowingMain] = useState(false);
@@ -126,11 +126,11 @@ export default function CompanyProfile() {
       employmentType: newJob.employmentType,
       description: newJob.description
     };
-    
+
     setJobs([jobWithId, ...jobs]);
   };
 
-  const company = data.find((item) => item.id === parseInt(companyId));
+  const company = data.find((item) => item.id === parseInt(company_id));
   if (!company) {
     return <div className="text-center mt-10">Company not found</div>;
   }
@@ -139,23 +139,23 @@ export default function CompanyProfile() {
     <>
       <Navbar />
       <div className="bg-gray-100 min-h-screen">
-        <CompanyHeader 
-          company={company} 
-          isFollowingMain={isFollowingMain} 
-          setIsFollowingMain={setIsFollowingMain} 
+        <CompanyHeader
+          company={company}
+          isFollowingMain={isFollowingMain}
+          setIsFollowingMain={setIsFollowingMain}
         />
-        
-        <CompanyTabs 
-          activeTab={activeTab} 
-          setActiveTab={setActiveTab} 
-          tabs={tabs} 
+
+        <CompanyTabs
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          tabs={tabs}
         />
 
         <div className="mt-4 max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             <CompanyLeftSidebar company={company} />
-            
-            <CompanyMainContent 
+
+            <CompanyMainContent
               activeTab={activeTab}
               company={company}
               posts={posts}
@@ -167,8 +167,8 @@ export default function CompanyProfile() {
               onAddPost={handleAddPost}
               onJobPost={handleJobPost}
             />
-            
-            <CompanyRightSidebar 
+
+            <CompanyRightSidebar
               isFollowingAmazon={isFollowingAmazon}
               setIsFollowingAmazon={setIsFollowingAmazon}
               isConnectedSophia={isConnectedSophia}

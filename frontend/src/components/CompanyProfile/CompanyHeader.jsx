@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import companyProfile from "../../assets/img/company-profile.jpg";
 import { Pencil } from 'lucide-react';
 import CompanyEditModal from '../../components/CompanyProfile/CompanyEditModal.jsx';
@@ -6,16 +6,32 @@ import CompanyEditModal from '../../components/CompanyProfile/CompanyEditModal.j
 export default function CompanyHeader({ company, isFollowingMain, setIsFollowingMain }) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [formData, setFormData] = useState({
-    name: company.name,
-    linkedin: company.linkedin || '',
-    website: company.website || '',
-    industry: company.industry || '',
-    size: company.size || '',
-    type: company.type || '',
-    logo: company.logo || '',
-    tagline: company.tagline || ''
+    name: '',
+    linkedin: '',
+    website: '',
+    industry: '',
+    size: '',
+    type: '',
+    logo: '',
+    tagline: ''
   });
   const [logoPreview, setLogoPreview] = useState(null);
+
+  // Sinkronkan formData setiap kali company berubah
+  useEffect(() => {
+    if (company) {
+      setFormData({
+        name: company.name || '',
+        linkedin: company.linkedin_url || '',
+        website: company.website || '',
+        industry: company.industry || '',
+        size: company.size || '',
+        type: company.type || '',
+        logo: company.logo || '',
+        tagline: company.tagline || ''
+      });
+    }
+  }, [company]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

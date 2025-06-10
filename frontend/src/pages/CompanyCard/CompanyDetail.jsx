@@ -6,9 +6,13 @@ import CompanyTabs from "../../components/CompanyProfile/CompanyTabs.jsx";
 import CompanyLeftSidebar from "../../components/CompanyProfile/CompanyLeftSidebar.jsx";
 import CompanyMainContent from "../../components/CompanyProfile/CompanyMainContent.jsx";
 import CompanyRightSidebar from "../../components/CompanyProfile/CompanyRightSidebar.jsx";
+import CompanyEditModal from "../../components/CompanyProfile/CompanyEditModal.jsx";
 
 export default function CompanyDetail() {
-  const { companyId } = useParams();
+  const { company_id } = useParams();
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
   const navigate = useNavigate();
   const [company, setCompany] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -23,38 +27,152 @@ export default function CompanyDetail() {
   const [jobs, setJobs] = useState([]);
   const [userReviews, setUserReviews] = useState([]);
 
+  const [formData, setFormData] = useState({
+    name: "",
+    linkedin: "",
+    website: "",
+    industry: "",
+    size: "",
+    type: "",
+    logo: "",
+    tagline: ""
+  });
+  const [logoPreview, setLogoPreview] = useState(null);
+
   useEffect(() => {
     const fetchCompanyDetail = async () => {
       try {
         const token = localStorage.getItem("token");
         const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
-        const res = await fetch(`${apiUrl}/api/companies/${companyId}/details`, {
-          headers: { Authorization: `Bearer ${token}` },
+
+        const res = await fetch(`${apiUrl}/api/companies/${company_id}/details`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
+
         const data = await res.json();
 
         if (data.data) {
+          const c = data.data;
           setCompany({
-            ...data.data,
-            // Add any additional fields needed for the UI
-            followers: data.data.followers || 0,
-            connections: data.data.connections || 0,
-            Employees: data.data.employees || "0",
+            ...c,
+            followers: c.followers || 0,
+            connections: c.connections || 0,
+            Employees: c.employees || "0",
             rating: 4.5,
-            jobs: data.data.jobs?.length || 0,
-            caption: data.data.tagline || "Innovative solutions for your business"
+            jobs: c.jobs?.length || 0,
+            caption: c.tagline || "Innovative solutions for your business",
+            linkedin_url: c.linkedin_url || "",
           });
+
+          // Initialize form data with current company details
+          setFormData({
+            name: c.name || "",
+            linkedin: c.linkedin_url || "",
+            website: c.website || "",
+            industry: c.industry || "",
+            size: c.size || "",
+            type: c.type || "",
+            logo: c.logo || "",
+            tagline: c.tagline || ""
+          });
+
+          setJobs(c.jobs || []);
         } else {
           setCompany(null);
         }
       } catch (error) {
+        console.error("Error fetching company detail:", error);
         setCompany(null);
       } finally {
         setLoading(false);
       }
     };
+
     fetchCompanyDetail();
-  }, [companyId]);
+  }, [company_id]);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleLogoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setLogoPreview(URL.createObjectURL(file));
+      setFormData((prev) => ({
+        ...prev,
+        logo: file,
+      }));
+    }
+  };
+
+  const handleSubmitEditRequest = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Authentication token missing. Please log in again.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
+      // Log untuk debugging
+      console.log("Submitting edit request for company:", company_id);
+      console.log("Form data:", formData);
+
+      const formDataToSend = new FormData();
+      formDataToSend.append("name", formData.name);
+      formDataToSend.append("linkedin_url", formData.linkedin);
+      formDataToSend.append("website", formData.website);
+      formDataToSend.append("industry", formData.industry);
+      formDataToSend.append("size", formData.size);
+      formDataToSend.append("type", formData.type);
+      formDataToSend.append("tagline", formData.tagline);
+
+      if (formData.logo instanceof File) {
+        formDataToSend.append("logo", formData.logo);
+      }
+
+      const response = await fetch(`${apiUrl}/api/companies/${company_id}/request-edit`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formDataToSend,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API error response:", errorText);
+        throw new Error("Failed to submit edit request");
+      }
+
+      // Set success state
+      setSubmitSuccess(true);
+
+      // Show loading for 2 seconds then redirect
+      setTimeout(() => {
+        setIsSubmitting(false);
+        setIsEditModalOpen(false);
+        navigate(-1); // Kembali ke halaman sebelumnya
+      }, 2000);
+
+    } catch (error) {
+      console.error("Error submitting edit request:", error);
+      alert(error.message || "Failed to submit edit request. Please try again.");
+      setIsSubmitting(false);
+    }
+  };
 
   const handleCommentSubmit = () => {
     if (!newComment.trim()) return;
@@ -83,7 +201,7 @@ export default function CompanyDetail() {
       date: new Date().toLocaleString(),
       likes: 0,
       comments: 0,
-      shares: 0
+      shares: 0,
     };
 
     setPosts([newPost, ...posts]);
@@ -97,7 +215,7 @@ export default function CompanyDetail() {
       company: company?.name || "Company",
       location: newJob.location,
       employmentType: newJob.employmentType,
-      description: newJob.description
+      description: newJob.description,
     };
 
     setJobs([jobWithId, ...jobs]);
@@ -109,7 +227,10 @@ export default function CompanyDetail() {
     return (
       <div className="text-center text-red-500">
         Failed to load company details.
-        <button onClick={() => navigate(-1)} className="mt-4 underline text-blue-600">
+        <button
+          onClick={() => navigate(-1)}
+          className="mt-4 underline text-blue-600"
+        >
           Go back
         </button>
       </div>
@@ -123,6 +244,7 @@ export default function CompanyDetail() {
           company={company}
           isFollowingMain={isFollowingMain}
           setIsFollowingMain={setIsFollowingMain}
+          onEditClick={() => setIsEditModalOpen(true)}
         />
 
         <CompanyTabs
@@ -130,6 +252,20 @@ export default function CompanyDetail() {
           setActiveTab={setActiveTab}
           tabs={tabs}
         />
+
+        <CompanyEditModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          formData={formData}
+          logoPreview={logoPreview}
+          handleInputChange={handleInputChange}
+          handleLogoChange={handleLogoChange}
+          handleSubmit={handleSubmitEditRequest}
+          isSubmitting={isSubmitting}
+          submitSuccess={submitSuccess}
+          company_id={company_id} 
+        />
+
 
         <div className="mt-4 max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">

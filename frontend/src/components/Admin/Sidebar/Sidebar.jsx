@@ -205,16 +205,16 @@ export default function Sidebar() {
                 <Link
                   className={
                     "text-xs uppercase py-3 font-bold block " +
-                    (window.location.href.indexOf("/admin/list-user") !== -1
+                    (window.location.href.indexOf("/company-management/company-edit-request") !== -1
                       ? "text-sky-500 hover:text-sky-600"
                       : "text-gray-700 hover:text-gray-500")
                   }
-                  to="/admin/list-user"
+                  to="/company-management/company-edit-request"
                 >
                   <i
                     className={
                       "fas fa-table mr-2 text-sm " +
-                      (window.location.href.indexOf("/admin/list-user") !== -1
+                      (window.location.href.indexOf("/company-management/company-edit-request") !== -1
                         ? "opacity-75"
                         : "text-gray-300")
                     }

@@ -47,6 +47,7 @@ import CompanyDetail from "./pages/CompanyCard/CompanyDetail.jsx";
 import MyCompanies from "./pages/CompanyCard/MyCompanies.jsx";
 import CompanyPending from "./pages/CompanyCard/CompanyPending.jsx";
 import CompanyEdit from "./pages/CompanyCard/CompanyEdit.jsx"
+import CompanyEditRequest from "./pages/Admin/Admin1/ListEditRequest.jsx";
 // import ProtectedCompanyRoute from "./components/Auth/protectedCompanyRoute.jsx";
 
 const router = createBrowserRouter([
@@ -169,7 +170,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/company-profile/:companyId",
+    path: "/company-profile/:company_id",
     element: (
       <ProtectedRoute>
         <CompanyProfile />
@@ -390,7 +391,7 @@ const router = createBrowserRouter([
         element: <MyCompanies />,
       },
       {
-        path: "company-detail/:companyId",
+        path: "company-detail/:company_id",
         element: <CompanyDetail />,
       },
       {
@@ -401,6 +402,10 @@ const router = createBrowserRouter([
         path: "company-edit",
         element: <CompanyEdit />,
       },
+      {
+        path: "company-edit-request",
+        element: <CompanyEditRequest />,
+      }
     ],  
 },
 ]);

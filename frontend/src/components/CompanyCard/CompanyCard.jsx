@@ -311,7 +311,7 @@ const CompanyCards = () => {
 
     const handleSaveChanges = (editedData) => {
         console.log("Saving changes:", {
-            companyId: selectedCompany.id,
+            company_id: selectedCompany.id,
             changes: editedData
         });
         setShowEditModal(false);
