@@ -82,6 +82,10 @@ func main() {
 
 	companyJoinRequestRepository := repository.NewCompanyJoinRequestRepository()
 
+	companyPostRepository := repository.NewCompanyPostRepository()
+
+	companyPostCommentRepository := repository.NewCompanyPostCommentRepository()
+
 	// ===== Services =====
 	// Notification service (moved up because it's used by many other services)
 	notificationService := service.NewNotificationService(
@@ -223,6 +227,26 @@ func main() {
 		validate,
 	)
 
+	companyPostService := service.NewCompanyPostService(
+		db,
+		companyPostRepository,
+		memberCompanyRepository,
+		companyRepository,
+		userRepository,
+		notificationService,
+		validate,
+	)
+
+	companyPostCommentService := service.NewCompanyPostCommentService(
+		db,
+		companyPostCommentRepository,
+		companyPostRepository,
+		memberCompanyRepository,
+		userRepository,
+		notificationService,
+		validate,
+	)
+
 	// ===== Controllers =====
 	// User-related controllers
 	userController := controller.NewUserController(
@@ -272,6 +296,10 @@ func main() {
 
 	companyJoinRequestController := controller.NewCompanyJoinRequestController(companyJoinRequestService)
 
+	companyPostController := controller.NewCompanyPostController(companyPostService)
+
+	companyPostCommentController := controller.NewCompanyPostCommentController(companyPostCommentService)
+
 	// ===== Router and Middleware =====
 	// Initialize router with all controllers and JWT secret
 	router := app.NewRouter(
@@ -296,6 +324,8 @@ func main() {
 		adminCompanyEditController,
 		memberCompanyController,
 		companyJoinRequestController,
+		companyPostController,
+		companyPostCommentController,
 	)
 
 	// Seed admin data

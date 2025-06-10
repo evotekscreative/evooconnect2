@@ -28,6 +28,9 @@ func setupUserRoutes(
 	companyManagementController controller.CompanyManagementController,
 	memberCompanyController controller.MemberCompanyController,
 	companyJoinRequestController controller.CompanyJoinRequestController,
+	companyPostController controller.CompanyPostController,
+	companyPostCommentController controller.CompanyPostCommentController,
+
 ) {
 	// Create user middleware
 	userAuth := middleware.NewUserAuthMiddleware()
@@ -199,4 +202,36 @@ func setupUserRoutes(
 	router.PUT("/api/company-join-requests/:requestId/review", userAuth(companyJoinRequestController.Review))
 	router.DELETE("/api/company-join-requests/:requestId", userAuth(companyJoinRequestController.Cancel))
 	router.GET("/api/companies/:companyId/join-requests/pending-count", userAuth(companyJoinRequestController.GetPendingCount))
+
+	// Company Post Routes
+	router.POST("/api/companies/:companyId/posts", userAuth(companyPostController.Create))
+	router.GET("/api/companies/:companyId/posts", userAuth(companyPostController.FindByCompanyId))
+	router.GET("/api/company-posts", userAuth(companyPostController.FindWithFilters))
+	router.GET("/api/company-posts/:postId", userAuth(companyPostController.FindById))
+	router.PUT("/api/company-posts/:postId", userAuth(companyPostController.Update))
+	router.DELETE("/api/company-posts/:postId", userAuth(companyPostController.Delete))
+	router.PATCH("/api/company-posts/:postId/status", userAuth(companyPostController.UpdateStatus))
+	router.GET("/api/users/:userId/company-posts", userAuth(companyPostController.FindByCreatorId))
+
+	// Company Post Like Routes
+	router.POST("/api/company-posts/:postId/like", userAuth(companyPostController.LikePost))
+	router.DELETE("/api/company-posts/:postId/like", userAuth(companyPostController.UnlikePost))
+
+	// Company Post Comment Routes - following same pattern as regular post comments
+	router.POST("/api/company-posts/:postId/comments", userAuth(companyPostCommentController.CreateComment))
+	router.GET("/api/company-posts/:postId/comments", userAuth(companyPostCommentController.GetCommentsByPostId))
+
+	// Reply comments
+	router.POST("/api/company-posts/:postId/comments/reply", userAuth(companyPostCommentController.CreateReply))
+
+	// Sub-reply comments
+	router.POST("/api/company-posts/:postId/comments/sub-reply", userAuth(companyPostCommentController.CreateSubReply))
+
+	// Comment management
+	router.GET("/api/company-post-comments/:commentId", userAuth(companyPostCommentController.FindById))
+	router.PUT("/api/company-post-comments/:commentId", userAuth(companyPostCommentController.Update))
+	router.DELETE("/api/company-post-comments/:commentId", userAuth(companyPostCommentController.Delete))
+
+	// Get replies by parent comment ID
+	router.GET("/api/company-post-comments/:commentId/replies", userAuth(companyPostCommentController.GetRepliesByParentId))
 }
