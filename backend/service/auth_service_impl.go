@@ -447,29 +447,54 @@ func (service *AuthServiceImpl) VerifyEmail(ctx context.Context, request web.Ver
 	err := service.Validate.Struct(request)
 	helper.PanicIfError(err)
 
+	// Get client IP for rate limiting
+	clientIP := helper.GetClientIP(ctx)
+
+	// Check rate limiting first
+	rateLimitTx, err := service.DB.Begin()
+	if err != nil {
+		panic(exception.NewInternalServerError("Database error: " + err.Error()))
+	}
+
+	var isLimited bool
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				rateLimitTx.Rollback()
+				panic(r)
+			}
+		}()
+
+		isLimited, err = service.UserRepository.IsRateLimited(ctx, rateLimitTx, clientIP, "email_verification", 5, 5*time.Minute)
+		if err != nil {
+			rateLimitTx.Rollback()
+			isLimited = false
+		} else {
+			rateLimitTx.Commit()
+		}
+	}()
+
+	if isLimited {
+		panic(exception.NewTooManyRequestsError("Too many verification attempts. Please try again later."))
+	}
+
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
-	// Get user_id from the JWT token (added by middleware)
-	_, ok := ctx.Value("user_id").(string)
-	if !ok {
-		fmt.Println("ERROR: user_id not found in context")
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
 	// Check if token is a reasonable length
 	if len(request.Token) != 6 {
+		// Log failed attempt
+		_ = service.UserRepository.LogFailedAttempt(ctx, tx, clientIP, "email_verification", request.Token)
 		panic(exception.NewBadRequestError("Invalid verification token format"))
 	}
 
-	// Get the current user by ID
+	// Get the user by verification token (not from JWT context)
 	user, err := service.UserRepository.FindByVerificationToken(ctx, tx, request.Token)
 	if err != nil {
 		// Log failed attempt
-		clientIP := helper.GetClientIP(ctx)
 		_ = service.UserRepository.LogFailedAttempt(ctx, tx, clientIP, "email_verification", request.Token)
-		panic(exception.NewBadRequestError("Invalid verification token"))
+		panic(exception.NewBadRequestError("Invalid or expired verification token"))
 	}
 
 	// Check if user is already verified
@@ -482,6 +507,13 @@ func (service *AuthServiceImpl) VerifyEmail(ctx context.Context, request web.Ver
 	// Update user's verification status
 	err = service.UserRepository.UpdateVerificationStatus(ctx, tx, user.Id, true)
 	helper.PanicIfError(err)
+
+	// Clear rate limiting for successful verification
+	clearTx, err := service.DB.Begin()
+	if err == nil {
+		_ = service.UserRepository.ClearFailedAttempts(ctx, clearTx, user.Id, "email_verification")
+		clearTx.Commit()
+	}
 
 	return web.MessageResponse{
 		Message: "Email successfully verified",
