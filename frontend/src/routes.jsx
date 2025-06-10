@@ -48,6 +48,8 @@ import CompanyPending from "./pages/CompanyCard/CompanyPending.jsx";
 import CompanyEdit from "./pages/CompanyCard/CompanyEdit.jsx"
 // import ProtectedCompanyRoute from "./components/Auth/protectedCompanyRoute.jsx";
 
+import CompanyDashboard from "./pages/CompanyDashboard/CompanyDashboard.jsx";
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -398,6 +400,11 @@ const router = createBrowserRouter([
       },
     ],  
 },
+
+  {
+    path: "company-dashboard",
+    element: <CompanyDashboard />,
+  },
 ]);
 
 export default router;
