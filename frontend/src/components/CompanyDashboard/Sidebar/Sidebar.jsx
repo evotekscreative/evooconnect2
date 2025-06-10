@@ -26,8 +26,6 @@ export default function Sidebar() {
                         <Dropdown />
                     </Link>
 
-                    {/* User */}
-
                     {/* Collapse */}
                     <div
                         className={

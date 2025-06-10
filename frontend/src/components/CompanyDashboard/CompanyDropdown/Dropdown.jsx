@@ -50,18 +50,41 @@ const CompanyDropdown = () => {
                 <div className="absolute left-0 mt-2 w-56 bg-white border border-gray-200 rounded-md shadow-lg z-[1000]">
                     <ul className="py-1">
                         <li className="px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150 flex items-center space-x-2">
-                            <User className="w-4 h-4 text-gray-500" />
-                            <span className="text-sm">Profile</span>
+                            <div className="flex items-center space-x-2 truncate">
+                                <img
+                                    src="/b55b507a-32a1-4ec9-a56e-bcb704e59eb5.png"
+                                    alt="Company"
+                                    className="w-8 h-8 rounded-full object-cover"
+                                />
+                                <span className="text-gray-800 font-medium truncate normal-case">Company 2</span>
+                            </div>
                         </li>
                         <li className="px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150 flex items-center space-x-2">
-                            <Settings className="w-4 h-4 text-gray-500" />
-                            <span className="text-sm">Settings</span>
+                            <div className="flex items-center space-x-2 truncate">
+                                <img
+                                    src="/b55b507a-32a1-4ec9-a56e-bcb704e59eb5.png"
+                                    alt="Company"
+                                    className="w-8 h-8 rounded-full object-cover"
+                                />
+                                <span className="text-gray-800 font-medium truncate normal-case">Company 3</span>
+                            </div>
                         </li>
-                        <li className="px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150 flex items-center space-x-2 text-red-500">
-                            <LogOut className="w-4 h-4" />
-                            <span className="text-sm">Logout</span>
+                        <li className="px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150 flex items-center space-x-2">
+                            <div className="flex items-center space-x-2 truncate">
+                                <img
+                                    src="/b55b507a-32a1-4ec9-a56e-bcb704e59eb5.png"
+                                    alt="Company"
+                                    className="w-8 h-8 rounded-full object-cover"
+                                />
+                                <span className="text-gray-800 font-medium truncate normal-case">Company 4</span>
+                            </div>
                         </li>
                     </ul>
+                    <div className="border-t border-gray-200 px-3 py-2">
+                        <button className="w-full text-sm text-primary font-medium hover:underline text-left">
+                            + Create Company
+                        </button>
+                    </div>
                 </div>
             )}
         </div>
