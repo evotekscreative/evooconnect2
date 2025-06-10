@@ -4,7 +4,7 @@ export default function CompanyForm({ form, logoPreview, handleChange, isSubmitt
     return (
         <div className="w-full max-w-2xl bg-white p-6 rounded-lg shadow-md border border-gray-900">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Company Information</h2>
-            
+
             <div className="grid grid-cols-1 gap-6">
                 {/* Name */}
                 <div>
@@ -28,8 +28,8 @@ export default function CompanyForm({ form, logoPreview, handleChange, isSubmitt
                         </span>
                         <input
                             type="text"
-                            name="url"
-                            value={form.url}
+                            name="LinkedinUrl"
+                            value={form.linkedin_url}
                             onChange={handleChange}
                             className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-900 focus:ring-blue-500 focus:border-blue-500"
                             required

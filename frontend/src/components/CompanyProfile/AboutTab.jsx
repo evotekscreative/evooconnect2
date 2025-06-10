@@ -26,7 +26,7 @@ export default function AboutTab({ company }) {
           <hr className="py-2" />
           <li><strong>Founded:</strong> {company.founded}</li>
           <hr className="py-2" />
-          <li><strong>Linkedin Url:</strong> {company.linkedin_url}</li>
+          <li><strong>Linkedin Url:</strong> {company.linkedin_url || 'N/A'}</li>
         </ul>
       </div>
 

@@ -29,12 +29,11 @@ export default function CompanyDetail() {
 
   const [formData, setFormData] = useState({
     name: "",
-    linkedin: "",
+    linkedin_url: "",
     website: "",
     industry: "",
     size: "",
-    type: "",
-    logo: "",
+    typelinkedin_urlo: "",
     tagline: ""
   });
   const [logoPreview, setLogoPreview] = useState(null);
@@ -69,12 +68,12 @@ export default function CompanyDetail() {
           // Initialize form data with current company details
           setFormData({
             name: c.name || "",
-            linkedin: c.linkedin_url || "",
+            linkedin_url: c.linkedin_url || "",
             website: c.website || "",
             industry: c.industry || "",
             size: c.size || "",
             type: c.type || "",
-            logo: c.logo || "",
+            logo: c.linkedin_url ? c.linkedin_url : null,
             tagline: c.tagline || ""
           });
 
@@ -132,12 +131,12 @@ export default function CompanyDetail() {
 
       const formDataToSend = new FormData();
       formDataToSend.append("name", formData.name);
-      formDataToSend.append("linkedin_url", formData.linkedin);
+      formDataToSend.append("linkedin_url", formData.linkedin_url);
       formDataToSend.append("website", formData.website);
       formDataToSend.append("industry", formData.industry);
       formDataToSend.append("size", formData.size);
       formDataToSend.append("type", formData.type);
-      formDataToSend.append("tagline", formData.tagline);
+      formDataToSend.append("tagline", formData.linkedin_url);
 
       if (formData.logo instanceof File) {
         formDataToSend.append("logo", formData.logo);

@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import companyProfile from "../../assets/img/company-profile.jpg";
 import { Pencil } from 'lucide-react';
 import CompanyEditModal from '../../components/CompanyProfile/CompanyEditModal.jsx';
+import { toast } from 'react-toastify';
 
 export default function CompanyHeader({ company, isFollowingMain, setIsFollowingMain }) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
-    linkedin: '',
+    linkedin_url: '',
     website: '',
     industry: '',
     size: '',
@@ -16,13 +19,13 @@ export default function CompanyHeader({ company, isFollowingMain, setIsFollowing
     tagline: ''
   });
   const [logoPreview, setLogoPreview] = useState(null);
+  const [logoFile, setLogoFile] = useState(null);
 
-  // Sinkronkan formData setiap kali company berubah
   useEffect(() => {
     if (company) {
       setFormData({
         name: company.name || '',
-        linkedin: company.linkedin_url || '',
+        linkedin_url: company.linkedin_url || '',
         website: company.website || '',
         industry: company.industry || '',
         size: company.size || '',
@@ -49,17 +52,79 @@ export default function CompanyHeader({ company, isFollowingMain, setIsFollowing
         setLogoPreview(reader.result);
       };
       reader.readAsDataURL(file);
-      setFormData(prev => ({
-        ...prev,
-        logo: URL.createObjectURL(file)
-      }));
+      setLogoFile(file);
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
-    setIsEditModalOpen(false);
+    setIsSubmitting(true);
+
+    // Enhanced validation
+    if (!formData.name || !formData.website || !formData.industry) {
+      toast.error("Name, website, and industry are required.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error("Authentication required. Please log in.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const formDataToSend = new FormData();
+
+      // Append all fields including empty ones (backend might expect them)
+      formDataToSend.append('name', formData.name);
+      formDataToSend.append('linkedin_url', formData.linkedin_url || '');
+      formDataToSend.append('website', formData.website);
+      formDataToSend.append('industry', formData.industry);
+      formDataToSend.append('size', formData.size || '');
+      formDataToSend.append('type', formData.type || '');
+      formDataToSend.append('tagline', formData.tagline || '');
+
+      if (logoFile) {
+        formDataToSend.append('logo', logoFile);
+      } else if (formData.logo) {
+        // If no new file but existing logo, send the existing logo URL
+        formDataToSend.append('logoUrl', formData.logo);
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:3000'}/api/companies/${company.id}/request-edit`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formDataToSend
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        // More detailed error message from backend if available
+        const errorMsg = responseData.message ||
+          (responseData.errors ? JSON.stringify(responseData.errors) : 'Failed to submit edit request');
+        toast.error(errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      setSubmitSuccess(true);
+      toast.success('Edit request submitted for admin approval');
+
+      setTimeout(() => {
+        setIsEditModalOpen(false);
+        setSubmitSuccess(false);
+      }, 2000);
+
+    } catch (error) {
+      console.error('Error submitting edit request:', error);
+      toast.error(error.message || 'Failed to submit edit request');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -72,6 +137,8 @@ export default function CompanyHeader({ company, isFollowingMain, setIsFollowing
         handleInputChange={handleInputChange}
         handleLogoChange={handleLogoChange}
         handleSubmit={handleSubmit}
+        isSubmitting={isSubmitting}
+        submitSuccess={submitSuccess}
       />
 
       {/* Header Content */}
@@ -86,7 +153,7 @@ export default function CompanyHeader({ company, isFollowingMain, setIsFollowing
           </p>
         </div>
         <div className="flex gap-2 mt-4 md:mt-0">
-          <button 
+          <button
             onClick={() => setIsEditModalOpen(true)}
             className="p-2 text-gray-500 hover:text-blue-600 transition-colors border rounded-md"
             aria-label="Edit company"

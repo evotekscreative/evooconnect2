@@ -110,7 +110,7 @@ export default function SubmissionCompanyCard({ company, showStatus = false }) {
                                 </div>
                             </div>
                             <div className="flex-1 space-y-2">
-                                <div><span className="font-semibold">LinkedIn: </span>{selectedSubmission.linkedin_url || "-"}</div>
+                                <div><span className="font-semibold">LinkedIn: </span>{selectedSubmission.LinkedinUrl || "-"}</div>
                                 <div><span className="font-semibold">Website: </span>{selectedSubmission.website || "-"}</div>
                                 <div><span className="font-semibold">Industry: </span>{selectedSubmission.industry || "-"}</div>
                                 <div><span className="font-semibold">Organization Size: </span>{selectedSubmission.size || "-"}</div>

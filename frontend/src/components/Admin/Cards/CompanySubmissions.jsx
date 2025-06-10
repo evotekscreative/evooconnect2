@@ -112,9 +112,9 @@ const CompanySubmissions = ({ color = "light" }) => {
         ...(status === 'rejected' && reason && { rejection_reason: reason })
       };
 
-      console.log(`Trying with Axios-like approach for ${status}`);
+      // Tambahkan log payload
+      console.log("Review payload:", payload);
 
-      // Gunakan pendekatan yang mirip dengan Postman
       const xhr = new XMLHttpRequest();
       xhr.open('PUT', `${apiUrl}/api/admin/company-submissions/review/${submissionId}`);
       xhr.setRequestHeader('Content-Type', 'application/json');
@@ -126,7 +126,6 @@ const CompanySubmissions = ({ color = "light" }) => {
           console.log("Response:", xhr.responseText);
 
           if (xhr.status >= 200 && xhr.status < 300) {
-            // Sukses - refresh data
             fetchSubmissions().then(() => {
               toast.success(`Submission ${status} successfully`);
               setRejectionModalOpen(false);
@@ -135,9 +134,14 @@ const CompanySubmissions = ({ color = "light" }) => {
               setIsReviewing(false);
             });
           } else {
-            // Error
+            // Log error detail
             console.error("Error response:", xhr.responseText);
-            toast.error(`Failed to ${status} submission`);
+            let errorMessage = `Failed to ${status} submission`;
+            try {
+              const errorData = JSON.parse(xhr.responseText);
+              errorMessage = errorData?.data || errorMessage;
+            } catch (e) { }
+            toast.error(errorMessage);
             setIsReviewing(false);
           }
         }
@@ -145,12 +149,11 @@ const CompanySubmissions = ({ color = "light" }) => {
 
       xhr.send(JSON.stringify(payload));
     } catch (error) {
-      console.error(`Error ${status} submission:`, error);
-      toast.error(`Failed to ${status} submission`);
+      let errorMessage = "Failed to review company submission";
+      toast.error(errorMessage);
       setIsReviewing(false);
     }
   };
-
   const handleApprove = (submissionId) => {
     handleReviewAction(submissionId, 'approved');
   };

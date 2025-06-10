@@ -143,7 +143,7 @@ export default function CreateCompany() {
 
       const formData = new FormData();
       formData.append("name", form.name);
-      formData.append("linkedin_url", form.url);
+      formData.append("LinkedinUrl", form.url);
       formData.append("website", form.website);
       formData.append("industry", form.industry);
       formData.append("size", form.size);
