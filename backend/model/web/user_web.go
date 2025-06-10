@@ -83,5 +83,5 @@ type UserBasicInfo struct {
 	Id       string `json:"id"`
 	Name     string `json:"name"`
 	Username string `json:"username"`
-	Avatar   string `json:"avatar"`
+	Photo    string `json:"photo"`
 }

@@ -59,7 +59,7 @@ func (repository *CompanyFollowerRepositoryImpl) Unfollow(ctx context.Context, t
 func (repository *CompanyFollowerRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, id uuid.UUID) (domain.CompanyFollower, error) {
 	SQL := `SELECT cf.id, cf.company_id, cf.user_id, cf.created_at,
                    c.name as company_name, c.logo as company_logo,
-                   u.name as user_name, u.username as user_username, u.avatar as user_avatar
+                   u.name as user_name, u.username as user_username, u.photo as user_photo
             FROM company_followers cf
             LEFT JOIN companies c ON cf.company_id = c.id
             LEFT JOIN users u ON cf.user_id = u.id
@@ -72,12 +72,12 @@ func (repository *CompanyFollowerRepositoryImpl) FindById(ctx context.Context, t
 	defer rows.Close()
 
 	var follower domain.CompanyFollower
-	var companyName, companyLogo, userName, userUsername, userAvatar sql.NullString
+	var companyName, companyLogo, userName, userUsername, userPhoto sql.NullString
 
 	if rows.Next() {
 		err := rows.Scan(
 			&follower.Id, &follower.CompanyId, &follower.UserId, &follower.CreatedAt,
-			&companyName, &companyLogo, &userName, &userUsername, &userAvatar,
+			&companyName, &companyLogo, &userName, &userUsername, &userPhoto,
 		)
 		if err != nil {
 			return domain.CompanyFollower{}, fmt.Errorf("failed to scan company follower: %w", err)
@@ -98,7 +98,7 @@ func (repository *CompanyFollowerRepositoryImpl) FindById(ctx context.Context, t
 				Id:       follower.UserId,
 				Name:     userName.String,
 				Username: userUsername.String,
-				Avatar:   userAvatar.String,
+				Photo:    userPhoto.String,
 			}
 		}
 
@@ -181,7 +181,7 @@ func (repository *CompanyFollowerRepositoryImpl) FindFollowersByCompanyId(ctx co
 
 		// Set nullable fields
 		if userPhoto.Valid {
-			user.Avatar = userPhoto.String
+			user.Photo = userPhoto.String
 		}
 		if companyLogo.Valid {
 			company.Logo = companyLogo.String

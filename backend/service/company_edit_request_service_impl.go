@@ -272,7 +272,7 @@ func (service *CompanyManagementServiceImpl) GetCompanyDetail(ctx context.Contex
 			Id:       owner.Id.String(),
 			Name:     owner.Name,
 			Username: owner.Username,
-			Avatar:   owner.Photo,
+			Photo:    owner.Photo,
 		}
 	}
 

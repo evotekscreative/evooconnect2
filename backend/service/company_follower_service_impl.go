@@ -160,7 +160,7 @@ func (service *CompanyFollowerServiceImpl) GetCompanyFollowers(ctx context.Conte
 				Id:       follower.User.Id.String(),
 				Name:     follower.User.Name,
 				Username: follower.User.Username,
-				Avatar:   follower.User.Avatar,
+				Photo:    follower.User.Photo,
 			}
 		}
 

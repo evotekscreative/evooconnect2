@@ -1,8 +1,9 @@
 package domain
 
 import (
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type CompanySubmissionStatus string
@@ -72,5 +73,5 @@ type UserBasicInfo struct {
 	Id       uuid.UUID `json:"id"`
 	Name     string    `json:"name"`
 	Username string    `json:"username"`
-	Avatar   string    `json:"avatar"`
+	Photo    string    `json:"photo"`
 }
