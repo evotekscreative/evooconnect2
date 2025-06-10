@@ -10688,6 +10688,583 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Company Follow Management",
+      "description": "Endpoints for managing company followers - allowing users to follow/unfollow companies and view follower information",
+      "item": [
+        {
+          "name": "Follow Company",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"company_id\": \"{{company_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/company-follow/follow",
+              "host": ["{{base_url}}"],
+              "path": ["api", "company-follow", "follow"]
+            },
+            "description": "Follow a company to receive updates about their posts and activities. Users can only follow companies they have access to."
+          },
+          "response": [
+            {
+              "name": "Follow Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"company_id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/company-follow/follow",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "company-follow", "follow"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 201,\n    \"status\": \"CREATED\",\n    \"data\": {\n        \"id\": \"f1e2d3c4-b5a6-9788-1234-567890abcdef\",\n        \"user_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"company_id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n        \"followed_at\": \"2023-12-01T10:30:00Z\",\n        \"company\": {\n            \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n            \"name\": \"Tech Innovators Inc\",\n            \"linkedin_url\": \"tech-innovators\",\n            \"logo\": \"uploads/companies/tech-innovators/logo.jpg\",\n            \"industry\": \"Information Technology\",\n            \"size\": \"201-500 employees\"\n        }\n    }\n}"
+            },
+            {
+              "name": "Already Following",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"company_id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/company-follow/follow",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "company-follow", "follow"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 400,\n    \"status\": \"BAD REQUEST\",\n    \"data\": \"You are already following this company\"\n}"
+            },
+            {
+              "name": "Company Not Found",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"company_id\": \"invalid-company-id\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/company-follow/follow",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "company-follow", "follow"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 404,\n    \"status\": \"NOT FOUND\",\n    \"data\": \"Company not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Unfollow Company",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"company_id\": \"{{company_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/company-follow/unfollow",
+              "host": ["{{base_url}}"],
+              "path": ["api", "company-follow", "unfollow"]
+            },
+            "description": "Unfollow a company to stop receiving updates about their posts and activities."
+          },
+          "response": [
+            {
+              "name": "Unfollow Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"company_id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/company-follow/unfollow",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "company-follow", "unfollow"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"message\": \"Successfully unfollowed company\",\n        \"company_id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n        \"unfollowed_at\": \"2023-12-01T11:45:00Z\"\n    }\n}"
+            },
+            {
+              "name": "Not Following",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"company_id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/company-follow/unfollow",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "company-follow", "unfollow"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 400,\n    \"status\": \"BAD REQUEST\",\n    \"data\": \"You are not following this company\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Company Followers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/company-follow/{{company_id}}/followers?limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "company-follow", "{{company_id}}", "followers"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of followers to return (default: 10, max: 50)"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Number of followers to skip (default: 0)"
+                }
+              ]
+            },
+            "description": "Get a list of users who are following a specific company with pagination. This endpoint is public and doesn't require authentication."
+          },
+          "response": [
+            {
+              "name": "Get Followers Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/company-follow/a1b2c3d4-e5f6-7890-abcd-ef1234567890/followers?limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "company-follow",
+                    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                    "followers"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"followers\": [\n            {\n                \"id\": \"f1e2d3c4-b5a6-9788-1234-567890abcdef\",\n                \"user_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                \"followed_at\": \"2023-12-01T10:30:00Z\",\n                \"user\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                    \"name\": \"John Doe\",\n                    \"username\": \"johndoe\",\n                    \"photo\": \"uploads/users/550e8400-e29b-41d4-a716-446655440000/photo.jpg\",\n                    \"headline\": \"Fullstack Developer\"\n                }\n            },\n            {\n                \"id\": \"g2f3e4d5-c6b7-a899-2345-678901bcdefg\",\n                \"user_id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n                \"followed_at\": \"2023-11-30T15:20:00Z\",\n                \"user\": {\n                    \"id\": \"661f9511-f3a2-41d5-b882-557535440123\",\n                    \"name\": \"Jane Smith\",\n                    \"username\": \"janesmith\",\n                    \"photo\": \"uploads/users/661f9511-f3a2-41d5-b882-557535440123/profile.jpg\",\n                    \"headline\": \"UX Designer\"\n                }\n            },\n            {\n                \"id\": \"h3g4f5e6-d7c8-b9aa-3456-789012cdefgh\",\n                \"user_id\": \"772g0622-g4b3-52e6-c993-668646551234\",\n                \"followed_at\": \"2023-11-29T09:15:00Z\",\n                \"user\": {\n                    \"id\": \"772g0622-g4b3-52e6-c993-668646551234\",\n                    \"name\": \"Alex Johnson\",\n                    \"username\": \"alexj\",\n                    \"photo\": \"uploads/users/772g0622-g4b3-52e6-c993-668646551234/avatar.jpg\",\n                    \"headline\": \"Backend Developer\"\n                }\n            }\n        ],\n        \"company\": {\n            \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n            \"name\": \"Tech Innovators Inc\",\n            \"linkedin_url\": \"tech-innovators\",\n            \"logo\": \"uploads/companies/tech-innovators/logo.jpg\",\n            \"industry\": \"Information Technology\",\n            \"size\": \"201-500 employees\"\n        },\n        \"total\": 25,\n        \"limit\": 10,\n        \"offset\": 0\n    }\n}"
+            },
+            {
+              "name": "No Followers",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/company-follow/a1b2c3d4-e5f6-7890-abcd-ef1234567890/followers?limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "company-follow",
+                    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                    "followers"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"followers\": [],\n        \"company\": {\n            \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n            \"name\": \"Tech Innovators Inc\",\n            \"linkedin_url\": \"tech-innovators\",\n            \"logo\": \"uploads/companies/tech-innovators/logo.jpg\",\n            \"industry\": \"Information Technology\",\n            \"size\": \"201-500 employees\"\n        },\n        \"total\": 0,\n        \"limit\": 10,\n        \"offset\": 0\n    }\n}"
+            },
+            {
+              "name": "Company Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/company-follow/invalid-company-id/followers",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "company-follow",
+                    "invalid-company-id",
+                    "followers"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 404,\n    \"status\": \"NOT FOUND\",\n    \"data\": \"Company not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Check Follow Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/company-follow/{{company_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "company-follow", "{{company_id}}", "status"]
+            },
+            "description": "Check if the current user is following a specific company. Returns the follow relationship status and details."
+          },
+          "response": [
+            {
+              "name": "Following Status - True",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/company-follow/a1b2c3d4-e5f6-7890-abcd-ef1234567890/status",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "company-follow",
+                    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                    "status"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"is_following\": true,\n        \"followed_at\": \"2023-12-01T10:30:00Z\",\n        \"follow_id\": \"f1e2d3c4-b5a6-9788-1234-567890abcdef\",\n        \"company\": {\n            \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n            \"name\": \"Tech Innovators Inc\",\n            \"linkedin_url\": \"tech-innovators\",\n            \"logo\": \"uploads/companies/tech-innovators/logo.jpg\",\n            \"industry\": \"Information Technology\",\n            \"size\": \"201-500 employees\",\n            \"followers_count\": 25\n        }\n    }\n}"
+            },
+            {
+              "name": "Following Status - False",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/company-follow/a1b2c3d4-e5f6-7890-abcd-ef1234567890/status",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "company-follow",
+                    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                    "status"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"is_following\": false,\n        \"followed_at\": null,\n        \"follow_id\": null,\n        \"company\": {\n            \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n            \"name\": \"Tech Innovators Inc\",\n            \"linkedin_url\": \"tech-innovators\",\n            \"logo\": \"uploads/companies/tech-innovators/logo.jpg\",\n            \"industry\": \"Information Technology\",\n            \"size\": \"201-500 employees\",\n            \"followers_count\": 25\n        }\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get User Following Companies",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/user/following-companies?limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "following-companies"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of companies to return (default: 10, max: 50)"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Number of companies to skip (default: 0)"
+                }
+              ]
+            },
+            "description": "Get a list of companies that the current user is following with pagination. Shows detailed information about each followed company."
+          },
+          "response": [
+            {
+              "name": "Get Following Companies Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/user/following-companies?limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "user", "following-companies"],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"following_companies\": [\n            {\n                \"id\": \"f1e2d3c4-b5a6-9788-1234-567890abcdef\",\n                \"followed_at\": \"2023-12-01T10:30:00Z\",\n                \"company\": {\n                    \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n                    \"name\": \"Tech Innovators Inc\",\n                    \"linkedin_url\": \"tech-innovators\",\n                    \"website\": \"https://techinnovators.com\",\n                    \"logo\": \"uploads/companies/tech-innovators/logo.jpg\",\n                    \"industry\": \"Information Technology\",\n                    \"size\": \"201-500 employees\",\n                    \"type\": \"Privately Held\",\n                    \"tagline\": \"Innovating the future of technology\",\n                    \"followers_count\": 25,\n                    \"posts_count\": 12\n                }\n            },\n            {\n                \"id\": \"g2f3e4d5-c6b7-a899-2345-678901bcdefg\",\n                \"followed_at\": \"2023-11-28T14:20:00Z\",\n                \"company\": {\n                    \"id\": \"b2c3d4e5-f6g7-8901-bcde-fg2345678901\",\n                    \"name\": \"Digital Solutions Ltd\",\n                    \"linkedin_url\": \"digital-solutions\",\n                    \"website\": \"https://digitalsolutions.com\",\n                    \"logo\": \"uploads/companies/digital-solutions/logo.jpg\",\n                    \"industry\": \"Software Development\",\n                    \"size\": \"51-200 employees\",\n                    \"type\": \"Public Company\",\n                    \"tagline\": \"Digital transformation made simple\",\n                    \"followers_count\": 18,\n                    \"posts_count\": 8\n                }\n            },\n            {\n                \"id\": \"h3g4f5e6-d7c8-b9aa-3456-789012cdefgh\",\n                \"followed_at\": \"2023-11-25T09:45:00Z\",\n                \"company\": {\n                    \"id\": \"c3d4e5f6-g7h8-9012-cdef-gh3456789012\",\n                    \"name\": \"StartupHub Indonesia\",\n                    \"linkedin_url\": \"startuphub-id\",\n                    \"website\": \"https://startuphub.id\",\n                    \"logo\": \"uploads/companies/startuphub/logo.jpg\",\n                    \"industry\": \"Venture Capital & Private Equity\",\n                    \"size\": \"11-50 employees\",\n                    \"type\": \"Partnership\",\n                    \"tagline\": \"Empowering Indonesian startups\",\n                    \"followers_count\": 42,\n                    \"posts_count\": 15\n                }\n            }\n        ],\n        \"total\": 3,\n        \"limit\": 10,\n        \"offset\": 0\n    }\n}"
+            },
+            {
+              "name": "No Following Companies",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/user/following-companies?limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "user", "following-companies"],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"following_companies\": [],\n        \"total\": 0,\n        \"limit\": 10,\n        \"offset\": 0\n    }\n}"
+            }
+          ]
+        }
+      ]
     }
   ],
   "variable": [

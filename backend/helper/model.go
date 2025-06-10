@@ -443,3 +443,41 @@ func ToCompanyJoinRequestResponse(request domain.CompanyJoinRequest) web.Company
 
 	return response
 }
+
+func ToCompanyFollowerResponse(follower domain.CompanyFollower) web.CompanyFollowerResponse {
+	response := web.CompanyFollowerResponse{
+		Id:        follower.Id.String(),
+		CompanyId: follower.CompanyId.String(),
+		UserId:    follower.UserId.String(),
+		CreatedAt: follower.CreatedAt,
+	}
+
+	// Set company info if available
+	if follower.Company != nil {
+		response.Company = &web.CompanyBasicInfo{
+			Id:   follower.Company.Id.String(),
+			Name: follower.Company.Name,
+			Logo: follower.Company.Logo,
+		}
+	}
+
+	// Set user info if available
+	if follower.User != nil {
+		response.User = &web.UserBasicInfo{
+			Id:       follower.User.Id.String(),
+			Name:     follower.User.Name,
+			Username: follower.User.Username,
+			Avatar:   follower.User.Avatar,
+		}
+	}
+
+	return response
+}
+
+func ToCompanyFollowerResponses(followers []domain.CompanyFollower) []web.CompanyFollowerResponse {
+	var responses []web.CompanyFollowerResponse
+	for _, follower := range followers {
+		responses = append(responses, ToCompanyFollowerResponse(follower))
+	}
+	return responses
+}

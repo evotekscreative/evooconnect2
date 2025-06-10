@@ -58,12 +58,19 @@ type Company struct {
 }
 
 type CompanyFollower struct {
-	Id        uuid.UUID `db:"id"`
-	CompanyId uuid.UUID `db:"company_id"`
-	UserId    uuid.UUID `db:"user_id"`
-	CreatedAt time.Time `db:"created_at"`
+	Id        uuid.UUID `json:"id"`
+	CompanyId uuid.UUID `json:"company_id"`
+	UserId    uuid.UUID `json:"user_id"`
+	CreatedAt time.Time `json:"created_at"`
 
 	// Relations
-	Company *Company `db:"-"`
-	User    *User    `db:"-"`
+	Company *Company       `json:"company,omitempty"`
+	User    *UserBasicInfo `json:"user,omitempty"`
+}
+
+type UserBasicInfo struct {
+	Id       uuid.UUID `json:"id"`
+	Name     string    `json:"name"`
+	Username string    `json:"username"`
+	Avatar   string    `json:"avatar"`
 }

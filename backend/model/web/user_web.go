@@ -78,3 +78,10 @@ type UserBriefResponse struct {
 	CreatedAt   string    `json:"created_at"`
 	UpdatedAt   string    `json:"updated_at"`
 }
+
+type UserBasicInfo struct {
+	Id       string `json:"id"`
+	Name     string `json:"name"`
+	Username string `json:"username"`
+	Avatar   string `json:"avatar"`
+}

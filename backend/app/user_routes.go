@@ -30,6 +30,7 @@ func setupUserRoutes(
 	companyJoinRequestController controller.CompanyJoinRequestController,
 	companyPostController controller.CompanyPostController,
 	companyPostCommentController controller.CompanyPostCommentController,
+	companyFollowerController controller.CompanyFollowerController,
 
 ) {
 	// Create user middleware
@@ -234,4 +235,13 @@ func setupUserRoutes(
 
 	// Get replies by parent comment ID
 	router.GET("/api/company-post-comments/:commentId/replies", userAuth(companyPostCommentController.GetRepliesByParentId))
+
+	// Company Follower Routes
+	router.POST("/api/company-follow/follow", userAuth(companyFollowerController.FollowCompany))
+	router.POST("/api/company-follow/unfollow", userAuth(companyFollowerController.UnfollowCompany))
+	router.GET("/api/company-follow/:companyId/followers", companyFollowerController.GetCompanyFollowers)
+	router.GET("/api/company-follow/:companyId/status", userAuth(companyFollowerController.CheckFollowStatus))
+
+	// Move conflicting route to different path
+	router.GET("/api/user/following-companies", userAuth(companyFollowerController.GetUserFollowingCompanies))
 }
