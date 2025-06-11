@@ -28,4 +28,5 @@ type PostService interface {
 	UnpinPost(ctx context.Context, postId uuid.UUID, userId uuid.UUID) web.PostResponse
 	FindPendingPostsByUserId(ctx context.Context, userId uuid.UUID, limit, offset int) []web.PendingPostResponse
 	FindPendingPostsByUserIdAndGroupId(ctx context.Context, userId uuid.UUID, groupId uuid.UUID, limit, offset int) []web.PendingPostResponse
+	
 }

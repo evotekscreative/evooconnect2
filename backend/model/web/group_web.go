@@ -49,6 +49,8 @@ type GroupResponse struct {
 	Creator      UserBriefResponse  `json:"creator,omitempty"`
 	Members      []GroupMemberBrief `json:"members,omitempty"`
 	MembersCount int                `json:"members_count"`
+	IsJoined	bool               `json:"is_joined"`
+	JoinedAt     string             `json:"joined_at,omitempty"`
 	CreatedAt    time.Time          `json:"created_at"`
 	UpdatedAt    time.Time          `json:"updated_at"`
 }

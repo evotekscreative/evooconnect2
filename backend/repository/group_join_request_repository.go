@@ -14,5 +14,5 @@ type GroupJoinRequestRepository interface {
 	FindByGroupId(ctx context.Context, tx *sql.Tx, groupId uuid.UUID, limit, offset int) []domain.GroupJoinRequest
 	UpdateStatus(ctx context.Context, tx *sql.Tx, id uuid.UUID, status string) domain.GroupJoinRequest
 	Delete(ctx context.Context, tx *sql.Tx, id uuid.UUID)
-	
+	FindByUserId(ctx context.Context, tx *sql.Tx, userId uuid.UUID, limit, offset int) []domain.GroupJoinRequest
 }

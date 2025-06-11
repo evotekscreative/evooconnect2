@@ -31,6 +31,7 @@ import UserProfile from "./pages/Profile/UserProfile.jsx";
 import UserPostPage from "./pages/UserPostPage.jsx";
 import MemberList from "./pages/MemberList.jsx";
 import SearchResults from "./pages/SearchResults.jsx";
+import ApprovePost from "./pages/ApprovePost.jsx";
 import CreateCompany from "./pages/Jobs/CreateCompany.jsx";
 import UserListConnection from "./pages/UserListConnection.jsx";
 import LoginAdmin from "./pages/Admin/AuthAdmin/LoginAdmin.jsx";
@@ -291,6 +292,14 @@ const router = createBrowserRouter([
   {
     path: "/post/:postId",
     element: <SinglePost />,
+  },
+  {
+    path: "groups/:groupId/approve-posts",
+    element: (
+      <ProtectedRoute>
+        <ApprovePost />
+      </ProtectedRoute>
+    ),
   },
 
   {

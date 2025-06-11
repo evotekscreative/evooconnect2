@@ -186,3 +186,21 @@
 }
 
 
+/* styles/ckeditor-content.css */
+.ck-content ul,
+.ck-content ol {
+  padding-left: 40px;
+}
+
+.ck-content ul {
+  list-style-type: disc;
+}
+
+.ck-content ol {
+  list-style-type: decimal;
+}
+
+.ck-content li {
+  margin-bottom: 0.5em;
+}
+

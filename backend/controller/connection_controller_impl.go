@@ -237,3 +237,39 @@ func (controller *ConnectionControllerImpl) CancelConnectionRequest(writer http.
 
 	helper.WriteToResponseBody(writer, webResponse)
 }
+
+func (controller *ConnectionControllerImpl) CountRequestInvitation(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Ambil user_id dari context yang diset oleh middleware
+	userIdStr, ok := request.Context().Value("user_id").(string)
+	if !ok {
+		webResponse := web.APIResponse{
+			Code:   http.StatusUnauthorized,
+			Status: "UNAUTHORIZED",
+			Error:  "Unauthorized access",
+		}
+		helper.WriteToResponseBody(writer, webResponse)
+		return
+	}
+
+	userId, err := uuid.Parse(userIdStr)
+	if err != nil {
+		webResponse := web.APIResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD_REQUEST",
+			Error:  "Invalid user ID",
+		}
+		helper.WriteToResponseBody(writer, webResponse)
+		return
+	}
+
+	// Hitung jumlah permintaan koneksi dan undangan grup
+	response := controller.ConnectionService.CountRequestInvitation(request.Context(), userId)
+
+	webResponse := web.APIResponse{
+		Code:   http.StatusOK,
+		Status: "OK",
+		Data:   response,
+	}
+
+	helper.WriteToResponseBody(writer, webResponse)
+}

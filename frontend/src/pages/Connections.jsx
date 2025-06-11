@@ -130,11 +130,43 @@ export default function Connection() {
   const [connectedUsers, setConnectedUsers] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [invitationCount, setInvitationCount] = useState(0);
+
   const [alertInfo, setAlertInfo] = useState({
     show: false,
     type: "", // 'success' or 'error'
     message: "",
   });
+
+  useEffect(() => {
+  const fetchCounts = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      
+      const response = await axios.get(
+        `${apiUrl}/api/count-request-invitation`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      
+      if (response.data && response.data.data) {
+        setInvitationCount(response.data.data.connection_requests || 0);
+      }
+    } catch (error) {
+      console.error("Error fetching counts:", error);
+    }
+  };
+  
+  fetchCounts();
+  
+  // Refresh counts every minute
+  const interval = setInterval(fetchCounts, 60000);
+  return () => clearInterval(interval);
+}, []);
 
   const fetchInvitations = async () => {
     const token = localStorage.getItem("token");
@@ -306,7 +338,8 @@ export default function Connection() {
     });
   }
 };
-  const handleAccept = async (id) => {
+
+const handleAccept = async (id, invitationId) => {
   const token = localStorage.getItem("token");
 
   try {
@@ -332,6 +365,24 @@ export default function Connection() {
     // If needed, you can do a final state sync here
     await fetchPeoples();
     
+    // After successful acceptance, refresh the count
+    try {
+      const countResponse = await axios.get(
+        `${apiUrl}/api/count-request-invitation`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      
+      if (countResponse.data && countResponse.data.data) {
+        setInvitationCount(countResponse.data.data.connection_requests || 0);
+      }
+    } catch (countError) {
+      console.error("Error refreshing counts:", countError);
+    }
+    
   } catch (error) {
     // Revert optimistic update if API call fails
     setInvitations(invitations);
@@ -345,6 +396,7 @@ export default function Connection() {
     });
   }
 };
+
 
   const handleReject = async (id) => {
     const token = localStorage.getItem("token");
@@ -421,16 +473,22 @@ export default function Connection() {
                 >
                   People
                 </button>
-                <button
-                  onClick={() => setActiveTab("invitations")}
-                  className={`px-4 py-2 border-b-2 ${
-                    activeTab === "invitations"
-                      ? "border-blue-500 text-blue-600"
-                      : "border-transparent text-gray-500"
-                  } font-medium`}
-                >
-                  Invitations
-                </button>
+              
+<button
+  onClick={() => setActiveTab("invitations")}
+  className={`px-4 py-2 border-b-2 relative ${
+    activeTab === "invitations"
+      ? "border-blue-500 text-blue-600"
+      : "border-transparent text-gray-500"
+  } font-medium`}
+>
+  Invitations
+  {invitationCount > 0 && (
+    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+      {invitationCount > 99 ? "99+" : invitationCount}
+    </span>
+  )}
+</button>
               </div>
             </div>
 

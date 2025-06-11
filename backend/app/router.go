@@ -130,6 +130,7 @@ func NewRouter(
 	router.POST("/api/groups", groupController.Create)
 	router.GET("/api/groups", groupController.FindAll)
 	router.GET("/api/my-groups", groupController.FindMyGroups)
+	router.GET("/api/my-joined-groups", groupController.FindMyJoinedGroups)
 	router.GET("/api/groups/:groupId", groupController.FindById)
 	router.PUT("/api/groups/:groupId", groupController.Update)
 	router.DELETE("/api/groups/:groupId", groupController.Delete)
@@ -154,12 +155,14 @@ func NewRouter(
 	router.PUT("/api/invitations/:invitationId/reject", groupController.RejectInvitation)
 	router.GET("/api/my-invitations", groupController.FindMyInvitations)
 	router.DELETE("/api/invitations/:invitationId", groupController.CancelInvitation)
+	router.GET("/api/count-request-invitation", connectionController.CountRequestInvitation)
 
 	// Join request group
 	router.POST("/api/groups/:groupId/join-requests", groupController.CreateJoinRequest)
 	router.GET("/api/groups/:groupId/join-requests", groupController.FindJoinRequestsByGroupId)
 	router.PUT("/api/join-requests/:requestId/accept", groupController.AcceptJoinRequest)
 	router.PUT("/api/join-requests/:requestId/reject", groupController.RejectJoinRequest)
+	router.GET("/api/my-join-requests", groupController.FindMyJoinRequests)
 	router.DELETE("/api/join-requests/:requestId", groupController.CancelJoinRequest)
 
 	// Chat routes

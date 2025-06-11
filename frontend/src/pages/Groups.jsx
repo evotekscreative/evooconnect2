@@ -10,7 +10,7 @@ import GroupsSidebar from "../components/Group/GroupsSidebar";
 import CreateGroupModal from "../components/Group/CreateGroupModal";
 import Alert from "../components/Auth/alert";
 
-const base_url =  import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+const base_url = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
 export default function Groups() {
   const { groupId } = useParams();
@@ -20,13 +20,14 @@ export default function Groups() {
   const [error, setError] = useState(null);
 
   const [groupForm, setGroupForm] = useState({
-    name: "",
-    description: "",
-    rule: "",
-    privacy_level: "public",
-    invite_policy: "admin",
-    image: null,
-  });
+  name: "",
+  description: "",
+  rule: "",
+  privacy_level: "public",
+  invite_policy: "admin",
+  post_approval: false,  // Add this line
+  image: null,
+});
 
   const [adminGroups, setAdminGroups] = useState([]);
   const [joinedGroups, setJoinedGroups] = useState([]);
@@ -35,28 +36,65 @@ export default function Groups() {
   const [loadingInvitations, setLoadingInvitations] = useState(false);
   const [suggestedGroups, setSuggestedGroups] = useState([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-   const [alert, setAlert] = useState({
+  const [alert, setAlert] = useState({
     show: false,
     type: 'success',
     message: '',
   });
+
+  const [allGroups, setAllGroups] = useState([]);
+  const [loadingAllGroups, setLoadingAllGroups] = useState(false);
+  const [pagination, setPagination] = useState({
+    limit: 10,
+    offset: 0,
+    total: 0
+  });
+
+  const fetchAllGroups = async (limit = 10, offset = 0) => {
+    try {
+      setLoadingAllGroups(true);
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${base_url}/api/groups?limit=${limit}&offset=${offset}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setAllGroups(response.data.data || []);
+      setPagination({
+        limit: response.data.limit || limit,
+        offset: response.data.offset || offset,
+        total: response.data.total || 0
+      });
+    } catch (error) {
+      console.error("Failed to fetch all groups:", error);
+      toast.error("Failed to load groups");
+    } finally {
+      setLoadingAllGroups(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'allGroups') {
+      fetchAllGroups();
+    }
+  }, [activeTab]);
 
   const showAlert = (type, message) => {
     setAlert({ show: true, type, message });
     setTimeout(() => setAlert({ ...alert, show: false }), 5000);
   };
 
-
-  // Fetch data functions
   const fetchGroupsData = async () => {
     try {
       const token = localStorage.getItem("token");
       setIsLoading(true);
 
-      const [adminResponse, allGroupsResponse] = await Promise.all([
-        axios.get(`${base_url}/api/my-groups`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${base_url}/api/groups`, { headers: { Authorization: `Bearer ${token}` } })
-      ]);
+      const adminResponse = await axios.get(`${base_url}/api/my-groups`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const joinedGroupsResponse = await axios.get(`${base_url}/api/my-joined-groups`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
       const adminGroupsData = Array.isArray(adminResponse.data.data)
         ? adminResponse.data.data.map(group => ({
@@ -67,9 +105,10 @@ export default function Groups() {
         : [];
 
       const adminGroupIds = adminGroupsData.map(group => group.id);
-      const joinedGroupsData = Array.isArray(allGroupsResponse.data.data)
-        ? allGroupsResponse.data.data
-          .filter(group => group.joined_at && !adminGroupIds.includes(group.id))
+
+      const joinedGroupsData = Array.isArray(joinedGroupsResponse.data.data)
+        ? joinedGroupsResponse.data.data
+          .filter(group => !adminGroupIds.includes(group.id))
           .map(group => ({
             ...group,
             isAdmin: false,
@@ -104,15 +143,23 @@ export default function Groups() {
         ? adminResponse.data.data.map(g => g.id)
         : [];
 
+      const joinedResponse = await axios.get(`${base_url}/api/my-joined-groups`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const joinedGroupIds = Array.isArray(joinedResponse.data.data)
+        ? joinedResponse.data.data.map(g => g.id)
+        : [];
+
       const filteredSuggestions = allGroupsResponse.data.data
         .filter(group =>
           group.privacy_level === "public" &&
           !adminGroupIds.includes(group.id) &&
-          !group.joined_at
+          !joinedGroupIds.includes(group.id)
         );
 
-      let randomSuggestions = filteredSuggestions.length <= 3 
-        ? filteredSuggestions 
+      let randomSuggestions = filteredSuggestions.length <= 3
+        ? filteredSuggestions
         : filteredSuggestions.sort(() => 0.5 - Math.random()).slice(0, 3);
 
       setSuggestedGroups(randomSuggestions);
@@ -142,11 +189,13 @@ export default function Groups() {
     }
   };
 
-  // Handler functions
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setGroupForm(prev => ({ ...prev, [name]: value }));
-  };
+  const { name, value, type, checked } = e.target;
+  setGroupForm(prev => ({ 
+    ...prev, 
+    [name]: type === 'checkbox' ? checked : value 
+  }));
+};
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -167,6 +216,7 @@ export default function Groups() {
       formData.append("rule", groupForm.rule);
       formData.append("privacy_level", groupForm.privacy_level);
       formData.append("invite_policy", groupForm.invite_policy);
+      formData.append("post_approval", groupForm.post_approval);
       formData.append("photo", groupForm.image);
 
       const response = await axios.post(`${base_url}/api/groups`, formData, {
@@ -182,7 +232,6 @@ export default function Groups() {
         createdDate: new Date().toISOString().split('T')[0],
         members_count: 1
       };
-
       setAdminGroups(prev => [newGroup, ...prev]);
       toast.success("Group created successfully!");
 
@@ -192,10 +241,11 @@ export default function Groups() {
         rule: "",
         privacy_level: "public",
         invite_policy: "admin",
+        post_approval: false,  // Reset post approval
         image: null,
       });
       setShowModal(false);
-    showAlert('success', 'Group created successfully.');
+      showAlert('success', 'Group created successfully.');
     } catch (error) {
       console.error("Failed to connect:", error);
       showAlert('error', 'Failed to create group.');
@@ -258,10 +308,10 @@ export default function Groups() {
         });
         setAdminGroups(adminGroups.filter(group => group.id !== groupId));
         showAlert('success', 'Group deleted successfully.');
-    } catch (error) {
-      console.error("Failed to connect:", error);
-      showAlert('error', 'Failed to delete group.');
-    }
+      } catch (error) {
+        console.error("Failed to connect:", error);
+        showAlert('error', 'Failed to delete group.');
+      }
     }
   };
 
@@ -269,15 +319,15 @@ export default function Groups() {
     if (window.confirm("Are you sure you want to leave this group?")) {
       try {
         const token = localStorage.getItem("token");
-        await axios.put(`${base_url}/api/groups/${groupId}/leave`, {}, {
+        await axios.delete(`${base_url}/api/groups/${groupId}/leave`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-
+        
         setJoinedGroups(joinedGroups.filter(group => group.id !== groupId));
-        toast.success("You have left the group successfully!");
+        showAlert('success', 'You have left the group successfully.');
       } catch (error) {
-        console.error("Error leaving group:", error);
-        toast.error(error.response?.data?.message || "Failed to leave group");
+        console.error("Failed to leave group:", error);
+        showAlert('error', 'Failed to leave group.');
       }
     }
   };
@@ -306,9 +356,8 @@ export default function Groups() {
 
         setJoinedGroups(prev => [groupWithJoinedDate, ...prev]);
         setSuggestedGroups(prev => prev.filter(group => group.id !== groupId));
-        
       }
-    showAlert('success', 'You have joined the group successfully.');
+      showAlert('success', 'You have joined the group successfully.');
     } catch (error) {
       console.error("Failed to connect:", error);
       showAlert('error', 'Failed to join group.');
@@ -329,26 +378,26 @@ export default function Groups() {
       <div className="p-4 sm:p-6 bg-gray-100 min-h-screen">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
           {alert.show && (
-        <div className="fixed top-4 right-4 z-50 w-full max-w-sm">
-          <Alert 
-            type={alert.type} 
-            message={alert.message} 
-            onClose={() => setAlert({ ...alert, show: false })}
-          />
-        </div>
-      )}
+            <div className="fixed top-4 right-4 z-50 w-full max-w-sm">
+              <Alert
+                type={alert.type}
+                message={alert.message}
+                onClose={() => setAlert({ ...alert, show: false })}
+              />
+            </div>
+          )}
           {/* Main Content */}
           <div className="lg:col-span-3 space-y-4 bg-white rounded-xl shadow p-4 sm:p-6">
-            <GroupsHeader 
-              navigate={navigate} 
-              setShowModal={setShowModal} 
+            <GroupsHeader
+              navigate={navigate}
+              setShowModal={setShowModal}
             />
-            
-            <GroupsTabs 
-              activeTab={activeTab} 
-              setActiveTab={setActiveTab} 
+
+            <GroupsTabs
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
             />
-            
+
             <GroupsContent
               activeTab={activeTab}
               adminGroups={adminGroups}
@@ -359,18 +408,24 @@ export default function Groups() {
               handleLeaveGroup={handleLeaveGroup}
               handleAcceptInvitation={handleAcceptInvitation}
               handleRejectInvitation={handleRejectInvitation}
+              allGroups={allGroups}
+              loadingAllGroups={loadingAllGroups}
+              pagination={pagination}
+              fetchAllGroups={fetchAllGroups}
             />
           </div>
 
           {/* Sidebar */}
           <GroupsSidebar
-            adminGroups={adminGroups}
-            joinedGroups={joinedGroups}
-            suggestedGroups={suggestedGroups}
-            loadingSuggestions={loadingSuggestions}
-            handleJoinGroup={handleJoinGroup}
-            base_url={base_url}
-          />
+  adminGroups={adminGroups}
+  joinedGroups={joinedGroups}
+  suggestedGroups={suggestedGroups}
+  loadingSuggestions={loadingSuggestions}
+  handleJoinGroup={handleJoinGroup}
+  base_url={base_url}
+  fetchSuggestedGroups={fetchSuggestedGroups} // Add this prop
+/>
+
         </div>
 
         {/* Create Group Modal */}

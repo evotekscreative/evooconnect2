@@ -741,3 +741,77 @@ func (controller *GroupControllerImpl) CancelJoinRequest(writer http.ResponseWri
 
     helper.WriteToResponseBody(writer, webResponse)
 }
+
+func (controller *GroupControllerImpl) FindMyJoinedGroups(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+    // Get user ID from token
+    userId, err := helper.GetUserIdFromToken(request)
+    helper.PanicIfError(err)
+
+    // Get user's joined groups
+    groupResponses := controller.GroupService.FindMyJoinedGroups(request.Context(), userId)
+
+    // Send response
+    webResponse := web.WebResponse{
+        Code:   http.StatusOK,
+        Status: "OK",
+        Data:   groupResponses,
+    }
+    helper.WriteToResponseBody(writer, webResponse)
+}
+
+func (controller *GroupControllerImpl) FindMyJoinRequests(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Ambil user_id dari context yang diset oleh middleware
+	userIdStr, ok := request.Context().Value("user_id").(string)
+	if !ok {
+		webResponse := web.APIResponse{
+			Code:   http.StatusUnauthorized,
+			Status: "UNAUTHORIZED",
+			Error:  "Unauthorized access",
+		}
+		helper.WriteToResponseBody(writer, webResponse)
+		return
+	}
+
+	userId, err := uuid.Parse(userIdStr)
+	if err != nil {
+		webResponse := web.APIResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD_REQUEST",
+			Error:  "Invalid user ID",
+		}
+		helper.WriteToResponseBody(writer, webResponse)
+		return
+	}
+
+	// Ambil parameter limit dan offset dari query string
+	limitStr := request.URL.Query().Get("limit")
+	offsetStr := request.URL.Query().Get("offset")
+
+	limit := 10 // Default limit
+	offset := 0 // Default offset
+
+	if limitStr != "" {
+		limit, err = strconv.Atoi(limitStr)
+		if err != nil || limit < 1 {
+			limit = 10
+		}
+	}
+
+	if offsetStr != "" {
+		offset, err = strconv.Atoi(offsetStr)
+		if err != nil || offset < 0 {
+			offset = 0
+		}
+	}
+
+	// Dapatkan daftar join requests yang dibuat oleh user
+	joinRequests := controller.GroupService.FindMyJoinRequests(request.Context(), userId, limit, offset)
+
+	webResponse := web.APIResponse{
+		Code:   http.StatusOK,
+		Status: "OK",
+		Data:   joinRequests,
+	}
+
+	helper.WriteToResponseBody(writer, webResponse)
+}

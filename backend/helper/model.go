@@ -113,58 +113,59 @@ func ToUserShortResponse(user domain.User, isConnected bool, isConnectedRequest 
 }
 
 func ToPostResponse(post domain.Post) web.PostResponse {
-    postResponse := web.PostResponse{
-        Id:            post.Id,
-        UserId:        post.UserId,
-        Content:       post.Content,
-        Images:        post.Images,
-        Visibility:    post.Visibility,
-        CreatedAt:     post.CreatedAt,
-        UpdatedAt:     post.UpdatedAt,
-        IsLiked:       post.IsLiked,
-        LikesCount:    post.LikesCount,
-        CommentsCount: post.CommentsCount,
-        GroupId:       post.GroupId,
-        IsPinned:      post.IsPinned,
-        PinnedAt:      post.PinnedAt,
-        Status:        post.Status,
-    }
+	postResponse := web.PostResponse{
+		Id:            post.Id,
+		UserId:        post.UserId,
+		Content:       post.Content,
+		Images:        post.Images,
+		Visibility:    post.Visibility,
+		CreatedAt:     post.CreatedAt,
+		UpdatedAt:     post.UpdatedAt,
+		IsLiked:       post.IsLiked,
+		LikesCount:    post.LikesCount,
+		CommentsCount: post.CommentsCount,
+		GroupId:       post.GroupId,
+		IsPinned:      post.IsPinned,
+		PinnedAt:      post.PinnedAt,
+		Status:        post.Status,
+		IsReported:    post.IsReported,
+	}
 
-    // Perbaikan: Pastikan user tidak nil dan memiliki data yang valid
-    if post.User != nil && post.User.Id != uuid.Nil {
-        photo := post.User.Photo
-        headline := post.User.Headline
-        
-        postResponse.User = web.UserShort{
-            Id:                 post.User.Id,
-            Name:               post.User.Name,
-            Username:           post.User.Username,
-            Photo:              &photo,
-            Headline:           &headline,
-            IsConnected:        post.User.IsConnected,
-            IsConnectedRequest: "",
-        }
-    }
+	// Perbaikan: Pastikan user tidak nil dan memiliki data yang valid
+	if post.User != nil && post.User.Id != uuid.Nil {
+		photo := post.User.Photo
+		headline := post.User.Headline
 
-    if post.Group != nil {
-        // Buat struct baru yang hanya berisi field yang kita inginkan
-        postResponse.Group = &web.GroupResponse{
-            Id:           post.Group.Id,
-            Name:         post.Group.Name,
-            Description:  post.Group.Description,
-            Rule:         post.Group.Rule,
-            PrivacyLevel: post.Group.PrivacyLevel,
-            InvitePolicy: post.Group.InvitePolicy,
-            PostApproval: post.Group.PostApproval,
-            CreatorId:    post.Group.CreatorId,
-        }
+		postResponse.User = web.UserShort{
+			Id:                 post.User.Id,
+			Name:               post.User.Name,
+			Username:           post.User.Username,
+			Photo:              &photo,
+			Headline:           &headline,
+			IsConnected:        post.User.IsConnected,
+			IsConnectedRequest: "",
+		}
+	}
 
-        if post.Group.Image != nil && *post.Group.Image != "" {
-            postResponse.Group.Image = post.Group.Image
-        }
-    }
+	if post.Group != nil {
+		// Buat struct baru yang hanya berisi field yang kita inginkan
+		postResponse.Group = &web.GroupResponse{
+			Id:           post.Group.Id,
+			Name:         post.Group.Name,
+			Description:  post.Group.Description,
+			Rule:         post.Group.Rule,
+			PrivacyLevel: post.Group.PrivacyLevel,
+			InvitePolicy: post.Group.InvitePolicy,
+			PostApproval: post.Group.PostApproval,
+			CreatorId:    post.Group.CreatorId,
+		}
 
-    return postResponse
+		if post.Group.Image != nil && *post.Group.Image != "" {
+			postResponse.Group.Image = post.Group.Image
+		}
+	}
+
+	return postResponse
 }
 
 func ToPostResponses(posts []domain.Post) []web.PostResponse {
@@ -291,10 +292,11 @@ func ToGroupResponse(group domain.Group) web.GroupResponse {
 		Image:        group.Image,
 		PrivacyLevel: group.PrivacyLevel,
 		InvitePolicy: group.InvitePolicy,
-		PostApproval: group.PostApproval, // Tambahkan field ini
+		PostApproval: group.PostApproval,
 		CreatorId:    group.CreatorId,
 		CreatedAt:    group.CreatedAt,
 		UpdatedAt:    group.UpdatedAt,
+		IsJoined:     false, // Default value
 	}
 
 	if group.Creator != nil {

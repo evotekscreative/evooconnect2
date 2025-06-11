@@ -25,6 +25,8 @@ type GroupService interface {
 	GetMembers(ctx context.Context, groupId uuid.UUID) []web.GroupMemberResponse
 	LeaveGroup(ctx context.Context, groupId, userId uuid.UUID) web.LeaveGroupResponse
 	JoinPublicGroup(ctx context.Context, groupId, userId uuid.UUID) web.GroupMemberResponse
+	FindMyJoinedGroups(ctx context.Context, userId uuid.UUID) []web.GroupResponse
+	FindMyJoinRequests(ctx context.Context, userId uuid.UUID, limit, offset int) []web.JoinRequestResponse
 
 	// Invitation management
 	CreateInvitation(ctx context.Context, groupId, userId, inviteeId uuid.UUID) web.GroupInvitationResponse

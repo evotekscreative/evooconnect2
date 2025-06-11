@@ -20,6 +20,8 @@ import (
 func main() {
 	log.Println("Starting server...")
 
+	helper.InitTimezone("Asia/Jakarta")
+
 	// ===== Server initialization =====
 	helper.LoadEnv()
 	db := app.NewDB()
@@ -86,7 +88,7 @@ func main() {
 	// ===== Services =====
 	// User-related services
 	profileViewService := service.NewProfileViewService(db, profileViewRepository, userRepository, notificationService)
-	connectionService := service.NewConnectionService(connectionRepository, userRepository, notificationService, db, validate)
+	connectionService := service.NewConnectionService(connectionRepository, userRepository, notificationService, db, groupInvitationRepository, validate)
 	userService := service.NewUserService(userRepository, connectionRepository, profileViewService, db, validate)
 	authService := service.NewAuthService(userRepository, db, validate, jwtSecret)
 
@@ -173,6 +175,7 @@ func main() {
 		commentRepository,
 		blogRepository,
 		commentBlogRepository,
+		groupRepository,
 		db,
 	)
 

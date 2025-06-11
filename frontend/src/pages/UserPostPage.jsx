@@ -893,7 +893,7 @@ const PostPage = () => {
     }
   };
 
-  const handleReply = async (commentId, replyToUser = null) => {
+ const handleReply = async (commentId, replyToUser = null) => {
     if (!commentId || !replyText.trim()) return;
 
     try {
@@ -908,7 +908,7 @@ const PostPage = () => {
         `${apiUrl}/api/comments/${commentId}/replies`,
         {
           content: replyText,
-          replyTo: replyingTo,
+          replyTo: replyingTo, // This should be the comment ID you're replying to
         },
         {
           headers: {
@@ -929,7 +929,14 @@ const PostPage = () => {
                 .join("")
             : "CU",
         },
-        reply_to: response.data.data.reply_to,
+        replyTo: replyToUser
+          ? {
+              id: replyToUser.id,
+              name: replyToUser.name,
+              username: replyToUser.username,
+              initials: getInitials(replyToUser.name),
+            }
+          : null,
       };
 
       setAllReplies((prev) => ({
@@ -937,6 +944,7 @@ const PostPage = () => {
         [commentId]: [...(prev[commentId] || []), newReply],
       }));
 
+      // Update comment replies count
       setComments((prev) => {
         const updated = { ...prev };
         if (updated[currentPostId]) {
@@ -967,7 +975,6 @@ const PostPage = () => {
       );
     }
   };
-
   const toggleReplies = async (commentId) => {
     setEditingReplyId(null);
     setEditingCommentId(null);
@@ -1315,7 +1322,7 @@ const PostPage = () => {
 
     // Ambil maksimal 3 huruf pertama dari nama depan, tengah, dan belakang
     const initials = names
-      .slice(0, 3)
+      .slice(0, 2)
       .map((word) => word[0].toUpperCase())
       .join("");
 

@@ -27,6 +27,7 @@ type Post struct {
 	// Field untuk pin post
 	IsPinned bool       `json:"is_pinned"`
 	PinnedAt *time.Time `json:"pinned_at,omitempty"`
+	IsReported    bool       `json:"is_reported"`
 
 	// Relasi
 	User  *User  `json:"user,omitempty"`

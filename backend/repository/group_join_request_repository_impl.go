@@ -164,3 +164,34 @@ func (repository *GroupJoinRequestRepositoryImpl) Delete(ctx context.Context, tx
     }
 }
 
+func (repository *GroupJoinRequestRepositoryImpl) FindByUserId(ctx context.Context, tx *sql.Tx, userId uuid.UUID, limit, offset int) []domain.GroupJoinRequest {
+	SQL := `SELECT id, group_id, user_id, status, message, created_at, updated_at 
+            FROM group_join_requests 
+            WHERE user_id = $1 AND status = 'pending'
+            ORDER BY created_at DESC
+            LIMIT $2 OFFSET $3`
+
+	rows, err := tx.QueryContext(ctx, SQL, userId, limit, offset)
+	if err != nil {
+		helper.PanicIfError(err)
+	}
+	defer rows.Close()
+
+	var requests []domain.GroupJoinRequest
+	for rows.Next() {
+		var request domain.GroupJoinRequest
+		err := rows.Scan(
+			&request.Id,
+			&request.GroupId,
+			&request.UserId,
+			&request.Status,
+			&request.Message,
+			&request.CreatedAt,
+			&request.UpdatedAt,
+		)
+		helper.PanicIfError(err)
+		requests = append(requests, request)
+	}
+
+	return requests
+}

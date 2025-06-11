@@ -39,6 +39,7 @@ type PostResponse struct {
 	UpdatedAt     time.Time      `json:"updated_at"`
 	IsPinned      bool           `json:"is_pinned"`
 	PinnedAt      *time.Time     `json:"pinned_at,omitempty"`
+	IsReported    bool           `json:"is_reported"`
 }
 
 // Add this struct to the file

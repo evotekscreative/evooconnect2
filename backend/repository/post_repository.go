@@ -25,4 +25,5 @@ type PostRepository interface {
 	PinPost(ctx context.Context, tx *sql.Tx, postId uuid.UUID) (domain.Post, error)
     UnpinPost(ctx context.Context, tx *sql.Tx, postId uuid.UUID) error
     CountPinnedPostsByGroupId(ctx context.Context, tx *sql.Tx, groupId uuid.UUID) (int, error)	
+	IsReported(ctx context.Context, tx *sql.Tx, postId uuid.UUID, userId uuid.UUID) bool
 }

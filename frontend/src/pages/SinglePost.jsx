@@ -1352,7 +1352,7 @@ export default function SocialNetworkFeed() {
 
     // Ambil maksimal 3 huruf pertama dari nama depan, tengah, dan belakang
     const initials = names
-      .slice(0, 3)
+      .slice(0, 2)
       .map((word) => word[0].toUpperCase())
       .join("");
 

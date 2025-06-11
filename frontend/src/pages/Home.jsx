@@ -1,6 +1,14 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import axios from "axios";
-import dayjs from "dayjs";
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+import relativeTime from 'dayjs/plugin/relativeTime'; // Tambahkan import ini
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.extend(relativeTime); // Tambahkan baris ini
+
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 import { Tooltip as ChartTooltip } from "chart.js";
 import { Button } from "../components/Button";
@@ -9,6 +17,7 @@ import { CKEditor } from "@ckeditor/ckeditor5-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Alert from "../components/Auth/Alert";
 import { Line } from "react-chartjs-2";
+import "../assets/css/style.css"; 
 import {
   SquarePen,
   NotebookPen,
@@ -140,6 +149,11 @@ export default function SocialNetworkFeed() {
     dailyViews: [],
   });
   const [connections, setConnections] = useState([]);
+  const [reportTarget, setReportTarget] = useState({
+  userId: null,
+  targetType: null,
+  targetId: null
+});
 
   const fetchSuggestedConnections = async () => {
     try {
@@ -564,25 +578,24 @@ export default function SocialNetworkFeed() {
         if (response.data?.data) {
           // Transformasi data setelah fetch
           const formattedPosts = response.data.data.map((post) => ({
-            id: post.id,
-            content: post.content,
-            images:
-              post.images?.map((img) =>
-                img.startsWith("http") ? img : `${apiUrl}/${img}`
-              ) || [],
-            user: post.user || {
-              id: post.user_id,
-              name: "Unknown User",
-              initials: "UU",
-              username: "unknown",
-            },
-            group: post.group || null,
-            likes_count: post.likes_count || 0,
-            comments_count: post.comments_count || 0,
-            created_at: post.created_at,
-            visibility: post.visibility || "public",
-            isLiked: post.is_liked || false,
-          }));
+  id: post.id,
+  content: post.content,
+  images: post.images?.map((img) => 
+    img.startsWith("http") ? img : `${apiUrl}/${img}`
+  ) || [],
+  user: post.user || {
+    id: post.user_id,
+    name: "Unknown User",
+    initials: "UU",
+    username: "unknown",
+  },
+  group: post.group || null,
+  likes_count: post.likes_count || 0,
+  comments_count: post.comments_count || 0,
+  created_at: post.created_at, // Jangan beri fallback
+  visibility: post.visibility || "public",
+  isLiked: post.is_liked || false,
+}));
 
           // Update state posts
           if (append) {
@@ -689,41 +702,30 @@ export default function SocialNetworkFeed() {
     }
   };
 
-  const formatPostTime = (timestamp) => {
-    if (!timestamp) return "Just now";
+ const formatPostTime = (dateString) => {
+  if (!dateString) return "";
 
-    let postTime;
-    try {
-      postTime = dayjs(timestamp);
-      if (!postTime.isValid()) {
-        postTime = dayjs(new Date(timestamp));
-      }
-    } catch (e) {
-      console.error("Error parsing timestamp:", timestamp, e);
-      return "Just now";
+  try {
+    const utcDate = dayjs.utc(dateString);
+
+    if (!utcDate.isValid()) {
+      console.warn("Invalid date:", dateString);
+      return "";
     }
 
-    if (!postTime.isValid()) {
-      return "Just now";
+    const now = dayjs.utc();
+    const diffInHours = now.diff(utcDate, 'hour');
+
+    if (diffInHours < 24) {
+     return utcDate.format('h:mm A'); // hasil: 2:49 AM // Format 24 jam, misal: 02:49
+    } else {
+      return utcDate.format('MMM D [at] HH:mm'); // Misal: Jun 5 at 02:49
     }
-
-    const now = dayjs();
-    const diffInSeconds = now.diff(postTime, "second");
-    const diffInMinutes = now.diff(postTime, "minute");
-    const diffInHours = now.diff(postTime, "hour");
-    const diffInDays = now.diff(postTime, "day");
-
-    // Handle future dates or timezone issues by showing "Just now" instead of negative values
-    if (diffInSeconds < 0) return "Just now";
-
-    if (diffInSeconds < 60) return `${diffInSeconds}s ago`;
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    if (diffInDays < 7) return `${diffInDays}d ago`;
-
-    // For older dates, return formatted date (e.g. "MMM D, YYYY")
-    return postTime.format("MMM D, YYYY");
-  };
+  } catch (error) {
+    console.error("Time formatting error:", error);
+    return "";
+  }
+};
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
@@ -741,85 +743,92 @@ export default function SocialNetworkFeed() {
   };
 
   const handlePostSubmit = async () => {
-    if (selectedPostId) {
-      await handleUpdatePost();
-      return;
-    }
+  if (selectedPostId) {
+    await handleUpdatePost();
+    return;
+  }
 
-    setIsLoading(true);
-    setError(null);
+  setIsLoading(true);
+  setError(null);
 
-    try {
-      const content = activeTab === "update" ? postContent : articleContent;
-      const userToken = localStorage.getItem("token");
+  try {
+    const content = activeTab === "update" ? postContent : articleContent;
+    const userToken = localStorage.getItem("token");
 
-      const formData = new FormData();
-      formData.append("content", content);
-      formData.append("visibility", postVisibility);
+    const formData = new FormData();
+    formData.append("content", content);
+    formData.append("visibility", postVisibility);
 
-      // Tambahkan semua gambar ke FormData
-      newPostImages.forEach((img) => {
-        if (img.file) {
-          formData.append("images", img.file);
-        }
-      });
-
-      const response = await axios.post(apiUrl + "/api/posts", formData, {
-        headers: {
-          Authorization: `Bearer ${userToken}`,
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      if (!response.data || !response.data.data) {
-        throw new Error("Invalid response from server");
+    // Tambahkan semua gambar ke FormData
+    newPostImages.forEach((img) => {
+      if (img.file) {
+        formData.append("images", img.file);
       }
+    });
 
-      // Pastikan response.data.data.images adalah array URL gambar
-      const images = response.data.data.images || [];
+    const response = await axios.post(apiUrl + "/api/posts", formData, {
+      headers: {
+        Authorization: `Bearer ${userToken}`,
+        "Content-Type": "multipart/form-data",
+      },
+    });
 
-      const newPost = {
-        id: response.data.data.id,
-        content: response.data.data.content || content,
-        images: images.map((img) => {
-          // Pastikan URL gambar lengkap jika backend hanya mengembalikan nama file
-          return img.startsWith("http") ? img : `${apiUrl}/${img}`;
-        }),
-        visibility: response.data.data.visibility || postVisibility,
-        likes_count: response.data.data.likes_count || 0,
-        comments_count: response.data.data.comments_count || 0,
-        createdAt: response.data.data.createdAt || new Date().toISOString(),
-        user: response.data.data.user || {
-          name: "Current User",
-          photo: "",
-          initials: "CU",
-        },
-      };
-
-      setPosts((prevPosts) => [newPost, ...prevPosts]);
-      setPostContent("");
-      setArticleContent("");
-
-      setAlertInfo({
-        show: true,
-        type: "success",
-        message: "Successfully created post!",
-      });
-    } catch (error) {
-      setAlertInfo({
-        show: true,
-        type: "error",
-        message: "Field is required",
-      });
-      setError(
-        error.response?.data?.message ||
-          error.message ||
-          "Failed to create post. Please try again."
-      );
-    } finally {
-      setIsLoading(false);
+    if (!response.data || !response.data.data) {
+      throw new Error("Invalid response from server");
     }
-  };
+
+    // Pastikan response.data.data.images adalah array URL gambar
+    const images = response.data.data.images || [];
+    
+    // Gunakan waktu saat ini untuk memastikan waktu postingan langsung muncul
+    const currentTime = new Date().toISOString();
+
+    const newPost = {
+      id: response.data.data.id,
+      content: response.data.data.content || content,
+      images: images.map((img) => {
+        // Pastikan URL gambar lengkap jika backend hanya mengembalikan nama file
+        return img.startsWith("http") ? img : `${apiUrl}/${img}`;
+      }),
+      visibility: response.data.data.visibility || postVisibility,
+      likes_count: response.data.data.likes_count || 0,
+      comments_count: response.data.data.comments_count || 0,
+      created_at: response.data.data.created_at || currentTime, // Gunakan created_at bukan createdAt
+      user: response.data.data.user || {
+        id: currentUserId,
+        name: user.name || "Current User",
+        photo: user.photo || "",
+        initials: user.initials || "CU",
+        username: user.username || "user",
+      },
+    };
+
+    setPosts((prevPosts) => [newPost, ...prevPosts]);
+    setPostContent("");
+    setArticleContent("");
+    setNewPostImages([]); // Reset gambar setelah posting
+
+    setAlertInfo({
+      show: true,
+      type: "success",
+      message: "Successfully created post!",
+    });
+  } catch (error) {
+    setAlertInfo({
+      show: true,
+      type: "error",
+      message: "Field is required",
+    });
+    setError(
+      error.response?.data?.message ||
+        error.message ||
+        "Failed to create post. Please try again."
+    );
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   const closeCommentModal = () => {
     setShowCommentModal(false);
@@ -849,7 +858,7 @@ export default function SocialNetworkFeed() {
             Authorization: `Bearer ${userToken}`,
           },
         }
-      );
+      )
 
       const commentsWithReplies = (response.data?.data?.comments || []).map(
         (comment) => {
@@ -894,7 +903,7 @@ export default function SocialNetworkFeed() {
     }
   };
 
-  const fetchReplies = async (commentId) => {
+ const fetchReplies = async (commentId) => {
     try {
       const userToken = localStorage.getItem("token");
       const response = await axios.get(
@@ -1049,7 +1058,6 @@ export default function SocialNetworkFeed() {
       setLoadingComments((prev) => ({ ...prev, [commentId]: false }));
     }
   };
-
   useEffect(() => {
     // Muat cache replies saat komponen dimount
     const loadCachedReplies = () => {
@@ -1128,130 +1136,89 @@ export default function SocialNetworkFeed() {
     }
   };
 
-  const handleReply = async (commentId, replyToUser = null) => {
+const handleReply = async (commentId, replyToUser = null) => {
     if (!commentId || !replyText.trim()) return;
 
     try {
-      const userToken = localStorage.getItem("token");
+      const token = localStorage.getItem("token");
 
-      // Jika sedang edit reply
       if (editingReplyId) {
         await handleUpdateReply(editingReplyId);
         return;
       }
 
-      // Jika membuat reply baru
       const response = await axios.post(
         `${apiUrl}/api/comments/${commentId}/replies`,
         {
           content: replyText,
-          reply_to_id: replyingTo, // Include the reply_to_id if this is a reply to another reply
+          replyTo: replyingTo, // This should be the comment ID you're replying to
         },
         {
           headers: {
-            Authorization: `Bearer ${userToken}`,
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         }
       );
 
-      // Create the new reply object with all necessary data
       const newReply = {
         ...response.data.data,
-        id: response.data.data.id || Math.random().toString(36).substr(2, 9),
         user: {
-          ...(response.data.data.user || {
-            id: currentUserId,
-            name: user.name,
-            username: user.username,
-            initials: getInitials(user.name),
-          }),
+          ...response.data.data.user,
           initials: response.data.data.user?.name
-            ? getInitials(response.data.data.user.name)
-            : "UU",
+            ? response.data.data.user.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+            : "CU",
         },
-        reply_to: replyToUser
+        replyTo: replyToUser
           ? {
               id: replyToUser.id,
               name: replyToUser.name,
               username: replyToUser.username,
+              initials: getInitials(replyToUser.name),
             }
           : null,
-        created_at: new Date().toISOString(),
       };
 
-      // Update state based on whether this is a reply to a comment or another reply
-      if (replyingTo === commentId) {
-        // This is a direct reply to a comment
-        setAllReplies((prev) => ({
-          ...prev,
-          [commentId]: [...(prev[commentId] || []), newReply],
-        }));
-      } else {
-        // This is a reply to another reply - find and update the parent reply
-        setAllReplies((prev) => {
-          const updatedReplies = { ...prev };
-          const parentCommentId = Object.keys(updatedReplies).find((id) =>
-            updatedReplies[id].some((r) => r.id === replyingTo)
-          );
-
-          if (parentCommentId) {
-            updatedReplies[parentCommentId] = updatedReplies[
-              parentCommentId
-            ].map((reply) => {
-              if (reply.id === replyingTo) {
-                return {
-                  ...reply,
-                  replies: [...(reply.replies || []), newReply],
-                };
-              }
-              return reply;
-            });
-          }
-
-          return updatedReplies;
-        });
-      }
+      setAllReplies((prev) => ({
+        ...prev,
+        [commentId]: [...(prev[commentId] || []), newReply],
+      }));
 
       // Update comment replies count
       setComments((prev) => {
         const updated = { ...prev };
         if (updated[currentPostId]) {
-          updated[currentPostId] = updated[currentPostId].map((comment) => {
-            if (comment.id === commentId) {
+          updated[currentPostId] = updated[currentPostId].map((c) => {
+            if (c.id === commentId) {
               return {
-                ...comment,
-                repliesCount: (comment.repliesCount || 0) + 1,
+                ...c,
+                repliesCount: (c.repliesCount || 0) + 1,
               };
             }
-            return comment;
+            return c;
           });
         }
         return updated;
       });
 
-      // Reset form
       setReplyText("");
       setReplyingTo(null);
       setReplyToUser(null);
       setCommentError(null);
-
-      // Ensure replies are expanded
       setExpandedReplies((prev) => ({ ...prev, [commentId]: true }));
-      setAlertInfo({
-        show: true,
-        type: "success",
-        message: "Reply posted successfully!",
-      });
+      addAlert("success", "Successfully added reply!");
     } catch (error) {
-      console.error("Failed to add reply:", error);
-      setAlertInfo({
-        show: true,
-        type: "error",
-        message: error.response?.data?.message || "Failed to add reply",
-      });
+      addAlert("error", "Failed to add reply");
+      setCommentError(
+        error.response?.data?.message ||
+          "Failed to add reply. Please try again."
+      );
     }
   };
+
 
   const toggleReplies = async (commentId) => {
     // Reset editing states when toggling replies
@@ -1517,20 +1484,28 @@ export default function SocialNetworkFeed() {
               </>
             ) : (
               <>
-                {/* Opsi untuk post user lain */}
-                <button
-                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
-                  onClick={() => {
-                    const post = posts.find((p) => p.id === selectedPostId);
-                    if (post && post.user) {
-                      handleReportClick(post.user.id, "post", post.id); // Pass post.id as third parameter
-                    }
-                    handleClosePostOptions();
-                  }}
-                >
-                  <TriangleAlert size={16} className="mr-2" />
-                  Report Post
-                </button>
+              
+<button
+  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
+  onClick={() => {
+    const post = posts.find((p) => p.id === selectedPostId);
+    if (post && post.user && post.id) {
+      handleReportClick(post.user.id, "post", post.id);
+    } else {
+      console.error("Invalid post data for report:", post);
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: "Cannot report this post. Missing required information.",
+      });
+    }
+    handleClosePostOptions();
+  }}
+>
+  <TriangleAlert size={16} className="mr-2" />
+  Report Post
+</button>
+
                 {!isConnected && (
                   <button
                     className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-blue-500"
@@ -1669,7 +1644,7 @@ export default function SocialNetworkFeed() {
 
     // Ambil maksimal 3 huruf pertama dari nama depan, tengah, dan belakang
     const initials = names
-      .slice(0, 3)
+      .slice(0, 2)
       .map((word) => word[0].toUpperCase())
       .join("");
 
@@ -1807,35 +1782,15 @@ export default function SocialNetworkFeed() {
   };
 
   // Fix for handleReportClick to properly set target IDs
-  const handleReportClick = (targetUserId, targetType, id) => {
-    // Validate parameters first
-    if (!targetUserId) {
-      setAlertInfo({
-        show: true,
-        type: "error",
-        message: "Cannot identify the content owner",
-      });
-      return;
-    }
+const handleReportClick = (userId, targetType, targetId) => {
+  setReportTarget({
+    userId,
+    targetType,
+    targetId
+  });
+  setShowReportModal(true);
+};
 
-    if (!id) {
-      setAlertInfo({
-        show: true,
-        type: "error",
-        message: "Cannot identify the content to report",
-      });
-      return;
-    }
-
-    // Set report target information
-    setReportTargetUserId(targetUserId);
-    setSelectedPostId(id); // Make sure this is set for posts
-    setSelectedComment(null); // Clear comment data when reporting a post
-
-    setShowReportModal(true);
-    setShowPostOptions(false);
-    setShowCommentOptions(false);
-  };
 
   const renderCommentOptionsModal = () => {
     if (!showCommentOptions || !selectedComment) return null;
@@ -2148,132 +2103,156 @@ export default function SocialNetworkFeed() {
       });
     }
   };
+const ReportModal = ({
+  showReportModal,
+  setShowReportModal,
+  selectedReason,
+  setSelectedReason,
+  customReason,
+  setCustomReason,
+  setAlertInfo,
+  reportTarget // Tambahkan prop reportTarget
+}) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const ReportModal = ({
-    showReportModal,
-    setShowReportModal,
-    selectedReason,
-    setSelectedReason,
-    customReason,
-    setCustomReason,
-    handleReportComment,
-    targetUserId,
-    selectedPostId,
-    selectedComment,
-    setAlertInfo, // Add this prop
-  }) => {
-    return (
-      <div
-        className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] ${
-          showReportModal ? "block" : "hidden"
-        }`}
-      >
-        <div className="bg-white rounded-lg w-full max-w-md mx-4 p-5">
-          <h3 className="text-lg font-semibold mb-4">Report this content</h3>
-          <p className="mb-3 text-sm text-gray-600">
-            Please select a reason for reporting
-          </p>
+  const handleSubmitReport = async () => {
+    if (!selectedReason) {
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: "Please select a reason for reporting"
+      });
+      return;
+    }
 
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            {[
-              "Harassment",
-              "Fraud",
-              "Spam",
-              "Misinformation",
-              "Hate speech",
-              "Threats or violence",
-              "Self-harm",
-              "Graphic content",
-              "Extremist organizations",
-              "Sexual content",
-              "Fake account",
-              "Child exploitation",
-              "Illegal products",
-              "Violation",
-              "Other",
-            ].map((reason) => (
-              <button
-                key={reason}
-                className={`py-2 px-3 text-sm border rounded-full ${
-                  selectedReason === reason
-                    ? "bg-blue-100 border-blue-500 text-blue-700"
-                    : "bg-white hover:bg-gray-100"
-                }`}
-                onClick={() => setSelectedReason(reason)}
-              >
-                {reason}
-              </button>
-            ))}
-          </div>
+    const reasonText = selectedReason === "Other" ? customReason : selectedReason;
+    
+    try {
+      setIsSubmitting(true);
+      const userToken = localStorage.getItem("token");
+      
+      const response = await axios.post(
+        `${apiUrl}/api/reports/${reportTarget.userId}/${reportTarget.targetType}/${reportTarget.targetId}`,
+        { reason: reasonText },
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+            "Content-Type": "application/json"
+          }
+        }
+      );
 
-          {selectedReason === "Other" && (
-            <textarea
-              className="w-full p-2 border rounded mb-3 text-sm"
-              rows={3}
-              placeholder="Please describe the reason for your report"
-              value={customReason}
-              onChange={(e) => setCustomReason(e.target.value)}
-            />
-          )}
+      if (response.data?.code === 201) {
+        setAlertInfo({
+          show: true,
+          type: "success",
+          message: "Report submitted successfully!"
+        });
+        setShowReportModal(false);
+        setSelectedReason("");
+        setCustomReason("");
+      } else {
+        throw new Error("Failed to submit report");
+      }
+    } catch (error) {
+      console.error("Failed to submit report:", error);
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: error.response?.data?.message || "Failed to submit report"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-          <div className="flex justify-end gap-2">
+  return (
+    <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] ${
+      showReportModal ? "block" : "hidden"
+    }`}>
+      <div className="bg-white rounded-lg w-full max-w-md mx-4 p-5">
+        <h3 className="text-lg font-semibold mb-4">Report this content</h3>
+        <p className="mb-3 text-sm text-gray-600">
+          Please select a reason for reporting
+        </p>
+
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          {[
+            "Harassment",
+            "Fraud",
+            "Spam",
+            "Misinformation",
+            "Hate speech",
+            "Threats or violence",
+            "Self-harm",
+            "Graphic content",
+            "Extremist organizations",
+            "Sexual content",
+            "Fake account",
+            "Child exploitation",
+            "Illegal products",
+            "Violation",
+            "Other",
+          ].map((reason) => (
             <button
-              className="text-gray-500 hover:text-gray-700"
-              onClick={() => {
-                setShowReportModal(false);
-                setSelectedReason("");
-                setCustomReason("");
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              className={`px-4 py-2 rounded text-white ${
-                selectedReason
-                  ? "bg-blue-600 hover:bg-blue-700"
-                  : "bg-gray-300 cursor-not-allowed"
+              key={reason}
+              className={`py-2 px-3 text-sm border rounded-full ${
+                selectedReason === reason
+                  ? "bg-blue-100 border-blue-500 text-blue-700"
+                  : "bg-white hover:bg-gray-100"
               }`}
-              disabled={!selectedReason}
-              onClick={() => {
-                const reasonText =
-                  selectedReason === "Other" ? customReason : selectedReason;
-
-                // Determine the correct content type and ID
-                const contentType = selectedComment ? "comment" : "post";
-                const contentId = selectedComment
-                  ? selectedComment.id
-                  : selectedPostId;
-
-                // Ensure all parameters are defined
-                if (targetUserId && contentId && reasonText) {
-                  handleReportComment(
-                    targetUserId,
-                    contentType,
-                    contentId,
-                    reasonText
-                  );
-                } else {
-                  console.error("Report parameters:", {
-                    targetUserId,
-                    contentType,
-                    contentId,
-                    reasonText,
-                  });
-                  setAlertInfo({
-                    show: true,
-                    type: "error",
-                    message: "Missing information needed to submit report",
-                  });
-                }
-              }}
+              onClick={() => setSelectedReason(reason)}
             >
-              Report
+              {reason}
             </button>
-          </div>
+          ))}
+        </div>
+
+        {selectedReason === "Other" && (
+          <textarea
+            className="w-full p-2 border rounded mb-3 text-sm"
+            rows={3}
+            placeholder="Please describe the reason for your report"
+            value={customReason}
+            onChange={(e) => setCustomReason(e.target.value)}
+          />
+        )}
+
+        <div className="flex justify-end gap-2">
+          <button
+            className="text-gray-500 hover:text-gray-700"
+            onClick={() => {
+              setShowReportModal(false);
+              setSelectedReason("");
+              setCustomReason("");
+            }}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </button>
+          <button
+            className={`px-4 py-2 rounded text-white ${
+              selectedReason
+                ? "bg-blue-600 hover:bg-blue-700"
+                : "bg-gray-300 cursor-not-allowed"
+            }`}
+            disabled={!selectedReason || isSubmitting}
+            onClick={handleSubmitReport}
+          >
+            {isSubmitting ? (
+              <div className="flex items-center justify-center">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                Submitting...
+              </div>
+            ) : (
+              "Report"
+            )}
+          </button>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
   const handleDeleteComment = async (commentId) => {
     try {
@@ -2923,7 +2902,7 @@ export default function SocialNetworkFeed() {
                   className="bg-white rounded-lg shadow-md mb-6 p-4 space-y-4"
                 >
                   {/* Modified header with overlapping images */}
-                  <div className="border-b border-gray-200 pb-3 mb-3 relative">
+                  <div className="border-b border-gray-200 pb-2 mb-1 relative">
                     {/* Group info - as background element */}
                     {post?.group && (
                       <Link to={`/groups/${post.group?.id}`}>
@@ -2954,7 +2933,7 @@ export default function SocialNetworkFeed() {
                       </Link>
                     )}
 
-                    <div className="flex justify-between items-start mb-2">
+                    <div className="flex justify-between items-start">
                       <div className="flex items-start">
                         {/* User photo */}
                         <div
@@ -3005,10 +2984,8 @@ export default function SocialNetworkFeed() {
                           </h6>
                           <div className="flex items-center">
                             <small className="text-gray-500 text-xs">
-                              {formatPostTime(
-                                post.created_at || new Date().toISOString()
-                              )}
-                            </small>
+  {formatPostTime(post.created_at)}
+</small>
                             <span className="text-gray-400 mx-1 text-xs">
                               •
                             </span>
@@ -3054,10 +3031,16 @@ export default function SocialNetworkFeed() {
                   {/* Post Content */}
                   {post.content && (
                     // Tambahkan class khusus untuk konten post
-                    <div
-                      className="prose max-w-none text-gray-700 ck-content custom-post-content"
-                      dangerouslySetInnerHTML={{ __html: post.content }}
-                    />
+                   <div 
+  className="ck-content ml-1 text-gray-600 break-words whitespace-pre-line" 
+  style={{ 
+    maxWidth: '100%',
+    color: '#374151',
+    padding: '0.5rem'
+  }}
+  dangerouslySetInnerHTML={{ __html: post.content }}
+/>
+
                   )}
 
                   {renderPhotoGrid(post.images)}
@@ -3866,20 +3849,17 @@ export default function SocialNetworkFeed() {
       )}
 
       {showReportModal && (
-        <ReportModal
-          showReportModal={showReportModal}
-          setShowReportModal={setShowReportModal}
-          selectedReason={selectedReason}
-          setSelectedReason={setSelectedReason}
-          customReason={customReason}
-          setCustomReason={setCustomReason}
-          handleReportComment={handleReportComment}
-          targetUserId={reportTargetUserId}
-          selectedPostId={selectedPostId}
-          selectedComment={selectedComment}
-          setAlertInfo={setAlertInfo} // Pass this prop
-        />
-      )}
+  <ReportModal
+    showReportModal={showReportModal}
+    setShowReportModal={setShowReportModal}
+    selectedReason={selectedReason}
+    setSelectedReason={setSelectedReason}
+    customReason={customReason}
+    setCustomReason={setCustomReason}
+    setAlertInfo={setAlertInfo}
+    reportTarget={reportTarget} // Tambahkan reportTarget
+  />
+)}
 
       {/* Comment Modal */}
       {showCommentModal && (
@@ -4189,8 +4169,7 @@ export default function SocialNetworkFeed() {
 
                                             {/* Reply Actions */}
                                             <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                              {reply.user?.id ===
-                                                currentUserId && (
+                                              {reply.user?.id === user.id && (
                                                 <button
                                                   className="text-gray-500 hover:text-gray-700"
                                                   onClick={(e) => {
@@ -4203,8 +4182,7 @@ export default function SocialNetworkFeed() {
                                                 </button>
                                               )}
 
-                                              {reply.user?.id !==
-                                                currentUserId && (
+                                              {reply.user?.id !== user.id && (
                                                 <button
                                                   className="text-gray-500 hover:text-red-500"
                                                   onClick={(e) => {

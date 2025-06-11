@@ -288,44 +288,44 @@ func (service *PostServiceImpl) Delete(ctx context.Context, postId uuid.UUID, us
 }
 
 func (service *PostServiceImpl) FindById(ctx context.Context, postId uuid.UUID, currentUserId uuid.UUID) web.PostResponse {
-    tx, err := service.DB.Begin()
-    helper.PanicIfError(err)
-    defer helper.CommitOrRollback(tx)
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
 
-    post, err := service.PostRepository.FindById(ctx, tx, postId)
-    if err != nil {
-        panic(exception.NewNotFoundError("Post not found"))
-    }
+	post, err := service.PostRepository.FindById(ctx, tx, postId)
+	if err != nil {
+		panic(exception.NewNotFoundError("Post not found"))
+	}
 
-    // Pastikan informasi user diambil dengan benar
-    if post.User == nil || post.User.Id == uuid.Nil {
-        user, err := service.UserRepository.FindById(ctx, tx, post.UserId)
-        if err == nil {
-            post.User = &user
-        }
-    }
+	// Pastikan informasi user diambil dengan benar
+	if post.User == nil || post.User.Id == uuid.Nil {
+		user, err := service.UserRepository.FindById(ctx, tx, post.UserId)
+		if err == nil {
+			post.User = &user
+		}
+	}
 
-    // Check if the current user has liked this post
-    post.IsLiked = service.PostRepository.IsLiked(ctx, tx, postId, currentUserId)
-    post.CommentsCount, _ = service.CommentRepository.CountByPostId(ctx, tx, postId)
-    post.LikesCount = service.PostRepository.GetLikesCount(ctx, tx, postId)
+	// Check if the current user has liked this post
+	post.IsLiked = service.PostRepository.IsLiked(ctx, tx, postId, currentUserId)
+	post.CommentsCount, _ = service.CommentRepository.CountByPostId(ctx, tx, postId)
+	post.LikesCount = service.PostRepository.GetLikesCount(ctx, tx, postId)
 
-    // Set connection status
-    if post.User != nil && post.UserId != currentUserId {
-        post.User.IsConnected = service.ConnectionRepository.IsConnected(ctx, tx, currentUserId, post.UserId)
-    } else if post.User != nil && post.UserId == currentUserId {
-        post.User.IsConnected = false
-    }
+	// Set connection status
+	if post.User != nil && post.UserId != currentUserId {
+		post.User.IsConnected = service.ConnectionRepository.IsConnected(ctx, tx, currentUserId, post.UserId)
+	} else if post.User != nil && post.UserId == currentUserId {
+		post.User.IsConnected = false
+	}
 
-    // Ambil informasi grup jika post berada dalam grup
-    if post.GroupId != nil {
-        group, err := service.GroupRepository.FindById(ctx, tx, *post.GroupId)
-        if err == nil {
-            post.Group = &group
-        }
-    }
+	// Ambil informasi grup jika post berada dalam grup
+	if post.GroupId != nil {
+		group, err := service.GroupRepository.FindById(ctx, tx, *post.GroupId)
+		if err == nil {
+			post.Group = &group
+		}
+	}
 
-    return helper.ToPostResponse(post)
+	return helper.ToPostResponse(post)
 }
 
 func (service *PostServiceImpl) FindAll(ctx context.Context, limit, offset int, currentUserId uuid.UUID) []web.PostResponse {
@@ -348,6 +348,8 @@ func (service *PostServiceImpl) FindAll(ctx context.Context, limit, offset int, 
 		post.IsLiked = service.PostRepository.IsLiked(ctx, tx, post.Id, currentUserId)
 		post.CommentsCount, _ = service.CommentRepository.CountByPostId(ctx, tx, post.Id)
 		post.LikesCount = service.PostRepository.GetLikesCount(ctx, tx, post.Id)
+		post.IsReported = service.PostRepository.IsReported(ctx, tx, post.Id, currentUserId)	
+		
 
 		// Perbaikan: Gunakan IsConnected alih-alih CheckConnectionExists
 		// dan pastikan parameter diberikan dengan benar
@@ -383,6 +385,7 @@ func (service *PostServiceImpl) FindByUserId(ctx context.Context, targetUserId u
 		post.IsLiked = service.PostRepository.IsLiked(ctx, tx, post.Id, currentUserId)
 		post.CommentsCount, _ = service.CommentRepository.CountByPostId(ctx, tx, post.Id)
 		post.LikesCount = service.PostRepository.GetLikesCount(ctx, tx, post.Id)
+		post.IsReported = service.PostRepository.IsReported(ctx, tx, post.Id, currentUserId)
 
 		// Perbaikan: Gunakan IsConnected alih-alih CheckConnectionExists
 		// dan pastikan parameter diberikan dengan benar
@@ -492,6 +495,14 @@ func (service *PostServiceImpl) CreateGroupPost(ctx context.Context, groupId uui
 		panic(exception.NewInternalServerError("Failed to begin transaction: " + err.Error()))
 	}
 	defer helper.CommitOrRollback(tx)
+
+	// Periksa apakah user diblokir dari grup ini
+	isBlocked := false
+	blockedSQL := `SELECT COUNT(*) FROM group_blocked_members WHERE group_id = $1 AND user_id = $2`
+	err = tx.QueryRowContext(ctx, blockedSQL, groupId, userId).Scan(&isBlocked)
+	if err == nil && isBlocked {
+		panic(exception.NewForbiddenError("You have been blocked from this group"))
+	}
 
 	// Verify user is a member of the group with simple query
 	memberSQL := `SELECT group_id, role, is_active FROM group_members WHERE group_id = $1 AND user_id = $2`
@@ -680,6 +691,16 @@ func (service *PostServiceImpl) FindByGroupId(ctx context.Context, groupId uuid.
 		return []web.PostResponse{}
 	}
 	defer helper.CommitOrRollback(tx)
+
+	// Periksa apakah user diblokir dari grup ini
+	var isBlocked bool
+	blockedSQL := `SELECT EXISTS(SELECT 1 FROM group_blocked_members WHERE group_id = $1 AND user_id = $2)`
+	err = tx.QueryRowContext(ctx, blockedSQL, groupId, userId).Scan(&isBlocked)
+	if err == nil && isBlocked {
+		panic(exception.NewForbiddenError("You have been blocked from this group"))
+	}
+
+	// Kode yang sudah ada...
 
 	fmt.Printf("DEBUG: Finding posts for group %s by user %s\n", groupId, userId)
 
@@ -1623,150 +1644,150 @@ func (service *PostServiceImpl) FindPendingPostsByUserId(ctx context.Context, us
 }
 
 func (service *PostServiceImpl) FindPendingPostsByUserIdAndGroupId(ctx context.Context, userId uuid.UUID, groupId uuid.UUID, limit, offset int) []web.PendingPostResponse {
-    // Gunakan koneksi baru untuk menghindari masalah koneksi
-    db := service.DB
+	// Gunakan koneksi baru untuk menghindari masalah koneksi
+	db := service.DB
 
-    // Query untuk mendapatkan post milik user di grup tertentu
-    SQL := `SELECT id, user_id, content, visibility, created_at, updated_at, group_id, status
+	// Query untuk mendapatkan post milik user di grup tertentu
+	SQL := `SELECT id, user_id, content, visibility, created_at, updated_at, group_id, status
             FROM posts 
             WHERE user_id = $1 AND group_id = $2
             ORDER BY created_at DESC
             LIMIT $3 OFFSET $4`
 
-    rows, err := db.QueryContext(ctx, SQL, userId, groupId, limit, offset)
-    if err != nil {
-        fmt.Printf("ERROR: Failed to query posts: %v\n", err)
-        return []web.PendingPostResponse{}
-    }
-    defer rows.Close()
+	rows, err := db.QueryContext(ctx, SQL, userId, groupId, limit, offset)
+	if err != nil {
+		fmt.Printf("ERROR: Failed to query posts: %v\n", err)
+		return []web.PendingPostResponse{}
+	}
+	defer rows.Close()
 
-    var pendingPosts []web.PendingPostResponse
-    for rows.Next() {
-        var post domain.Post
-        var groupIdPtr *uuid.UUID
-        var statusNull sql.NullString
+	var pendingPosts []web.PendingPostResponse
+	for rows.Next() {
+		var post domain.Post
+		var groupIdPtr *uuid.UUID
+		var statusNull sql.NullString
 
-        err := rows.Scan(
-            &post.Id,
-            &post.UserId,
-            &post.Content,
-            &post.Visibility,
-            &post.CreatedAt,
-            &post.UpdatedAt,
-            &groupIdPtr,
-            &statusNull,
-        )
+		err := rows.Scan(
+			&post.Id,
+			&post.UserId,
+			&post.Content,
+			&post.Visibility,
+			&post.CreatedAt,
+			&post.UpdatedAt,
+			&groupIdPtr,
+			&statusNull,
+		)
 
-        if err != nil {
-            fmt.Printf("ERROR: Failed to scan post: %v\n", err)
-            continue
-        }
+		if err != nil {
+			fmt.Printf("ERROR: Failed to scan post: %v\n", err)
+			continue
+		}
 
-        post.GroupId = groupIdPtr
-        if statusNull.Valid {
-            post.Status = statusNull.String
-        }
+		post.GroupId = groupIdPtr
+		if statusNull.Valid {
+			post.Status = statusNull.String
+		}
 
-        // Ambil informasi user
-        userSQL := `SELECT id, name, username, COALESCE(photo, ''), COALESCE(headline, '')
+		// Ambil informasi user
+		userSQL := `SELECT id, name, username, COALESCE(photo, ''), COALESCE(headline, '')
                     FROM users WHERE id = $1`
-        var user domain.User
-        err = db.QueryRowContext(ctx, userSQL, post.UserId).Scan(
-            &user.Id,
-            &user.Name,
-            &user.Username,
-            &user.Photo,
-            &user.Headline,
-        )
-        if err == nil {
-            post.User = &user
-        }
+		var user domain.User
+		err = db.QueryRowContext(ctx, userSQL, post.UserId).Scan(
+			&user.Id,
+			&user.Name,
+			&user.Username,
+			&user.Photo,
+			&user.Headline,
+		)
+		if err == nil {
+			post.User = &user
+		}
 
-        // Ambil informasi grup
-        var group domain.Group
-        if post.GroupId != nil {
-            groupSQL := `SELECT id, name, description, rule, COALESCE(image, '') as image, 
+		// Ambil informasi grup
+		var group domain.Group
+		if post.GroupId != nil {
+			groupSQL := `SELECT id, name, description, rule, COALESCE(image, '') as image, 
                         privacy_level, invite_policy, post_approval, creator_id
                         FROM groups WHERE id = $1`
-            err = db.QueryRowContext(ctx, groupSQL, *post.GroupId).Scan(
-                &group.Id,
-                &group.Name,
-                &group.Description,
-                &group.Rule,
-                &group.Image,
-                &group.PrivacyLevel,
-                &group.InvitePolicy,
-                &group.PostApproval,
-                &group.CreatorId,
-            )
-            if err == nil {
-                post.Group = &group
-            }
-        }
+			err = db.QueryRowContext(ctx, groupSQL, *post.GroupId).Scan(
+				&group.Id,
+				&group.Name,
+				&group.Description,
+				&group.Rule,
+				&group.Image,
+				&group.PrivacyLevel,
+				&group.InvitePolicy,
+				&group.PostApproval,
+				&group.CreatorId,
+			)
+			if err == nil {
+				post.Group = &group
+			}
+		}
 
-        // Buat response sederhana
-        pendingResponse := web.PendingPostResponse{
-            Id:        post.Id,
-            PostId:    post.Id,
-            GroupId:   *post.GroupId,
-            Status:    post.Status,
-            CreatedAt: post.CreatedAt,
-            UpdatedAt: post.UpdatedAt,
-        }
+		// Buat response sederhana
+		pendingResponse := web.PendingPostResponse{
+			Id:        post.Id,
+			PostId:    post.Id,
+			GroupId:   *post.GroupId,
+			Status:    post.Status,
+			CreatedAt: post.CreatedAt,
+			UpdatedAt: post.UpdatedAt,
+		}
 
-        // Tambahkan post info dengan user dan group
-        postResponse := web.PostResponse{
-            Id:         post.Id,
-            UserId:     post.UserId,
-            Content:    post.Content,
-            Visibility: post.Visibility,
-            Status:     post.Status,
-            GroupId:    post.GroupId,
-            CreatedAt:  post.CreatedAt,
-            UpdatedAt:  post.UpdatedAt,
-        }
+		// Tambahkan post info dengan user dan group
+		postResponse := web.PostResponse{
+			Id:         post.Id,
+			UserId:     post.UserId,
+			Content:    post.Content,
+			Visibility: post.Visibility,
+			Status:     post.Status,
+			GroupId:    post.GroupId,
+			CreatedAt:  post.CreatedAt,
+			UpdatedAt:  post.UpdatedAt,
+		}
 
-        // Tambahkan user info
-        if post.User != nil {
-            postResponse.User = web.UserShort{
-                Id:       post.User.Id,
-                Name:     post.User.Name,
-                Username: post.User.Username,
-            }
+		// Tambahkan user info
+		if post.User != nil {
+			postResponse.User = web.UserShort{
+				Id:       post.User.Id,
+				Name:     post.User.Name,
+				Username: post.User.Username,
+			}
 
-            if post.User.Photo != "" {
-                photo := post.User.Photo
-                postResponse.User.Photo = &photo
-            }
+			if post.User.Photo != "" {
+				photo := post.User.Photo
+				postResponse.User.Photo = &photo
+			}
 
-            if post.User.Headline != "" {
-                headline := post.User.Headline
-                postResponse.User.Headline = &headline
-            }
-        }
+			if post.User.Headline != "" {
+				headline := post.User.Headline
+				postResponse.User.Headline = &headline
+			}
+		}
 
-        // Tambahkan group info
-        if post.Group != nil {
-            // Buat struct baru yang hanya berisi field yang kita inginkan
-            postResponse.Group = &web.GroupResponse{
-                Id:           post.Group.Id,
-                Name:         post.Group.Name,
-                Description:  post.Group.Description,
-                Rule:         post.Group.Rule,
-                PrivacyLevel: post.Group.PrivacyLevel,
-                InvitePolicy: post.Group.InvitePolicy,
-                PostApproval: post.Group.PostApproval,
-                CreatorId:    post.Group.CreatorId,
-            }
+		// Tambahkan group info
+		if post.Group != nil {
+			// Buat struct baru yang hanya berisi field yang kita inginkan
+			postResponse.Group = &web.GroupResponse{
+				Id:           post.Group.Id,
+				Name:         post.Group.Name,
+				Description:  post.Group.Description,
+				Rule:         post.Group.Rule,
+				PrivacyLevel: post.Group.PrivacyLevel,
+				InvitePolicy: post.Group.InvitePolicy,
+				PostApproval: post.Group.PostApproval,
+				CreatorId:    post.Group.CreatorId,
+			}
 
 			if post.Group.Image != nil && *post.Group.Image != "" {
 				postResponse.Group.Image = post.Group.Image // Langsung gunakan pointer yang sudah ada
 			}
 		}
 
-        pendingResponse.Post = postResponse
-        pendingPosts = append(pendingPosts, pendingResponse)
-    }
+		pendingResponse.Post = postResponse
+		pendingPosts = append(pendingPosts, pendingResponse)
+	}
 
-    return pendingPosts
+	return pendingPosts
 }

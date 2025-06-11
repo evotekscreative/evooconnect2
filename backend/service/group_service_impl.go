@@ -27,7 +27,7 @@ type GroupServiceImpl struct {
 	NotificationService        NotificationService
 	Validate                   *validator.Validate
 	GroupJoinRequestRepository repository.GroupJoinRequestRepository
-	BlockedMemberRepository repository.GroupBlockedMemberRepository
+	BlockedMemberRepository    repository.GroupBlockedMemberRepository
 }
 
 func NewGroupService(
@@ -50,7 +50,7 @@ func NewGroupService(
 		ConnectionRepository:       connectionRepository, // Tambahkan ini
 		NotificationService:        notificationService,
 		Validate:                   validate,
-		BlockedMemberRepository: blockedMemberRepository,
+		BlockedMemberRepository:    blockedMemberRepository,
 		GroupJoinRequestRepository: groupJoinRequestRepository,
 	}
 }
@@ -130,21 +130,21 @@ func (service *GroupServiceImpl) Update(ctx context.Context, groupId, userId uui
 		panic(exception.NewForbiddenError("only group admin can update group"))
 	}
 
-    if request.Name != "" {
-        group.Name = request.Name
-    }
-    if request.Description != "" {
-        group.Description = request.Description
-    }
-    if request.Rule != "" {
-        group.Rule = request.Rule
-    }
-    if request.PrivacyLevel != "" {
-        group.PrivacyLevel = request.PrivacyLevel
-    }
-    if request.InvitePolicy != "" {
-        group.InvitePolicy = request.InvitePolicy
-    }
+	if request.Name != "" {
+		group.Name = request.Name
+	}
+	if request.Description != "" {
+		group.Description = request.Description
+	}
+	if request.Rule != "" {
+		group.Rule = request.Rule
+	}
+	if request.PrivacyLevel != "" {
+		group.PrivacyLevel = request.PrivacyLevel
+	}
+	if request.InvitePolicy != "" {
+		group.InvitePolicy = request.InvitePolicy
+	}
 
 	// Update post approval setting
 	group.PostApproval = request.PostApproval
@@ -224,6 +224,21 @@ func (service *GroupServiceImpl) FindById(ctx context.Context, groupId uuid.UUID
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
+	// Ambil ID user yang sedang login dari context
+	currentUserIdStr, ok := ctx.Value("user_id").(string)
+	var currentUserId uuid.UUID
+	if ok {
+		currentUserId, _ = uuid.Parse(currentUserIdStr)
+	}
+
+	// Periksa apakah user diblokir dari grup ini
+	if currentUserId != uuid.Nil {
+		isBlocked := service.BlockedMemberRepository.IsBlocked(ctx, tx, groupId, currentUserId)
+		if isBlocked {
+			panic(exception.NewForbiddenError("You have been blocked from this group"))
+		}
+	}
+
 	// Get the group
 	group, err := service.GroupRepository.FindById(ctx, tx, groupId)
 	if err != nil {
@@ -270,21 +285,90 @@ func (service *GroupServiceImpl) FindAll(ctx context.Context, limit, offset int)
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
+	// Ambil ID user yang sedang login dari context
+	currentUserIdStr, ok := ctx.Value("user_id").(string)
+	var currentUserId uuid.UUID
+	if ok {
+		currentUserId, _ = uuid.Parse(currentUserIdStr)
+	}
+
 	groups := service.GroupRepository.FindAll(ctx, tx, limit, offset)
+
+	// Jika user login, ambil grup yang diikuti dan join request yang pending
+	var userMemberships []domain.GroupMember
+	var pendingJoinRequests []domain.GroupJoinRequest
+	var createdGroups []domain.Group
+
+	if currentUserId != uuid.Nil {
+		// Ambil grup yang diikuti user
+		userMemberships = service.MemberRepository.FindByUserId(ctx, tx, currentUserId)
+
+		// Ambil grup yang dibuat oleh user
+		createdGroups = service.GroupRepository.FindByCreator(ctx, tx, currentUserId)
+
+		// Ambil join request yang pending
+		joinRequestsSQL := `SELECT id, group_id, user_id, status, message, created_at, updated_at 
+                           FROM group_join_requests 
+                           WHERE user_id = $1 AND status = 'pending'`
+		rows, err := tx.QueryContext(ctx, joinRequestsSQL, currentUserId)
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var request domain.GroupJoinRequest
+				err := rows.Scan(
+					&request.Id,
+					&request.GroupId,
+					&request.UserId,
+					&request.Status,
+					&request.Message,
+					&request.CreatedAt,
+					&request.UpdatedAt,
+				)
+				if err == nil {
+					pendingJoinRequests = append(pendingJoinRequests, request)
+				}
+			}
+		}
+	}
+
+	// Buat map untuk mempermudah pengecekan
+	membershipMap := make(map[uuid.UUID]bool)
+	for _, member := range userMemberships {
+		membershipMap[member.GroupId] = true
+	}
+
+	pendingRequestMap := make(map[uuid.UUID]bool)
+	for _, request := range pendingJoinRequests {
+		pendingRequestMap[request.GroupId] = true
+	}
+
+	createdGroupMap := make(map[uuid.UUID]bool)
+	for _, group := range createdGroups {
+		createdGroupMap[group.Id] = true
+	}
 
 	var responses []web.GroupResponse
 	for _, group := range groups {
-		if group.PrivacyLevel == "public" {
-			members := service.MemberRepository.FindByGroupId(ctx, tx, group.Id)
+		// Hapus filter yang hanya menampilkan grup public
+		// Skip grup yang dibuat oleh user atau grup yang sudah diikuti atau sudah request join
+		if currentUserId != uuid.Nil &&
+			(createdGroupMap[group.Id] || membershipMap[group.Id] || pendingRequestMap[group.Id]) {
+			continue
+		}
 
-			// Load creator data
-			creator, err := service.UserRepository.FindById(ctx, tx, group.CreatorId)
-			if err == nil {
-				response := helper.ToGroupResponse(group)
-				response.Creator = helper.ToUserBriefResponse(creator)
-				response.MembersCount = len(members)
-				responses = append(responses, response)
-			}
+		members := service.MemberRepository.FindByGroupId(ctx, tx, group.Id)
+
+		// Load creator data
+		creator, err := service.UserRepository.FindById(ctx, tx, group.CreatorId)
+		if err == nil {
+			response := helper.ToGroupResponse(group)
+			response.Creator = helper.ToUserBriefResponse(creator)
+			response.MembersCount = len(members)
+
+			// Set is_joined selalu false karena kita hanya menampilkan grup yang belum diikuti
+			response.IsJoined = false
+
+			responses = append(responses, response)
 		}
 	}
 
@@ -296,21 +380,21 @@ func (service *GroupServiceImpl) FindMyGroups(ctx context.Context, userId uuid.U
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
-	memberships := service.MemberRepository.FindByUserId(ctx, tx, userId)
+	// Ambil grup yang dibuat oleh user
+	groups := service.GroupRepository.FindByCreator(ctx, tx, userId)
 
 	var responses []web.GroupResponse
-	for _, member := range memberships {
-		group, err := service.GroupRepository.FindById(ctx, tx, member.GroupId)
-		if err == nil {
-			members := service.MemberRepository.FindByGroupId(ctx, tx, group.Id)
+	for _, group := range groups {
+		members := service.MemberRepository.FindByGroupId(ctx, tx, group.Id)
 
-			creator, err := service.UserRepository.FindById(ctx, tx, group.CreatorId)
-			if err == nil {
-				response := helper.ToGroupResponse(group)
-				response.Creator = helper.ToUserBriefResponse(creator)
-				response.MembersCount = len(members)
-				responses = append(responses, response)
-			}
+		// Ambil data creator
+		creator, err := service.UserRepository.FindById(ctx, tx, group.CreatorId)
+		if err == nil {
+			response := helper.ToGroupResponse(group)
+			response.Creator = helper.ToUserBriefResponse(creator)
+			response.MembersCount = len(members)
+			response.IsJoined = true // User adalah creator grup
+			responses = append(responses, response)
 		}
 	}
 
@@ -514,9 +598,14 @@ func (service *GroupServiceImpl) RemoveMemberWithBlock(ctx context.Context, grou
 
 		if service.NotificationService != nil {
 			refType := "group_member_removed"
-			message := fmt.Sprintf("Anda telah dikeluarkan dari grup %s", group.Name)
+			reasonText := ""
+			if block && reason != "" {
+				reasonText = fmt.Sprintf(" dengan alasan: %s", reason)
+			}
+
+			message := fmt.Sprintf("You have been removed from the group %s%s", group.Name, reasonText)
 			if block {
-				message = fmt.Sprintf("Anda telah dikeluarkan dari grup %s dan tidak bisa join kembali kecuali diundang oleh admin", group.Name)
+				message = fmt.Sprintf("You have been removed from the group %s and cannot rejoin unless invited by the admin%s", group.Name, reasonText)
 			}
 
 			go func() {
@@ -542,6 +631,11 @@ func (service *GroupServiceImpl) RemoveMemberWithBlock(ctx context.Context, grou
 				if m.Role == "admin" || m.UserId == group.CreatorId {
 					if m.UserId != userId { // Jangan kirim ke admin yang melakukan kick
 						refType := "group_member_blocked"
+						reasonText := ""
+						if reason != "" {
+							reasonText = fmt.Sprintf(" with reason: %s", reason)
+						}
+
 						go func(adminId uuid.UUID) {
 							service.NotificationService.Create(
 								context.Background(),
@@ -549,7 +643,8 @@ func (service *GroupServiceImpl) RemoveMemberWithBlock(ctx context.Context, grou
 								string(domain.NotificationCategoryGroup),
 								"group_member_blocked",
 								"Member Blocked",
-								fmt.Sprintf("%s telah dikeluarkan dan diblokir dari grup %s oleh %s", removedUser.Name, group.Name, adminName),
+								fmt.Sprintf("%s telah dikeluarkan dan diblokir dari grup %s oleh %s%s",
+									removedUser.Name, group.Name, adminName, reasonText),
 								&groupId,
 								&refType,
 								&userId,
@@ -725,69 +820,69 @@ func (service *GroupServiceImpl) GetMembers(ctx context.Context, groupId uuid.UU
 }
 
 func (service *GroupServiceImpl) CreateInvitation(ctx context.Context, groupId, userId, inviteeId uuid.UUID) web.GroupInvitationResponse {
-    tx, err := service.DB.Begin()
-    helper.PanicIfError(err)
-    defer helper.CommitOrRollback(tx)
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
 
-    // Check if user is admin of the group
-    if !service.isGroupAdmin(ctx, tx, groupId, userId) {
-        panic(exception.NewForbiddenError("only group admin can send invitations"))
-    }
+	// Check if user is admin of the group
+	if !service.isGroupAdmin(ctx, tx, groupId, userId) {
+		panic(exception.NewForbiddenError("only group admin can send invitations"))
+	}
 
-    // Check if invitee exists
-    invitee, err := service.UserRepository.FindById(ctx, tx, inviteeId)
-    if err != nil {
-        panic(exception.NewNotFoundError("user to invite not found"))
-    }
+	// Check if invitee exists
+	invitee, err := service.UserRepository.FindById(ctx, tx, inviteeId)
+	if err != nil {
+		panic(exception.NewNotFoundError("user to invite not found"))
+	}
 
-    // Check if invitee is already a member
-    existingMember := service.MemberRepository.FindByGroupIdAndUserId(ctx, tx, groupId, inviteeId)
-    if existingMember.GroupId != uuid.Nil {
-        panic(exception.NewBadRequestError("user is already a member of this group"))
-    }
+	// Check if invitee is already a member
+	existingMember := service.MemberRepository.FindByGroupIdAndUserId(ctx, tx, groupId, inviteeId)
+	if existingMember.GroupId != uuid.Nil {
+		panic(exception.NewBadRequestError("user is already a member of this group"))
+	}
 
-    // Check if user is blocked and remove from blocklist if they are
-    isBlocked := service.BlockedMemberRepository.IsBlocked(ctx, tx, groupId, inviteeId)
-    if isBlocked {
-        service.BlockedMemberRepository.RemoveFromBlocklist(ctx, tx, groupId, inviteeId)
-        
-        // Hapus undangan lama jika ada
-        existingInvitation := service.InvitationRepository.FindByGroupIdAndInviteeId(ctx, tx, groupId, inviteeId)
-        if existingInvitation.Id != uuid.Nil {
-            // Hapus undangan lama
-            service.InvitationRepository.CancelRequest(ctx, tx, existingInvitation.Id)
-        }
-    } else {
-        // Check if invitation already exists (hanya jika tidak diblokir)
-        existingInvitation := service.InvitationRepository.FindByGroupIdAndInviteeId(ctx, tx, groupId, inviteeId)
-        if existingInvitation.Id != uuid.Nil {
-            panic(exception.NewBadRequestError("invitation already sent to this user"))
-        }
-    }
+	// Check if user is blocked and remove from blocklist if they are
+	isBlocked := service.BlockedMemberRepository.IsBlocked(ctx, tx, groupId, inviteeId)
+	if isBlocked {
+		service.BlockedMemberRepository.RemoveFromBlocklist(ctx, tx, groupId, inviteeId)
 
-    // Get group info
-    group, err := service.GroupRepository.FindById(ctx, tx, groupId)
-    if err != nil {
-        panic(exception.NewNotFoundError("group not found"))
-    }
+		// Hapus undangan lama jika ada
+		existingInvitation := service.InvitationRepository.FindByGroupIdAndInviteeId(ctx, tx, groupId, inviteeId)
+		if existingInvitation.Id != uuid.Nil {
+			// Hapus undangan lama
+			service.InvitationRepository.CancelRequest(ctx, tx, existingInvitation.Id)
+		}
+	} else {
+		// Check if invitation already exists (hanya jika tidak diblokir)
+		existingInvitation := service.InvitationRepository.FindByGroupIdAndInviteeId(ctx, tx, groupId, inviteeId)
+		if existingInvitation.Id != uuid.Nil {
+			panic(exception.NewBadRequestError("invitation already sent to this user"))
+		}
+	}
 
-    // Get inviter info
-    inviter, err := service.UserRepository.FindById(ctx, tx, userId)
-    if err != nil {
-        panic(exception.NewNotFoundError("inviter not found"))
-    }
+	// Get group info
+	group, err := service.GroupRepository.FindById(ctx, tx, groupId)
+	if err != nil {
+		panic(exception.NewNotFoundError("group not found"))
+	}
 
-    invitation := domain.GroupInvitation{
-        Id:        uuid.New(),
-        GroupId:   groupId,
-        InviterId: userId,
-        InviteeId: inviteeId,
-        Status:    "pending",
-        CreatedAt: time.Now(),
-        UpdatedAt: time.Now(),
-    }
+	// Get inviter info
+	inviter, err := service.UserRepository.FindById(ctx, tx, userId)
+	if err != nil {
+		panic(exception.NewNotFoundError("inviter not found"))
+	}
 
-    invitation = service.InvitationRepository.Save(ctx, tx, invitation)
+	invitation := domain.GroupInvitation{
+		Id:        uuid.New(),
+		GroupId:   groupId,
+		InviterId: userId,
+		InviteeId: inviteeId,
+		Status:    "pending",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	invitation = service.InvitationRepository.Save(ctx, tx, invitation)
 
 	// Kirim notifikasi ke user yang diundang
 	if service.NotificationService != nil {
@@ -1155,49 +1250,49 @@ func (service *GroupServiceImpl) JoinPublicGroup(ctx context.Context, userId uui
 		}
 	}
 
-member := domain.GroupMember{
-    GroupId:  groupId,
-    UserId:   userId,
-    Role:     "member",
-    JoinedAt: time.Now(),
-    IsActive: true,
-}
+	member := domain.GroupMember{
+		GroupId:  groupId,
+		UserId:   userId,
+		Role:     "member",
+		JoinedAt: time.Now(),
+		IsActive: true,
+	}
 
-member = service.MemberRepository.AddMember(ctx, tx, member)
+	member = service.MemberRepository.AddMember(ctx, tx, member)
 
-// Return member response
-user, _ := service.UserRepository.FindById(ctx, tx, userId)
-response := helper.ToGroupMemberResponse(member)
-if user.Id != uuid.Nil {
-    response.User = helper.ToUserBriefResponse(user)
-}
+	// Return member response
+	user, _ := service.UserRepository.FindById(ctx, tx, userId)
+	response := helper.ToGroupMemberResponse(member)
+	if user.Id != uuid.Nil {
+		response.User = helper.ToUserBriefResponse(user)
+	}
 
-// Kirim notifikasi ke pembuat grup
-if service.NotificationService != nil && group.CreatorId != userId {
-    refType := "group_new_member"
-    groupName := group.Name
-    creatorId := group.CreatorId
-    userName := "Someone"
-    if user.Id != uuid.Nil {
-        userName = user.Name
-    }
+	// Kirim notifikasi ke pembuat grup
+	if service.NotificationService != nil && group.CreatorId != userId {
+		refType := "group_new_member"
+		groupName := group.Name
+		creatorId := group.CreatorId
+		userName := "Someone"
+		if user.Id != uuid.Nil {
+			userName = user.Name
+		}
 
-    go func() {
-        service.NotificationService.Create(
-            context.Background(),
-            creatorId,
-            string(domain.NotificationCategoryGroup),
-            "group_new_member",
-            "New Group Member",
-            fmt.Sprintf("%s joined your group %s", userName, groupName),
-            &groupId,
-            &refType,
-            &userId,
-        )
-    }()
-}
+		go func() {
+			service.NotificationService.Create(
+				context.Background(),
+				creatorId,
+				string(domain.NotificationCategoryGroup),
+				"group_new_member",
+				"New Group Member",
+				fmt.Sprintf("%s joined your group %s", userName, groupName),
+				&groupId,
+				&refType,
+				&userId,
+			)
+		}()
+	}
 
-return response
+	return response
 }
 
 // Tambahkan di service/group_service_impl.go
@@ -1257,7 +1352,7 @@ func (service *GroupServiceImpl) CreateJoinRequest(ctx context.Context, userId u
 	if existingMember.GroupId != uuid.Nil && existingMember.IsActive {
 		panic(exception.NewBadRequestError("You are already a member of this group"))
 	}
-	
+
 	// Check if user already has a pending request
 	existingRequest, err := service.GroupJoinRequestRepository.FindByGroupIdAndUserId(ctx, tx, groupId, userId)
 	if err == nil && existingRequest.Status == "pending" {
@@ -1278,63 +1373,63 @@ func (service *GroupServiceImpl) CreateJoinRequest(ctx context.Context, userId u
 	joinRequest = service.GroupJoinRequestRepository.Save(ctx, tx, joinRequest)
 
 	user, _ := service.UserRepository.FindById(ctx, tx, userId)
-joinRequest.User = &user
+	joinRequest.User = &user
 
-// Get group admins, moderators, and creator for notifications
-var adminIds []uuid.UUID
+	// Get group admins, moderators, and creator for notifications
+	var adminIds []uuid.UUID
 
-// Add creator
-adminIds = append(adminIds, group.CreatorId)
+	// Add creator
+	adminIds = append(adminIds, group.CreatorId)
 
-// Add admins
-adminsSQL := `SELECT user_id FROM group_members 
+	// Add admins
+	adminsSQL := `SELECT user_id FROM group_members 
             WHERE group_id = $1 AND role = 'admin' AND is_active = true`
 
-rows, err := tx.QueryContext(ctx, adminsSQL, groupId)
-if err == nil {
-    defer rows.Close()
-    for rows.Next() {
-        var adminId uuid.UUID
-        if err := rows.Scan(&adminId); err == nil && adminId != group.CreatorId {
-            adminIds = append(adminIds, adminId)
-        }
-    }
-}
+	rows, err := tx.QueryContext(ctx, adminsSQL, groupId)
+	if err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var adminId uuid.UUID
+			if err := rows.Scan(&adminId); err == nil && adminId != group.CreatorId {
+				adminIds = append(adminIds, adminId)
+			}
+		}
+	}
 
-// Send notifications to admins
-if service.NotificationService != nil {
-    userName := user.Name
-    groupName := group.Name
-    requestId := joinRequest.Id
+	// Send notifications to admins
+	if service.NotificationService != nil {
+		userName := user.Name
+		groupName := group.Name
+		requestId := joinRequest.Id
 
-    go func() {
-        // Use new context and transaction for goroutine
-        newCtx := context.Background()
-        newTx, err := service.DB.Begin()
-        if err != nil {
-            fmt.Printf("Error creating transaction in goroutine: %v\n", err)
-            return
-        }
-        defer newTx.Commit()
+		go func() {
+			// Use new context and transaction for goroutine
+			newCtx := context.Background()
+			newTx, err := service.DB.Begin()
+			if err != nil {
+				fmt.Printf("Error creating transaction in goroutine: %v\n", err)
+				return
+			}
+			defer newTx.Commit()
 
-        for _, adminId := range adminIds {
-            refType := "group_join_request"
-            service.NotificationService.Create(
-                newCtx,
-                adminId,
-                string(domain.NotificationCategoryGroup),
-                "group_join_request",
-                "Join Request",
-                fmt.Sprintf("%s wants to join %s", userName, groupName),
-                &requestId,
-                &refType,
-                &userId,
-            )
-        }
-    }()
-}
+			for _, adminId := range adminIds {
+				refType := "group_join_request"
+				service.NotificationService.Create(
+					newCtx,
+					adminId,
+					string(domain.NotificationCategoryGroup),
+					"group_join_request",
+					"Join Request",
+					fmt.Sprintf("%s wants to join %s", userName, groupName),
+					&requestId,
+					&refType,
+					&userId,
+				)
+			}
+		}()
+	}
 
-return helper.ToJoinRequestResponse(joinRequest)
+	return helper.ToJoinRequestResponse(joinRequest)
 }
 
 func (service *GroupServiceImpl) FindJoinRequestsByGroupId(ctx context.Context, groupId uuid.UUID, userId uuid.UUID, limit, offset int) []web.JoinRequestResponse {
@@ -1535,4 +1630,134 @@ func (service *GroupServiceImpl) CancelJoinRequest(ctx context.Context, requestI
 
 	// Delete the join request
 	service.GroupJoinRequestRepository.Delete(ctx, tx, requestId)
+}
+
+func (service *GroupServiceImpl) FindMyJoinedGroups(ctx context.Context, userId uuid.UUID) []web.GroupResponse {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Ambil semua grup yang diikuti oleh user
+	memberships := service.MemberRepository.FindByUserId(ctx, tx, userId)
+
+	// Ambil semua join request yang pending dari user
+	var joinRequests []domain.GroupJoinRequest
+	joinRequestsSQL := `SELECT id, group_id, user_id, status, message, created_at, updated_at 
+                       FROM group_join_requests 
+                       WHERE user_id = $1 AND status = 'pending'`
+	rows, err := tx.QueryContext(ctx, joinRequestsSQL, userId)
+	if err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var request domain.GroupJoinRequest
+			err := rows.Scan(
+				&request.Id,
+				&request.GroupId,
+				&request.UserId,
+				&request.Status,
+				&request.Message,
+				&request.CreatedAt,
+				&request.UpdatedAt,
+			)
+			if err == nil {
+				joinRequests = append(joinRequests, request)
+			}
+		}
+	}
+
+	// Buat map untuk menyimpan group ID yang memiliki join request pending
+	pendingJoinRequestGroups := make(map[uuid.UUID]bool)
+	for _, request := range joinRequests {
+		pendingJoinRequestGroups[request.GroupId] = true
+	}
+
+	// Buat map untuk menyimpan joined_at berdasarkan group ID
+	joinedAtMap := make(map[uuid.UUID]time.Time)
+	for _, member := range memberships {
+		joinedAtMap[member.GroupId] = member.JoinedAt
+	}
+
+	var responses []web.GroupResponse
+	for _, member := range memberships {
+		// Jangan tampilkan grup yang dibuat oleh user sendiri
+		group, err := service.GroupRepository.FindById(ctx, tx, member.GroupId)
+		if err == nil && group.CreatorId != userId {
+			members := service.MemberRepository.FindByGroupId(ctx, tx, group.Id)
+
+			creator, err := service.UserRepository.FindById(ctx, tx, group.CreatorId)
+			if err == nil {
+				response := helper.ToGroupResponse(group)
+				response.Creator = helper.ToUserBriefResponse(creator)
+				response.MembersCount = len(members)
+				response.IsJoined = true // User adalah anggota grup
+
+				// Tambahkan joined_at ke response
+				if joinedAt, ok := joinedAtMap[group.Id]; ok {
+					response.JoinedAt = joinedAt.Format("2006-01-02T15:04:05Z")
+				}
+
+				responses = append(responses, response)
+			}
+		}
+	}
+
+	return responses
+}
+
+func (service *GroupServiceImpl) FindMyJoinRequests(ctx context.Context, userId uuid.UUID, limit, offset int) []web.JoinRequestResponse {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Dapatkan join requests yang dibuat oleh user
+	requests := service.GroupJoinRequestRepository.FindByUserId(ctx, tx, userId, limit, offset)
+
+	var responses []web.JoinRequestResponse
+	for _, request := range requests {
+		// Dapatkan informasi grup dengan lengkap
+		group, err := service.GroupRepository.FindById(ctx, tx, request.GroupId)
+		if err != nil {
+			fmt.Printf("ERROR: Failed to get group info: %v\n", err)
+			continue
+		}
+
+		// Dapatkan informasi creator grup
+		creator, err := service.UserRepository.FindById(ctx, tx, group.CreatorId)
+		if err == nil {
+			group.Creator = &creator
+		}
+
+		// Hitung jumlah anggota grup
+		members := service.MemberRepository.FindByGroupId(ctx, tx, group.Id)
+
+		request.Group = &group
+
+		// Dapatkan informasi user
+		user, err := service.UserRepository.FindById(ctx, tx, request.UserId)
+		if err != nil {
+			fmt.Printf("ERROR: Failed to get user info: %v\n", err)
+			continue
+		}
+		request.User = &user
+
+		// Buat response
+		response := helper.ToJoinRequestResponse(request)
+
+		// Tambahkan informasi tambahan ke grup
+		if response.Group != nil {
+			response.Group.Creator = helper.ToUserBriefResponse(*group.Creator)
+			response.Group.MembersCount = len(members)
+			response.Group.CreatedAt = group.CreatedAt
+			response.Group.UpdatedAt = group.UpdatedAt
+
+			// Pastikan image diambil dengan benar
+			if group.Image != nil {
+				response.Group.Image = group.Image
+			}
+		}
+
+		responses = append(responses, response)
+	}
+
+	return responses
 }

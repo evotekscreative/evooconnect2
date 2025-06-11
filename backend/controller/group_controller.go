@@ -13,6 +13,8 @@ type GroupController interface {
 	Delete(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	FindById(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	FindAll(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+	FindMyJoinedGroups(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+	FindMyJoinRequests(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	FindMyGroups(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 
 	// Group post management
