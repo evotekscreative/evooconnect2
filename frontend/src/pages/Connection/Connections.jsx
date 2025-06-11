@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import Case from "../components/Case";
+import Case from "../../components/Case";
 import { Link, useNavigate } from "react-router-dom";
-import Profile from "../assets/img/logo-evo-2.png";
+import Profile from "../../assets/img/logo-evo-2.png";
 import axios from "axios";
-import NetworkManager from "../components/NetworkManager";
+import NetworkManager from "../../components/NetworkManager";
 import {
   Briefcase,
   MapPin,
@@ -15,7 +15,7 @@ import {
   UserCheck,
   AlertCircle,
 } from "lucide-react";
-import Alert from "../components/Auth/Alert";
+import Alert from "../../components/Auth/Alert";
 
 // Komponen Avatar: Menampilkan foto jika ada, jika tidak tampilkan inisial
 function Avatar({ src, name, size = 64 }) {

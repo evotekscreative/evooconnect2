@@ -1,12 +1,15 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import path from 'path'; // Pastikan modul 'path' sudah terinstall (bawaan Node.js)
+import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'), // Mengarah ke folder `src`
+      '@': path.resolve(__dirname, './src'),
     },
+  },
+  server: {
+    host: '0.0.0.0', 
   },
 });

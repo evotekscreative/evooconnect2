@@ -3,12 +3,12 @@ import blogImage from "../../assets/img/blog1.jpg";
 
 const BlogHeader = () => (
   <div
-    className="bg-cover bg-center h-[350px] rounded-b-3xl"
+    className="bg-cover bg-center h-[240px] sm:h-[380px] rounded-b-3xl"
     style={{ backgroundImage: `url(${blogImage})` }}
   >
-    <div className="h-[350px] bg-black bg-opacity-60 text-white py-20 px-4 rounded-b-3xl text-center">
-      <h1 className="text-4xl font-bold mb-4">EVOConnect Blog</h1>
-      <p className="max-w-3xl mx-auto text-lg font-light">
+    <div className="h-[240px] sm:h-[380px] bg-black bg-opacity-60 text-white py-10 sm:py-20 px-4 rounded-b-3xl text-center flex flex-col items-center justify-center">
+      <h1 className="font-bold text-2xl sm:text-4xl mb-4">EVOConnect Blog</h1>
+      <p className="max-w-3xl mx-auto text-base sm:text-lg font-light">
         Write, Inspire, and Elevate Your Career.
       </p>
       <div className="mt-6">

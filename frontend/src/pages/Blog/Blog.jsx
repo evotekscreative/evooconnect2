@@ -16,7 +16,6 @@ const cleanHTML = (html) => {
 
 const Blog = () => {
           const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
-
   const [blogs, setBlogs] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageGroup, setPageGroup] = useState(0);
@@ -41,7 +40,12 @@ const Blog = () => {
             : "https://via.placeholder.com/300", 
         }));
 
-        setBlogs(blogsWithCleanContent.reverse());
+        // Urutkan ASCENDING: terbaru di paling awal
+        blogsWithCleanContent.sort(
+          (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        );
+
+        setBlogs(blogsWithCleanContent);
       } catch (error) {
         console.error("Error fetching blogs:", error);
       }
@@ -60,8 +64,8 @@ const Blog = () => {
   return (
     <Case>
       <BlogHeader />
-      <div className="bg-white max-w-7xl mx-auto px-4 py-20">
-        <h2 className="text-2xl font-semibold text-center mb-12 text-gray-800">
+      <div className="bg-white max-w-7xl mx-auto px-4 py-10">
+        <h2 className="h-[80px] sm:h-[120px] text-2xl font-semibold text-center text-gray-800">
           Latest Articles
         </h2>
 
@@ -69,7 +73,7 @@ const Blog = () => {
           <p className="text-center text-gray-500">No articles yet.</p>
         ) : (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
               {currentArticles.map((article) => (
                 <BlogCard article={article} key={article.id} />
               ))}

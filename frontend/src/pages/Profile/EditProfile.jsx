@@ -27,7 +27,7 @@ import {
   Building,
   AlignLeft,
 } from "lucide-react";
-import Alert from "@/components/Auth/alert";
+import Alert from "@/components/Auth/Alert";
 import axios from "axios";
 
 const base_url =

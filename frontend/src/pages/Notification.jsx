@@ -13,12 +13,13 @@ import {
   HeartCrack,
   Trash2,
   Eye,
+  Grid,
 } from "lucide-react";
 import Case from "../components/Case";
-import Alert from "../components/Auth/alert";
+import Alert from "../components/Auth/Alert";
 
 const NotificationPage = () => {
-      const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+  const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
   const [notifTab, setNotifTab] = React.useState(() => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -56,7 +57,11 @@ const NotificationPage = () => {
   });
 
   const notifTabs = [
-    { key: "all", label: "All" },
+    {
+      key: "all",
+      label: "All",
+      icon: <Grid className="w-4 h-4 mr-0" />,
+    },
     {
       key: "post",
       label: "Sosial Media",
@@ -68,17 +73,17 @@ const NotificationPage = () => {
       label: "Connection",
       icon: <User className="w-4 h-4 mr-1" />,
     },
-    
-    
+
+
   ];
 
   useEffect(() => {
-  const searchParams = new URLSearchParams(window.location.search);
-  const tab = searchParams.get('tab') || 'all';
-  if (tab !== notifTab) {
-    setNotifTab(tab);
-  }
-}, [window.location.search]);
+    const searchParams = new URLSearchParams(window.location.search);
+    const tab = searchParams.get('tab') || 'all';
+    if (tab !== notifTab) {
+      setNotifTab(tab);
+    }
+  }, [window.location.search]);
 
 
 
@@ -160,10 +165,10 @@ const NotificationPage = () => {
       const notif = data.id
         ? data
         : data.data
-        ? data.data
-        : data.notification
-        ? data.notification
-        : {};
+          ? data.data
+          : data.notification
+            ? data.notification
+            : {};
 
       const newNotification = {
         id: notif.id,
@@ -380,7 +385,6 @@ const NotificationPage = () => {
     );
   };
 
-  // ...existing code...
   const handleDeleteByCategory = async (category) => {
     const token = localStorage.getItem("token");
     setLoading(true);
@@ -411,7 +415,6 @@ const NotificationPage = () => {
       setLoading(false);
     }
   };
-  // ...existing code...
 
   return (
     <Case>
@@ -492,46 +495,51 @@ const NotificationPage = () => {
               </div>
             </div>
 
-            {/* Center Column - Full width on mobile, 2/4 on LG */}
+            {/* Center Column*/}
             <div className="w-full lg:w-2/4">
-              <div className="bg-white rounded-lg shadow mb-4">
+              <div className="bg-white rounded-lg shadow mb-8">
                 <div className="p-4 border-b">
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-semibold">Recent</h2>
+                  {/* NAVBAR TABS - hanya tampil di mobile */}
+                  <div className="block lg:hidden">
+                    <div className="overflow-x-auto whitespace-nowrap flex gap-2 text-sm mb-4 pb-1">
+                      {notifTabs.map((tab) => (
+                        <button
+                          key={tab.key}
+                          onClick={() => setNotifTab(tab.key)}
+                          className={`flex flex-col items-center min-w-[64px] px-2 py-2 rounded-lg transition ${notifTab === tab.key
+                              ? "text-sky-600 bg-sky-50"
+                              : "text-gray-600"
+                            }`}
+                        >
+                          {tab.icon ? (
+                            React.cloneElement(tab.icon, { size: 20 })
+                          ) : (
+                            <span className="h-5 w-5" />
+                          )}
+                          <span className="text-xs mt-1">{tab.label}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-
-                  {/* Tabs */}
-                  <div className="mt-2 flex flex-wrap gap-2 text-sm mb-4">
+                  <h2 className="text-xl font-semibold">Recent</h2>
+                  {/* NAVBAR TABS - hanya tampil di desktop */}
+                  <div className="hidden lg:flex gap-2 mt-4 flex-wrap">
                     {notifTabs.map((tab) => (
                       <button
                         key={tab.key}
                         onClick={() => setNotifTab(tab.key)}
-                        className={`px-4 py-1 border rounded-full flex items-center font-semibold transition
-          ${
-            notifTab === tab.key
-              ? "bg-sky-100 text-sky-700 border-sky-400"
-              : "border-sky-400 text-sky-600 hover:bg-sky-50"
-          }`}
+                        className={`flex items-center px-4 py-1.5 rounded-full border-2 transition font-semibold text-sm
+                        ${
+                          notifTab === tab.key
+                            ? "border-sky-400 text-sky-600 bg-sky-50"
+                            : "border-sky-300 text-sky-500 hover:border-sky-400 bg-white"
+                        }`}
+                        style={{ minWidth: 80, maxWidth: "100%" }}
                       >
-                        {tab.icon}
+                        {tab.icon && React.cloneElement(tab.icon, { size: 18, className: "mr-2" })}
                         {tab.label}
                       </button>
                     ))}
-                    {notifTab !== "all" && (
-                      <button
-                        className="ml-1 flex items-center gap-1 px-4 py-1 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full font-semibold shadow hover:from-red-600 hover:to-pink-600 transition text-xs"
-                        onClick={() => {
-                          setCategoryToDelete(notifTab);
-                          setShowDeleteCategoryModal(true);
-                        }}
-                      >
-                        <Trash2 size={16} />
-                        Delete All&nbsp;
-                        <span className="font-bold">
-                          {notifTabs.find((t) => t.key === notifTab)?.label}
-                        </span>
-                      </button>
-                    )}
                   </div>
                 </div>
                 {showDeleteCategoryModal && (
@@ -604,7 +612,7 @@ const NotificationPage = () => {
                   </div>
                 )}
 
-                <div className="max-h-96 overflow-y-auto">
+                <div className="">
                   {loading ? (
                     <div className="text-center text-gray-400 py-8">
                       Loading...
@@ -615,9 +623,8 @@ const NotificationPage = () => {
                       .map((n) => (
                         <div
                           key={n.id}
-                          className={`p-4 flex border-b hover:bg-gray-50 items-center ${
-                            n.status === "unread" ? "bg-blue-50" : ""
-                          }`}
+                          className={`p-4 flex border-b hover:bg-gray-50 items-center ${n.status === "unread" ? "bg-blue-50" : ""
+                            }`}
                           onClick={() => markAsRead(n.id)}
                         >
                           {deleteMode && (
@@ -631,11 +638,10 @@ const NotificationPage = () => {
                           <div className="mr-3 flex items-center">{n.icon}</div>
                           <div className="flex-1">
                             <div className="flex justify-between">
-                              <div className="flex-1">
+                              <div className="flex-1 mr-4">
                                 <h3
-                                  className={`font-semibold ${
-                                    n.status === "unread" ? "text-blue-800" : ""
-                                  }`}
+                                  className={`font-semibold ${n.status === "unread" ? "text-blue-800" : ""
+                                    }`}
                                 >
                                   {n.title}
                                 </h3>
@@ -755,28 +761,7 @@ const NotificationPage = () => {
         </div>
 
         {/* Mobile Bottom Navigation - Show only on mobile */}
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t border-gray-200 z-40">
-          <div className="flex justify-around items-center p-2">
-            {notifTabs.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setNotifTab(tab.key)}
-                className={`flex flex-col items-center p-2 rounded-lg ${
-                  notifTab === tab.key
-                    ? "text-sky-600 bg-sky-50"
-                    : "text-gray-600"
-                }`}
-              >
-                {tab.icon ? (
-                  React.cloneElement(tab.icon, { size: 20 })
-                ) : (
-                  <span className="h-5 w-5" />
-                )}{" "}
-                {/* Placeholder jika tidak ada icon */}
-                <span className="text-xs mt-1">{tab.label}</span>
-              </button>
-            ))}
-          </div>
+        <div className="lg:hidden fixed top-0 left-0 right-0 bg-white shadow-lg border-t border-gray-200 z-40">
         </div>
 
         {modalOpen && (
