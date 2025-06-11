@@ -32,6 +32,9 @@ func NewRouter(
 	adminCompanyEditController controller.AdminCompanyEditController,
 	memberCompanyController controller.MemberCompanyController,
 	companyJoinRequestController controller.CompanyJoinRequestController,
+	companyPostController controller.CompanyPostController,
+	companyPostCommentController controller.CompanyPostCommentController,
+	companyFollowerController controller.CompanyFollowerController,
 ) *httprouter.Router {
 	router := httprouter.New()
 
@@ -57,6 +60,9 @@ func NewRouter(
 		companyManagementController,
 		memberCompanyController,
 		companyJoinRequestController,
+		companyPostController,
+		companyPostCommentController,
+		companyFollowerController,
 	)
 
 	// Setup admin routes

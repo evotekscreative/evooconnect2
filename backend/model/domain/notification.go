@@ -15,6 +15,7 @@ const (
 	NotificationCategoryPost       NotificationCategory = "post"
 	NotificationCategoryProfile    NotificationCategory = "profile"
 	NotificationCategoryCompany    NotificationCategory = "company"
+	NotificationCategoryEngagement NotificationCategory = "engagement"
 )
 
 // NotificationType represents the type of notification

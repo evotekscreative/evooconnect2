@@ -79,8 +79,12 @@ func main() {
 	companySubmissionRepository := repository.NewCompanySubmissionRepository()
 	companyEditRequestRepository := repository.NewCompanyEditRequestRepository()
 	memberCompanyRepository := repository.NewMemberCompanyRepository()
-
 	companyJoinRequestRepository := repository.NewCompanyJoinRequestRepository()
+	companyPostRepository := repository.NewCompanyPostRepository()
+	companyPostCommentRepository := repository.NewCompanyPostCommentRepository()
+
+	// Add company follower repository
+	companyFollowerRepository := repository.NewCompanyFollowerRepository()
 
 	// ===== Services =====
 	// Notification service (moved up because it's used by many other services)
@@ -201,11 +205,23 @@ func main() {
 		validate,
 	)
 
+	// Company follower service
+	companyFollowerService := service.NewCompanyFollowerService(
+		companyFollowerRepository,
+		companyRepository,
+		userRepository,
+		notificationService,
+		db,
+		validate,
+	)
+
+	// Company management service (updated with follower repository)
 	companyManagementService := service.NewCompanyManagementService(
 		companyRepository,
 		companyEditRequestRepository,
 		companyJoinRequestRepository,
 		memberCompanyRepository,
+		companyFollowerRepository, // Add this parameter
 		userRepository,
 		adminRepository,
 		notificationService,
@@ -219,6 +235,26 @@ func main() {
 		companyRepository,
 		userRepository,
 		memberCompanyRepository,
+		notificationService,
+		validate,
+	)
+
+	companyPostService := service.NewCompanyPostService(
+		db,
+		companyPostRepository,
+		memberCompanyRepository,
+		companyRepository,
+		userRepository,
+		notificationService,
+		validate,
+	)
+
+	companyPostCommentService := service.NewCompanyPostCommentService(
+		db,
+		companyPostCommentRepository,
+		companyPostRepository,
+		memberCompanyRepository,
+		userRepository,
 		notificationService,
 		validate,
 	)
@@ -272,6 +308,13 @@ func main() {
 
 	companyJoinRequestController := controller.NewCompanyJoinRequestController(companyJoinRequestService)
 
+	companyPostController := controller.NewCompanyPostController(companyPostService)
+
+	companyPostCommentController := controller.NewCompanyPostCommentController(companyPostCommentService)
+
+	// Add company follower controller
+	companyFollowerController := controller.NewCompanyFollowerController(companyFollowerService)
+
 	// ===== Router and Middleware =====
 	// Initialize router with all controllers and JWT secret
 	router := app.NewRouter(
@@ -296,6 +339,9 @@ func main() {
 		adminCompanyEditController,
 		memberCompanyController,
 		companyJoinRequestController,
+		companyPostController,
+		companyPostCommentController,
+		companyFollowerController,
 	)
 
 	// Seed admin data

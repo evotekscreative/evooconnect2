@@ -22,14 +22,15 @@ const (
 	TypeAudio    = "audio"
 
 	// Common upload directories
-	DirUsers      = "users"
-	DirGroups     = "groups"
-	DirPosts      = "posts"
-	DirComments   = "comments"
-	DirExperience = "experience"
-	DirEducation  = "education"
-	DirBlogs      = "blogs"
-	DirCompanies  = "companies"
+	DirUsers        = "users"
+	DirGroups       = "groups"
+	DirPosts        = "posts"
+	DirComments     = "comments"
+	DirExperience   = "experience"
+	DirEducation    = "education"
+	DirBlogs        = "blogs"
+	DirCompanies    = "companies"
+	DirCompanyPosts = "company_posts"
 )
 
 // FileUploadOptions provides configuration options for file uploads
