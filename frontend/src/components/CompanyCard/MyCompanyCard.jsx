@@ -5,7 +5,7 @@ export default function MyCompanyCard({ company }) {
   const navigate = useNavigate();
 
   const handleDetailClick = () => {
-    navigate(`/company-management/company-detail/${company.id}`);
+    navigate(`/company-detail/${company.id}`);
   };
 
   return (

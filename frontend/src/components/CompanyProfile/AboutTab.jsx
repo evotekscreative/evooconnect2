@@ -20,8 +20,6 @@ export default function AboutTab({ company }) {
           <hr className="py-2" />
           <li><strong>Company Size:</strong> {company.size || 'N/A'}</li>
           <hr className="py-2" />
-          <li><strong>Headquarters:</strong> {company.headquarters }</li>
-          <hr className="py-2" />
           <li><strong>Type:</strong> {company.type || 'N/A'}</li>
           <hr className="py-2" />
           <li><strong>Tagline</strong> {company.tagline || 'N/A'}</li>

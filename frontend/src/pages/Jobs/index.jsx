@@ -44,7 +44,6 @@ export default function Jobs() {
         logo: null,
         logoPreview: null,
         website: "",
-        headquarters: "",
         companyType: "",
         foundedYear: "",
         specialties: "",
@@ -217,7 +216,6 @@ export default function Jobs() {
             rating: parseFloat(companyForm.rating),
             jobs: 0,
             website: companyForm.website,
-            headquarters: companyForm.headquarters,
             companyType: companyForm.companyType,
             foundedYear: companyForm.foundedYear,
             specialties: companyForm.specialties
@@ -234,7 +232,6 @@ export default function Jobs() {
             logo: null,
             logoPreview: null,
             website: "",
-            headquarters: "",
             companyType: "",
             foundedYear: "",
             specialties: "",

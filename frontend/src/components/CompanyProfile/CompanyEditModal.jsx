@@ -99,40 +99,41 @@ const CompanyEditModal = ({
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  e.preventDefault();
+  setIsSubmitting(true);
 
-    try {
-      // Calculate changes from original data
-      const changes = {};
-      Object.keys(formData).forEach(key => {
-        if (formData[key] !== companyData[key]) {
-          changes[key] = formData[key];
-        }
-      });
-
-      if (Object.keys(changes).length === 0) {
-        toast.warning("No changes detected");
-        setIsSubmitting(false);
-        return;
+  try {
+    // Hanya kirim field yang berubah
+    const changes = {};
+    Object.keys(formData).forEach(key => {
+      // Bandingkan dengan companyData, jika beda, masukkan ke changes
+      if (formData[key] !== (companyData[key] || "")) {
+        changes[key] = formData[key];
       }
+    });
 
-      // Include logo changes if there's a new preview
-      if (logoPreview && logoPreview.startsWith('data:')) {
-        changes.logo = logoPreview;
-      }
-
-      // Call the onSubmitEditRequest prop with the changes
-      await onSubmitEditRequest(changes);
-
-      setSubmitSuccess(true);
-      toast.success("Edit request submitted successfully!");
-    } catch (error) {
-      toast.error("Failed to submit edit request: " + error.message);
-    } finally {
-      setIsSubmitting(false);
+    // Jika ada perubahan logo
+    if (logoPreview && logoPreview.startsWith('data:')) {
+      changes.logo = logoPreview;
     }
-  };
+
+    if (Object.keys(changes).length === 0) {
+      toast.warning("Tidak ada perubahan yang dideteksi.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Kirim hanya field yang berubah
+    await onSubmitEditRequest(changes);
+
+    setSubmitSuccess(true);
+    toast.success("Permintaan edit berhasil dikirim!");
+  } catch (error) {
+    toast.error("Gagal mengirim permintaan edit: " + error.message);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const handleResubmit = () => {
     setSubmitSuccess(false);

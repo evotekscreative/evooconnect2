@@ -3,27 +3,29 @@ import { Users, UserMinus, UserPlus, Search, X, Check } from "lucide-react";
 import Sidebar from "../../components/CompanyDashboard/Sidebar/sidebar";
 import { toast } from 'react-toastify';
 
-const ManageMember = ({ currentUserRole }) => {
+const ManageMember = ({ currentUserRole, companyId }) => {
   const [members, setMembers] = useState([]);
   const [joinRequests, setJoinRequests] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
   const [newRole, setNewRole] = useState('member');
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchMembers();
     fetchJoinRequests();
-  }, []);
+  }, [companyId]);
 
   const fetchMembers = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        `${import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:3000'}/api/member-companies`,
+        `${import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:3000'}/api/companies/${companyId}/members`,
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
       if (response.ok) {
@@ -56,23 +58,36 @@ const ManageMember = ({ currentUserRole }) => {
   const handleReviewRequest = async (requestId, action) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:3000'}/api/company-join-requests/${requestId}/review`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ action })
+      const url = `${import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:3000'}/api/company-join-requests/${requestId}/review`;
+      
+      const options = {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action })
+      };
+
+      if (action === 'reject') {
+        if (!rejectReason) {
+          toast.error('Please provide a rejection reason');
+          return;
         }
-      );
+        options.body = JSON.stringify({ action, reject_reason: rejectReason });
+      }
+
+      const response = await fetch(url, options);
+      
       if (response.ok) {
         toast.success(`Request ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
         fetchJoinRequests();
         fetchMembers();
+        setShowRejectModal(false);
+        setRejectReason('');
       } else {
-        toast.error(`Failed to ${action} request`);
+        const errorData = await response.json();
+        toast.error(errorData.message || `Failed to ${action} request`);
       }
     } catch (error) {
       toast.error(`Failed to ${action} request`);
@@ -212,7 +227,7 @@ const ManageMember = ({ currentUserRole }) => {
                         <Check size={16} />
                       </button>
                       <button
-                        onClick={() => handleReviewRequest(request.id, 'reject')}
+                        onClick={() => setShowRejectModal(true)}
                         className="p-1.5 bg-red-100 text-red-600 rounded hover:bg-red-200"
                         title="Reject"
                       >
@@ -323,7 +338,6 @@ const ManageMember = ({ currentUserRole }) => {
               <p className="text-sm text-gray-600">
                 Joined on: {new Date(selectedMember.created_at).toLocaleDateString()}
               </p>
-              {/* Add more details as needed */}
             </div>
           </div>
         </div>
@@ -364,6 +378,45 @@ const ManageMember = ({ currentUserRole }) => {
                 className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
               >
                 Update Role
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Reason Modal */}
+      {showRejectModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-xl font-bold">Reject Join Request</h3>
+              <button onClick={() => setShowRejectModal(false)} className="text-gray-500 hover:text-gray-700">
+                &times;
+              </button>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Reason for rejection:</label>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded"
+                rows={3}
+                placeholder="Enter the reason for rejecting this request..."
+              />
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowRejectModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleReviewRequest(joinRequests[0].id, 'reject')}
+                disabled={!rejectReason}
+                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-50"
+              >
+                Submit Rejection
               </button>
             </div>
           </div>

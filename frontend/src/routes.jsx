@@ -377,15 +377,18 @@ const router = createBrowserRouter([
     element: <CreateCompanyStatus />,
   },
   {
+        path: "company-detail/:company_id",
+        element: 
+        <ProtectedRoute>
+        <CompanyDetail />,
+        </ProtectedRoute>
+      },
+  {
     path: "/company-management",
     children: [
       {
         path: "my-company",
         element: <MyCompanies />,
-      },
-      {
-        path: "company-detail/:company_id",
-        element: <CompanyDetail />,
       },
       {
         path: "company-pending",
