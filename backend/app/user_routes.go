@@ -196,6 +196,7 @@ func setupUserRoutes(
 	router.PUT("/api/member-companies/:memberCompanyId/role", userAuth(memberCompanyController.UpdateMemberRole))
 	router.PUT("/api/member-companies/:memberCompanyId/status", userAuth(memberCompanyController.UpdateMemberStatus))
 	router.DELETE("/api/member-companies/:memberCompanyId", userAuth(memberCompanyController.RemoveMember))
+	router.DELETE("/api/member-companies/:memberCompanyId/leave", userAuth(memberCompanyController.LeaveCompany))
 
 	router.POST("/api/companies/:companyId/join-request", userAuth(companyJoinRequestController.Create))
 	router.GET("/api/my-company-join-requests", userAuth(companyJoinRequestController.FindMyRequests))
