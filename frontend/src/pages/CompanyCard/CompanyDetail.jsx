@@ -44,6 +44,7 @@ export default function CompanyDetail() {
         const token = localStorage.getItem("token");
         const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
+        // Gunakan endpoint yang benar
         const res = await fetch(`${apiUrl}/api/companies/${company_id}/details`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -61,11 +62,7 @@ export default function CompanyDetail() {
             Employees: c.employees || "0",
             rating: 4.5,
             jobs: c.jobs?.length || 0,
-            caption: c.tagline || "Innovative solutions for your business",
-            linkedin_url: c.linkedin_url || "",
           });
-
-          // Initialize form data with current company details
           setFormData({
             name: c.name || "",
             linkedin_url: c.linkedin_url || "",
@@ -73,10 +70,9 @@ export default function CompanyDetail() {
             industry: c.industry || "",
             size: c.size || "",
             type: c.type || "",
-            logo: c.linkedin_url ? c.linkedin_url : null,
+            logo: c.logo || null,
             tagline: c.tagline || ""
           });
-
           setJobs(c.jobs || []);
         } else {
           setCompany(null);
@@ -225,7 +221,7 @@ export default function CompanyDetail() {
   if (!company)
     return (
       <div className="text-center text-red-500">
-        Failed to load company details.
+        Company not found or you don't have access.
         <button
           onClick={() => navigate(-1)}
           className="mt-4 underline text-blue-600"
@@ -262,7 +258,7 @@ export default function CompanyDetail() {
           handleSubmit={handleSubmitEditRequest}
           isSubmitting={isSubmitting}
           submitSuccess={submitSuccess}
-          company_id={company_id} 
+          company_id={company_id}
         />
 
 

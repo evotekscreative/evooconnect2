@@ -14,17 +14,17 @@ export default function AboutTab({ company }) {
         <h2 className="text-2xl font-semibold mb-4">Overview</h2>
         <hr className="py-2" />
         <ul className="space-y-2 text-gray-700">
-          <li><strong>Website:</strong> <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{company.website}</a></li>
+          <li><strong>Website:</strong> <a href={company.website || '#'} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{company.website}</a></li>
           <hr className="py-2" />
-          <li><strong>Industry:</strong> {company.industry}</li>
+          <li><strong>Industry:</strong> {company.industry || 'N/A'}</li>
           <hr className="py-2" />
-          <li><strong>Company Size:</strong> {company.size}</li>
+          <li><strong>Company Size:</strong> {company.size || 'N/A'}</li>
           <hr className="py-2" />
-          <li><strong>Headquarters:</strong> {company.headquarters}</li>
+          <li><strong>Headquarters:</strong> {company.headquarters }</li>
           <hr className="py-2" />
-          <li><strong>Type:</strong> {company.type}</li>
+          <li><strong>Type:</strong> {company.type || 'N/A'}</li>
           <hr className="py-2" />
-          <li><strong>Founded:</strong> {company.founded}</li>
+          <li><strong>Tagline</strong> {company.tagline || 'N/A'}</li>
           <hr className="py-2" />
           <li><strong>Linkedin Url:</strong> {company.linkedin_url || 'N/A'}</li>
         </ul>

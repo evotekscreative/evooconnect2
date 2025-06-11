@@ -8,7 +8,7 @@ import SearchBar from "./Navbar/SearchBar";
 import MessageDropdown from "./Navbar/MessageDropdown";
 import NotificationDropdown from "./Navbar/NotificationDropdown";
 import UserDropdown from "./Navbar/UserDropdown";
-
+import Other from "./Navbar/Other";
 
 const Navbar = () => {
   const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
@@ -155,6 +155,8 @@ const Navbar = () => {
       <div className="flex items-center gap-4">
         <NavLinks />
 
+        <Other />
+        
         <div className="flex items-center gap-4 sm:gap-6">
           {/* Message Dropdown */}  <MessageDropdown />
 

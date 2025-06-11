@@ -98,7 +98,7 @@ export default function CreateCompany() {
     if (readyToRenderForm) {
       setForm({
         name: "",
-        url: "",
+        linkedin_url: "",
         website: "",
         industry: "",
         size: "",
@@ -143,7 +143,7 @@ export default function CreateCompany() {
 
       const formData = new FormData();
       formData.append("name", form.name);
-      formData.append("LinkedinUrl", form.url);
+      formData.append("linkedin_url", form.linkedin_url);
       formData.append("website", form.website);
       formData.append("industry", form.industry);
       formData.append("size", form.size);

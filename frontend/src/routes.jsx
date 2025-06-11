@@ -9,7 +9,6 @@ import TermsCondition from "./pages/TermsCondition.jsx";
 import Jobs from "./pages/Jobs/jobs.jsx";
 import JobProfile from "./pages/Profile/job-profile.jsx";
 import Faq from "./pages/Faq/faq.jsx";
-import CompanyProfile from "./pages/Profile/company-profile.jsx";
 import Groups from "./pages/Groups.jsx";
 import CreateBlog from "./pages/Blog/CreateBlog.jsx";
 import BlogDetail from "./pages/Blog/BlogDetail.jsx";
@@ -48,7 +47,9 @@ import MyCompanies from "./pages/CompanyCard/MyCompanies.jsx";
 import CompanyPending from "./pages/CompanyCard/CompanyPending.jsx";
 import CompanyEdit from "./pages/CompanyCard/CompanyEdit.jsx"
 import CompanyEditRequest from "./pages/Admin/Admin1/ListEditRequest.jsx";
-// import ProtectedCompanyRoute from "./components/Auth/protectedCompanyRoute.jsx";
+
+import CompanyDashboard from "./pages/CompanyDashboard/CompanyDashboard.jsx";
+import ManageMember from "./pages/CompanyDashboard/ManageMember.jsx";
 
 const router = createBrowserRouter([
   {
@@ -166,14 +167,6 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <Faq />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/company-profile/:company_id",
-    element: (
-      <ProtectedRoute>
-        <CompanyProfile />
       </ProtectedRoute>
     ),
   },
@@ -408,6 +401,15 @@ const router = createBrowserRouter([
       }
     ],  
 },
+
+  {
+    path: "company-dashboard",
+    element: <CompanyDashboard />,
+  },
+  {
+    path: "manage-member",
+    element: <ManageMember />
+  }
 ]);
 
 export default router;

@@ -24,6 +24,7 @@ const CompanyPreview = ({ form, logoPreview }) => (
         <h4 className="font-bold text-gray-900 text-lg">{form.name || "Company name"}</h4>
         <p className="text-gray-500 text-base">{form.tagline || "Tagline"}</p>
         <p className="text-gray-400 text-sm">{form.industry || "Industry"}</p>
+        <p className="text-gray-400 text-sm mt-1">{form.size || "Company size"}</p>
         <button
           type="button"
           className="mt-4 bg-blue-600 text-white text-base font-semibold px-4 py-2 rounded hover:bg-blue-700"
@@ -43,12 +44,14 @@ const CompanyEditModal = ({
   onSubmitEditRequest
 }) => {
   const [formData, setFormData] = useState({
-    name: companyData?.name || '',
-    tagline: companyData?.tagline || '',
-    industry: companyData?.industry || '',
-    description: companyData?.description || '',
-    website: companyData?.website || '',
-    // Add other fields as needed
+    name: '',
+    tagline: '',
+    industry: '',
+    description: '',
+    website: '',
+    size: '',
+    type: '',
+    linkedin_url: ''
   });
 
   const [logoPreview, setLogoPreview] = useState(null);
@@ -57,20 +60,24 @@ const CompanyEditModal = ({
   const [showResubmitForm, setShowResubmitForm] = useState(false);
 
   useEffect(() => {
-  if (isOpen && companyData) {
-    setFormData({
-      name: companyData.name || '',
-      tagline: companyData.tagline || '',
-      industry: companyData.industry || '',
-      description: companyData.description || '',
-      website: companyData.website || '',
-      linkedin: companyData.linkedin_url || '',
-      logo: companyData.logo || '',
-      size: companyData.size || '',
-    });
-    setLogoPreview(companyData.logo ? `${import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000"}/${companyData.logo.replace(/^\/+/, "")}` : null);
-  }
-}, [isOpen, companyData]);
+    if (isOpen && companyData) {
+      setFormData({
+        name: companyData.name || '',
+        tagline: companyData.tagline || '',
+        industry: companyData.industry || '',
+        website: companyData.website || '',
+        size: companyData.size || '',
+        type: companyData.type || '',
+        linkedin_url: companyData.linkedin_url || ''
+      });
+      
+      setLogoPreview(
+        companyData.logo
+          ? `${import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000"}/${companyData.logo.replace(/^\/+/, "")}`
+          : null
+      );
+    }
+  }, [isOpen, companyData]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -108,6 +115,11 @@ const CompanyEditModal = ({
         toast.warning("No changes detected");
         setIsSubmitting(false);
         return;
+      }
+
+      // Include logo changes if there's a new preview
+      if (logoPreview && logoPreview.startsWith('data:')) {
+        changes.logo = logoPreview;
       }
 
       // Call the onSubmitEditRequest prop with the changes
@@ -220,17 +232,18 @@ const CompanyEditModal = ({
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Company Name*</label>
                         <input
                           type="text"
                           name="name"
                           value={formData.name}
                           onChange={handleInputChange}
+                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                         />
                       </div>
-                      <div>
+                      <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Tagline</label>
                         <input
                           type="text"
@@ -241,32 +254,68 @@ const CompanyEditModal = ({
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Industry</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Industry*</label>
                         <input
                           type="text"
                           name="industry"
                           value={formData.industry}
                           onChange={handleInputChange}
+                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Company Size</label>
+                        <select
+                          name="size"
+                          value={formData.size}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="">Select size</option>
+                          <option value="1-10 employees">1-10 employees</option>
+                          <option value="11-50 employees">11-50 employees</option>
+                          <option value="51-200 employees">51-200 employees</option>
+                          <option value="201-500 employees">201-500 employees</option>
+                          <option value="501-1000 employees">501-1000 employees</option>
+                          <option value="1001-5000 employees">1001-5000 employees</option>
+                          <option value="5001+ employees">5001+ employees</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Company Type</label>
+                        <select
+                          name="type"
+                          value={formData.type}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="">Select type</option>
+                          <option value="Public Company">Public Company</option>
+                          <option value="Privately Held">Privately Held</option>
+                          <option value="Nonprofit">Nonprofit</option>
+                          <option value="Government Agency">Government Agency</option>
+                          <option value="Educational Institution">Educational Institution</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Website*</label>
                         <input
                           type="url"
                           name="website"
                           value={formData.website}
                           onChange={handleInputChange}
+                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                         />
                       </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                        <textarea
-                          name="description"
-                          value={formData.description}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">LinkedIn Profile</label>
+                        <input
+                          type="text"
+                          name="linkedin_url"
+                          value={formData.linkedin_url}
                           onChange={handleInputChange}
-                          rows={3}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                         />
                       </div>
@@ -278,6 +327,7 @@ const CompanyEditModal = ({
                           onChange={handleLogoChange}
                           className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                         />
+                        <p className="mt-1 text-xs text-gray-500">Recommended size: 400x400px, JPG/PNG format</p>
                       </div>
                     </div>
 
@@ -320,4 +370,4 @@ const CompanyEditModal = ({
   );
 };
 
-export default CompanyEditModal;
+export default CompanyEditModal;  

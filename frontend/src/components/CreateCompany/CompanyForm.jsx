@@ -28,7 +28,7 @@ export default function CompanyForm({ form, logoPreview, handleChange, isSubmitt
                         </span>
                         <input
                             type="text"
-                            name="LinkedinUrl"
+                            name="linkedin_url"
                             value={form.linkedin_url}
                             onChange={handleChange}
                             className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-900 focus:ring-blue-500 focus:border-blue-500"
