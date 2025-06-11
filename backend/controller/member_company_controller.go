@@ -26,6 +26,7 @@ type MemberCompanyController interface {
 	GetUserRole(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	GetCompanyMemberCount(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	GetMembersByCompanyId(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+	LeaveCompany(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 }
 
 type MemberCompanyControllerImpl struct {
@@ -728,6 +729,52 @@ func (controller *MemberCompanyControllerImpl) GetMembersByCompanyId(writer http
 		Code:   http.StatusOK,
 		Status: "OK",
 		Data:   membersResponse,
+	}
+	helper.WriteToResponseBody(writer, webResponse)
+}
+
+// LeaveCompany - Allow user to leave a company
+func (controller *MemberCompanyControllerImpl) LeaveCompany(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Get user ID from token
+	userID, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+
+	// Parse company ID from URL
+	companyID, err := uuid.Parse(params.ByName("companyId"))
+	helper.PanicIfError(err)
+	if companyID == uuid.Nil {
+		helper.NewBadRequestError("Company ID is required")
+		return
+	}
+
+	// Check if user is a member of the company
+	isMember, err := controller.MemberCompanyService.IsUserMemberOfCompany(context.Background(), userID, companyID)
+	if err != nil || !isMember {
+		webResponse := web.WebResponse{
+			Code:   http.StatusForbidden,
+			Status: "FORBIDDEN",
+			Data:   "You are not a member of this company",
+		}
+		helper.WriteToResponseBody(writer, webResponse)
+		return
+	}
+
+	// Allow user to leave the company
+	err = controller.MemberCompanyService.LeaveCompany(context.Background(), userID, companyID)
+	if err != nil {
+		webResponse := web.WebResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD_REQUEST",
+			Data:   err.Error(),
+		}
+		helper.WriteToResponseBody(writer, webResponse)
+		return
+	}
+
+	webResponse := web.WebResponse{
+		Code:   http.StatusOK,
+		Status: "OK",
+		Data:   "Successfully left the company",
 	}
 	helper.WriteToResponseBody(writer, webResponse)
 }

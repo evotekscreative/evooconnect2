@@ -29,6 +29,7 @@ type MemberCompanyService interface {
 	GetCompanyMemberCount(ctx context.Context, companyID uuid.UUID) (int, error)
 	GetCompanyMemberCountByRole(ctx context.Context, companyID uuid.UUID, role entity.MemberCompanyRole) (int, error)
 	GetMembersByCompanyId(ctx context.Context, userID, companyID uuid.UUID, limit, offset int) (entity.MemberCompanyListResponse, error)
+	LeaveCompany(ctx context.Context, userID, companyID uuid.UUID) error
 }
 
 type memberCompanyServiceImpl struct {
@@ -520,4 +521,37 @@ func (service *memberCompanyServiceImpl) toMemberCompanyResponse(memberCompany e
 	}
 
 	return response
+}
+
+func (service *memberCompanyServiceImpl) LeaveCompany(ctx context.Context, userID, companyID uuid.UUID) error {
+	tx, err := service.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	memberCompany, err := service.MemberCompanyRepository.FindByUserAndCompany(ctx, tx, userID, companyID)
+	if err != nil {
+		return fmt.Errorf("member company not found")
+	}
+
+	if memberCompany.Role == entity.RoleSuperAdmin {
+		return fmt.Errorf("super admin cannot leave the company")
+	}
+
+	memberCompany.Status = entity.StatusInactive
+	now := time.Now()
+	memberCompany.LeftAt = &now
+
+	_, err = service.MemberCompanyRepository.Update(ctx, tx, memberCompany)
+	if err != nil {
+		return fmt.Errorf("failed to leave company: %w", err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
 }
