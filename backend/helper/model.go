@@ -481,3 +481,134 @@ func ToCompanyFollowerResponses(followers []domain.CompanyFollower) []web.Compan
 	}
 	return responses
 }
+
+func ToJobApplicationResponse(jobApplication domain.JobApplication) web.JobApplicationResponse {
+	response := web.JobApplicationResponse{
+		Id:                 jobApplication.Id.String(),
+		JobVacancyId:       jobApplication.JobVacancyId.String(),
+		ApplicantId:        jobApplication.ApplicantId.String(),
+		ContactInfo:        ToContactInfoResponse(jobApplication.ContactInfo),
+		CvFilePath:         jobApplication.CvFilePath,
+		MotivationLetter:   jobApplication.MotivationLetter,
+		CoverLetter:        jobApplication.CoverLetter,
+		ExpectedSalary:     jobApplication.ExpectedSalary,
+		AvailableStartDate: jobApplication.AvailableStartDate,
+		Status:             string(jobApplication.Status),
+		RejectionReason:    jobApplication.RejectionReason,
+		Notes:              jobApplication.Notes,
+		ReviewedAt:         jobApplication.ReviewedAt,
+		SubmittedAt:        jobApplication.SubmittedAt,
+		CreatedAt:          jobApplication.CreatedAt,
+		UpdatedAt:          jobApplication.UpdatedAt,
+	}
+
+	if jobApplication.ReviewedBy != nil {
+		reviewedById := jobApplication.ReviewedBy.String()
+		response.ReviewedBy = &reviewedById
+	}
+
+	if jobApplication.JobVacancy != nil {
+		jobVacancyBrief := &web.JobVacancyBriefResponse{
+			Id:       jobApplication.JobVacancy.Id.String(),
+			Title:    jobApplication.JobVacancy.Title,
+			Location: jobApplication.JobVacancy.Location,
+			JobType:  string(jobApplication.JobVacancy.JobType),
+		}
+		if jobApplication.JobVacancy.Company != nil {
+			jobVacancyBrief.Company = jobApplication.JobVacancy.Company.Name
+		}
+		response.JobVacancy = jobVacancyBrief
+	}
+
+	if jobApplication.Applicant != nil {
+		applicant := ToUserProfileResponse(*jobApplication.Applicant)
+		response.Applicant = &applicant
+	}
+
+	if jobApplication.Reviewer != nil {
+		response.Reviewer = &web.UserMinimal{
+			Id:       jobApplication.Reviewer.Id,
+			Name:     jobApplication.Reviewer.Name,
+			Username: jobApplication.Reviewer.Username,
+			Photo:    jobApplication.Reviewer.Photo,
+		}
+	}
+
+	return response
+}
+
+func ToJobApplicationResponses(jobApplications []domain.JobApplication) []web.JobApplicationResponse {
+	var responses []web.JobApplicationResponse
+	for _, jobApplication := range jobApplications {
+		responses = append(responses, ToJobApplicationResponse(jobApplication))
+	}
+	return responses
+}
+
+func ToContactInfoResponse(contactInfo domain.ContactInfo) web.ContactInfoResponse {
+	return web.ContactInfoResponse{
+		Phone:    contactInfo.Phone,
+		Email:    contactInfo.Email,
+		LinkedIn: contactInfo.LinkedIn,
+		Address:  contactInfo.Address,
+	}
+}
+
+func ToJobVacancyResponse(jobVacancy domain.JobVacancy) web.JobVacancyResponse {
+	response := web.JobVacancyResponse{
+		Id:                   jobVacancy.Id.String(),
+		CompanyId:            jobVacancy.CompanyId.String(),
+		CreatorId:            jobVacancy.CreatorId.String(),
+		Title:                jobVacancy.Title,
+		Department:           jobVacancy.Department,
+		JobType:              string(jobVacancy.JobType),
+		Location:             jobVacancy.Location,
+		SalaryMin:            jobVacancy.SalaryMin,
+		SalaryMax:            jobVacancy.SalaryMax,
+		Currency:             jobVacancy.Currency,
+		ExperienceLevel:      string(jobVacancy.ExperienceLevel),
+		EducationRequirement: jobVacancy.EducationRequirement,
+		JobDescription:       jobVacancy.JobDescription,
+		Requirements:         jobVacancy.Requirements,
+		Benefits:             jobVacancy.Benefits,
+		SkillsRequired:       []string(jobVacancy.SkillsRequired),
+		ApplicationDeadline:  jobVacancy.ApplicationDeadline,
+		IsUrgent:             jobVacancy.IsUrgent,
+		RemoteWorkAllowed:    jobVacancy.RemoteWorkAllowed,
+		Status:               string(jobVacancy.Status),
+		ViewCount:            jobVacancy.ViewCount,
+		ApplicationCount:     jobVacancy.ApplicationCount,
+		CreatedAt:            jobVacancy.CreatedAt,
+		UpdatedAt:            jobVacancy.UpdatedAt,
+	}
+
+	if jobVacancy.Company != nil {
+		response.Company = &web.CompanyBriefResponse{
+			Id:       jobVacancy.Company.Id,
+			Name:     jobVacancy.Company.Name,
+			Logo:     jobVacancy.Company.Logo,
+			Industry: jobVacancy.Company.Industry,
+			Website:  jobVacancy.Company.Website,
+		}
+	}
+
+	if jobVacancy.Creator != nil {
+		response.Creator = &web.UserMinimal{
+			Id:       jobVacancy.Creator.Id,
+			Name:     jobVacancy.Creator.Name,
+			Email:    jobVacancy.Creator.Email,
+			Photo:    jobVacancy.Creator.Photo,
+			Headline: jobVacancy.Creator.Headline,
+		}
+	}
+
+	return response
+}
+
+func ToJobVacancyResponses(jobVacancies []domain.JobVacancy) []web.JobVacancyResponse {
+	var responses []web.JobVacancyResponse
+	for _, jobVacancy := range jobVacancies {
+		responses = append(responses, ToJobVacancyResponse(jobVacancy))
+	}
+	return responses
+}

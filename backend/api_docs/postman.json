@@ -11461,6 +11461,798 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Job Management",
+      "description": "Endpoints untuk mengelola lowongan kerja dan lamaran pekerjaan",
+      "item": [
+        {
+          "name": "Job Vacancy Management",
+          "description": "Endpoints untuk mengelola lowongan kerja perusahaan",
+          "item": [
+            {
+              "name": "Create Job Vacancy",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Senior Software Engineer\",\n  \"department\": \"Engineering\",\n  \"job_type\": \"full_time\",\n  \"location\": \"Jakarta, Indonesia\",\n  \"salary_min\": 15000000,\n  \"salary_max\": 25000000,\n  \"currency\": \"IDR\",\n  \"experience_level\": \"senior_level\",\n  \"education_requirement\": \"Bachelor's Degree in Computer Science\",\n  \"job_description\": \"We are looking for a Senior Software Engineer to join our dynamic engineering team. You will be responsible for developing scalable web applications and mentoring junior developers.\",\n  \"requirements\": \"- 5+ years of experience in software development\\n- Proficiency in Go, JavaScript, React\\n- Experience with microservices architecture\\n- Strong problem-solving skills\",\n  \"benefits\": \"- Competitive salary\\n- Health insurance\\n- Flexible working hours\\n- Professional development opportunities\",\n  \"skills_required\": [\"Go\", \"JavaScript\", \"React\", \"PostgreSQL\", \"Docker\"],\n  \"application_deadline\": \"2024-02-15T23:59:59Z\",\n  \"is_urgent\": false,\n  \"remote_work_allowed\": true\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/companies/{{company_id}}/job-vacancies",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "companies",
+                    "{{company_id}}",
+                    "job-vacancies"
+                  ]
+                },
+                "description": "Membuat lowongan kerja baru untuk perusahaan. Hanya admin/HRD perusahaan yang dapat membuat lowongan."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": ""
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/api/companies/{{company_id}}/job-vacancies"
+                    }
+                  },
+                  "status": "Created",
+                  "code": 201,
+                  "body": "{\n  \"code\": 201,\n  \"status\": \"CREATED\",\n  \"data\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"company_id\": \"c3d4e5f6-g7h8-i9j0-k1l2-m3n4o5p6q7r8\",\n    \"creator_id\": \"f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3\",\n    \"title\": \"Senior Software Engineer\",\n    \"department\": \"Engineering\",\n    \"job_type\": \"full_time\",\n    \"location\": \"Jakarta, Indonesia\",\n    \"salary_min\": 15000000,\n    \"salary_max\": 25000000,\n    \"currency\": \"IDR\",\n    \"experience_level\": \"senior_level\",\n    \"education_requirement\": \"Bachelor's Degree in Computer Science\",\n    \"job_description\": \"We are looking for a Senior Software Engineer...\",\n    \"requirements\": \"- 5+ years of experience in software development...\",\n    \"benefits\": \"- Competitive salary...\",\n    \"skills_required\": [\"Go\", \"JavaScript\", \"React\", \"PostgreSQL\", \"Docker\"],\n    \"application_deadline\": \"2024-02-15T23:59:59Z\",\n    \"status\": \"draft\",\n    \"is_urgent\": false,\n    \"remote_work_allowed\": true,\n    \"application_count\": 0,\n    \"view_count\": 0,\n    \"created_at\": \"2024-01-15T10:30:00Z\",\n    \"updated_at\": \"2024-01-15T10:30:00Z\",\n    \"company\": {\n      \"id\": \"c3d4e5f6-g7h8-i9j0-k1l2-m3n4o5p6q7r8\",\n      \"name\": \"TechCorp Indonesia\",\n      \"logo\": \"uploads/companies/logo.png\",\n      \"industry\": \"Technology\"\n    },\n    \"creator\": {\n      \"id\": \"f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3\",\n      \"name\": \"Jane Doe\",\n      \"username\": \"jane.doe\",\n      \"photo\": \"uploads/users/jane.jpg\"\n    }\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Get Company Job Vacancies",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/companies/{{company_id}}/job-vacancies?status=published&limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "companies",
+                    "{{company_id}}",
+                    "job-vacancies"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "published",
+                      "description": "Filter by status: draft, published, closed, archived"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                },
+                "description": "Mengambil daftar lowongan kerja untuk perusahaan tertentu dengan filter dan pagination."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "status": "OK",
+                  "code": 200,
+                  "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"job_vacancies\": [\n      {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"company_id\": \"c3d4e5f6-g7h8-i9j0-k1l2-m3n4o5p6q7r8\",\n        \"title\": \"Senior Software Engineer\",\n        \"department\": \"Engineering\",\n        \"job_type\": \"full_time\",\n        \"location\": \"Jakarta, Indonesia\",\n        \"salary_min\": 15000000,\n        \"salary_max\": 25000000,\n        \"currency\": \"IDR\",\n        \"experience_level\": \"senior_level\",\n        \"status\": \"published\",\n        \"is_urgent\": false,\n        \"remote_work_allowed\": true,\n        \"application_count\": 25,\n        \"view_count\": 150,\n        \"application_deadline\": \"2024-02-15T23:59:59Z\",\n        \"created_at\": \"2024-01-15T10:30:00Z\",\n        \"company\": {\n          \"id\": \"c3d4e5f6-g7h8-i9j0-k1l2-m3n4o5p6q7r8\",\n          \"name\": \"TechCorp Indonesia\",\n          \"logo\": \"uploads/companies/logo.png\",\n          \"industry\": \"Technology\"\n        }\n      }\n    ],\n    \"pagination\": {\n      \"total\": 1,\n      \"limit\": 10,\n      \"offset\": 0,\n      \"has_more\": false\n    }\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Get Job Vacancy Detail",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/job-vacancies/{{vacancy_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "job-vacancies", "{{vacancy_id}}"]
+                },
+                "description": "Mengambil detail lengkap lowongan kerja berdasarkan ID."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "status": "OK",
+                  "code": 200,
+                  "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"company_id\": \"c3d4e5f6-g7h8-i9j0-k1l2-m3n4o5p6q7r8\",\n    \"creator_id\": \"f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3\",\n    \"title\": \"Senior Software Engineer\",\n    \"department\": \"Engineering\",\n    \"job_type\": \"full_time\",\n    \"location\": \"Jakarta, Indonesia\",\n    \"salary_min\": 15000000,\n    \"salary_max\": 25000000,\n    \"currency\": \"IDR\",\n    \"experience_level\": \"senior_level\",\n    \"education_requirement\": \"Bachelor's Degree in Computer Science\",\n    \"job_description\": \"We are looking for a Senior Software Engineer to join our dynamic engineering team...\",\n    \"requirements\": \"- 5+ years of experience in software development\\n- Proficiency in Go, JavaScript, React\\n- Experience with microservices architecture\",\n    \"benefits\": \"- Competitive salary\\n- Health insurance\\n- Flexible working hours\",\n    \"skills_required\": [\"Go\", \"JavaScript\", \"React\", \"PostgreSQL\", \"Docker\"],\n    \"application_deadline\": \"2024-02-15T23:59:59Z\",\n    \"status\": \"published\",\n    \"is_urgent\": false,\n    \"remote_work_allowed\": true,\n    \"application_count\": 25,\n    \"view_count\": 150,\n    \"created_at\": \"2024-01-15T10:30:00Z\",\n    \"updated_at\": \"2024-01-15T10:30:00Z\",\n    \"company\": {\n      \"id\": \"c3d4e5f6-g7h8-i9j0-k1l2-m3n4o5p6q7r8\",\n      \"name\": \"TechCorp Indonesia\",\n      \"logo\": \"uploads/companies/logo.png\",\n      \"industry\": \"Technology\"\n    },\n    \"creator\": {\n      \"id\": \"f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3\",\n      \"name\": \"Jane Doe\",\n      \"username\": \"jane.doe\",\n      \"photo\": \"uploads/users/jane.jpg\"\n    }\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Update Job Vacancy",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Senior Full Stack Engineer\",\n  \"department\": \"Engineering\",\n  \"job_type\": \"full_time\",\n  \"location\": \"Jakarta, Indonesia (Hybrid)\",\n  \"salary_min\": 18000000,\n  \"salary_max\": 28000000,\n  \"currency\": \"IDR\",\n  \"experience_level\": \"senior_level\",\n  \"education_requirement\": \"Bachelor's Degree in Computer Science or related field\",\n  \"job_description\": \"We are looking for a Senior Full Stack Engineer to join our dynamic engineering team. You will be responsible for developing scalable web applications, mentoring junior developers, and contributing to architectural decisions.\",\n  \"requirements\": \"- 5+ years of experience in full stack development\\n- Proficiency in Go, JavaScript, React, Node.js\\n- Experience with microservices architecture\\n- Strong problem-solving and communication skills\",\n  \"benefits\": \"- Competitive salary and performance bonuses\\n- Comprehensive health insurance\\n- Flexible working hours and hybrid work options\\n- Professional development budget\\n- Stock options\",\n  \"skills_required\": [\"Go\", \"JavaScript\", \"React\", \"Node.js\", \"PostgreSQL\", \"Docker\", \"Kubernetes\"],\n  \"application_deadline\": \"2024-03-01T23:59:59Z\",\n  \"is_urgent\": false,\n  \"remote_work_allowed\": true\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/job-vacancies/{{vacancy_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "job-vacancies", "{{vacancy_id}}"]
+                },
+                "description": "Memperbarui informasi lowongan kerja. Hanya creator atau admin perusahaan yang dapat mengupdate."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "status": "OK",
+                  "code": 200,
+                  "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"company_id\": \"c3d4e5f6-g7h8-i9j0-k1l2-m3n4o5p6q7r8\",\n    \"creator_id\": \"f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3\",\n    \"title\": \"Senior Full Stack Engineer\",\n    \"department\": \"Engineering\",\n    \"job_type\": \"full_time\",\n    \"location\": \"Jakarta, Indonesia (Hybrid)\",\n    \"salary_min\": 18000000,\n    \"salary_max\": 28000000,\n    \"currency\": \"IDR\",\n    \"experience_level\": \"senior_level\",\n    \"education_requirement\": \"Bachelor's Degree in Computer Science or related field\",\n    \"job_description\": \"We are looking for a Senior Full Stack Engineer...\",\n    \"requirements\": \"- 5+ years of experience in full stack development...\",\n    \"benefits\": \"- Competitive salary and performance bonuses...\",\n    \"skills_required\": [\"Go\", \"JavaScript\", \"React\", \"Node.js\", \"PostgreSQL\", \"Docker\", \"Kubernetes\"],\n    \"application_deadline\": \"2024-03-01T23:59:59Z\",\n    \"status\": \"published\",\n    \"is_urgent\": false,\n    \"remote_work_allowed\": true,\n    \"application_count\": 25,\n    \"view_count\": 150,\n    \"created_at\": \"2024-01-15T10:30:00Z\",\n    \"updated_at\": \"2024-01-16T14:20:00Z\",\n    \"company\": {\n      \"id\": \"c3d4e5f6-g7h8-i9j0-k1l2-m3n4o5p6q7r8\",\n      \"name\": \"TechCorp Indonesia\",\n      \"logo\": \"uploads/companies/logo.png\",\n      \"industry\": \"Technology\"\n    },\n    \"creator\": {\n      \"id\": \"f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3\",\n      \"name\": \"Jane Doe\",\n      \"username\": \"jane.doe\",\n      \"photo\": \"uploads/users/jane.jpg\"\n    }\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Delete Job Vacancy",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/job-vacancies/{{vacancy_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "job-vacancies", "{{vacancy_id}}"]
+                },
+                "description": "Menghapus lowongan kerja. Hanya creator atau admin perusahaan yang dapat menghapus. Lowongan yang sudah memiliki aplikasi tidak dapat dihapus."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "status": "OK",
+                  "code": 200,
+                  "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": \"Job vacancy deleted successfully\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Update Job Vacancy Status",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"published\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/job-vacancies/{{vacancy_id}}/status",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "job-vacancies", "{{vacancy_id}}", "status"]
+                },
+                "description": "Mengubah status lowongan kerja. Status yang valid: draft, published, closed, archived."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "status": "OK",
+                  "code": 200,
+                  "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"status\": \"published\",\n    \"updated_at\": \"2024-01-16T14:25:00Z\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Get Job Vacancy Statistics",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/job-vacancies/{{vacancy_id}}/stats",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "job-vacancies", "{{vacancy_id}}", "stats"]
+                },
+                "description": "Mengambil statistik detail untuk lowongan kerja tertentu."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "status": "OK",
+                  "code": 200,
+                  "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"vacancy_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"total_applications\": 25,\n    \"total_views\": 150,\n    \"application_by_status\": {\n      \"submitted\": 10,\n      \"under_review\": 8,\n      \"shortlisted\": 5,\n      \"interview_scheduled\": 2,\n      \"accepted\": 0,\n      \"rejected\": 0\n    },\n    \"daily_applications\": [\n      {\n        \"date\": \"2024-01-15\",\n        \"count\": 5\n      },\n      {\n        \"date\": \"2024-01-16\",\n        \"count\": 8\n      }\n    ],\n    \"daily_views\": [\n      {\n        \"date\": \"2024-01-15\",\n        \"count\": 45\n      },\n      {\n        \"date\": \"2024-01-16\",\n        \"count\": 62\n      }\n    ]\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Search Job Vacancies",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/job-vacancies?search=software engineer&job_type=full_time&experience_level=senior_level&location=Jakarta&remote_work=true&salary_min=15000000&limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "job-vacancies"],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "software engineer",
+                      "description": "Search dalam title, description, requirements"
+                    },
+                    {
+                      "key": "job_type",
+                      "value": "full_time",
+                      "description": "full_time, part_time, contract, internship, freelance"
+                    },
+                    {
+                      "key": "experience_level",
+                      "value": "senior_level",
+                      "description": "entry_level, mid_level, senior_level, executive"
+                    },
+                    {
+                      "key": "location",
+                      "value": "Jakarta"
+                    },
+                    {
+                      "key": "remote_work",
+                      "value": "true"
+                    },
+                    {
+                      "key": "salary_min",
+                      "value": "15000000"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                },
+                "description": "Mencari lowongan kerja dengan berbagai filter. Hanya menampilkan lowongan dengan status 'published'."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "status": "OK",
+                  "code": 200,
+                  "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"job_vacancies\": [\n      {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"company_id\": \"c3d4e5f6-g7h8-i9j0-k1l2-m3n4o5p6q7r8\",\n        \"title\": \"Senior Software Engineer\",\n        \"department\": \"Engineering\",\n        \"job_type\": \"full_time\",\n        \"location\": \"Jakarta, Indonesia\",\n        \"salary_min\": 15000000,\n        \"salary_max\": 25000000,\n        \"currency\": \"IDR\",\n        \"experience_level\": \"senior_level\",\n        \"status\": \"published\",\n        \"is_urgent\": false,\n        \"remote_work_allowed\": true,\n        \"application_deadline\": \"2024-02-15T23:59:59Z\",\n        \"created_at\": \"2024-01-15T10:30:00Z\",\n        \"company\": {\n          \"id\": \"c3d4e5f6-g7h8-i9j0-k1l2-m3n4o5p6q7r8\",\n          \"name\": \"TechCorp Indonesia\",\n          \"logo\": \"uploads/companies/logo.png\",\n          \"industry\": \"Technology\"\n        }\n      }\n    ],\n    \"pagination\": {\n      \"total\": 1,\n      \"limit\": 10,\n      \"offset\": 0,\n      \"has_more\": false\n    },\n    \"filters_applied\": {\n      \"search\": \"software engineer\",\n      \"job_type\": \"full_time\",\n      \"experience_level\": \"senior_level\",\n      \"location\": \"Jakarta\",\n      \"remote_work\": true,\n      \"salary_min\": 15000000\n    }\n  }\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Job Application Management",
+          "description": "Endpoints untuk mengelola lamaran pekerjaan",
+          "item": [
+            {
+              "name": "Apply for Job",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"contact_info\": {\n    \"phone\": \"+62812345678901\",\n    \"email\": \"john.doe@email.com\",\n    \"linkedin\": \"https://linkedin.com/in/johndoe\",\n    \"address\": \"Jl. Sudirman No. 123, Jakarta Selatan, Indonesia\"\n  },\n  \"motivation_letter\": \"I am excited to apply for the Senior Software Engineer position at TechCorp Indonesia. With over 6 years of experience in full-stack development and a passion for creating scalable solutions, I believe I would be a valuable addition to your engineering team. My expertise in Go, JavaScript, and React aligns perfectly with your requirements, and I am particularly drawn to your company's innovative approach to technology solutions.\",\n  \"cover_letter\": \"Dear Hiring Manager,\\n\\nI am writing to express my strong interest in the Senior Software Engineer position at TechCorp Indonesia. Throughout my career, I have consistently delivered high-quality software solutions and mentored junior developers.\\n\\nIn my previous role at XYZ Tech, I led the development of a microservices architecture that improved system performance by 40% and reduced deployment time by 60%. I am proficient in Go, JavaScript, React, and have extensive experience with PostgreSQL and Docker.\\n\\nI am excited about the opportunity to contribute to TechCorp's continued growth and innovation. Thank you for considering my application.\\n\\nBest regards,\\nJohn Doe\",\n  \"expected_salary\": 22000000,\n  \"available_start_date\": \"2024-03-01T00:00:00Z\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/job-vacancies/{{vacancy_id}}/apply",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "job-vacancies", "{{vacancy_id}}", "apply"]
+                },
+                "description": "Melamar ke lowongan kerja. User hanya bisa melamar sekali per lowongan dan hanya untuk lowongan yang masih aktif."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "status": "Created",
+                  "code": 201,
+                  "body": "{\n  \"code\": 201,\n  \"status\": \"CREATED\",\n  \"data\": {\n    \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    \"job_vacancy_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"applicant_id\": \"f095b3b9-5f5f-42bc-b185-834719e898f3\",\n    \"contact_info\": {\n      \"phone\": \"+62812345678901\",\n      \"email\": \"john.doe@email.com\",\n      \"linkedin\": \"https://linkedin.com/in/johndoe\",\n      \"address\": \"Jl. Sudirman No. 123, Jakarta Selatan, Indonesia\"\n    },\n    \"motivation_letter\": \"I am excited to apply for the Senior Software Engineer position...\",\n    \"cover_letter\": \"Dear Hiring Manager,\\n\\nI am writing to express my strong interest...\",\n    \"expected_salary\": 22000000,\n    \"available_start_date\": \"2024-03-01T00:00:00Z\",\n    \"status\": \"submitted\",\n    \"submitted_at\": \"2024-01-16T15:30:00Z\",\n    \"created_at\": \"2024-01-16T15:30:00Z\",\n    \"updated_at\": \"2024-01-16T15:30:00Z\",\n    \"job_vacancy\": {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"title\": \"Senior Software Engineer\",\n      \"company\": {\n        \"id\": \"c3d4e5f6-g7h8-i9j0-k1l2-m3n4o5p6q7r8\",\n        \"name\": \"TechCorp Indonesia\",\n        \"logo\": \"uploads/companies/logo.png\"\n      }\n    },\n    \"applicant\": {\n      \"id\": \"f095b3b9-5f5f-42bc-b185-834719e898f3\",\n      \"name\": \"John Doe\",\n      \"username\": \"john.doe\",\n      \"photo\": \"uploads/users/john.jpg\"\n    }\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Upload CV",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "cv",
+                      "type": "file",
+                      "src": "path/to/cv.pdf"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/job-applications/{{application_id}}/upload-cv",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "job-applications",
+                    "{{application_id}}",
+                    "upload-cv"
+                  ]
+                },
+                "description": "Upload CV untuk lamaran kerja. Mendukung format PDF, DOC, DOCX dengan maksimal ukuran 5MB."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "status": "OK",
+                  "code": 200,
+                  "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    \"cv_file_path\": \"uploads/cv/john_doe_cv_1642345800.pdf\",\n    \"updated_at\": \"2024-01-16T16:00:00Z\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Get My Job Applications",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/my-job-applications?status=submitted&limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "my-job-applications"],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "submitted",
+                      "description": "Filter by status: submitted, under_review, shortlisted, interview_scheduled, accepted, rejected"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                },
+                "description": "Mengambil daftar lamaran kerja yang sudah diajukan oleh user yang sedang login."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "status": "OK",
+                  "code": 200,
+                  "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"applications\": [\n      {\n        \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n        \"job_vacancy_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"status\": \"submitted\",\n        \"expected_salary\": 22000000,\n        \"available_start_date\": \"2024-03-01T00:00:00Z\",\n        \"submitted_at\": \"2024-01-16T15:30:00Z\",\n        \"created_at\": \"2024-01-16T15:30:00Z\",\n        \"job_vacancy\": {\n          \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n          \"title\": \"Senior Software Engineer\",\n          \"department\": \"Engineering\",\n          \"location\": \"Jakarta, Indonesia\",\n          \"job_type\": \"full_time\",\n          \"status\": \"published\",\n          \"company\": {\n            \"id\": \"c3d4e5f6-g7h8-i9j0-k1l2-m3n4o5p6q7r8\",\n            \"name\": \"TechCorp Indonesia\",\n            \"logo\": \"uploads/companies/logo.png\",\n            \"industry\": \"Technology\"\n          }\n        }\n      }\n    ],\n    \"pagination\": {\n      \"total\": 1,\n      \"limit\": 10,\n      \"offset\": 0,\n      \"has_more\": false\n    }\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Get Job Application Detail",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/job-applications/{{application_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "job-applications", "{{application_id}}"]
+                },
+                "description": "Mengambil detail lengkap lamaran kerja berdasarkan ID."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "status": "OK",
+                  "code": 200,
+                  "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    \"job_vacancy_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"applicant_id\": \"f095b3b9-5f5f-42bc-b185-834719e898f3\",\n    \"cv_file_path\": \"uploads/cv/john_doe_cv_1642345800.pdf\",\n    \"contact_info\": {\n      \"phone\": \"+62812345678901\",\n      \"email\": \"john.doe@email.com\",\n      \"linkedin\": \"https://linkedin.com/in/johndoe\",\n      \"address\": \"Jl. Sudirman No. 123, Jakarta Selatan, Indonesia\"\n    },\n    \"motivation_letter\": \"I am excited to apply for the Senior Software Engineer position...\",\n    \"cover_letter\": \"Dear Hiring Manager,\\n\\nI am writing to express my strong interest...\",\n    \"expected_salary\": 22000000,\n    \"available_start_date\": \"2024-03-01T00:00:00Z\",\n    \"status\": \"under_review\",\n    \"reviewed_by\": \"f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3\",\n    \"reviewed_at\": \"2024-01-17T09:00:00Z\",\n    \"notes\": \"Candidate has strong technical background. Scheduled for technical interview.\",\n    \"submitted_at\": \"2024-01-16T15:30:00Z\",\n    \"created_at\": \"2024-01-16T15:30:00Z\",\n    \"updated_at\": \"2024-01-17T09:00:00Z\",\n    \"job_vacancy\": {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"title\": \"Senior Software Engineer\",\n      \"department\": \"Engineering\",\n      \"location\": \"Jakarta, Indonesia\",\n      \"company\": {\n        \"id\": \"c3d4e5f6-g7h8-i9j0-k1l2-m3n4o5p6q7r8\",\n        \"name\": \"TechCorp Indonesia\",\n        \"logo\": \"uploads/companies/logo.png\"\n      }\n    },\n    \"applicant\": {\n      \"id\": \"f095b3b9-5f5f-42bc-b185-834719e898f3\",\n      \"name\": \"John Doe\",\n      \"username\": \"john.doe\",\n      \"photo\": \"uploads/users/john.jpg\"\n    },\n    \"reviewer\": {\n      \"id\": \"f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3\",\n      \"name\": \"Jane Doe\",\n      \"username\": \"jane.doe\",\n      \"photo\": \"uploads/users/jane.jpg\"\n    }\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Update Job Application",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"contact_info\": {\n    \"phone\": \"+62812345678901\",\n    \"email\": \"john.doe.updated@email.com\",\n    \"linkedin\": \"https://linkedin.com/in/johndoe-updated\",\n    \"address\": \"Jl. Thamrin No. 456, Jakarta Pusat, Indonesia\"\n  },\n  \"motivation_letter\": \"Updated motivation letter: I am even more excited to apply for the Senior Software Engineer position at TechCorp Indonesia. After researching more about your company's recent projects and achievements, I am confident that my skills and experience would be a perfect fit for your team. My passion for innovation and continuous learning aligns with your company values.\",\n  \"cover_letter\": \"Updated cover letter with additional achievements and recent projects.\",\n  \"expected_salary\": 24000000,\n  \"available_start_date\": \"2024-02-15T00:00:00Z\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/job-applications/{{application_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "job-applications", "{{application_id}}"]
+                },
+                "description": "Memperbarui lamaran kerja. Hanya dapat dilakukan oleh applicant dan hanya untuk lamaran dengan status 'submitted'."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "status": "OK",
+                  "code": 200,
+                  "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    \"job_vacancy_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"applicant_id\": \"f095b3b9-5f5f-42bc-b185-834719e898f3\",\n    \"contact_info\": {\n      \"phone\": \"+62812345678901\",\n      \"email\": \"john.doe.updated@email.com\",\n      \"linkedin\": \"https://linkedin.com/in/johndoe-updated\",\n      \"address\": \"Jl. Thamrin No. 456, Jakarta Pusat, Indonesia\"\n    },\n    \"motivation_letter\": \"Updated motivation letter: I am even more excited to apply...\",\n    \"cover_letter\": \"Updated cover letter with additional achievements...\",\n    \"expected_salary\": 24000000,\n    \"available_start_date\": \"2024-02-15T00:00:00Z\",\n    \"status\": \"submitted\",\n    \"submitted_at\": \"2024-01-16T15:30:00Z\",\n    \"created_at\": \"2024-01-16T15:30:00Z\",\n    \"updated_at\": \"2024-01-17T10:15:00Z\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Delete Job Application",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/job-applications/{{application_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "job-applications", "{{application_id}}"]
+                },
+                "description": "Menghapus lamaran kerja. Hanya dapat dilakukan oleh applicant dan hanya untuk lamaran dengan status 'submitted'."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "status": "OK",
+                  "code": 200,
+                  "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": \"Job application deleted successfully\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Check Application Status",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/job-applications/{{application_id}}/status",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "job-applications",
+                    "{{application_id}}",
+                    "status"
+                  ]
+                },
+                "description": "Mengecek status terkini dari lamaran kerja."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "status": "OK",
+                  "code": 200,
+                  "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"application_id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    \"status\": \"under_review\",\n    \"reviewed_at\": \"2024-01-17T09:00:00Z\",\n    \"notes\": \"Application is being reviewed by HR team\",\n    \"updated_at\": \"2024-01-17T09:00:00Z\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Get Applications by Job Vacancy",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/job-vacancies/{{vacancy_id}}/applications?status=submitted&limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "job-vacancies",
+                    "{{vacancy_id}}",
+                    "applications"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "submitted"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                },
+                "description": "Mengambil daftar lamaran untuk lowongan kerja tertentu. Hanya dapat diakses oleh HRD/admin perusahaan."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "status": "OK",
+                  "code": 200,
+                  "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"applications\": [\n      {\n        \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n        \"applicant_id\": \"f095b3b9-5f5f-42bc-b185-834719e898f3\",\n        \"status\": \"submitted\",\n        \"expected_salary\": 22000000,\n        \"available_start_date\": \"2024-03-01T00:00:00Z\",\n        \"submitted_at\": \"2024-01-16T15:30:00Z\",\n        \"cv_file_path\": \"uploads/cv/john_doe_cv_1642345800.pdf\",\n        \"applicant\": {\n          \"id\": \"f095b3b9-5f5f-42bc-b185-834719e898f3\",\n          \"name\": \"John Doe\",\n          \"username\": \"john.doe\",\n          \"photo\": \"uploads/users/john.jpg\",\n          \"email\": \"john.doe@email.com\"\n        }\n      }\n    ],\n    \"pagination\": {\n      \"total\": 1,\n      \"limit\": 10,\n      \"offset\": 0,\n      \"has_more\": false\n    },\n    \"job_vacancy\": {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"title\": \"Senior Software Engineer\",\n      \"department\": \"Engineering\",\n      \"status\": \"published\"\n    }\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Get Company Job Applications",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/companies/{{company_id}}/job-applications?status=under_review&limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "companies",
+                    "{{company_id}}",
+                    "job-applications"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "under_review"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                },
+                "description": "Mengambil semua lamaran untuk perusahaan tertentu. Hanya dapat diakses oleh HRD/admin perusahaan."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "status": "OK",
+                  "code": 200,
+                  "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"applications\": [\n      {\n        \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n        \"job_vacancy_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"applicant_id\": \"f095b3b9-5f5f-42bc-b185-834719e898f3\",\n        \"status\": \"under_review\",\n        \"expected_salary\": 22000000,\n        \"submitted_at\": \"2024-01-16T15:30:00Z\",\n        \"reviewed_at\": \"2024-01-17T09:00:00Z\",\n        \"job_vacancy\": {\n          \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n          \"title\": \"Senior Software Engineer\",\n          \"department\": \"Engineering\"\n        },\n        \"applicant\": {\n          \"id\": \"f095b3b9-5f5f-42bc-b185-834719e898f3\",\n          \"name\": \"John Doe\",\n          \"username\": \"john.doe\",\n          \"photo\": \"uploads/users/john.jpg\",\n          \"email\": \"john.doe@email.com\"\n        }\n      }\n    ],\n    \"pagination\": {\n      \"total\": 1,\n      \"limit\": 10,\n      \"offset\": 0,\n      \"has_more\": false\n    }\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Search Job Applications",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/job-applications?job_vacancy_id={{vacancy_id}}&status=submitted&search=John&limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "job-applications"],
+                  "query": [
+                    {
+                      "key": "job_vacancy_id",
+                      "value": "{{vacancy_id}}"
+                    },
+                    {
+                      "key": "status",
+                      "value": "submitted"
+                    },
+                    {
+                      "key": "search",
+                      "value": "John",
+                      "description": "Search dalam nama applicant, email, motivation letter"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                },
+                "description": "Mencari lamaran kerja dengan berbagai filter."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "status": "OK",
+                  "code": 200,
+                  "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"applications\": [\n      {\n        \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n        \"job_vacancy_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"status\": \"submitted\",\n        \"expected_salary\": 22000000,\n        \"submitted_at\": \"2024-01-16T15:30:00Z\",\n        \"applicant\": {\n          \"id\": \"f095b3b9-5f5f-42bc-b185-834719e898f3\",\n          \"name\": \"John Doe\",\n          \"username\": \"john.doe\",\n          \"email\": \"john.doe@email.com\"\n        },\n        \"job_vacancy\": {\n          \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n          \"title\": \"Senior Software Engineer\",\n          \"company\": {\n            \"name\": \"TechCorp Indonesia\"\n          }\n        }\n      }\n    ],\n    \"pagination\": {\n      \"total\": 1,\n      \"limit\": 10,\n      \"offset\": 0,\n      \"has_more\": false\n    }\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Review Job Application",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"shortlisted\",\n  \"notes\": \"Candidate has excellent technical background and relevant experience. Moving to technical interview stage. Strong potential for the team.\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/job-applications/{{application_id}}/review",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "job-applications",
+                    "{{application_id}}",
+                    "review"
+                  ]
+                },
+                "description": "Review dan update status lamaran kerja. Hanya dapat dilakukan oleh HRD/admin perusahaan. Status yang valid: under_review, shortlisted, interview_scheduled, accepted, rejected."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "status": "OK",
+                  "code": 200,
+                  "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    \"job_vacancy_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"applicant_id\": \"f095b3b9-5f5f-42bc-b185-834719e898f3\",\n    \"status\": \"shortlisted\",\n    \"notes\": \"Candidate has excellent technical background and relevant experience...\",\n    \"reviewed_by\": \"f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3\",\n    \"reviewed_at\": \"2024-01-17T14:30:00Z\",\n    \"submitted_at\": \"2024-01-16T15:30:00Z\",\n    \"updated_at\": \"2024-01-17T14:30:00Z\",\n    \"applicant\": {\n      \"id\": \"f095b3b9-5f5f-42bc-b185-834719e898f3\",\n      \"name\": \"John Doe\",\n      \"username\": \"john.doe\",\n      \"email\": \"john.doe@email.com\"\n    },\n    \"reviewer\": {\n      \"id\": \"f8a7b6c5-d4e3-2f1g-h0i9-j8k7l6m5n4o3\",\n      \"name\": \"Jane Doe\",\n      \"username\": \"jane.doe\"\n    }\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Get Company Application Statistics",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/companies/{{company_id}}/job-applications/stats",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "companies",
+                    "{{company_id}}",
+                    "job-applications",
+                    "stats"
+                  ]
+                },
+                "description": "Mengambil statistik lamaran kerja untuk perusahaan tertentu."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "status": "OK",
+                  "code": 200,
+                  "body": "{\n  \"code\": 200,\n  \"status\": \"OK\",\n  \"data\": {\n    \"company_id\": \"c3d4e5f6-g7h8-i9j0-k1l2-m3n4o5p6q7r8\",\n    \"total_applications\": 125,\n    \"total_job_vacancies\": 8,\n    \"application_by_status\": {\n      \"submitted\": 45,\n      \"under_review\": 32,\n      \"shortlisted\": 25,\n      \"interview_scheduled\": 12,\n      \"accepted\": 8,\n      \"rejected\": 3\n    },\n    \"monthly_statistics\": [\n      {\n        \"month\": \"2024-01\",\n        \"total_applications\": 30,\n        \"new_applications\": 15,\n        \"accepted\": 5,\n        \"rejected\": 2\n      },\n      {\n        \"month\": \"2024-02\",\n        \"total_applications\": 25,\n        \"new_applications\": 10,\n        \"accepted\": 3,\n        \"rejected\": 1\n      }\n    ]\n  }\n}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ],
   "variable": [

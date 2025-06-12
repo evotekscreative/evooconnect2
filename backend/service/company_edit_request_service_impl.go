@@ -191,6 +191,95 @@ func (service *CompanyManagementServiceImpl) GetMyCompanies(ctx context.Context,
 	return responses
 }
 
+// GetCompanyById retrieves a company's basic information by its ID
+// func (service *CompanyManagementServiceImpl) GetCompanyById(ctx context.Context, companyId uuid.UUID, userId uuid.UUID) web.CompanyPublicResponse {
+// 	tx, err := service.DB.Begin()
+// 	helper.PanicIfError(err)
+// 	defer helper.CommitOrRollback(tx)
+
+// 	// Find the company by ID
+// 	company, err := service.CompanyRepository.FindById(ctx, tx, companyId)
+// 	if err != nil {
+// 		panic(exception.NewNotFoundError("Company not found"))
+// 	}
+
+// 	// Check if the user is following the company
+// 	isFollowing := service.CompanyFollowerRepository.IsFollowing(ctx, tx, userId, companyId)
+
+// 	// Get followers count
+// 	followersCount := service.CompanyFollowerRepository.CountFollowersByCompanyId(ctx, tx, companyId)
+
+// 	// Get membership information
+// 	isPendingJoinRequest := service.CompanyJoinRequestRepository.IsPendingJoinRequest(ctx, tx, userId, companyId)
+// 	isMember := false
+// 	userRole := ""
+// 	if memberInfo, err := service.MemberCompanyRepository.FindByUserAndCompany(ctx, tx, userId, companyId); err == nil {
+// 		isMember = true
+// 		userRole = string(memberInfo.Role)
+// 	}
+
+// 	// Check for pending edit requests
+// 	hasPendingEdit := service.CompanyEditRequestRepository.HasPendingEdit(ctx, tx, companyId)
+
+// 	// Get pending edit request ID if exists
+// 	pendingEditId := ""
+// 	if hasPendingEdit {
+// 		editRequests := service.CompanyEditRequestRepository.FindByCompanyId(ctx, tx, companyId)
+// 		for _, editRequest := range editRequests {
+// 			if editRequest.Status == domain.CompanyEditRequestStatusPending {
+// 				pendingEditId = editRequest.Id.String()
+// 				break
+// 			}
+// 		}
+// 	}
+
+// 	response := web.CompanyPublicResponse{
+// 		Id:          company.Id.String(),
+// 		Name:        company.Name,
+// 		LinkedinUrl: company.LinkedinUrl,
+// 		Website:     company.Website,
+// 		Industry:    company.Industry,
+// 		Size:        company.Size,
+// 		Type:        company.Type,
+// 		Logo:        company.Logo,
+// 		Tagline:     company.Tagline,
+// 		IsVerified:  company.IsVerified,
+// 		CreatedAt:   company.CreatedAt,
+// 		UpdatedAt:   company.UpdatedAt,
+
+// 		// Follow information
+// 		IsFollowing:    isFollowing,
+// 		FollowersCount: followersCount,
+
+// 		// Membership information
+// 		IsPendingJoinRequest: isPendingJoinRequest,
+// 		IsMemberOfCompany:    isMember,
+// 		UserRole:             userRole,
+
+// 		// Edit information
+// 		HasPendingEdit: hasPendingEdit,
+// 		PendingEditId:  pendingEditId,
+// 	}
+
+// 	// Set owner information
+// 	owner, err := service.UserRepository.FindById(ctx, tx, company.OwnerId)
+// 	if err != nil {
+// 		owner = domain.User{}
+// 	}
+// 	if owner.Id != uuid.Nil {
+// 		response.Owner = &web.UserBasicInfo{
+// 			Id:       owner.Id.String(),
+// 			Name:     owner.Name,
+// 			Username: owner.Username,
+// 			Photo:    owner.Photo,
+// 		}
+// 	} else {
+// 		response.Owner = nil
+// 	}
+
+// 	return response
+// }
+
 func (service *CompanyManagementServiceImpl) GetCompanyDetail(ctx context.Context, companyId uuid.UUID, userId uuid.UUID) web.CompanyDetailResponse {
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)

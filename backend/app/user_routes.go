@@ -31,7 +31,8 @@ func setupUserRoutes(
 	companyPostController controller.CompanyPostController,
 	companyPostCommentController controller.CompanyPostCommentController,
 	companyFollowerController controller.CompanyFollowerController,
-
+	jobVacancyController controller.JobVacancyController,
+	jobApplicationController controller.JobApplicationController,
 ) {
 	// Create user middleware
 	userAuth := middleware.NewUserAuthMiddleware()
@@ -185,6 +186,7 @@ func setupUserRoutes(
 	router.GET("/api/companies", userAuth(companyManagementController.GetAllCompanies))
 	router.GET("/api/my-companies", userAuth(companyManagementController.GetMyCompanies))
 	router.GET("/api/companies/:companyId/details", userAuth(companyManagementController.GetCompanyDetail))
+	// router.GET("/api/companies/:companyId", userAuth(companyManagementController.GetCompanyById))
 	router.GET("/api/companies/:companyId/member-companies", userAuth(memberCompanyController.GetMembersByCompanyId))
 	router.DELETE("/api/companies/:companyId", userAuth(companyManagementController.DeleteCompany))
 	router.GET("/api/my-company-edit-requests", userAuth(companyManagementController.GetMyEditRequests))
@@ -245,4 +247,38 @@ func setupUserRoutes(
 
 	// Move conflicting route to different path
 	router.GET("/api/user/following-companies", userAuth(companyFollowerController.GetUserFollowingCompanies))
+
+	// Job Vacancy Routes
+	// Company job vacancy management
+	router.POST("/api/companies/:companyId/job-vacancies", userAuth(jobVacancyController.Create))
+	router.GET("/api/companies/:companyId/job-vacancies", userAuth(jobVacancyController.FindByCompany))
+	// router.GET("/api/my-job-vacancies", userAuth(jobVacancyController.FindMyVacancies))
+	router.GET("/api/job-vacancies/:vacancyId", userAuth(jobVacancyController.FindById))
+	router.PUT("/api/job-vacancies/:vacancyId", userAuth(jobVacancyController.Update))
+	router.DELETE("/api/job-vacancies/:vacancyId", userAuth(jobVacancyController.Delete))
+	router.PATCH("/api/job-vacancies/:vacancyId/status", userAuth(jobVacancyController.UpdateStatus))
+	router.GET("/api/job-vacancies/:vacancyId/stats", userAuth(jobVacancyController.GetStats))
+
+	// Public job vacancy search (still requires authentication)
+	router.GET("/api/job-vacancies", userAuth(jobVacancyController.FindWithFilters))
+	// router.GET("/api/job-vacancies/search", userAuth(jobVacancyController.PublicSearch))
+
+	// Job Application Routes
+	// Apply for jobs
+	router.POST("/api/job-vacancies/:vacancyId/apply", userAuth(jobApplicationController.Create))
+	router.POST("/api/job-applications/:applicationId/upload-cv", userAuth(jobApplicationController.UploadCV))
+
+	// User's job applications
+	router.GET("/api/my-job-applications", userAuth(jobApplicationController.FindMyApplications))
+	router.GET("/api/job-applications/:applicationId", userAuth(jobApplicationController.FindById))
+	router.PUT("/api/job-applications/:applicationId", userAuth(jobApplicationController.Update))
+	router.DELETE("/api/job-applications/:applicationId", userAuth(jobApplicationController.Delete))
+	router.GET("/api/job-applications/:applicationId/status", userAuth(jobApplicationController.CheckApplicationStatus))
+
+	// Company job application management
+	router.GET("/api/job-vacancies/:vacancyId/applications", userAuth(jobApplicationController.FindByJobVacancy))
+	router.GET("/api/companies/:companyId/job-applications", userAuth(jobApplicationController.FindByCompany))
+	router.GET("/api/job-applications", userAuth(jobApplicationController.FindWithFilters))
+	router.PATCH("/api/job-applications/:applicationId/review", userAuth(jobApplicationController.ReviewApplication))
+	router.GET("/api/companies/:companyId/job-applications/stats", userAuth(jobApplicationController.GetStats))
 }
