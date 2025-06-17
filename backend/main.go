@@ -268,7 +268,6 @@ func main() {
 		companyRepository,
 		userRepository,
 		db,
-		notificationService,
 		validate,
 	)
 

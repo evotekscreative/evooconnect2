@@ -556,49 +556,48 @@ func ToContactInfoResponse(contactInfo domain.ContactInfo) web.ContactInfoRespon
 
 func ToJobVacancyResponse(jobVacancy domain.JobVacancy) web.JobVacancyResponse {
 	response := web.JobVacancyResponse{
-		Id:                   jobVacancy.Id.String(),
-		CompanyId:            jobVacancy.CompanyId.String(),
-		CreatorId:            jobVacancy.CreatorId.String(),
-		Title:                jobVacancy.Title,
-		Department:           jobVacancy.Department,
-		JobType:              string(jobVacancy.JobType),
-		Location:             jobVacancy.Location,
-		SalaryMin:            jobVacancy.SalaryMin,
-		SalaryMax:            jobVacancy.SalaryMax,
-		Currency:             jobVacancy.Currency,
-		ExperienceLevel:      string(jobVacancy.ExperienceLevel),
-		EducationRequirement: jobVacancy.EducationRequirement,
-		JobDescription:       jobVacancy.JobDescription,
-		Requirements:         jobVacancy.Requirements,
-		Benefits:             jobVacancy.Benefits,
-		SkillsRequired:       []string(jobVacancy.SkillsRequired),
-		ApplicationDeadline:  jobVacancy.ApplicationDeadline,
-		IsUrgent:             jobVacancy.IsUrgent,
-		RemoteWorkAllowed:    jobVacancy.RemoteWorkAllowed,
-		Status:               string(jobVacancy.Status),
-		ViewCount:            jobVacancy.ViewCount,
-		ApplicationCount:     jobVacancy.ApplicationCount,
-		CreatedAt:            jobVacancy.CreatedAt,
-		UpdatedAt:            jobVacancy.UpdatedAt,
+		Id:                  jobVacancy.Id.String(),
+		CompanyId:           jobVacancy.CompanyId.String(),
+		Title:               jobVacancy.Title,
+		Description:         jobVacancy.Description,
+		Requirements:        jobVacancy.Requirements,
+		Location:            jobVacancy.Location,
+		JobType:             string(jobVacancy.JobType),
+		ExperienceLevel:     string(jobVacancy.ExperienceLevel),
+		MinSalary:           jobVacancy.MinSalary,
+		MaxSalary:           jobVacancy.MaxSalary,
+		Currency:            jobVacancy.Currency,
+		Skills:              []string(jobVacancy.Skills),
+		Benefits:            jobVacancy.Benefits,
+		WorkType:            string(jobVacancy.WorkType),
+		ApplicationDeadline: jobVacancy.ApplicationDeadline,
+		Status:              string(jobVacancy.Status),
+		TypeApply:           string(jobVacancy.TypeApply),
+		ExternalLink:        jobVacancy.ExternalLink,
+		CreatedAt:           jobVacancy.CreatedAt,
+		UpdatedAt:           jobVacancy.UpdatedAt,
 	}
 
+	// Set creator ID if available
+	if jobVacancy.CreatorId != nil {
+		creatorIdStr := jobVacancy.CreatorId.String()
+		response.CreatorId = &creatorIdStr
+	}
+
+	// Set company info if available
 	if jobVacancy.Company != nil {
-		response.Company = &web.CompanyBriefResponse{
-			Id:       jobVacancy.Company.Id,
-			Name:     jobVacancy.Company.Name,
-			Logo:     jobVacancy.Company.Logo,
-			Industry: jobVacancy.Company.Industry,
-			Website:  jobVacancy.Company.Website,
+		response.Company = &web.CompanyBasicResponse{
+			Id:   jobVacancy.Company.Id.String(),
+			Name: jobVacancy.Company.Name,
+			Logo: &jobVacancy.Company.Logo,
 		}
 	}
 
+	// Set creator info if available
 	if jobVacancy.Creator != nil {
-		response.Creator = &web.UserMinimal{
-			Id:       jobVacancy.Creator.Id,
-			Name:     jobVacancy.Creator.Name,
-			Email:    jobVacancy.Creator.Email,
-			Photo:    jobVacancy.Creator.Photo,
-			Headline: jobVacancy.Creator.Headline,
+		response.Creator = &web.UserBasicResponse{
+			Id:   jobVacancy.Creator.Id.String(),
+			Name: jobVacancy.Creator.Name,
 		}
 	}
 

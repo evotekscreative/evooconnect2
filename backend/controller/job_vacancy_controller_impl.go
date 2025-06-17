@@ -1,10 +1,10 @@
 package controller
 
 import (
+	"evoconnect/backend/exception"
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/service"
-	// "fmt"
 	"net/http"
 	"strconv"
 
@@ -23,18 +23,27 @@ func NewJobVacancyController(jobVacancyService service.JobVacancyService) JobVac
 }
 
 func (controller *JobVacancyControllerImpl) Create(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	companyIdParam := params.ByName("companyId")
-	companyId, err := uuid.Parse(companyIdParam)
-	helper.PanicIfError(err)
-
-	// Get user from context
+	// Get user ID from context (set by auth middleware)
 	userId, err := helper.GetUserIdFromToken(request)
-	helper.PanicIfError(err)
+	if err != nil {
+		panic(exception.NewUnauthorizedError("Invalid or missing token"))
+	}
 
-	createRequest := web.CreateJobVacancyRequest{}
+	// Parse request body
+	var createRequest web.CreateJobVacancyRequest
 	helper.ReadFromRequestBody(request, &createRequest)
 
-	jobVacancyResponse := controller.JobVacancyService.Create(request.Context(), createRequest, companyId, userId)
+	// Set company ID from path parameter if not provided in body
+	if companyIdParam := params.ByName("companyId"); companyIdParam != "" {
+		companyId, err := uuid.Parse(companyIdParam)
+		if err != nil {
+			panic(exception.NewBadRequestError("Invalid company ID"))
+		}
+		createRequest.CompanyId = companyId
+	}
+
+	// Create job vacancy
+	jobVacancyResponse := controller.JobVacancyService.Create(request.Context(), createRequest, userId)
 
 	webResponse := web.WebResponse{
 		Code:   201,
@@ -46,17 +55,23 @@ func (controller *JobVacancyControllerImpl) Create(writer http.ResponseWriter, r
 }
 
 func (controller *JobVacancyControllerImpl) Update(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	jobVacancyIdParam := params.ByName("vacancyId")
-	jobVacancyId, err := uuid.Parse(jobVacancyIdParam)
-	helper.PanicIfError(err)
-
-	// Get user from context
+	// Get user ID from context
 	userId, err := helper.GetUserIdFromToken(request)
-	helper.PanicIfError(err)
+	if err != nil {
+		panic(exception.NewUnauthorizedError("Invalid or missing token"))
+	}
 
-	updateRequest := web.UpdateJobVacancyRequest{}
+	// Get job vacancy ID from path
+	jobVacancyId, err := uuid.Parse(params.ByName("jobVacancyId"))
+	if err != nil {
+		panic(exception.NewBadRequestError("Invalid job vacancy ID"))
+	}
+
+	// Parse request body
+	var updateRequest web.UpdateJobVacancyRequest
 	helper.ReadFromRequestBody(request, &updateRequest)
 
+	// Update job vacancy
 	jobVacancyResponse := controller.JobVacancyService.Update(request.Context(), updateRequest, jobVacancyId, userId)
 
 	webResponse := web.WebResponse{
@@ -69,30 +84,41 @@ func (controller *JobVacancyControllerImpl) Update(writer http.ResponseWriter, r
 }
 
 func (controller *JobVacancyControllerImpl) Delete(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	jobVacancyIdParam := params.ByName("vacancyId")
-	jobVacancyId, err := uuid.Parse(jobVacancyIdParam)
-	helper.PanicIfError(err)
+	// Get user ID from context
+	userId, err := helper.GetUserIdFromToken(request)
+	if err != nil {
+		panic(exception.NewUnauthorizedError("Invalid or missing token"))
+	}
 
-	// Get user from context
-	userContext := request.Context().Value("user").(map[string]interface{})
-	userId, err := uuid.Parse(userContext["id"].(string))
-	helper.PanicIfError(err)
+	// Get job vacancy ID from path
+	jobVacancyId, err := uuid.Parse(params.ByName("jobVacancyId"))
+	if err != nil {
+		panic(exception.NewBadRequestError("Invalid job vacancy ID"))
+	}
 
-	controller.JobVacancyService.Delete(request.Context(), jobVacancyId, userId)
+	// Delete job vacancy
+	err = controller.JobVacancyService.Delete(request.Context(), jobVacancyId, userId)
+	if err != nil {
+		panic(exception.NewInternalServerError("Failed to delete job vacancy"))
+	}
 
 	webResponse := web.WebResponse{
 		Code:   200,
 		Status: "OK",
+		Data:   "Job vacancy deleted successfully",
 	}
 
 	helper.WriteToResponseBody(writer, webResponse)
 }
 
 func (controller *JobVacancyControllerImpl) FindById(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	jobVacancyIdParam := params.ByName("vacancyId")
-	jobVacancyId, err := uuid.Parse(jobVacancyIdParam)
-	helper.PanicIfError(err)
+	// Get job vacancy ID from path
+	jobVacancyId, err := uuid.Parse(params.ByName("jobVacancyId"))
+	if err != nil {
+		panic(exception.NewBadRequestError("Invalid job vacancy ID"))
+	}
 
+	// Find job vacancy
 	jobVacancyResponse := controller.JobVacancyService.FindById(request.Context(), jobVacancyId)
 
 	webResponse := web.WebResponse{
@@ -104,188 +130,207 @@ func (controller *JobVacancyControllerImpl) FindById(writer http.ResponseWriter,
 	helper.WriteToResponseBody(writer, webResponse)
 }
 
-func (controller *JobVacancyControllerImpl) FindByCompany(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	companyIdParam := params.ByName("companyId")
-	companyId, err := uuid.Parse(companyIdParam)
-	helper.PanicIfError(err)
-
-	// Get query parameters
-	status := request.URL.Query().Get("status")
-	limitStr := request.URL.Query().Get("limit")
-	offsetStr := request.URL.Query().Get("offset")
-
-	limit := 10
-	if limitStr != "" {
-		limit, err = strconv.Atoi(limitStr)
-		helper.PanicIfError(err)
+func (controller *JobVacancyControllerImpl) FindByCompanyId(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Get company ID from path
+	companyId, err := uuid.Parse(params.ByName("companyId"))
+	if err != nil {
+		panic(exception.NewBadRequestError("Invalid company ID"))
 	}
 
-	offset := 0
-	if offsetStr != "" {
-		offset, err = strconv.Atoi(offsetStr)
-		helper.PanicIfError(err)
+	// Get pagination parameters
+	page, pageSize, err := helper.GetPaginationParams(request)
+	if err != nil {
+		panic(exception.NewBadRequestError("Invalid pagination parameters"))
 	}
 
-	jobVacancyResponse := controller.JobVacancyService.FindByCompany(request.Context(), companyId, status, limit, offset)
+	// Convert offset to page number
+	if page == 0 {
+		page = 1
+	}
+	if pageSize == 0 {
+		pageSize = 10
+	}
+
+	// Find job vacancies by company
+	jobVacanciesResponse := controller.JobVacancyService.FindByCompanyId(request.Context(), companyId, page, pageSize)
 
 	webResponse := web.WebResponse{
 		Code:   200,
 		Status: "OK",
-		Data:   jobVacancyResponse,
+		Data:   jobVacanciesResponse,
 	}
 
 	helper.WriteToResponseBody(writer, webResponse)
 }
 
-func (controller *JobVacancyControllerImpl) FindMyJobVacancies(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	// Get user from context
-	userContext := request.Context().Value("user").(map[string]interface{})
-	userId, err := uuid.Parse(userContext["id"].(string))
-	helper.PanicIfError(err)
-
-	// Get query parameters
-	limitStr := request.URL.Query().Get("limit")
-	offsetStr := request.URL.Query().Get("offset")
-
-	limit := 10
-	if limitStr != "" {
-		limit, err = strconv.Atoi(limitStr)
-		helper.PanicIfError(err)
+func (controller *JobVacancyControllerImpl) FindByCreatorId(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Get user ID from context
+	userId, err := helper.GetUserIdFromToken(request)
+	if err != nil {
+		panic(exception.NewUnauthorizedError("Invalid or missing token"))
 	}
 
-	offset := 0
-	if offsetStr != "" {
-		offset, err = strconv.Atoi(offsetStr)
-		helper.PanicIfError(err)
+	// Get pagination parameters
+	page, pageSize, err := helper.GetPaginationParams(request)
+	if err != nil {
+		panic(exception.NewBadRequestError("Invalid pagination parameters"))
 	}
 
-	jobVacancyResponse := controller.JobVacancyService.FindByCreator(request.Context(), userId, limit, offset)
+	// Convert offset to page number
+	if page == 0 {
+		page = 1
+	}
+	if pageSize == 0 {
+		pageSize = 10
+	}
+
+	// Find job vacancies by creator
+	jobVacanciesResponse := controller.JobVacancyService.FindByCreatorId(request.Context(), userId, page, pageSize)
 
 	webResponse := web.WebResponse{
 		Code:   200,
 		Status: "OK",
-		Data:   jobVacancyResponse,
+		Data:   jobVacanciesResponse,
 	}
 
 	helper.WriteToResponseBody(writer, webResponse)
 }
 
-func (controller *JobVacancyControllerImpl) FindWithFilters(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	filterRequest := web.JobVacancyFilterRequest{}
-	helper.ReadFromParams(request, &filterRequest)
-
-	// Set default values
-	if filterRequest.Limit == 0 {
-		filterRequest.Limit = 10
+func (controller *JobVacancyControllerImpl) FindAll(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Get pagination parameters
+	page, pageSize, err := helper.GetPaginationParams(request)
+	if err != nil {
+		panic(exception.NewBadRequestError("Invalid pagination parameters"))
 	}
 
-	jobVacancyResponse := controller.JobVacancyService.FindWithFilters(request.Context(), filterRequest)
+	// Convert offset to page number
+	if page == 0 {
+		page = 1
+	}
+	if pageSize == 0 {
+		pageSize = 10
+	}
+
+	// Find all job vacancies
+	jobVacanciesResponse := controller.JobVacancyService.FindAll(request.Context(), page, pageSize)
 
 	webResponse := web.WebResponse{
 		Code:   200,
 		Status: "OK",
-		Data:   jobVacancyResponse,
+		Data:   jobVacanciesResponse,
 	}
 
 	helper.WriteToResponseBody(writer, webResponse)
 }
 
-func (controller *JobVacancyControllerImpl) FindPublicJobs(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	// Parse query parameters
-	searchRequest := web.PublicJobSearchRequest{
-		JobType:         request.URL.Query().Get("job_type"),
-		ExperienceLevel: request.URL.Query().Get("experience_level"),
-		Location:        request.URL.Query().Get("location"),
-		Search:          request.URL.Query().Get("search"),
-		Industry:        request.URL.Query().Get("industry"),
-		SortBy:          request.URL.Query().Get("sort_by"),
-		SortOrder:       request.URL.Query().Get("sort_order"),
+func (controller *JobVacancyControllerImpl) FindActiveJobs(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Get pagination parameters
+	page, pageSize, err := helper.GetPaginationParams(request)
+	if err != nil {
+		panic(exception.NewBadRequestError("Invalid pagination parameters"))
 	}
 
-	// Parse company_id if provided
-	if companyIdStr := request.URL.Query().Get("company_id"); companyIdStr != "" {
-		companyId, err := uuid.Parse(companyIdStr)
-		if err == nil {
-			searchRequest.CompanyId = &companyId
-		}
+	// Convert offset to page number
+	if page == 0 {
+		page = 1
+	}
+	if pageSize == 0 {
+		pageSize = 10
 	}
 
-	// Parse boolean fields
-	if remoteWorkStr := request.URL.Query().Get("remote_work"); remoteWorkStr != "" {
-		remoteWork := remoteWorkStr == "true"
-		searchRequest.RemoteWork = &remoteWork
-	}
-
-	if isUrgentStr := request.URL.Query().Get("is_urgent"); isUrgentStr != "" {
-		isUrgent := isUrgentStr == "true"
-		searchRequest.IsUrgent = &isUrgent
-	}
-
-	// Parse numeric fields
-	if salaryMinStr := request.URL.Query().Get("salary_min"); salaryMinStr != "" {
-		if salaryMin, err := strconv.ParseFloat(salaryMinStr, 64); err == nil {
-			searchRequest.SalaryMin = &salaryMin
-		}
-	}
-
-	if salaryMaxStr := request.URL.Query().Get("salary_max"); salaryMaxStr != "" {
-		if salaryMax, err := strconv.ParseFloat(salaryMaxStr, 64); err == nil {
-			searchRequest.SalaryMax = &salaryMax
-		}
-	}
-
-	if postedWithinStr := request.URL.Query().Get("posted_within"); postedWithinStr != "" {
-		if postedWithin, err := strconv.Atoi(postedWithinStr); err == nil {
-			searchRequest.PostedWithin = postedWithin
-		}
-	}
-
-	// Parse pagination
-	searchRequest.Limit = 20 // Default
-	if limitStr := request.URL.Query().Get("limit"); limitStr != "" {
-		if limit, err := strconv.Atoi(limitStr); err == nil {
-			searchRequest.Limit = limit
-		}
-	}
-
-	if offsetStr := request.URL.Query().Get("offset"); offsetStr != "" {
-		if offset, err := strconv.Atoi(offsetStr); err == nil {
-			searchRequest.Offset = offset
-		}
-	}
-
-	// Set default sort
-	if searchRequest.SortBy == "" {
-		searchRequest.SortBy = "date"
-	}
-	if searchRequest.SortOrder == "" {
-		searchRequest.SortOrder = "desc"
-	}
-
-	jobVacancyResponse := controller.JobVacancyService.FindPublicJobs(request.Context(), searchRequest)
+	// Find active job vacancies
+	jobVacanciesResponse := controller.JobVacancyService.FindActiveJobs(request.Context(), page, pageSize)
 
 	webResponse := web.WebResponse{
 		Code:   200,
 		Status: "OK",
-		Data:   jobVacancyResponse,
+		Data:   jobVacanciesResponse,
+	}
+
+	helper.WriteToResponseBody(writer, webResponse)
+}
+
+func (controller *JobVacancyControllerImpl) SearchJobs(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Parse search request from query parameters
+	searchRequest := web.JobVacancySearchRequest{
+		Query:     request.URL.Query().Get("query"),
+		Location:  request.URL.Query().Get("location"),
+		MinSalary: parseFloatPtr(request.URL.Query().Get("min_salary")),
+		MaxSalary: parseFloatPtr(request.URL.Query().Get("max_salary")),
+		CompanyId: parseStringPtr(request.URL.Query().Get("company_id")),
+		Page:      parseInt(request.URL.Query().Get("page"), 1),
+		PageSize:  parseInt(request.URL.Query().Get("page_size"), 10),
+	}
+
+	// Parse array parameters
+	if jobTypes := request.URL.Query()["job_type"]; len(jobTypes) > 0 {
+		searchRequest.JobType = jobTypes
+	}
+	if experienceLevels := request.URL.Query()["experience_level"]; len(experienceLevels) > 0 {
+		searchRequest.ExperienceLevel = experienceLevels
+	}
+	if workTypes := request.URL.Query()["work_type"]; len(workTypes) > 0 {
+		searchRequest.WorkType = workTypes
+	}
+	if skills := request.URL.Query()["skills"]; len(skills) > 0 {
+		searchRequest.Skills = skills
+	}
+
+	// Search job vacancies
+	jobVacanciesResponse := controller.JobVacancyService.SearchJobs(request.Context(), searchRequest)
+
+	webResponse := web.WebResponse{
+		Code:   200,
+		Status: "OK",
+		Data:   jobVacanciesResponse,
 	}
 
 	helper.WriteToResponseBody(writer, webResponse)
 }
 
 func (controller *JobVacancyControllerImpl) UpdateStatus(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	jobVacancyIdParam := params.ByName("vacancyId")
-	jobVacancyId, err := uuid.Parse(jobVacancyIdParam)
-	helper.PanicIfError(err)
-
-	// Get user from context
+	// Get user ID from context
 	userId, err := helper.GetUserIdFromToken(request)
-	helper.PanicIfError(err)
+	if err != nil {
+		panic(exception.NewUnauthorizedError("Invalid or missing token"))
+	}
 
-	statusRequest := web.UpdateJobStatusRequest{}
+	// Get job vacancy ID from path
+	jobVacancyId, err := uuid.Parse(params.ByName("jobVacancyId"))
+	if err != nil {
+		panic(exception.NewBadRequestError("Invalid job vacancy ID"))
+	}
+
+	// Parse request body
+	var statusRequest struct {
+		Status string `json:"status" validate:"required,oneof=draft active closed archived"`
+	}
 	helper.ReadFromRequestBody(request, &statusRequest)
 
-	jobVacancyResponse := controller.JobVacancyService.UpdateStatus(request.Context(), jobVacancyId, statusRequest.Status, userId)
+	// Update status
+	err = controller.JobVacancyService.UpdateStatus(request.Context(), jobVacancyId, statusRequest.Status, userId)
+	if err != nil {
+		panic(exception.NewInternalServerError("Failed to update job vacancy status"))
+	}
+
+	webResponse := web.WebResponse{
+		Code:   200,
+		Status: "OK",
+		Data:   "Job vacancy status updated successfully",
+	}
+
+	helper.WriteToResponseBody(writer, webResponse)
+}
+
+func (controller *JobVacancyControllerImpl) GetPublicJobDetail(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Get job vacancy ID from path
+	jobVacancyId, err := uuid.Parse(params.ByName("jobVacancyId"))
+	if err != nil {
+		panic(exception.NewBadRequestError("Invalid job vacancy ID"))
+	}
+
+	// Get public job detail
+	jobVacancyResponse := controller.JobVacancyService.GetPublicJobDetail(request.Context(), jobVacancyId)
 
 	webResponse := web.WebResponse{
 		Code:   200,
@@ -296,53 +341,30 @@ func (controller *JobVacancyControllerImpl) UpdateStatus(writer http.ResponseWri
 	helper.WriteToResponseBody(writer, webResponse)
 }
 
-func (controller *JobVacancyControllerImpl) IncrementView(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	jobVacancyIdParam := params.ByName("vacancyId")
-	jobVacancyId, err := uuid.Parse(jobVacancyIdParam)
-	helper.PanicIfError(err)
-
-	controller.JobVacancyService.IncrementViewCount(request.Context(), jobVacancyId)
-
-	webResponse := web.WebResponse{
-		Code:   200,
-		Status: "OK",
+// Helper functions
+func parseFloatPtr(s string) *float64 {
+	if s == "" {
+		return nil
 	}
-
-	helper.WriteToResponseBody(writer, webResponse)
+	if f, err := strconv.ParseFloat(s, 64); err == nil {
+		return &f
+	}
+	return nil
 }
 
-func (controller *JobVacancyControllerImpl) GetStats(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	var companyId *uuid.UUID
-	companyIdParam := request.URL.Query().Get("company_id")
-	if companyIdParam != "" {
-		id, err := uuid.Parse(companyIdParam)
-		helper.PanicIfError(err)
-		companyId = &id
+func parseStringPtr(s string) *string {
+	if s == "" {
+		return nil
 	}
-
-	statsResponse := controller.JobVacancyService.GetStats(request.Context(), companyId)
-
-	webResponse := web.WebResponse{
-		Code:   200,
-		Status: "OK",
-		Data:   statsResponse,
-	}
-
-	helper.WriteToResponseBody(writer, webResponse)
+	return &s
 }
 
-func (controller *JobVacancyControllerImpl) GetCompanyStats(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	companyIdParam := params.ByName("companyId")
-	companyId, err := uuid.Parse(companyIdParam)
-	helper.PanicIfError(err)
-
-	statsResponse := controller.JobVacancyService.GetCompanyJobStats(request.Context(), companyId)
-
-	webResponse := web.WebResponse{
-		Code:   200,
-		Status: "OK",
-		Data:   statsResponse,
+func parseInt(s string, defaultValue int) int {
+	if s == "" {
+		return defaultValue
 	}
-
-	helper.WriteToResponseBody(writer, webResponse)
+	if i, err := strconv.Atoi(s); err == nil {
+		return i
+	}
+	return defaultValue
 }

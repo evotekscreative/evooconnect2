@@ -250,18 +250,20 @@ func setupUserRoutes(
 
 	// Job Vacancy Routes
 	// Company job vacancy management
-	router.POST("/api/companies/:companyId/job-vacancies", userAuth(jobVacancyController.Create))
-	router.GET("/api/companies/:companyId/job-vacancies", userAuth(jobVacancyController.FindByCompany))
-	// router.GET("/api/my-job-vacancies", userAuth(jobVacancyController.FindMyVacancies))
-	router.GET("/api/job-vacancies/:vacancyId", userAuth(jobVacancyController.FindById))
+	// Public job vacancy endpoints
+	router.GET("/api/jobs", jobVacancyController.FindActiveJobs)
+	router.GET("/api/jobs/search", jobVacancyController.SearchJobs)
+	router.GET("/api/job-vacancies/:vacancyId", jobVacancyController.FindById)
+	router.GET("/api/job-vacancies/:vacancyId/public", jobVacancyController.GetPublicJobDetail)
+	router.GET("/api/companies/:companyId/jobs", jobVacancyController.FindByCompanyId)
+
+	// Protected job vacancy endpoints (authentication required)
+	router.GET("/api/all-jobs", userAuth(jobVacancyController.FindAll))
+	router.GET("/api/users/:userId/jobs", userAuth(jobVacancyController.FindByCreatorId))
+	router.POST("/api/companies/:companyId/jobs", userAuth(jobVacancyController.Create))
 	router.PUT("/api/job-vacancies/:vacancyId", userAuth(jobVacancyController.Update))
 	router.DELETE("/api/job-vacancies/:vacancyId", userAuth(jobVacancyController.Delete))
 	router.PATCH("/api/job-vacancies/:vacancyId/status", userAuth(jobVacancyController.UpdateStatus))
-	router.GET("/api/job-vacancies/:vacancyId/stats", userAuth(jobVacancyController.GetStats))
-
-	// Public job vacancy search (still requires authentication)
-	router.GET("/api/job-vacancies", userAuth(jobVacancyController.FindWithFilters))
-	// router.GET("/api/job-vacancies/search", userAuth(jobVacancyController.PublicSearch))
 
 	// Job Application Routes
 	// Apply for jobs

@@ -11,88 +11,91 @@ import (
 type JobType string
 type ExperienceLevel string
 type JobVacancyStatus string
+type WorkType string
+type JobApplyType string
 
 const (
 	// Job Types
-	JobTypeFullTime   JobType = "full_time"
-	JobTypePartTime   JobType = "part_time"
+	JobTypeFullTime   JobType = "full-time"
+	JobTypePartTime   JobType = "part-time"
 	JobTypeContract   JobType = "contract"
 	JobTypeInternship JobType = "internship"
 	JobTypeFreelance  JobType = "freelance"
 
 	// Experience Levels
-	ExperienceLevelEntry     ExperienceLevel = "entry_level"
-	ExperienceLevelMid       ExperienceLevel = "mid_level"
-	ExperienceLevelSenior    ExperienceLevel = "senior_level"
+	ExperienceLevelEntry     ExperienceLevel = "entry"
+	ExperienceLevelMid       ExperienceLevel = "mid"
+	ExperienceLevelSenior    ExperienceLevel = "senior"
+	ExperienceLevelLead      ExperienceLevel = "lead"
 	ExperienceLevelExecutive ExperienceLevel = "executive"
 
 	// Job Vacancy Status
-	JobVacancyStatusDraft     JobVacancyStatus = "draft"
-	JobVacancyStatusPublished JobVacancyStatus = "published"
-	JobVacancyStatusClosed    JobVacancyStatus = "closed"
-	JobVacancyStatusArchived  JobVacancyStatus = "archived"
+	JobVacancyStatusDraft    JobVacancyStatus = "draft"
+	JobVacancyStatusActive   JobVacancyStatus = "active"
+	JobVacancyStatusClosed   JobVacancyStatus = "closed"
+	JobVacancyStatusArchived JobVacancyStatus = "archived"
+
+	// Work Types
+	WorkTypeRemote   WorkType = "remote"
+	WorkTypeHybrid   WorkType = "hybrid"
+	WorkTypeInOffice WorkType = "in-office"
+
+	// Job Apply Types
+	JobApplyTypeSimple   JobApplyType = "simple_apply"
+	JobApplyTypeExternal JobApplyType = "external_apply"
 )
+
+type JobVacancy struct {
+	Id                  uuid.UUID        `json:"id"`
+	CompanyId           uuid.UUID        `json:"company_id"`
+	CreatorId           *uuid.UUID       `json:"creator_id"`
+	Title               string           `json:"title"`
+	Description         string           `json:"description"`
+	Requirements        string           `json:"requirements"`
+	Location            string           `json:"location"`
+	JobType             JobType          `json:"job_type"`
+	ExperienceLevel     ExperienceLevel  `json:"experience_level"`
+	MinSalary           *float64         `json:"min_salary"`
+	MaxSalary           *float64         `json:"max_salary"`
+	Currency            string           `json:"currency"`
+	Skills              SkillsArray      `json:"skills"`
+	Benefits            string           `json:"benefits"`
+	WorkType            WorkType         `json:"work_type"`
+	ApplicationDeadline *time.Time       `json:"application_deadline"`
+	Status              JobVacancyStatus `json:"status"`
+	TypeApply           JobApplyType     `json:"type_apply"`
+	ExternalLink        *string          `json:"external_link"`
+	CreatedAt           time.Time        `json:"created_at"`
+	UpdatedAt           time.Time        `json:"updated_at"`
+
+	// Relations
+	Company *Company `json:"company,omitempty"`
+	Creator *User    `json:"creator,omitempty"`
+}
 
 type SkillsArray []string
 
 // Value implements the driver.Valuer interface for SkillsArray
-func (sa SkillsArray) Value() (driver.Value, error) {
-	if sa == nil {
+func (s SkillsArray) Value() (driver.Value, error) {
+	if len(s) == 0 {
 		return nil, nil
 	}
-	return json.Marshal(sa)
+	return json.Marshal(s)
 }
 
 // Scan implements the sql.Scanner interface for SkillsArray
-func (sa *SkillsArray) Scan(value interface{}) error {
+func (s *SkillsArray) Scan(value interface{}) error {
 	if value == nil {
-		*sa = nil
+		*s = nil
 		return nil
 	}
 
-	bytes, ok := value.([]byte)
-	if !ok {
+	switch v := value.(type) {
+	case []byte:
+		return json.Unmarshal(v, s)
+	case string:
+		return json.Unmarshal([]byte(v), s)
+	default:
 		return nil
 	}
-
-	return json.Unmarshal(bytes, sa)
-}
-
-type JobVacancy struct {
-	Id                   uuid.UUID        `json:"id"`
-	CompanyId            uuid.UUID        `json:"company_id"`
-	CreatorId            uuid.UUID        `json:"creator_id"`
-	Title                string           `json:"title"`
-	Department           string           `json:"department"`
-	JobType              JobType          `json:"job_type"`
-	Location             string           `json:"location"`
-	SalaryMin            *float64         `json:"salary_min"`
-	SalaryMax            *float64         `json:"salary_max"`
-	Currency             string           `json:"currency"`
-	ExperienceLevel      ExperienceLevel  `json:"experience_level"`
-	EducationRequirement string           `json:"education_requirement"`
-	JobDescription       string           `json:"job_description"`
-	Requirements         string           `json:"requirements"`
-	Benefits             string           `json:"benefits"`
-	SkillsRequired       SkillsArray      `json:"skills_required"`
-	ApplicationDeadline  *time.Time       `json:"application_deadline"`
-	Status               JobVacancyStatus `json:"status"`
-	IsUrgent             bool             `json:"is_urgent"`
-	RemoteWorkAllowed    bool             `json:"remote_work_allowed"`
-	ApplicationCount     int              `json:"application_count"`
-	ViewCount            int              `json:"view_count"`
-	CreatedAt            time.Time        `json:"created_at"`
-	UpdatedAt            time.Time        `json:"updated_at"`
-
-	// Relations
-	Company *CompanyBriefResponse `json:"company,omitempty"`
-	Creator *UserBriefResponse    `json:"creator,omitempty"`
-}
-
-type CompanyBriefResponse struct {
-	Id       uuid.UUID `json:"id"`
-	Name     string    `json:"name"`
-	Logo     *string   `json:"logo"`
-	Industry string    `json:"industry"`
-	Website  *string   `json:"website"`
 }

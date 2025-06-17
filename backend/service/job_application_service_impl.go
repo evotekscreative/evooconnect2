@@ -58,7 +58,7 @@ func (service *JobApplicationServiceImpl) Create(ctx context.Context, request we
 		panic(exception.NewNotFoundError("Job vacancy not found"))
 	}
 
-	if jobVacancy.Status != domain.JobVacancyStatusPublished {
+	if jobVacancy.Status != domain.JobVacancyStatusActive {
 		panic(exception.NewBadRequestError("Job vacancy is not available for applications"))
 	}
 

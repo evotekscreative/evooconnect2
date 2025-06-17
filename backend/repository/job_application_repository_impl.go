@@ -73,7 +73,7 @@ func (repository *JobApplicationRepositoryImpl) FindById(ctx context.Context, tx
 
 	var jobApplication domain.JobApplication
 	var jobVacancy domain.JobVacancy
-	var company domain.CompanyBriefResponse
+	var company domain.Company
 	var applicant domain.User
 	var reviewer domain.User
 	var companyLogo, applicantPhoto, reviewerName, reviewerUsername, rejectionReason, notes sql.NullString
@@ -105,7 +105,7 @@ func (repository *JobApplicationRepositoryImpl) FindById(ctx context.Context, tx
 	jobVacancy.Id = jobApplication.JobVacancyId
 	company.Id = jobVacancy.CompanyId
 	if companyLogo.Valid {
-		company.Logo = &companyLogo.String
+		company.Logo = companyLogo.String
 	}
 	jobVacancy.Company = &company
 	jobApplication.JobVacancy = &jobVacancy
@@ -250,7 +250,7 @@ func (repository *JobApplicationRepositoryImpl) FindByApplicantId(ctx context.Co
 	for rows.Next() {
 		var app domain.JobApplication
 		var jobVacancy domain.JobVacancy
-		var company domain.CompanyBriefResponse
+		var company domain.Company
 		var companyLogo sql.NullString
 
 		err := rows.Scan(
@@ -258,7 +258,7 @@ func (repository *JobApplicationRepositoryImpl) FindByApplicantId(ctx context.Co
 			&app.MotivationLetter, &app.CoverLetter, &app.ExpectedSalary, &app.AvailableStartDate,
 			&app.Status, &app.RejectionReason, &app.Notes, &app.ReviewedBy, &app.ReviewedAt,
 			&app.InterviewScheduledAt, &app.SubmittedAt, &app.CreatedAt, &app.UpdatedAt,
-			&jobVacancy.Title, &jobVacancy.JobType, &jobVacancy.Location, &jobVacancy.RemoteWorkAllowed,
+			&jobVacancy.Title, &jobVacancy.JobType, &jobVacancy.Location, &jobVacancy.WorkType,
 			&company.Name, &companyLogo)
 
 		if err != nil {
@@ -269,7 +269,7 @@ func (repository *JobApplicationRepositoryImpl) FindByApplicantId(ctx context.Co
 		jobVacancy.Id = app.JobVacancyId
 		company.Id = jobVacancy.CompanyId
 		if companyLogo.Valid {
-			company.Logo = &companyLogo.String
+			company.Logo = companyLogo.String
 		}
 		jobVacancy.Company = &company
 		app.JobVacancy = &jobVacancy
@@ -445,7 +445,7 @@ func (repository *JobApplicationRepositoryImpl) FindWithFilters(ctx context.Cont
 	for rows.Next() {
 		var app domain.JobApplication
 		var jobVacancy domain.JobVacancy
-		var company domain.CompanyBriefResponse
+		var company domain.Company
 		var applicant domain.User
 		var companyLogo, applicantPhoto sql.NullString
 
@@ -465,7 +465,7 @@ func (repository *JobApplicationRepositoryImpl) FindWithFilters(ctx context.Cont
 		jobVacancy.Id = app.JobVacancyId
 		company.Id = jobVacancy.CompanyId
 		if companyLogo.Valid {
-			company.Logo = &companyLogo.String
+			company.Logo = companyLogo.String
 		}
 		jobVacancy.Company = &company
 		app.JobVacancy = &jobVacancy
