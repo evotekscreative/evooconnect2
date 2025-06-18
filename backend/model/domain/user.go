@@ -80,10 +80,29 @@ type User struct {
 	Socials             sql.NullString `json:"socials"`
 	Photo               string         `json:"photo"`
 	IsVerified          bool           `json:"is_verified"`
+	IsConnected         bool           `json:"is_connected"`
 	VerificationToken   string         `json:"-"`
 	VerificationExpires time.Time      `json:"-"`
 	ResetToken          string         `json:"-"`
 	ResetExpires        time.Time      `json:"-"`
 	CreatedAt           time.Time      `json:"created_at"`
 	UpdatedAt           time.Time      `json:"updated_at"`
+}
+
+type UserBriefResponse struct {
+	Id          uuid.UUID `json:"id"`
+	Name        string    `json:"name"`
+	Username    string    `json:"username"`
+	Photo       string    `json:"photo"`
+	Email       string    `json:"email"`
+	Headline    string    `json:"headline"`
+	IsConnected bool      `json:"is_connected"`
+}
+
+type UserShort struct {
+	Id          uuid.UUID `json:"id"`
+	Name        string    `json:"name"`
+	Username    string    `json:"username"`
+	Photo       string    `json:"photo"`
+	IsConnected bool      `json:"is_connected"`
 }

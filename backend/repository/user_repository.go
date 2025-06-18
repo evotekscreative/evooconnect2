@@ -27,4 +27,6 @@ type UserRepository interface {
 	ClearFailedAttempts(ctx context.Context, tx *sql.Tx, userID uuid.UUID, actionType string) error
 	IsRateLimited(ctx context.Context, tx *sql.Tx, clientIP string, actionType string, maxAttempts int, window time.Duration) (bool, error)
 	UpdateVerificationStatus(ctx context.Context, tx *sql.Tx, userId uuid.UUID, isVerified bool) error
+	FindUsersNotConnectedWith(ctx context.Context, tx *sql.Tx, currentUserId uuid.UUID, limit int, offset int) ([]domain.User, error)
+	Search(ctx context.Context, tx *sql.Tx, query string, limit int, offset int) []domain.User
 }

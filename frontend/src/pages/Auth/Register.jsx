@@ -5,9 +5,12 @@ import logo from '../../assets/img/logoB.png';
 import googleIcon from '../../assets/img/google-icon.jpg';
 import Alert from '../../components/Auth/Alert';
 import '../../assets/css/style.css';
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import Cookies from 'js-cookie';
 
 function Register() {
+        const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
@@ -15,6 +18,65 @@ function Register() {
     email: '',
     password: '',
   });
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      // Log the credential for debugging
+      console.log("Google credential:", credentialResponse.credential);
+
+      const response = await axios.post(
+        apiUrl + "/api/auth/google",
+        {
+          token: credentialResponse.credential,
+        }
+      );
+
+      // Check that the token is a valid JWT format with console.log
+      console.log("Backend response:", response.data);
+
+      if (!response.data.data?.token) {
+        throw new Error("No token received from server");
+      }
+
+      // Store JWT token
+      localStorage.setItem("token", response.data.data.token);
+
+      // Clear any stored name/email info from localStorage
+      localStorage.removeItem("register_name");
+      localStorage.removeItem("register_email");
+
+      // Show success message
+      setAlertInfo({
+        show: true,
+        type: "success",
+        message: "Registration successful!",
+      });
+
+      // Redirect to home after successful registration
+      setTimeout(() => {
+        navigate("/");
+      }, 1000);
+    } catch (error) {
+      console.error("Google auth error:", error);
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message:
+          error.response?.data?.data ||
+          error.message ||
+          "Registration with Google failed",
+      });
+    }
+  };
+
+  const handleGoogleError = () => {
+    setAlertInfo({
+      show: true,
+      type: 'error',
+      message: 'Google sign-in was canceled or failed'
+    });
+  };
+
 
   const [errors, setErrors] = useState({});
   const [alertInfo, setAlertInfo] = useState({
@@ -72,30 +134,30 @@ function Register() {
     setErrors({});
 
     // In your Register component's handleSubmit:
-try {
-  const response = await axios.post('http://localhost:3000/api/auth/register', formData);
-  const token = response.data.token;
-  localStorage.setItem('token', token);
+    try {
+      const response = await axios.post(apiUrl + '/api/auth/register', formData);
+      const token = response.data.data.token;
+      localStorage.setItem('token', token);
 
-  localStorage.removeItem('register_name');
-  localStorage.removeItem('register_email');
+      localStorage.removeItem('register_name');
+      localStorage.removeItem('register_email');
 
-  setAlertInfo({
-    show: true,
-    type: 'success',
-    message: response.data.message || 'Registration successful! Verification code sent to your email.',
-  });
+      setAlertInfo({
+        show: true,
+        type: 'success',
+        message: response.data.message || 'Registration successful! Verification code sent to your email.',
+      });
 
-  // Navigate with email and also store it
-  navigate('/verify-email', { 
-    state: { 
-      email: formData.email,
-      from: '/register' 
-    } 
-  });
-  
-  // Clear form
-  setFormData({ name: '', username: '', email: '', password: '' });
+      // Navigate with email and also store it
+      navigate('/verify-email', {
+        state: {
+          email: formData.email,
+          from: '/register'
+        }
+      });
+
+      // Clear form
+      setFormData({ name: '', username: '', email: '', password: '' });
 
     } catch (error) {
       setAlertInfo({
@@ -168,8 +230,8 @@ try {
                   type="submit"
                   disabled={loading}
                   className={`w-full font-semibold py-2 rounded-lg transition text-white ${loading
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700"
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700"
                     }`}
                 >
                   {loading ? (
@@ -205,10 +267,18 @@ try {
               <div className="mt-4 pb-4 text-center border-b border-gray-200">
                 <p className="text-xs text-gray-500 mb-3">Or login with</p>
                 <div className="flex justify-center items-center mb-2">
-                  <a href="#" className="shadow-lg flex items-center px-3 py-2 border shadow-sm rounded-md bg-white hover:bg-gray-50">
-                    <img src={googleIcon} alt="Google" className="w-5 h-5 mr-2" />
-                    <span className="text-sm">Login with Google</span>
-                  </a>
+                  <GoogleOAuthProvider clientId="630548216793-u72hegqjlqli4petjg5lsgkrp8fn0foc.apps.googleusercontent.com">
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={handleGoogleError}
+                      useOneTap
+                      theme="outline"
+                      text="signup_with"
+                      shape="rectangular"
+                      logo_alignment="center"
+                      width="280"
+                    />
+                  </GoogleOAuthProvider>
                 </div>
               </div>
 

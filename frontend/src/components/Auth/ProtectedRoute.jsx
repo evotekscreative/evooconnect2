@@ -5,6 +5,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 
 const ProtectedRoute = ({ children }) => {
+    const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
   const token = localStorage.getItem('token');
   const location = useLocation();
   const navigate = useNavigate();
@@ -18,11 +19,12 @@ const ProtectedRoute = ({ children }) => {
       }
 
       try {
-        const response = await axios.get('http://localhost:3000/api/user/profile', {
+        const response = await axios.get(`${apiUrl}/api/user/profile`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
         const user = response.data.data;
+        localStorage.setItem("user", JSON.stringify(user));
         if (!user.is_verified && location.pathname !== '/verify-email') {
           navigate('/verify-email', {
             state: {

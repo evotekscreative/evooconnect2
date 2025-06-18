@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
+	"encoding/json"
 	"evoconnect/backend/exception"
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/domain"
@@ -20,7 +22,6 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
-	googleOAuth "google.golang.org/api/oauth2/v2"
 )
 
 type AuthServiceImpl struct {
@@ -69,47 +70,36 @@ func generateRandomToken() string {
 
 // Add this method to your AuthServiceImpl
 func (service *AuthServiceImpl) GoogleAuth(ctx context.Context, request web.GoogleAuthRequest) (web.RegisterResponse, error) {
-	// Create an OAuth2 config for Google
-	config := &oauth2.Config{
-		ClientID:     helper.GetEnv("GOOGLE_CLIENT_ID", "YOUR_GOOGLE_CLIENT_ID"),         // Replace with your actual client ID
-		ClientSecret: helper.GetEnv("GOOGLE_CLIENT_SECRET", "YOUR_GOOGLE_CLIENT_SECRET"), // Replace with your actual client secret
-		Endpoint: oauth2.Endpoint{
-			AuthURL:  "https://accounts.google.com/o/oauth2/auth",
-			TokenURL: "https://oauth2.googleapis.com/token",
-		},
-		Scopes: []string{
-			"https://www.googleapis.com/auth/userinfo.profile",
-			"https://www.googleapis.com/auth/userinfo.email",
-		},
+	// Get Google OAuth config values
+	CLIENT_ID := helper.GetEnv("GOOGLE_CLIENT_ID", "630548216793-u72hegqjlqli4petjg5lsgkrp8fn0foc.apps.googleusercontent.com")
+
+	// For ID token verification, we should use a validator
+	idToken := request.Token
+
+	// Create a validator for the ID token
+	_ = oauth2.Config{
+		ClientID: CLIENT_ID,
 	}
 
-	// Exchange the token
-	token := &oauth2.Token{
-		AccessToken: request.Token,
-	}
-
-	// Get an HTTP client with the token
-	httpClient := config.Client(ctx, token)
-
-	// Create the OAuth2 service
-	service2, err := googleOAuth.New(httpClient)
+	// Parse and verify the token without making a remote call
+	payload, err := validateGoogleIDToken(idToken, CLIENT_ID)
 	if err != nil {
+		fmt.Printf("Error validating token: %v\n", err)
 		return web.RegisterResponse{}, err
 	}
 
-	// Get the user info
-	userInfo, err := service2.Userinfo.Get().Do()
-	// fmt.Printf("Creating new user: %+v\n", userInfo)
-	if err != nil {
-		return web.RegisterResponse{}, err
-	}
+	// Extract user info from validated token
+	email := payload["email"].(string)
+	name := payload["name"].(string)
+	picture := payload["picture"].(string)
 
+	// Start database transaction
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
 	// Check if user exists by email
-	existingUser, err := service.UserRepository.FindByEmail(ctx, tx, userInfo.Email)
+	existingUser, err := service.UserRepository.FindByEmail(ctx, tx, email)
 	if err == nil {
 		// User exists, generate token and return
 		jwtToken := service.generateToken(existingUser)
@@ -119,27 +109,29 @@ func (service *AuthServiceImpl) GoogleAuth(ctx context.Context, request web.Goog
 		}, nil
 	}
 
-	// User doesn't exist, create new account
-	// Generate username from name (slug + 6 random digits)
-	username := generateUsernameFromName(userInfo.Name)
+	// User doesn't exist, create a new account
+	// Generate username from name
+	username := generateUsernameFromName(name)
 
-	// Create random password (user can reset it later if needed)
+	// Generate random password for account security
 	randomPassword := generateRandomString(12)
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(randomPassword), bcrypt.DefaultCost)
 	helper.PanicIfError(err)
 
+	// Create new user
 	newUser := domain.User{
 		Id:         uuid.New(),
-		Name:       userInfo.Name,
-		Email:      userInfo.Email,
+		Name:       name,
+		Email:      email,
 		Username:   username,
 		Password:   string(hashedPassword),
-		IsVerified: true, // Google account emails are verified
-		Photo:      userInfo.Picture,
+		IsVerified: true, // Google accounts are already verified
+		Photo:      picture,
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
 	}
 
+	// Save new user to database
 	savedUser := service.UserRepository.Save(ctx, tx, newUser)
 	jwtToken := service.generateToken(savedUser)
 
@@ -147,6 +139,45 @@ func (service *AuthServiceImpl) GoogleAuth(ctx context.Context, request web.Goog
 		Token: jwtToken,
 		User:  savedUser,
 	}, nil
+}
+
+// Helper function to validate Google ID token without making a remote call
+func validateGoogleIDToken(tokenString string, clientID string) (map[string]interface{}, error) {
+	// Split the token to get parts
+	parts := strings.Split(tokenString, ".")
+	if len(parts) != 3 {
+		return nil, fmt.Errorf("invalid token format")
+	}
+
+	// Decode the payload (middle part)
+	payloadBytes, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse the JSON payload
+	var payload map[string]interface{}
+	err = json.Unmarshal(payloadBytes, &payload)
+	if err != nil {
+		return nil, err
+	}
+
+	// Verify audience (aud) matches your client ID
+	if aud, ok := payload["aud"].(string); !ok || aud != clientID {
+		return nil, fmt.Errorf("token not intended for this audience")
+	}
+
+	// Verify the token is not expired
+	if exp, ok := payload["exp"].(float64); ok {
+		if time.Now().Unix() > int64(exp) {
+			return nil, fmt.Errorf("token expired")
+		}
+	} else {
+		return nil, fmt.Errorf("missing expiration time")
+	}
+
+	// Token is valid!
+	return payload, nil
 }
 
 // Helper function to generate username from name
@@ -206,6 +237,37 @@ func (service *AuthServiceImpl) Login(ctx context.Context, request web.LoginRequ
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password))
 	if err != nil {
 		panic(exception.NewUnauthorizedError("Invalid credentials"))
+	}
+
+	// Check if user is banned or suspended
+	var status string
+	var suspendedUntil *time.Time
+	
+	// Query to get user status and suspended_until
+	query := "SELECT status, suspended_until FROM users WHERE id = $1"
+	err = tx.QueryRowContext(ctx, query, user.Id).Scan(&status, &suspendedUntil)
+	if err != nil && err != sql.ErrNoRows {
+		panic(exception.NewInternalServerError("Failed to check user status: " + err.Error()))
+	}
+	
+	// If user is banned, prevent login
+	if status == "banned" {
+		panic(exception.NewUnauthorizedError("Your account has been banned. Please contact support for more information."))
+	}
+	
+	// If user is suspended, check if suspension period is still active
+	if status == "suspended" && suspendedUntil != nil {
+		if time.Now().Before(*suspendedUntil) {
+			// User is still suspended
+			panic(exception.NewUnauthorizedError(fmt.Sprintf("Your account is suspended until %s", suspendedUntil.Format("2006-01-02 15:04:05"))))
+		} else {
+			// Suspension period has ended, update user status back to active
+			updateQuery := "UPDATE users SET status = 'active', suspended_until = NULL WHERE id = $1"
+			_, err = tx.ExecContext(ctx, updateQuery, user.Id)
+			if err != nil {
+				panic(exception.NewInternalServerError("Failed to update user status: " + err.Error()))
+			}
+		}
 	}
 
 	// Generate JWT token

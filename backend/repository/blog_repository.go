@@ -4,6 +4,7 @@ import (
     "context"
     "evoconnect/backend/model/domain"
     "github.com/google/uuid"
+    "database/sql"
 )
 
 type BlogRepository interface {
@@ -16,4 +17,5 @@ type BlogRepository interface {
 
 	FindByID(ctx context.Context, blogID string) (domain.Blog, error) // Tambahkan ini
 	GetRandomBlogs(ctx context.Context, limit int) ([]domain.Blog, error)
+     Search(ctx context.Context, tx *sql.Tx, query string, limit int, offset int) []domain.Blog
 }
