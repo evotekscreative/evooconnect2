@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import PropTypes from "prop-types";
-
-// components
-// import TableDropdown from "../../../components/Admin/Dropdowns/TableDropdown.jsx";
+import { Link } from "react-router-dom";
+import { FileText, Trash2 } from "lucide-react";
+import SimpleApply from "../../../components/CompanyDashboard/PostVacancy/SimpleApply.jsx";  
 
 // import gambar
 import bootstrapImg from "../../../assets/img/imgAdmin/bootstrap.jpg";
@@ -17,6 +17,7 @@ import team3 from "../../../assets/img/imgAdmin/team-3-800x800.jpg";
 import team4 from "../../../assets/img/imgAdmin/team-4-470x470.png";
 
 export default function TableVacancy({ color }) {
+  const [showModal, setShowModal] = useState(false);
   const isLight = color === "light";
 
   const headerClass =
@@ -27,7 +28,6 @@ export default function TableVacancy({ color }) {
     "bg-sky-800 text-sky-200 border-sky-700";
 
   const textColor = isLight ? "text-gray-800" : "text-gray-800";
-  // const bgColor = isLight ? "bg-white" : "bg-sky-900 text-white";
   const borderColor = isLight ? "border-gray-200" : "border-sky-700";
   const badgeColors = {
     pending: "text-orange-500",
@@ -36,8 +36,19 @@ export default function TableVacancy({ color }) {
     progress: "text-sky-500",
   };
 
+  const handleSubmitVacancy = (formData) => {
+    console.log("Form submitted:", formData);
+  };
+
   return (
     <div className={`relative flex flex-col w-full mb-6 shadow-lg rounded`}>
+      {/* Modal Component */}
+      <SimpleApply 
+        showModal={showModal}
+        setShowModal={setShowModal}
+        onSubmit={handleSubmitVacancy}
+      />
+
       <div className="rounded-t mb-0 px-4 py-3 border-b border-sky-700 bg-sky-800">
         <div className="flex flex-wrap items-center">
           <div className="w-full px-4 max-w-full flex-grow flex-1">
@@ -45,13 +56,20 @@ export default function TableVacancy({ color }) {
               Card Tables
             </h3>
           </div>
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-white text-sky-800 font-semibold px-4 py-2 rounded-lg shadow hover:bg-sky-100 transition duration-200"
+          >
+            Post Vacancy
+          </button>
         </div>
       </div>
+
       <div className="block w-full overflow-x-auto">
         <table className="items-center w-full bg-transparent border-collapse">
           <thead>
             <tr>
-              {["Project", "Budget", "Status", "Users", "Completion", ""].map((title, idx) => (
+              {["Project", "Budget", "Status", "Users", "Action", ""].map((title, idx) => (
                 <th
                   key={idx}
                   className={`${headerClass} ${isLight ? lightHeader : darkHeader}`}
@@ -68,45 +86,30 @@ export default function TableVacancy({ color }) {
                 name: "Argon Design System",
                 budget: "$2,500 USD",
                 status: "pending",
-                progress: 60,
-                barColor: "bg-red-500",
-                barBg: "bg-red-200",
               },
               {
                 img: angularImg,
                 name: "Angular Now UI Kit PRO",
                 budget: "$1,800 USD",
                 status: "completed",
-                progress: 100,
-                barColor: "bg-green-500",
-                barBg: "bg-green-200",
               },
               {
                 img: sketchImg,
                 name: "Black Dashboard Sketch",
                 budget: "$3,150 USD",
                 status: "delayed",
-                progress: 73,
-                barColor: "bg-red-500",
-                barBg: "bg-red-200",
               },
               {
                 img: reactImg,
                 name: "React Material Dashboard",
                 budget: "$4,400 USD",
                 status: "completed",
-                progress: 80,
-                barColor: "bg-green-500",
-                barBg: "bg-green-200",
               },
               {
                 img: vueImg,
                 name: "Vue Paper UI Kit PRO",
                 budget: "$2,200 USD",
                 status: "progress",
-                progress: 40,
-                barColor: "bg-sky-500",
-                barBg: "bg-sky-200",
               },
             ].map((row, idx) => (
               <tr key={idx}>
@@ -135,21 +138,17 @@ export default function TableVacancy({ color }) {
                   </div>
                 </td>
                 <td className={`border-t ${borderColor} px-6 py-4 text-xs`}>
-                  <div className="flex items-center">
-                    <span className="mr-2">{row.progress}%</span>
-                    <div className="relative w-full">
-                      <div className={`overflow-hidden h-2 text-xs flex rounded ${row.barBg}`}>
-                        <div
-                          style={{ width: `${row.progress}%` }}
-                          className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center ${row.barColor}`}
-                        />
-                      </div>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <Link to={"/company-dashboard/list-applicants"}>
+                      <button className="p-1 rounded hover:bg-gray-100 text-primary">
+                        <FileText size={18} />
+                      </button>
+                    </Link>
+                    <button className="p-1 rounded hover:bg-gray-100 text-red-600">
+                      <Trash2 size={18} />
+                    </button>
                   </div>
                 </td>
-                {/* <td className={`border-t ${borderColor} px-6 py-4 text-xs text-right`}>
-                  <TableDropdown />
-                </td> */}
               </tr>
             ))}
           </tbody>
@@ -158,11 +157,3 @@ export default function TableVacancy({ color }) {
     </div>
   );
 }
-
-// CardTable.defaultProps = {
-//   color: "light",
-// };
-
-// CardTable.propTypes = {
-//   color: PropTypes.oneOf(["light", "dark"]),
-// };

@@ -52,6 +52,7 @@ import CompanyDashboard from "./pages/CompanyDashboard/CompanyDashboard.jsx";
 import ManagePost from "./pages/CompanyDashboard/ManagePost.jsx";
 import ManageVacancy from "./pages/CompanyDashboard/ManageVacancy.jsx";
 import CompanySetting from "./pages/CompanyDashboard/CompanySetting.jsx";
+import ListApplicants from "./pages/CompanyDashboard/ListApplicants/ListApplicants.jsx";
 
 const router = createBrowserRouter([
   {
@@ -382,11 +383,14 @@ const router = createBrowserRouter([
 
     ],
   },
+
   {
     path: "/company-status",
     element: <CreateCompanyStatus />,
   },
+
   {
+    // path: "/company-management/:companyId",
     path: "/company-management",
     children: [
       {
@@ -405,6 +409,7 @@ const router = createBrowserRouter([
   },
 
   {
+    // path: "/company-dashboard/:companyId",
     path: "/company-dashboard",
     children: [
       {
@@ -413,16 +418,20 @@ const router = createBrowserRouter([
       },
       {
         path: "manage-post",
-        element: <ManagePost />,     
+        element: <ManagePost />,
       },
       {
         path: "manage-vacancy",
-        element: <ManageVacancy />,     
+        element: <ManageVacancy />,
       },
       {
         path: "company-setting",
-        element: <CompanySetting />,     
-      }
+        element: <CompanySetting />,
+      },
+      {
+        path: "list-applicants",
+        element: <ListApplicants />,
+      },
     ],
   }
 ]);
