@@ -70,7 +70,7 @@ const CompanyEditModal = ({
         type: companyData.type || '',
         linkedin_url: companyData.linkedin_url || ''
       });
-      
+
       setLogoPreview(
         companyData.logo
           ? `${import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000"}/${companyData.logo.replace(/^\/+/, "")}`
@@ -103,16 +103,26 @@ const CompanyEditModal = ({
   setIsSubmitting(true);
 
   try {
-    // Hanya kirim field yang berubah
+    // Ambil data awal dari companyData
+    const initialData = {
+      name: companyData.name || '',
+      tagline: companyData.tagline || '',
+      industry: companyData.industry || '',
+      website: companyData.website || '',
+      size: companyData.size || '',
+      type: companyData.type || '',
+      linkedin_url: companyData.linkedin_url || ''
+    };
+
+    // Bandingkan dengan formData, hanya kirim field yang berubah
     const changes = {};
     Object.keys(formData).forEach(key => {
-      // Bandingkan dengan companyData, jika beda, masukkan ke changes
-      if (formData[key] !== (companyData[key] || "")) {
+      if (formData[key] !== initialData[key]) {
         changes[key] = formData[key];
       }
     });
 
-    // Jika ada perubahan logo
+    // Jika ada perubahan logo (file)
     if (logoPreview && logoPreview.startsWith('data:')) {
       changes.logo = logoPreview;
     }
@@ -123,7 +133,7 @@ const CompanyEditModal = ({
       return;
     }
 
-    // Kirim hanya field yang berubah
+    // Kirim hanya field yang berubah ke parent handler
     await onSubmitEditRequest(changes);
 
     setSubmitSuccess(true);

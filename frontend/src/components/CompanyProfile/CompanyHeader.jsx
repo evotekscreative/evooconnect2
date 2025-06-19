@@ -12,6 +12,7 @@ export default function CompanyHeader({ company, currentUser }) {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [followers, setFollowers] = useState([]);
   const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [companyState, setCompanyState] = useState(company);
   const [editRequestStatus, setEditRequestStatus] = useState(company.has_pending_edit ? 'pending' : 'none');
   const [joinStatus, setJoinStatus] = useState(
     company.is_member_of_company ? 'joined' : (company.is_pending_join_request ? 'pending' : 'not_joined')
@@ -49,32 +50,78 @@ export default function CompanyHeader({ company, currentUser }) {
   };
 
   const handleJoinRequest = async () => {
+    console.log('Join button clicked');
+    console.log('Join status:', joinStatus);
+    console.log('Company ID:', company?.id);
+
+    const token = localStorage.getItem('token');
+    console.log('Token:', token);
+
     if (joinStatus === 'pending') {
       setShowCancelModal(true);
       return;
     }
 
+    if (!token || !company?.id) {
+      toast.error('Missing token or company ID');
+      return;
+    }
+
     setIsSubmitting(true);
+
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(
-        `${import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:3000'}/api/companies/${company.id}/join-request`,
-        {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
+      const endpoint = `${import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:3000'}/api/companies/${company.id}/join-request`;
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          company_id: company.id,
+          message: "I`am a part of this company and I want to join it."
+        })
+      });
+
+      console.log('Response status:', res.status);
+
       if (res.ok) {
+        let result = null;
+
+        const contentLength = res.headers.get("content-length");
+        const contentType = res.headers.get("content-type");
+
+        if (contentLength !== "0" && contentType?.includes("application/json")) {
+          result = await res.json();
+          console.log('Join request result:', result);
+
+          setCompanyState(prev => ({
+            ...prev,
+            pending_join_request_id: result.data?.id
+          }));
+        }
+
         toast.success('Join request submitted');
         setJoinStatus('pending');
       } else {
-        const err = await res.json().catch(() => ({}));
+        const errText = await res.text();
+        let err = {};
+        try {
+          err = JSON.parse(errText);
+        } catch {
+          err = { message: errText };
+        }
         toast.error(err.message || 'Failed to submit join request');
       }
+    } catch (error) {
+      console.error('Error submitting join request:', error);
+      toast.error('An error occurred while submitting join request');
     } finally {
       setIsSubmitting(false);
     }
   };
+
 
   const handleCancelRequest = async () => {
     setIsSubmitting(true);
@@ -121,13 +168,45 @@ export default function CompanyHeader({ company, currentUser }) {
     setShowFollowersModal(true);
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      // Gabungkan perubahan dengan data lama
+      const merged = { ...companyData, ...changes };
+      const formData = new FormData();
+      Object.entries(merged).forEach(([key, value]) => {
+        formData.append(key, value);
+      });
+
+      await onSubmitEditRequest(formData);
+
+      setSubmitSuccess(true);
+      toast.success("Permintaan edit berhasil dikirim!");
+    } catch (error) {
+      toast.error("Gagal mengirim permintaan edit: " + error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleEditRequest = async (changes) => {
     try {
       const token = localStorage.getItem('token');
       const formData = new FormData();
+
+      // Pastikan field sudah snake_case
       Object.entries(changes).forEach(([key, value]) => {
-        formData.append(key, value);
+        if (value !== undefined && value !== null && value !== "") {
+          formData.append(key, value);
+        }
       });
+
+      // Debug: cek isi FormData
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ': ' + pair[1]);
+      }
 
       const response = await fetch(
         `${import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:3000'}/api/companies/${company.id}/request-edit`,
@@ -211,7 +290,6 @@ export default function CompanyHeader({ company, currentUser }) {
         </div>
 
         <div className="flex flex-wrap gap-2 mt-4 md:mt-0 justify-center md:justify-end">
-          {/* Edit button - only for super_admin */}
           {isSuperAdmin && (
             company.has_pending_edit ? (
               <div className="text-yellow-600 font-semibold mt-2">
@@ -227,15 +305,12 @@ export default function CompanyHeader({ company, currentUser }) {
             )
           )}
 
-          {/* Visit Website button - always visible */}
           <button className="flex items-center gap-2 bg-blue-100 text-blue-600 px-4 py-2 rounded-md hover:bg-blue-200 text-sm">
             Visit Website
           </button>
 
-          {/* Follow and Join buttons - only for non-owner users */}
           {!isOwnerOrMember && (
             <>
-              {/* Follow button */}
               <button
                 onClick={handleFollow}
                 disabled={isSubmitting}
@@ -245,7 +320,6 @@ export default function CompanyHeader({ company, currentUser }) {
                 {isSubmitting ? 'Processing...' : company.is_following ? 'Followed' : '+ Follow'}
               </button>
 
-              {/* Join button */}
               {joinStatus === 'pending' ? (
                 <button
                   onClick={() => setShowCancelModal(true)}

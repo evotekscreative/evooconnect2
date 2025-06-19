@@ -406,11 +406,11 @@ const router = createBrowserRouter([
 },
 
   {
-    path: "company-dashboard",
+    path: "company-dashboard/:company_id",
     element: <CompanyDashboard />,
   },
   {
-    path: "manage-member",
+    path: "company-dashboard/manage-member/:company_id",
     element: <ManageMember />
   }
 ]);

@@ -7,6 +7,7 @@ import CompanyLeftSidebar from "../../components/CompanyProfile/CompanyLeftSideb
 import CompanyMainContent from "../../components/CompanyProfile/CompanyMainContent.jsx";
 import CompanyRightSidebar from "../../components/CompanyProfile/CompanyRightSidebar.jsx";
 import CompanyEditModal from "../../components/CompanyProfile/CompanyEditModal.jsx";
+import { toast } from 'react-toastify';
 
 export default function CompanyDetail() {
   const { company_id } = useParams();
@@ -33,7 +34,7 @@ export default function CompanyDetail() {
     website: "",
     industry: "",
     size: "",
-    typelinkedin_urlo: "",
+    type: "",
     tagline: ""
   });
   const [logoPreview, setLogoPreview] = useState(null);
@@ -41,17 +42,21 @@ export default function CompanyDetail() {
   useEffect(() => {
     const fetchCompanyDetail = async () => {
       try {
+        setLoading(true);
         const token = localStorage.getItem("token");
         const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
-        // Gunakan endpoint yang benar
-        const res = await fetch(`${apiUrl}/api/companies/${company_id}/details`, {
+        const response = await fetch(`${apiUrl}/api/companies/${company_id}/details`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
-        const data = await res.json();
+        if (!response.ok) {
+          throw new Error('Failed to fetch company details');
+        }
+
+        const data = await response.json();
 
         if (data.data) {
           const c = data.data;
@@ -79,6 +84,7 @@ export default function CompanyDetail() {
         }
       } catch (error) {
         console.error("Error fetching company detail:", error);
+        toast.error(error.message || "Failed to load company details");
         setCompany(null);
       } finally {
         setLoading(false);
@@ -114,29 +120,19 @@ export default function CompanyDetail() {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
-        alert("Authentication token missing. Please log in again.");
+        toast.error("Authentication token missing. Please log in again.");
         setIsSubmitting(false);
         return;
       }
 
       const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
-      // Log untuk debugging
-      console.log("Submitting edit request for company:", company_id);
-      console.log("Form data:", formData);
-
       const formDataToSend = new FormData();
-      formDataToSend.append("name", formData.name);
-      formDataToSend.append("linkedin_url", formData.linkedin_url);
-      formDataToSend.append("website", formData.website);
-      formDataToSend.append("industry", formData.industry);
-      formDataToSend.append("size", formData.size);
-      formDataToSend.append("type", formData.type);
-      formDataToSend.append("tagline", formData.linkedin_url);
-
-      if (formData.logo instanceof File) {
-        formDataToSend.append("logo", formData.logo);
-      }
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          formDataToSend.append(key, value);
+        }
+      });
 
       const response = await fetch(`${apiUrl}/api/companies/${company_id}/request-edit`, {
         method: "POST",
@@ -147,24 +143,22 @@ export default function CompanyDetail() {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("API error response:", errorText);
-        throw new Error("Failed to submit edit request");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to submit edit request");
       }
 
-      // Set success state
       setSubmitSuccess(true);
-
-      // Show loading for 2 seconds then redirect
+      toast.success("Edit request submitted successfully!");
+      
       setTimeout(() => {
         setIsSubmitting(false);
         setIsEditModalOpen(false);
-        navigate(-1); // Kembali ke halaman sebelumnya
+        window.location.reload(); // Refresh to see changes
       }, 2000);
 
     } catch (error) {
       console.error("Error submitting edit request:", error);
-      alert(error.message || "Failed to submit edit request. Please try again.");
+      toast.error(error.message || "Failed to submit edit request");
       setIsSubmitting(false);
     }
   };
@@ -216,20 +210,27 @@ export default function CompanyDetail() {
     setJobs([jobWithId, ...jobs]);
   };
 
-  if (loading) return <p className="text-center">Loading company detail...</p>;
-
-  if (!company)
+  if (loading) {
     return (
-      <div className="text-center text-red-500">
-        Company not found or you don't have access.
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (!company) {
+    return (
+      <div className="text-center py-10">
+        <h2 className="text-2xl font-bold text-red-500 mb-4">Company not found</h2>
         <button
           onClick={() => navigate(-1)}
-          className="mt-4 underline text-blue-600"
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
         >
           Go back
         </button>
       </div>
     );
+  }
 
   return (
     <>
@@ -260,7 +261,6 @@ export default function CompanyDetail() {
           submitSuccess={submitSuccess}
           company_id={company_id}
         />
-
 
         <div className="mt-4 max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">

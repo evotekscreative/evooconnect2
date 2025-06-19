@@ -34,10 +34,11 @@ const CompanySubmissions = ({ color = "light" }) => {
         return;
       }
 
-      let url = `${apiUrl}/api/admin/company-submissions?limit=${rowsPerPage}&offset=${(currentPage - 1) * rowsPerPage}`;
-
+      let url;
       if (statusFilter !== 'all') {
         url = `${apiUrl}/api/admin/company-submissions/status/${statusFilter}?limit=${rowsPerPage}&offset=${(currentPage - 1) * rowsPerPage}`;
+      } else {
+        url = `${apiUrl}/api/admin/company-submissions?limit=${rowsPerPage}&offset=${(currentPage - 1) * rowsPerPage}`;
       }
 
       const response = await fetch(url, {
