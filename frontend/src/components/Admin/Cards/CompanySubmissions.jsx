@@ -15,6 +15,7 @@ const CompanySubmissions = ({ color = "light" }) => {
   const [rejectionModalOpen, setRejectionModalOpen] = useState(false);
   const [currentSubmissionId, setCurrentSubmissionId] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const rowsPerPage = 10;
 
   const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
@@ -25,7 +26,7 @@ const CompanySubmissions = ({ color = "light" }) => {
   const fetchSubmissions = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("adminToken");
 
       if (!token) {
         toast.error("Please log in to view submissions");
@@ -33,15 +34,19 @@ const CompanySubmissions = ({ color = "light" }) => {
         return;
       }
 
-      const response = await fetch(
-        `${apiUrl}/api/admin/company-submissions?limit=${rowsPerPage}&offset=${(currentPage - 1) * rowsPerPage}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+      let url;
+      if (statusFilter !== 'all') {
+        url = `${apiUrl}/api/admin/company-submissions/status/${statusFilter}?limit=${rowsPerPage}&offset=${(currentPage - 1) * rowsPerPage}`;
+      } else {
+        url = `${apiUrl}/api/admin/company-submissions?limit=${rowsPerPage}&offset=${(currentPage - 1) * rowsPerPage}`;
+      }
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-      );
+      });
 
       if (!response.ok) {
         throw new Error(`Failed to fetch submissions: ${response.status} ${response.statusText}`);
@@ -64,12 +69,27 @@ const CompanySubmissions = ({ color = "light" }) => {
     }
   };
 
+  useEffect(() => {
+    const token = localStorage.getItem("adminToken");
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+
+    fetchSubmissions();
+  }, [currentPage, statusFilter]);
+
+  const handleStatusFilterChange = (status) => {
+    setStatusFilter(status);
+    setCurrentPage(1);
+  };
+
   const handlePageChange = (page) => {
     setCurrentPage(page);
   };
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("adminToken");
     if (!token) {
       window.location.href = "/login";
       return;
@@ -82,7 +102,7 @@ const CompanySubmissions = ({ color = "light" }) => {
     setIsReviewing(true);
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("adminToken");
       if (!token) {
         toast.error("Authentication token missing. Please log in again.");
         return;
@@ -93,9 +113,9 @@ const CompanySubmissions = ({ color = "light" }) => {
         ...(status === 'rejected' && reason && { rejection_reason: reason })
       };
 
-      console.log(`Trying with Axios-like approach for ${status}`);
+      // Tambahkan log payload
+      console.log("Review payload:", payload);
 
-      // Gunakan pendekatan yang mirip dengan Postman
       const xhr = new XMLHttpRequest();
       xhr.open('PUT', `${apiUrl}/api/admin/company-submissions/review/${submissionId}`);
       xhr.setRequestHeader('Content-Type', 'application/json');
@@ -107,7 +127,6 @@ const CompanySubmissions = ({ color = "light" }) => {
           console.log("Response:", xhr.responseText);
 
           if (xhr.status >= 200 && xhr.status < 300) {
-            // Sukses - refresh data
             fetchSubmissions().then(() => {
               toast.success(`Submission ${status} successfully`);
               setRejectionModalOpen(false);
@@ -116,9 +135,14 @@ const CompanySubmissions = ({ color = "light" }) => {
               setIsReviewing(false);
             });
           } else {
-            // Error
+            // Log error detail
             console.error("Error response:", xhr.responseText);
-            toast.error(`Failed to ${status} submission`);
+            let errorMessage = `Failed to ${status} submission`;
+            try {
+              const errorData = JSON.parse(xhr.responseText);
+              errorMessage = errorData?.data || errorMessage;
+            } catch (e) { }
+            toast.error(errorMessage);
             setIsReviewing(false);
           }
         }
@@ -126,12 +150,11 @@ const CompanySubmissions = ({ color = "light" }) => {
 
       xhr.send(JSON.stringify(payload));
     } catch (error) {
-      console.error(`Error ${status} submission:`, error);
-      toast.error(`Failed to ${status} submission`);
+      let errorMessage = "Failed to review company submission";
+      toast.error(errorMessage);
       setIsReviewing(false);
     }
   };
-
   const handleApprove = (submissionId) => {
     handleReviewAction(submissionId, 'approved');
   };
@@ -178,17 +201,32 @@ const CompanySubmissions = ({ color = "light" }) => {
   };
 
   return (
-    <div className="relative flex flex-col w-full mb-6 shadow-lg rounded-lg border border-gray-900 bg-white">
+    <div className="relative flex flex-col w-full mb-6 bg-white border border-gray-900 rounded-lg shadow-lg">
       {/* Header Section */}
-      <div className="rounded-t-lg px-6 py-4 border-b border-gray-900 bg-sky-800">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="px-6 py-4 border-b border-gray-900 rounded-t-lg bg-sky-800">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <h3 className="text-lg font-semibold text-white">
             Company Submissions ({totalCount})
           </h3>
           <div className="flex flex-col sm:flex-row gap-3">
+            {/* Status Filter */}
+            <div className="flex items-center space-x-2">
+              <select
+                value={statusFilter}
+                onChange={(e) => handleStatusFilterChange(e.target.value)}
+                className="px-3 py-2 border border-gray-900 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+
+            {/* Search Box */}
             <div className="relative flex-grow">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-gray-400" />
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <Search className="w-5 h-5 text-gray-400" />
               </div>
               <input
                 type="text"
@@ -198,12 +236,14 @@ const CompanySubmissions = ({ color = "light" }) => {
                 onChange={handleSearchChange}
               />
             </div>
+
+            {/* Refresh Button */}
             <button
               onClick={handleRefresh}
               className="flex items-center justify-center p-2.5 border border-gray-900 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
               title="Refresh"
             >
-              <RefreshCw className="h-5 w-5" />
+              <RefreshCw className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -216,22 +256,22 @@ const CompanySubmissions = ({ color = "light" }) => {
             <table className="min-w-full divide-y divide-gray-900">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider border-r border-gray-900 bg-sky-800 text-white">
+                  <th className="px-6 py-4 text-xs font-semibold tracking-wider text-left text-white uppercase border-r border-gray-900 bg-sky-800">
                     Company
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider border-r border-gray-900 bg-sky-800 text-white">
+                  <th className="px-6 py-4 text-xs font-semibold tracking-wider text-left text-white uppercase border-r border-gray-900 bg-sky-800">
                     Submitted By
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider border-r border-gray-900 bg-sky-800 text-white">
+                  <th className="px-6 py-4 text-xs font-semibold tracking-wider text-left text-white uppercase border-r border-gray-900 bg-sky-800">
                     Website
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider border-r border-gray-900 bg-sky-800 text-white">
+                  <th className="px-6 py-4 text-xs font-semibold tracking-wider text-left text-white uppercase border-r border-gray-900 bg-sky-800">
                     Industry
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider border-r border-gray-900 bg-sky-800 text-white">
+                  <th className="px-6 py-4 text-xs font-semibold tracking-wider text-left text-white uppercase border-r border-gray-900 bg-sky-800">
                     Status
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider bg-sky-800 text-white">
+                  <th className="px-6 py-4 text-xs font-semibold tracking-wider text-left text-white uppercase bg-sky-800">
                     Actions
                   </th>
                 </tr>
@@ -239,18 +279,18 @@ const CompanySubmissions = ({ color = "light" }) => {
               <tbody className="bg-white divide-y divide-gray-900">
                 {isLoading ? (
                   <tr>
-                    <td colSpan="6" className="px-6 py-6 text-center text-sm text-gray-500">
+                    <td colSpan="6" className="px-6 py-6 text-sm text-center text-gray-500">
                       Loading...
                     </td>
                   </tr>
                 ) : filteredData.length > 0 ? (
                   filteredData.map((submission) => (
                     <tr key={submission.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-900">
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900 border-r border-gray-900 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
+                          <div className="flex-shrink-0 w-10 h-10">
                             <img
-                              className="h-10 w-10 rounded-md object-cover"
+                              className="object-cover w-10 h-10 rounded-md"
                               src={submission.logo ? (submission.logo.startsWith('http') ? submission.logo : `${apiUrl}/${submission.logo}`) : 'https://via.placeholder.com/50'}
                               alt="Company logo"
                             />
@@ -260,21 +300,21 @@ const CompanySubmissions = ({ color = "light" }) => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-900">
+                      <td className="px-6 py-4 text-sm text-gray-900 border-r border-gray-900 whitespace-nowrap">
                         {submission.user?.name || 'N/A'}
                         <div className="text-gray-400">{submission.user?.email || ''}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:text-blue-800 border-r border-gray-900">
+                      <td className="px-6 py-4 text-sm text-blue-600 border-r border-gray-900 whitespace-nowrap hover:text-blue-800">
                         {submission.website ? (
                           <a href={submission.website} target="_blank" rel="noopener noreferrer">
                             {submission.website}
                           </a>
                         ) : 'N/A'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-900">
+                      <td className="px-6 py-4 text-sm text-gray-900 border-r border-gray-900 whitespace-nowrap">
                         {submission.industry || 'N/A'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap border-r border-gray-900">
+                      <td className="px-6 py-4 border-r border-gray-900 whitespace-nowrap">
                         <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${submission.status === 'approved' ? 'bg-green-100 text-green-800' :
                           submission.status === 'rejected' ? 'bg-red-100 text-red-800' :
                             'bg-yellow-100 text-yellow-800'
@@ -282,14 +322,14 @@ const CompanySubmissions = ({ color = "light" }) => {
                           {submission.status || 'pending'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-6 py-4 text-sm font-medium whitespace-nowrap">
                         <div className="flex space-x-2">
                           <button
                             onClick={() => handleViewSubmission(submission)}
                             className="text-blue-600 hover:text-blue-900"
                             title="View Details"
                           >
-                            <User className="h-5 w-5" />
+                            <User className="w-5 h-5" />
                           </button>
 
                           {(submission.status === 'pending' || !submission.status) && (
@@ -301,9 +341,9 @@ const CompanySubmissions = ({ color = "light" }) => {
                                 disabled={isReviewing}
                               >
                                 {isReviewing ? (
-                                  <RefreshCw className="h-5 w-5 animate-spin" />
+                                  <RefreshCw className="w-5 h-5 animate-spin" />
                                 ) : (
-                                  <Check className="h-5 w-5" />
+                                  <Check className="w-5 h-5" />
                                 )}
                               </button>
                               <button
@@ -313,9 +353,9 @@ const CompanySubmissions = ({ color = "light" }) => {
                                 disabled={isReviewing}
                               >
                                 {isReviewing ? (
-                                  <RefreshCw className="h-5 w-5 animate-spin" />
+                                  <RefreshCw className="w-5 h-5 animate-spin" />
                                 ) : (
-                                  <X className="h-5 w-5" />
+                                  <X className="w-5 h-5" />
                                 )}
                               </button>
                             </>
@@ -326,7 +366,7 @@ const CompanySubmissions = ({ color = "light" }) => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="6" className="px-6 py-6 text-center text-sm text-gray-500">
+                    <td colSpan="6" className="px-6 py-6 text-sm text-center text-gray-500">
                       No submissions found
                     </td>
                   </tr>
@@ -339,19 +379,19 @@ const CompanySubmissions = ({ color = "light" }) => {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="px-6 py-3 flex items-center justify-between border-t border-gray-900">
-          <div className="flex-1 flex justify-between sm:hidden">
+        <div className="flex items-center justify-between px-6 py-3 border-t border-gray-900">
+          <div className="flex justify-between flex-1 sm:hidden">
             <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+              className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
             >
               Previous
             </button>
             <button
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
-              className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+              className="relative inline-flex items-center px-4 py-2 ml-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
             >
               Next
             </button>
@@ -365,7 +405,7 @@ const CompanySubmissions = ({ color = "light" }) => {
               </p>
             </div>
             <div>
-              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              <nav className="relative z-0 inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                   let pageNum;
                   if (totalPages <= 5) {
@@ -399,8 +439,8 @@ const CompanySubmissions = ({ color = "light" }) => {
 
       {/* Enhanced Detail Modal */}
       {isModalOpen && selectedSubmission && (
-        <div className="fixed z-50 inset-0 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
             {/* Backdrop */}
             <div
               className="fixed inset-0 transition-all duration-300 backdrop-blur-sm bg-black/40"
@@ -411,10 +451,10 @@ const CompanySubmissions = ({ color = "light" }) => {
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
             {/* Modal Container */}
-            <div className="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all duration-300 scale-100 sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-gray-100">
+            <div className="inline-block overflow-hidden text-left align-bottom transition-all duration-300 transform scale-100 bg-white border border-gray-100 shadow-2xl rounded-2xl sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
 
               {/* Header Section */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 pt-6 pb-4 border-b border-gray-100">
+              <div className="px-6 pt-6 pb-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     {/* Company Logo */}
@@ -424,11 +464,11 @@ const CompanySubmissions = ({ color = "light" }) => {
                           <img
                             src={selectedSubmission.logo.startsWith('http') ? selectedSubmission.logo : `${apiUrl}/${selectedSubmission.logo}`}
                             alt="Company Logo"
-                            className="w-16 h-16 object-cover rounded-xl shadow-md ring-2 ring-white"
+                            className="object-cover w-16 h-16 shadow-md rounded-xl ring-2 ring-white"
                           />
                         </div>
                       ) : (
-                        <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center shadow-md">
+                        <div className="flex items-center justify-center w-16 h-16 shadow-md bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl">
                           <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
                           </svg>
@@ -438,7 +478,7 @@ const CompanySubmissions = ({ color = "light" }) => {
 
                     {/* Title and Status */}
                     <div>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-1">
+                      <h3 className="mb-1 text-2xl font-bold text-gray-900">
                         {selectedSubmission.name || 'Company Name'}
                       </h3>
                       <div className="flex items-center space-x-2">
@@ -461,7 +501,7 @@ const CompanySubmissions = ({ color = "light" }) => {
                   {/* Close Button */}
                   <button
                     onClick={handleCloseModal}
-                    className="rounded-lg p-2 text-gray-400 hover:text-gray-600 hover:bg-white/50 transition-colors duration-150"
+                    className="p-2 text-gray-400 transition-colors duration-150 rounded-lg hover:text-gray-600 hover:bg-white/50"
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -472,26 +512,26 @@ const CompanySubmissions = ({ color = "light" }) => {
 
               {/* Content Section */}
               <div className="px-6 py-6 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
 
                   {/* Company Details */}
                   <div className="space-y-4">
-                    <div className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors duration-150">
-                      <div className="flex items-center space-x-2 mb-2">
+                    <div className="p-4 transition-colors duration-150 bg-gray-50 rounded-xl hover:bg-gray-100">
+                      <div className="flex items-center mb-2 space-x-2">
                         <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
                         </svg>
-                        <label className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Company</label>
+                        <label className="text-sm font-semibold tracking-wide text-gray-600 uppercase">Company</label>
                       </div>
                       <p className="text-lg font-medium text-gray-900">{selectedSubmission.name || 'N/A'}</p>
                     </div>
 
-                    <div className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors duration-150">
-                      <div className="flex items-center space-x-2 mb-2">
+                    <div className="p-4 transition-colors duration-150 bg-gray-50 rounded-xl hover:bg-gray-100">
+                      <div className="flex items-center mb-2 space-x-2">
                         <svg className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
                         </svg>
-                        <label className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Industry</label>
+                        <label className="text-sm font-semibold tracking-wide text-gray-600 uppercase">Industry</label>
                       </div>
                       <p className="text-lg font-medium text-gray-900">{selectedSubmission.industry || 'N/A'}</p>
                     </div>
@@ -499,19 +539,19 @@ const CompanySubmissions = ({ color = "light" }) => {
 
                   {/* Website and Review Info */}
                   <div className="space-y-4">
-                    <div className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors duration-150">
-                      <div className="flex items-center space-x-2 mb-2">
+                    <div className="p-4 transition-colors duration-150 bg-gray-50 rounded-xl hover:bg-gray-100">
+                      <div className="flex items-center mb-2 space-x-2">
                         <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9"></path>
                         </svg>
-                        <label className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Website</label>
+                        <label className="text-sm font-semibold tracking-wide text-gray-600 uppercase">Website</label>
                       </div>
                       {selectedSubmission.website ? (
                         <a
                           href={selectedSubmission.website}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center text-lg font-medium text-blue-600 hover:text-blue-800 transition-colors duration-150"
+                          className="inline-flex items-center text-lg font-medium text-blue-600 transition-colors duration-150 hover:text-blue-800"
                         >
                           {selectedSubmission.website}
                           <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -524,12 +564,12 @@ const CompanySubmissions = ({ color = "light" }) => {
                     </div>
 
                     {selectedSubmission.status !== 'pending' && selectedSubmission.reviewed_at && (
-                      <div className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors duration-150">
-                        <div className="flex items-center space-x-2 mb-2">
+                      <div className="p-4 transition-colors duration-150 bg-gray-50 rounded-xl hover:bg-gray-100">
+                        <div className="flex items-center mb-2 space-x-2">
                           <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                           </svg>
-                          <label className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Reviewed</label>
+                          <label className="text-sm font-semibold tracking-wide text-gray-600 uppercase">Reviewed</label>
                         </div>
                         <p className="text-sm font-medium text-gray-700">
                           {new Date(selectedSubmission.reviewed_at).toLocaleString()}
@@ -541,12 +581,12 @@ const CompanySubmissions = ({ color = "light" }) => {
 
                 {/* Rejection Reason (if rejected) */}
                 {selectedSubmission.status === 'rejected' && selectedSubmission.rejection_reason && (
-                  <div className="bg-red-50 rounded-xl p-4">
-                    <div className="flex items-center space-x-2 mb-2">
+                  <div className="p-4 bg-red-50 rounded-xl">
+                    <div className="flex items-center mb-2 space-x-2">
                       <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                       </svg>
-                      <label className="text-sm font-semibold text-red-600 uppercase tracking-wide">Rejection Reason</label>
+                      <label className="text-sm font-semibold tracking-wide text-red-600 uppercase">Rejection Reason</label>
                     </div>
                     <p className="text-sm font-medium text-gray-900">{selectedSubmission.rejection_reason}</p>
                   </div>
@@ -554,12 +594,12 @@ const CompanySubmissions = ({ color = "light" }) => {
               </div>
 
               {/* Action Buttons */}
-              <div className="bg-gray-50 px-6 py-4 border-t border-gray-100">
-                <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
+              <div className="px-6 py-4 border-t border-gray-100 bg-gray-50">
+                <div className="flex flex-col justify-end space-y-2 sm:flex-row sm:space-y-0 sm:space-x-3">
                   <button
                     type="button"
                     onClick={handleCloseModal}
-                    className="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-sm font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-150 shadow-sm hover:shadow-md"
+                    className="inline-flex items-center justify-center px-6 py-3 text-sm font-semibold text-gray-700 transition-all duration-150 bg-white border border-gray-300 shadow-sm rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 hover:shadow-md"
                   >
                     Close
                   </button>
@@ -572,8 +612,8 @@ const CompanySubmissions = ({ color = "light" }) => {
 
       {/* Rejection Reason Modal */}
       {rejectionModalOpen && (
-        <div className="fixed z-50 inset-0 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
             <div
               className="fixed inset-0 transition-all duration-300 backdrop-blur-sm bg-black/40"
               aria-hidden="true"
@@ -582,11 +622,11 @@ const CompanySubmissions = ({ color = "light" }) => {
 
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-            <div className="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all duration-300 scale-100 sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-100">
-              <div className="bg-white px-6 pt-6 pb-4">
+            <div className="inline-block overflow-hidden text-left align-bottom transition-all duration-300 transform scale-100 bg-white border border-gray-100 shadow-2xl rounded-2xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="px-6 pt-6 pb-4 bg-white">
                 <div className="flex items-start justify-between">
                   <div className="w-full">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Rejection Reason</h3>
+                    <h3 className="mb-4 text-lg font-semibold text-gray-900">Rejection Reason</h3>
                     <div className="mt-2">
                       <textarea
                         className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
@@ -599,11 +639,11 @@ const CompanySubmissions = ({ color = "light" }) => {
                   </div>
                 </div>
               </div>
-              <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+              <div className="flex justify-end px-6 py-4 space-x-3 bg-gray-50">
                 <button
                   type="button"
                   onClick={() => setRejectionModalOpen(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   Cancel
                 </button>
@@ -611,7 +651,7 @@ const CompanySubmissions = ({ color = "light" }) => {
                   type="button"
                   onClick={confirmRejection}
                   disabled={isReviewing}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isReviewing ? 'Submitting...' : 'Confirm Rejection'}
                 </button>

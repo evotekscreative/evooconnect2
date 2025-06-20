@@ -12,6 +12,8 @@ func setupAdminRoutes(
 	adminAuthController controller.AdminAuthController,
 	companySubmissionController controller.CompanySubmissionController,
 	adminCompanyEditController controller.AdminCompanyEditController,
+	adminReportController controller.AdminReportController,
+	adminNotificationController controller.AdminNotificationController,
 ) {
 	// Create admin middleware
 	adminAuth := middleware.NewAdminAuthMiddleware()
@@ -35,6 +37,9 @@ func setupAdminRoutes(
 	router.GET("/api/admin/company-edit-requests/view/:requestId", adminAuth(adminCompanyEditController.GetEditRequestDetail))
 	router.POST("/api/admin/company-edit-requests/review/:requestId", adminAuth(adminCompanyEditController.ReviewEditRequest))
 
+		router.GET("/api/admin/reports", adminReportController.GetAllReports)
+	router.GET("/api/admin/reports/:reportId", adminReportController.GetReportDetail)
+	router.POST("/api/admin/reports/:reportId/action", adminReportController.TakeAction)
 	// Add more admin routes here as needed
 	// Examples:
 	// router.GET("/api/admin/users", adminAuth(adminUserController.GetAllUsers))

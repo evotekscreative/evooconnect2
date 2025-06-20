@@ -1,5 +1,6 @@
 import { Input } from "../../components/Input.jsx";
 import { Button } from "../../components/Button.jsx";
+import Case from "../Case.jsx";
 
 export default function CreateCompanyModal({ 
     showModal, 
@@ -117,18 +118,6 @@ export default function CreateCompanyModal({
                             value={companyForm.employees}
                             onChange={handleCompanyInputChange}
                             required
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Headquarters</label>
-                        <Input
-                            type="text"
-                            className="w-full"
-                            placeholder="Enter Headquarters"
-                            name="headquarters"
-                            value={companyForm.headquarters}
-                            onChange={handleCompanyInputChange}
                         />
                     </div>
 

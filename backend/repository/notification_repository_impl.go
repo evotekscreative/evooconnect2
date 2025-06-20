@@ -98,14 +98,16 @@ func (repository *NotificationRepositoryImpl) FindById(ctx context.Context, tx *
 		refId, _ := uuid.Parse(referenceId.String)
 		notification.ReferenceId = &refId
 	}
-	
+
 	if referenceType.Valid {
 		notification.ReferenceType = &referenceType.String
 	}
-	
-	if actorId.Valid {
-		aId, _ := uuid.Parse(actorId.String)
-		notification.ActorId = &aId
+
+	if actorId.Valid && actorId.String != "" {
+		aId, err := uuid.Parse(actorId.String)
+		if err == nil {
+			notification.ActorId = &aId
+		}
 	}
 
 	if headline.Valid {
@@ -117,112 +119,92 @@ func (repository *NotificationRepositoryImpl) FindById(ctx context.Context, tx *
 		user.Photo = photoStr
 	}
 
-	notification.Actor = &user
+	// notification.Actor = &user
 
 	return notification, nil
 }
 
 func (repository *NotificationRepositoryImpl) FindByUserId(ctx context.Context, tx *sql.Tx, userId uuid.UUID, category string, limit, offset int) []domain.Notification {
-	var query string
-	var args []interface{}
-	
-	if category != "" {
-		query = `
-			SELECT 
-				n.id, n.user_id, n.category, n.type, n.title, n.message, n.status, n.reference_id, n.reference_type, n.actor_id, n.created_at, n.updated_at,
-				u.id, u.name, u.username, u.email, u.headline, u.photo
-			FROM notifications n
-			LEFT JOIN users u ON n.actor_id = u.id
-			WHERE n.user_id = $1 AND n.category = $2
-			ORDER BY n.created_at DESC
-			LIMIT $3 OFFSET $4
-		`
-		args = []interface{}{userId, category, limit, offset}
-	} else {
-		query = `
-			SELECT 
-				n.id, n.user_id, n.category, n.type, n.title, n.message, n.status, n.reference_id, n.reference_type, n.actor_id, n.created_at, n.updated_at,
-				u.id, u.name, u.username, u.email, u.headline, u.photo
-			FROM notifications n
-			LEFT JOIN users u ON n.actor_id = u.id
-			WHERE n.user_id = $1
-			ORDER BY n.created_at DESC
-			LIMIT $2 OFFSET $3
-		`
-		args = []interface{}{userId, limit, offset}
-	}
+    var query string
+    var args []interface{}
+    
+    if category != "" {
+        query = `
+            SELECT 
+                n.id, n.user_id, n.category, n.type, n.title, n.message, n.status, 
+                n.reference_id, n.reference_type, n.actor_id, n.created_at, n.updated_at
+            FROM notifications n
+            WHERE n.user_id = $1 AND n.category = $2
+            ORDER BY n.created_at DESC
+            LIMIT $3 OFFSET $4
+        `
+        args = []interface{}{userId, category, limit, offset}
+    } else {
+        query = `
+            SELECT 
+                n.id, n.user_id, n.category, n.type, n.title, n.message, n.status, 
+                n.reference_id, n.reference_type, n.actor_id, n.created_at, n.updated_at
+            FROM notifications n
+            WHERE n.user_id = $1
+            ORDER BY n.created_at DESC
+            LIMIT $2 OFFSET $3
+        `
+        args = []interface{}{userId, limit, offset}
+    }
 
-	rows, err := tx.QueryContext(ctx, query, args...)
-	helper.PanicIfError(err)
-	defer rows.Close()
+    rows, err := tx.QueryContext(ctx, query, args...)
+    helper.PanicIfError(err)
+    defer rows.Close()
 
-	var notifications []domain.Notification
-	for rows.Next() {
-		var notification domain.Notification
-		var user domain.User
-		var headline, photo sql.NullString
-		var referenceId, actorId sql.NullString
-		var referenceType sql.NullString
+    var notifications []domain.Notification
+    for rows.Next() {
+        var notification domain.Notification
+        var referenceId, actorId sql.NullString
+        var referenceType sql.NullString
 
-		var scanArgs []interface{}
-		scanArgs = []interface{}{
-			&notification.Id,
-			&notification.UserId,
-			&notification.Category,
-			&notification.Type,
-			&notification.Title,
-			&notification.Message,
-			&notification.Status,
-			&referenceId,
-			&referenceType,
-			&actorId,
-			&notification.CreatedAt,
-			&notification.UpdatedAt,
-			&user.Id,
-			&user.Name,
-			&user.Username,
-			&user.Email,
-			&headline,
-			&photo,
-		}
+        err := rows.Scan(
+            &notification.Id,
+            &notification.UserId,
+            &notification.Category,
+            &notification.Type,
+            &notification.Title,
+            &notification.Message,
+            &notification.Status,
+            &referenceId,
+            &referenceType,
+            &actorId,
+            &notification.CreatedAt,
+            &notification.UpdatedAt,
+        )
+        helper.PanicIfError(err)
 
-		err := rows.Scan(scanArgs...)
-		helper.PanicIfError(err)
+        // Handle nullable fields
+        if referenceId.Valid {
+            refId, _ := uuid.Parse(referenceId.String)
+            notification.ReferenceId = &refId
+        }
+        
+        if referenceType.Valid {
+            notification.ReferenceType = &referenceType.String
+        }
+        
+        if actorId.Valid {
+            aId, err := uuid.Parse(actorId.String)
+            if err == nil {
+                notification.ActorId = &aId
+            }
+        }
 
-		if referenceId.Valid {
-			refId, _ := uuid.Parse(referenceId.String)
-			notification.ReferenceId = &refId
-		}
-		
-		if referenceType.Valid {
-			notification.ReferenceType = &referenceType.String
-		}
-		
-		if actorId.Valid {
-			aId, _ := uuid.Parse(actorId.String)
-			notification.ActorId = &aId
-		}
+        notifications = append(notifications, notification)
+    }
 
-		if headline.Valid {
-			headlineStr := headline.String
-			user.Headline = headlineStr
-		}
-		if photo.Valid {
-			photoStr := photo.String
-			user.Photo = photoStr
-		}
-
-		notification.Actor = &user
-		notifications = append(notifications, notification)
-	}
-
-	return notifications
+    return notifications
 }
 
 func (repository *NotificationRepositoryImpl) CountByUserId(ctx context.Context, tx *sql.Tx, userId uuid.UUID, category string) int {
 	var query string
 	var args []interface{}
-	
+
 	if category != "" {
 		query = `SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND category = $2`
 		args = []interface{}{userId, category}
@@ -241,7 +223,7 @@ func (repository *NotificationRepositoryImpl) CountByUserId(ctx context.Context,
 func (repository *NotificationRepositoryImpl) CountUnreadByUserId(ctx context.Context, tx *sql.Tx, userId uuid.UUID, category string) int {
 	var query string
 	var args []interface{}
-	
+
 	if category != "" {
 		query = `SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND status = 'unread' AND category = $2`
 		args = []interface{}{userId, category}
@@ -279,17 +261,17 @@ func (repository *NotificationRepositoryImpl) MarkAsRead(ctx context.Context, tx
 
 	result, err := tx.ExecContext(ctx, query, args...)
 	helper.PanicIfError(err)
-	
+
 	rowsAffected, err := result.RowsAffected()
 	helper.PanicIfError(err)
-	
+
 	return int(rowsAffected)
 }
 
 func (repository *NotificationRepositoryImpl) MarkAllAsRead(ctx context.Context, tx *sql.Tx, userId uuid.UUID, category string) int {
 	var query string
 	var args []interface{}
-	
+
 	if category != "" {
 		query = `
 			UPDATE notifications 
@@ -308,17 +290,17 @@ func (repository *NotificationRepositoryImpl) MarkAllAsRead(ctx context.Context,
 
 	result, err := tx.ExecContext(ctx, query, args...)
 	helper.PanicIfError(err)
-	
+
 	rowsAffected, err := result.RowsAffected()
 	helper.PanicIfError(err)
-	
+
 	return int(rowsAffected)
 }
 
 func (repository *NotificationRepositoryImpl) DeleteByUserIdAndCategory(ctx context.Context, tx *sql.Tx, userId uuid.UUID, category string) int {
 	var query string
 	var args []interface{}
-	
+
 	if category == "" {
 		// Hapus semua notifikasi pengguna jika kategori tidak ditentukan
 		query = "DELETE FROM notifications WHERE user_id = $1"
@@ -328,54 +310,54 @@ func (repository *NotificationRepositoryImpl) DeleteByUserIdAndCategory(ctx cont
 		query = "DELETE FROM notifications WHERE user_id = $1 AND category = $2"
 		args = []interface{}{userId, category}
 	}
-	
+
 	result, err := tx.ExecContext(ctx, query, args...)
 	helper.PanicIfError(err)
-	
+
 	rowsAffected, err := result.RowsAffected()
 	helper.PanicIfError(err)
-	
+
 	return int(rowsAffected)
 }
 
 func (repository *NotificationRepositoryImpl) DeleteSelected(ctx context.Context, tx *sql.Tx, userId uuid.UUID, notificationIds []uuid.UUID) (int64, error) {
-    if len(notificationIds) == 0 {
-        return 0, nil
-    }
-    
-    // Buat placeholder untuk query IN
-    placeholders := make([]string, len(notificationIds))
-    args := make([]interface{}, len(notificationIds)+1)
-    args[0] = userId
-    
-    for i, id := range notificationIds {
-        placeholders[i] = fmt.Sprintf("$%d", i+2)
-        args[i+1] = id
-    }
-    
-    // Buat query dengan placeholder
-    query := fmt.Sprintf(
-        "DELETE FROM notifications WHERE user_id = $1 AND id IN (%s)",
-        strings.Join(placeholders, ","),
-    )
-    
-    // Eksekusi query
-    result, err := tx.ExecContext(ctx, query, args...)
-    if err != nil {
-        return 0, err
-    }
-    
-    // Dapatkan jumlah baris yang dihapus
-    rowsAffected, err := result.RowsAffected()
-    if err != nil {
-        return 0, err
-    }
-    
-    return rowsAffected, nil
+	if len(notificationIds) == 0 {
+		return 0, nil
+	}
+
+	// Buat placeholder untuk query IN
+	placeholders := make([]string, len(notificationIds))
+	args := make([]interface{}, len(notificationIds)+1)
+	args[0] = userId
+
+	for i, id := range notificationIds {
+		placeholders[i] = fmt.Sprintf("$%d", i+2)
+		args[i+1] = id
+	}
+
+	// Buat query dengan placeholder
+	query := fmt.Sprintf(
+		"DELETE FROM notifications WHERE user_id = $1 AND id IN (%s)",
+		strings.Join(placeholders, ","),
+	)
+
+	// Eksekusi query
+	result, err := tx.ExecContext(ctx, query, args...)
+	if err != nil {
+		return 0, err
+	}
+
+	// Dapatkan jumlah baris yang dihapus
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	return rowsAffected, nil
 }
 
 func (repository *NotificationRepositoryImpl) FindSimilarNotification(ctx context.Context, tx *sql.Tx, userId uuid.UUID, category string, notificationType string, referenceId *uuid.UUID, actorId *uuid.UUID) (domain.Notification, error) {
-    query := `
+	query := `
         SELECT 
             n.id, n.user_id, n.category, n.type, n.title, n.message, n.status, n.reference_id, n.reference_type, n.actor_id, n.created_at, n.updated_at,
             u.id, u.name, u.username, u.email, u.headline, u.photo
@@ -385,84 +367,82 @@ func (repository *NotificationRepositoryImpl) FindSimilarNotification(ctx contex
         AND n.category = $2 
         AND n.type = $3
     `
-    
-    args := []interface{}{userId, category, notificationType}
-    argCount := 4
-    
-    if referenceId != nil {
-        query += " AND n.reference_id = $" + fmt.Sprintf("%d", argCount)
-        args = append(args, *referenceId)
-        argCount++
-    }
-    
-    if actorId != nil {
-        query += " AND n.actor_id = $" + fmt.Sprintf("%d", argCount)
-        args = append(args, *actorId)
-    }
-    
-    query += " ORDER BY n.created_at DESC LIMIT 1"
-    
-    var notification domain.Notification
-    var user domain.User
-    var headline, photo sql.NullString
-    var referenceIdStr, actorIdStr sql.NullString
-    var referenceType sql.NullString
-    
-    row := tx.QueryRowContext(ctx, query, args...)
-    err := row.Scan(
-        &notification.Id,
-        &notification.UserId,
-        &notification.Category,
-        &notification.Type,
-        &notification.Title,
-        &notification.Message,
-        &notification.Status,
-        &referenceIdStr,
-        &referenceType,
-        &actorIdStr,
-        &notification.CreatedAt,
-        &notification.UpdatedAt,
-        &user.Id,
-        &user.Name,
-        &user.Username,
-        &user.Email,
-        &headline,
-        &photo,
-    )
-    
-    if err == sql.ErrNoRows {
-        return domain.Notification{}, err
-    }
-    
-    if err != nil {
-        return domain.Notification{}, err
-    }
-    
-    if referenceIdStr.Valid {
-        refId, _ := uuid.Parse(referenceIdStr.String)
-        notification.ReferenceId = &refId
-    }
-    
-    if referenceType.Valid {
-        notification.ReferenceType = &referenceType.String
-    }
-    
-    if actorIdStr.Valid {
-        aId, _ := uuid.Parse(actorIdStr.String)
-        notification.ActorId = &aId
-    }
-    
-    if headline.Valid {
-        user.Headline = headline.String
-    }
-    
-    if photo.Valid {
-        user.Photo = photo.String
-    }
-    
-    notification.Actor = &user
-    
-    return notification, nil
+
+	args := []interface{}{userId, category, notificationType}
+	argCount := 4
+
+	if referenceId != nil {
+		query += " AND n.reference_id = $" + fmt.Sprintf("%d", argCount)
+		args = append(args, *referenceId)
+		argCount++
+	}
+
+	if actorId != nil {
+		query += " AND n.actor_id = $" + fmt.Sprintf("%d", argCount)
+		args = append(args, *actorId)
+	}
+
+	query += " ORDER BY n.created_at DESC LIMIT 1"
+
+	var notification domain.Notification
+	var user domain.User
+	var headline, photo sql.NullString
+	var referenceIdStr, actorIdStr sql.NullString
+	var referenceType sql.NullString
+
+	row := tx.QueryRowContext(ctx, query, args...)
+	err := row.Scan(
+		&notification.Id,
+		&notification.UserId,
+		&notification.Category,
+		&notification.Type,
+		&notification.Title,
+		&notification.Message,
+		&notification.Status,
+		&referenceIdStr,
+		&referenceType,
+		&actorIdStr,
+		&notification.CreatedAt,
+		&notification.UpdatedAt,
+		&user.Id,
+		&user.Name,
+		&user.Username,
+		&user.Email,
+		&headline,
+		&photo,
+	)
+
+	if err == sql.ErrNoRows {
+		return domain.Notification{}, err
+	}
+
+	if err != nil {
+		return domain.Notification{}, err
+	}
+
+	if referenceIdStr.Valid {
+		refId, _ := uuid.Parse(referenceIdStr.String)
+		notification.ReferenceId = &refId
+	}
+
+	if referenceType.Valid {
+		notification.ReferenceType = &referenceType.String
+	}
+
+	if actorIdStr.Valid {
+		aId, _ := uuid.Parse(actorIdStr.String)
+		notification.ActorId = &aId
+	}
+
+	if headline.Valid {
+		user.Headline = headline.String
+	}
+
+	if photo.Valid {
+		user.Photo = photo.String
+	}
+
+	// notification.Actor = &user
+
+	return notification, nil
 }
-
-

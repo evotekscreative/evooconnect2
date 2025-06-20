@@ -13,6 +13,7 @@ const NotificationDropdown = () => {
   const [pusherChannel, setPusherChannel] = useState(null);
 
   const bellRef = useRef(null);
+    const dropdownRef = useRef(null);
   const [isBellOpen, setIsBellOpen] = useState(false);
 
   const getUserIdFromToken = (token) => {
@@ -209,6 +210,22 @@ const NotificationDropdown = () => {
     fetchNotifications();
   }, []);
 
+   useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Jika dropdown terbuka dan klik terjadi di luar bell dan dropdown
+      if (isBellOpen && 
+          !bellRef.current?.contains(event.target) && 
+          !dropdownRef.current?.contains(event.target)) {
+        setIsBellOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isBellOpen]); 
+
   const handleNotificationClick = async (notif) => {
     if (notif.status === "unread") {
       await markAsRead(notif.id);
@@ -232,7 +249,7 @@ const NotificationDropdown = () => {
       </div>
 
       {isBellOpen && (
-        <div className="absolute right-0 z-50 mt-2 bg-white rounded-lg shadow-lg w-80">
+        <div ref={dropdownRef} className="absolute right-0 z-50 mt-2 bg-white rounded-lg shadow-lg w-80">
           <div className="flex items-center justify-between p-4 font-bold text-white border-b bg-gradient-to-r from-sky-500 to-cyan-400">
             <span>Notifications</span>
             {unreadCount > 0 && (

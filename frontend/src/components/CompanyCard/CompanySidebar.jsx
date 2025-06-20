@@ -15,7 +15,7 @@ const CompanySidebar = () => {
       <ul className="text-sm sm:text-base text-gray-800 space-y-2">
         <li className="border-b pb-3">
           <NavLink
-            to="/company-management/company-detail"
+            to="/company-management/my-company"
             className={({ isActive }) => 
               `flex justify-between items-center hover:text-primary transition ${
                 isActive ? "text-primary font-semibold" : ""

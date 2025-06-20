@@ -20,12 +20,20 @@ func setupUserRoutes(
 	connectionController controller.ConnectionController,
 	reportController controller.ReportController,
 	groupController controller.GroupController,
+	groupPinnedPostController controller.GroupPinnedPostController,
 	chatController controller.ChatController,
 	profileViewController controller.ProfileViewController,
 	notificationController controller.NotificationController,
 	searchController controller.SearchController,
 	companySubmissionController controller.CompanySubmissionController,
 	companyManagementController controller.CompanyManagementController,
+	memberCompanyController controller.MemberCompanyController,
+	companyJoinRequestController controller.CompanyJoinRequestController,
+	companyPostController controller.CompanyPostController,
+	companyPostCommentController controller.CompanyPostCommentController,
+	companyFollowerController controller.CompanyFollowerController,
+	jobVacancyController controller.JobVacancyController,
+	jobApplicationController controller.JobApplicationController,
 ) {
 	// Create user middleware
 	userAuth := middleware.NewUserAuthMiddleware()
@@ -123,8 +131,16 @@ func setupUserRoutes(
 	router.PUT("/api/groups/:groupId", userAuth(groupController.Update))
 	router.DELETE("/api/groups/:groupId", userAuth(groupController.Delete))
 
+	router.GET("/api/groups/:groupId/pending-posts",  userAuth(groupController.GetPendingPosts))
+	router.GET("/api/my/pending-posts",  userAuth(postController.FindMyPendingPosts))
+	router.GET("/api/groups/:groupId/my-pending-posts",  userAuth(postController.FindMyPendingPostsByGroupId))
+	router.PUT("/api/posts/:postId/approve",  userAuth(groupController.ApprovePost))
+	router.PUT("/api/posts/:postId/reject",  userAuth(groupController.RejectPost))
 	router.POST("/api/groups/:groupId/posts", userAuth(groupController.CreatePost))
 	router.GET("/api/groups/:groupId/posts", userAuth(groupController.GetGroupPosts))
+	router.POST("/api/posts/:postId/pin",  userAuth(postController.PinPost))
+	router.POST("/api/posts/:postId/unpin",  userAuth(postController.UnpinPost))
+	router.GET("/api/groups/:groupId/pinned-posts",  userAuth(groupPinnedPostController.GetPinnedPosts))
 
 	router.POST("/api/groups/:groupId/members/:userId", userAuth(groupController.AddMember))
 	router.DELETE("/api/groups/:groupId/members/:userId", userAuth(groupController.RemoveMember))
@@ -138,6 +154,13 @@ func setupUserRoutes(
 	router.PUT("/api/invitations/:invitationId/reject", userAuth(groupController.RejectInvitation))
 	router.GET("/api/my-invitations", userAuth(groupController.FindMyInvitations))
 	router.DELETE("/api/invitations/:invitationId", userAuth(groupController.CancelInvitation))
+
+	router.POST("/api/groups/:groupId/join-requests",  userAuth(groupController.CreateJoinRequest))
+	router.GET("/api/groups/:groupId/join-requests",  userAuth(groupController.FindJoinRequestsByGroupId))
+	router.PUT("/api/join-requests/:requestId/accept",  userAuth(groupController.AcceptJoinRequest))
+	router.PUT("/api/join-requests/:requestId/reject",  userAuth(groupController.RejectJoinRequest))
+	router.GET("/api/my-join-requests",  userAuth(groupController.FindMyJoinRequests))
+	router.DELETE("/api/join-requests/:requestId",  userAuth(groupController.CancelJoinRequest))
 
 	// Chat routes
 	router.POST("/api/conversations", userAuth(chatController.CreateConversation))
@@ -176,10 +199,104 @@ func setupUserRoutes(
 
 	// Company Management Routes - using different route structure to avoid conflicts
 	// All specific routes first, then wildcard routes
+	router.GET("/api/companies", userAuth(companyManagementController.GetAllCompanies))
 	router.GET("/api/my-companies", userAuth(companyManagementController.GetMyCompanies))
+	router.GET("/api/companies/:companyId/details", userAuth(companyManagementController.GetCompanyDetail))
+	// router.GET("/api/companies/:companyId", userAuth(companyManagementController.GetCompanyById))
+	router.GET("/api/companies/:companyId/member-companies", userAuth(memberCompanyController.GetMembersByCompanyId))
 	router.DELETE("/api/companies/:companyId", userAuth(companyManagementController.DeleteCompany))
 	router.GET("/api/my-company-edit-requests", userAuth(companyManagementController.GetMyEditRequests))
-	router.GET("/api/companies/:companyId/details", userAuth(companyManagementController.GetCompanyDetail))
 	router.POST("/api/companies/:companyId/request-edit", userAuth(companyManagementController.RequestEdit))
 	router.DELETE("/api/companies/:companyId/request-edit", userAuth(companyManagementController.DeleteCompanyEditRequest))
+
+	// Member Company Routes
+	router.GET("/api/member-companies/:memberCompanyId", userAuth(memberCompanyController.GetMemberByID))
+	router.PUT("/api/member-companies/:memberCompanyId/role", userAuth(memberCompanyController.UpdateMemberRole))
+	router.PUT("/api/member-companies/:memberCompanyId/status", userAuth(memberCompanyController.UpdateMemberStatus))
+	router.DELETE("/api/member-companies/:memberCompanyId", userAuth(memberCompanyController.RemoveMember))
+	router.DELETE("/api/member-companies/:memberCompanyId/leave", userAuth(memberCompanyController.LeaveCompany))
+
+	router.POST("/api/companies/:companyId/join-request", userAuth(companyJoinRequestController.Create))
+	router.GET("/api/my-company-join-requests", userAuth(companyJoinRequestController.FindMyRequests))
+	router.GET("/api/companies/:companyId/join-requests", userAuth(companyJoinRequestController.FindByCompanyId))
+	router.PUT("/api/company-join-requests/:requestId/review", userAuth(companyJoinRequestController.Review))
+	router.DELETE("/api/company-join-requests/:requestId", userAuth(companyJoinRequestController.Cancel))
+	router.GET("/api/companies/:companyId/join-requests/pending-count", userAuth(companyJoinRequestController.GetPendingCount))
+
+	// Company Post Routes
+	router.POST("/api/companies/:companyId/posts", userAuth(companyPostController.Create))
+	router.GET("/api/companies/:companyId/posts", userAuth(companyPostController.FindByCompanyId))
+	router.GET("/api/company-posts", userAuth(companyPostController.FindWithFilters))
+	router.GET("/api/company-posts/:postId", userAuth(companyPostController.FindById))
+	router.PUT("/api/company-posts/:postId", userAuth(companyPostController.Update))
+	router.DELETE("/api/company-posts/:postId", userAuth(companyPostController.Delete))
+	router.PATCH("/api/company-posts/:postId/status", userAuth(companyPostController.UpdateStatus))
+	router.GET("/api/users/:userId/company-posts", userAuth(companyPostController.FindByCreatorId))
+
+	// Company Post Like Routes
+	router.POST("/api/company-posts/:postId/like", userAuth(companyPostController.LikePost))
+	router.DELETE("/api/company-posts/:postId/like", userAuth(companyPostController.UnlikePost))
+
+	// Company Post Comment Routes - following same pattern as regular post comments
+	router.POST("/api/company-posts/:postId/comments", userAuth(companyPostCommentController.CreateComment))
+	router.GET("/api/company-posts/:postId/comments", userAuth(companyPostCommentController.GetCommentsByPostId))
+
+	// Reply comments
+	router.POST("/api/company-posts/:postId/comments/reply", userAuth(companyPostCommentController.CreateReply))
+
+	// Sub-reply comments
+	router.POST("/api/company-posts/:postId/comments/sub-reply", userAuth(companyPostCommentController.CreateSubReply))
+
+	// Comment management
+	router.GET("/api/company-post-comments/:commentId", userAuth(companyPostCommentController.FindById))
+	router.PUT("/api/company-post-comments/:commentId", userAuth(companyPostCommentController.Update))
+	router.DELETE("/api/company-post-comments/:commentId", userAuth(companyPostCommentController.Delete))
+
+	// Get replies by parent comment ID
+	router.GET("/api/company-post-comments/:commentId/replies", userAuth(companyPostCommentController.GetRepliesByParentId))
+
+	// Company Follower Routes
+	router.POST("/api/company-follow/follow", userAuth(companyFollowerController.FollowCompany))
+	router.POST("/api/company-follow/unfollow", userAuth(companyFollowerController.UnfollowCompany))
+	router.GET("/api/company-follow/:companyId/followers", companyFollowerController.GetCompanyFollowers)
+	router.GET("/api/company-follow/:companyId/status", userAuth(companyFollowerController.CheckFollowStatus))
+
+	// Move conflicting route to different path
+	router.GET("/api/user/following-companies", userAuth(companyFollowerController.GetUserFollowingCompanies))
+
+	// Job Vacancy Routes
+	// Company job vacancy management
+	// Public job vacancy endpoints
+	router.GET("/api/jobs", jobVacancyController.FindActiveJobs)
+	router.GET("/api/jobs/search", jobVacancyController.SearchJobs)
+	router.GET("/api/job-vacancies/:vacancyId", jobVacancyController.FindById)
+	router.GET("/api/job-vacancies/:vacancyId/public", jobVacancyController.GetPublicJobDetail)
+	router.GET("/api/companies/:companyId/jobs", jobVacancyController.FindByCompanyId)
+
+	// Protected job vacancy endpoints (authentication required)
+	router.GET("/api/all-jobs", userAuth(jobVacancyController.FindAll))
+	router.GET("/api/users/:userId/jobs", userAuth(jobVacancyController.FindByCreatorId))
+	router.POST("/api/companies/:companyId/jobs", userAuth(jobVacancyController.Create))
+	router.PUT("/api/job-vacancies/:vacancyId", userAuth(jobVacancyController.Update))
+	router.DELETE("/api/job-vacancies/:vacancyId", userAuth(jobVacancyController.Delete))
+	router.PATCH("/api/job-vacancies/:vacancyId/status", userAuth(jobVacancyController.UpdateStatus))
+
+	// Job Application Routes
+	// Apply for jobs
+	router.POST("/api/job-vacancies/:vacancyId/apply", userAuth(jobApplicationController.Create))
+	router.POST("/api/job-applications/:applicationId/upload-cv", userAuth(jobApplicationController.UploadCV))
+
+	// User's job applications
+	router.GET("/api/my-job-applications", userAuth(jobApplicationController.FindMyApplications))
+	router.GET("/api/job-applications/:applicationId", userAuth(jobApplicationController.FindById))
+	router.PUT("/api/job-applications/:applicationId", userAuth(jobApplicationController.Update))
+	router.DELETE("/api/job-applications/:applicationId", userAuth(jobApplicationController.Delete))
+	router.GET("/api/job-applications/:applicationId/status", userAuth(jobApplicationController.CheckApplicationStatus))
+
+	// Company job application management
+	router.GET("/api/job-vacancies/:vacancyId/applications", userAuth(jobApplicationController.FindByJobVacancy))
+	router.GET("/api/companies/:companyId/job-applications", userAuth(jobApplicationController.FindByCompany))
+	router.GET("/api/job-applications", userAuth(jobApplicationController.FindWithFilters))
+	router.PATCH("/api/job-applications/:applicationId/review", userAuth(jobApplicationController.ReviewApplication))
+	router.GET("/api/companies/:companyId/job-applications/stats", userAuth(jobApplicationController.GetStats))
 }

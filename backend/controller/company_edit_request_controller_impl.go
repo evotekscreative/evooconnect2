@@ -21,15 +21,39 @@ func NewCompanyManagementController(companyManagementService service.CompanyMana
 	}
 }
 
-func (controller *CompanyManagementControllerImpl) GetMyCompanies(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	userIdStr := request.Context().Value("user_id").(string)
-	userId, err := uuid.Parse(userIdStr)
+func (controller *CompanyManagementControllerImpl) GetAllCompanies(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Get user ID from token
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+	if userId == uuid.Nil {
+		helper.NewBadRequestError("Invalid user ID")
+		return
+	}
+
+	limit, offset, err := helper.GetPaginationParams(request)
 	if err != nil {
 		helper.WriteJSON(writer, http.StatusBadRequest, web.APIResponse{
 			Code:   http.StatusBadRequest,
 			Status: "BAD_REQUEST",
-			Error:  "Invalid user ID",
+			Error:  "Invalid pagination parameters",
 		})
+		return
+	}
+
+	companies := controller.CompanyManagementService.GetAllCompanies(request.Context(), userId, limit, offset)
+
+	helper.WriteJSON(writer, http.StatusOK, web.APIResponse{
+		Code:   http.StatusOK,
+		Status: "OK",
+		Data:   companies,
+	})
+}
+
+func (controller *CompanyManagementControllerImpl) GetMyCompanies(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+	if userId == uuid.Nil {
+		helper.NewBadRequestError("Invalid user ID")
 		return
 	}
 
@@ -41,6 +65,33 @@ func (controller *CompanyManagementControllerImpl) GetMyCompanies(writer http.Re
 		Data:   companies,
 	})
 }
+
+// func (controller *CompanyManagementControllerImpl) GetCompanyById(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+// 	companyIdStr := params.ByName("companyId")
+// 	companyId, err := uuid.Parse(companyIdStr)
+// 	if err != nil {
+// 		helper.WriteJSON(writer, http.StatusBadRequest, web.APIResponse{
+// 			Code:   http.StatusBadRequest,
+// 			Status: "BAD_REQUEST",
+// 			Error:  "Invalid company ID",
+// 		})
+// 		return
+// 	}
+// 	userId, err := helper.GetUserIdFromToken(request)
+// 	helper.PanicIfError(err)
+// 	if userId == uuid.Nil {
+// 		helper.NewBadRequestError("Invalid user ID")
+// 		return
+// 	}
+// 	company := controller.CompanyManagementService.GetCompanyById(request.Context(), companyId, userId)
+
+// 	// If company found, return 200 OK with company data
+// 	helper.WriteJSON(writer, http.StatusOK, web.APIResponse{
+// 		Code:   http.StatusOK,
+// 		Status: "OK",
+// 		Data:   company,
+// 	})
+// }
 
 func (controller *CompanyManagementControllerImpl) GetCompanyDetail(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	companyIdStr := params.ByName("companyId")
@@ -54,14 +105,10 @@ func (controller *CompanyManagementControllerImpl) GetCompanyDetail(writer http.
 		return
 	}
 
-	userIdStr := request.Context().Value("user_id").(string)
-	userId, err := uuid.Parse(userIdStr)
-	if err != nil {
-		helper.WriteJSON(writer, http.StatusBadRequest, web.APIResponse{
-			Code:   http.StatusBadRequest,
-			Status: "BAD_REQUEST",
-			Error:  "Invalid user ID",
-		})
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+	if userId == uuid.Nil {
+		helper.NewBadRequestError("Invalid user ID")
 		return
 	}
 
@@ -86,14 +133,10 @@ func (controller *CompanyManagementControllerImpl) RequestEdit(writer http.Respo
 		return
 	}
 
-	userIdStr := request.Context().Value("user_id").(string)
-	userId, err := uuid.Parse(userIdStr)
-	if err != nil {
-		helper.WriteJSON(writer, http.StatusBadRequest, web.APIResponse{
-			Code:   http.StatusBadRequest,
-			Status: "BAD_REQUEST",
-			Error:  "Invalid user ID",
-		})
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+	if userId == uuid.Nil {
+		helper.NewBadRequestError("Invalid user ID")
 		return
 	}
 
@@ -138,14 +181,10 @@ func (controller *CompanyManagementControllerImpl) RequestEdit(writer http.Respo
 }
 
 func (controller *CompanyManagementControllerImpl) GetMyEditRequests(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	userIdStr := request.Context().Value("user_id").(string)
-	userId, err := uuid.Parse(userIdStr)
-	if err != nil {
-		helper.WriteJSON(writer, http.StatusBadRequest, web.APIResponse{
-			Code:   http.StatusBadRequest,
-			Status: "BAD_REQUEST",
-			Error:  "Invalid user ID",
-		})
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+	if userId == uuid.Nil {
+		helper.NewBadRequestError("Invalid user ID")
 		return
 	}
 
@@ -170,14 +209,10 @@ func (controller *CompanyManagementControllerImpl) DeleteCompany(writer http.Res
 		return
 	}
 
-	userIdStr := request.Context().Value("user_id").(string)
-	userId, err := uuid.Parse(userIdStr)
-	if err != nil {
-		helper.WriteJSON(writer, http.StatusBadRequest, web.APIResponse{
-			Code:   http.StatusBadRequest,
-			Status: "BAD_REQUEST",
-			Error:  "Invalid user ID",
-		})
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+	if userId == uuid.Nil {
+		helper.NewBadRequestError("Invalid user ID")
 		return
 	}
 
@@ -209,14 +244,10 @@ func (controller *CompanyManagementControllerImpl) DeleteCompanyEditRequest(writ
 		return
 	}
 
-	userIdStr := request.Context().Value("user_id").(string)
-	userId, err := uuid.Parse(userIdStr)
-	if err != nil {
-		helper.WriteJSON(writer, http.StatusBadRequest, web.APIResponse{
-			Code:   http.StatusBadRequest,
-			Status: "BAD_REQUEST",
-			Error:  "Invalid user ID",
-		})
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+	if userId == uuid.Nil {
+		helper.NewBadRequestError("Invalid user ID")
 		return
 	}
 

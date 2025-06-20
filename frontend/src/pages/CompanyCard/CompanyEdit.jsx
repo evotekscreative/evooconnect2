@@ -2,7 +2,6 @@ import React from 'react';
 import Case from "../../components/Case.jsx";
 import { Link } from 'react-router-dom';
 import CompanySidebar from "../../components/CompanyCard/CompanySidebar.jsx";
-import CompanyCard from "../../components/CompanyCard/CompanyCard.jsx";
 
 export default function CompanyEdit() {
   return (
@@ -20,7 +19,6 @@ export default function CompanyEdit() {
                   Company Management
                 </h2>
                 <div className="overflow-x-auto">
-                  <CompanyCard />
                 </div>
               </div>
             </div>

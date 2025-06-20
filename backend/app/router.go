@@ -27,9 +27,19 @@ func NewRouter(
 	notificationController controller.NotificationController,
 	searchController controller.SearchController,
 	adminAuthController controller.AdminAuthController,
+	adminReportController controller.AdminReportController,
+	groupPinnedPostController controller.GroupPinnedPostController,
+	adminNotificationController controller.AdminNotificationController,
 	companySubmissionController controller.CompanySubmissionController,
 	companyManagementController controller.CompanyManagementController,
 	adminCompanyEditController controller.AdminCompanyEditController,
+	memberCompanyController controller.MemberCompanyController,
+	companyJoinRequestController controller.CompanyJoinRequestController,
+	companyPostController controller.CompanyPostController,
+	companyPostCommentController controller.CompanyPostCommentController,
+	companyFollowerController controller.CompanyFollowerController,
+	jobVacancyController controller.JobVacancyController,
+	jobApplicationController controller.JobApplicationController,
 ) *httprouter.Router {
 	router := httprouter.New()
 
@@ -47,12 +57,20 @@ func NewRouter(
 		connectionController,
 		reportController,
 		groupController,
+			groupPinnedPostController,
 		chatController,
 		profileViewController,
 		notificationController,
 		searchController,
 		companySubmissionController,
 		companyManagementController,
+		memberCompanyController,
+		companyJoinRequestController,
+		companyPostController,
+		companyPostCommentController,
+		companyFollowerController,
+		jobVacancyController,
+		jobApplicationController,
 	)
 
 	// Setup admin routes
@@ -61,6 +79,8 @@ func NewRouter(
 		adminAuthController,
 		companySubmissionController,
 		adminCompanyEditController,
+		adminReportController,
+		adminNotificationController,
 	)
 
 	// Static file servers
@@ -75,7 +95,7 @@ func NewRouter(
 func setupStaticRoutes(router *httprouter.Router) {
 	uploadFS := http.FileServer(http.Dir("uploads"))
 	publicFS := http.FileServer(http.Dir("public"))
-
+ 
 	// Add custom file server handler to serve static files
 	router.GET("/uploads/*filepath", func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		// Remove /uploads prefix from path

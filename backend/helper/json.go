@@ -8,22 +8,96 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"errors"
 )
 
-func ReadFromRequestBody(request *http.Request, result interface{}) {
-	if request.Body == nil {
-		PanicIfError(fmt.Errorf("request body is empty"))
+func ReadFromRequestBody(request *http.Request, result interface{}) error {
+    // Periksa apakah body kosong
+    if request.Body == nil {
+        return errors.New("request body is empty")
+    }
+    
+    decoder := json.NewDecoder(request.Body)
+    err := decoder.Decode(result)
+    if err != nil {
+        // Jika body kosong atau tidak valid JSON, berikan error yang lebih deskriptif
+        if err == io.EOF {
+            return errors.New("request body is empty")
+        }
+        return err
+    }
+    return nil
+}
+
+func ReadFromParams(request *http.Request, result interface{}) {
+	params := request.URL.Query()
+	if len(params) == 0 {
+		PanicIfError(fmt.Errorf("no parameters found in the request"))
 	}
 
-	body, err := io.ReadAll(request.Body)
-	PanicIfError(err)
+	val := reflect.ValueOf(result).Elem()
+	typ := val.Type()
 
-	if len(body) == 0 {
-		PanicIfError(fmt.Errorf("request body is empty"))
+	for i := 0; i < val.NumField(); i++ {
+		field := val.Field(i)
+		if !field.CanSet() {
+			continue
+		}
+
+		// Get parameter name from json tag or use struct field name
+		fieldType := typ.Field(i)
+		var paramKey string
+
+		jsonTag := fieldType.Tag.Get("json")
+		if jsonTag != "" && jsonTag != "-" {
+			// Extract the field name from the json tag
+			paramKey = strings.Split(jsonTag, ",")[0]
+		} else {
+			paramKey = strings.ToLower(fieldType.Name)
+		}
+
+		// Get parameter value
+		paramValues := params[paramKey]
+		if len(paramValues) == 0 {
+			continue
+		}
+		paramValue := paramValues[0]
+
+		// Set the value based on field type
+		switch field.Kind() {
+		case reflect.String:
+			field.SetString(paramValue)
+		case reflect.Int, reflect.Int64:
+			if intVal, err := strconv.ParseInt(paramValue, 10, 64); err == nil {
+				field.SetInt(intVal)
+			}
+		case reflect.Bool:
+			if boolVal, err := strconv.ParseBool(paramValue); err == nil {
+				field.SetBool(boolVal)
+			}
+		case reflect.Ptr:
+			// Handle pointer fields
+			if field.IsNil() {
+				// Create a new instance of the pointed type
+				field.Set(reflect.New(field.Type().Elem()))
+			}
+
+			// Set the value based on the pointer's underlying type
+			ptrElem := field.Elem()
+			switch ptrElem.Kind() {
+			case reflect.String:
+				ptrElem.SetString(paramValue)
+			case reflect.Int, reflect.Int64:
+				if intVal, err := strconv.ParseInt(paramValue, 10, 64); err == nil {
+					ptrElem.SetInt(intVal)
+				}
+			case reflect.Bool:
+				if boolVal, err := strconv.ParseBool(paramValue); err == nil {
+					ptrElem.SetBool(boolVal)
+				}
+			}
+		}
 	}
-
-	err = json.Unmarshal(body, result)
-	PanicIfError(err)
 }
 
 func ReadFromRequestForm(request *http.Request, result interface{}) {
@@ -114,3 +188,5 @@ func ReadFromMultipartForm(request *http.Request, result interface{}) {
 		}
 	}
 }
+
+

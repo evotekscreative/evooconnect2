@@ -32,6 +32,8 @@ func (r *BlogRepositoryImpl) FindAll(ctx context.Context) ([]domain.Blog, error)
     query := `
         SELECT id, title, slug, category, content, image_path, user_id, created_at, updated_at
         FROM tb_blog
+        WHERE status IS NULL OR status != 'taken_down'
+        ORDER BY created_at DESC
     `
     rows, err := r.DB.QueryContext(ctx, query)
     if err != nil {
@@ -73,7 +75,7 @@ func (r *BlogRepositoryImpl) Delete(ctx context.Context, blogID string) error {
 
 func (r *BlogRepositoryImpl) FindBySlug(ctx context.Context, slug string) (domain.Blog, error) {
     query := `
-        SELECT id, title, slug, category, content, image_path, user_id, created_at, updated_at
+        SELECT id, title, slug, category, content, image_path, user_id, status, created_at, updated_at
         FROM tb_blog
         WHERE slug = $1
         LIMIT 1
@@ -90,6 +92,7 @@ func (r *BlogRepositoryImpl) FindBySlug(ctx context.Context, slug string) (domai
         &blog.Content,
         &blog.ImagePath,
         &blog.UserID,
+        &blog.Status,
         &blog.CreatedAt,
         &blog.UpdatedAt,
     )
