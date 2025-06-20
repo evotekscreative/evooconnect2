@@ -397,7 +397,6 @@ const handleAccept = async (id, invitationId) => {
   }
 };
 
-
   const handleReject = async (id) => {
     const token = localStorage.getItem("token");
 

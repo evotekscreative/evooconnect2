@@ -392,6 +392,8 @@ const BlogDetail = () => {
           customReason={customReason}
           setCustomReason={setCustomReason}
         />
+
+        {toast && <Toast message={toast.message} type={toast.type} />}
       </div>
     </Case>
   );

@@ -15,6 +15,8 @@ const Navbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMsgOpen, setIsMsgOpen] = useState(false);
+  const [isBellOpen, setIsBellOpen] = useState(false);
   const navigate = useNavigate();
   const [user, setUser] = useState({
     name: "",
@@ -121,9 +123,8 @@ const Navbar = () => {
 
   return (
     <nav
-      className={`flex items-center justify-between px-4 sm:px-8 md:px-16 py-[13px] bg-sky-500 text-white shadow-sm font-sans sticky top-0 z-50 transition-all duration-300 ${
-        isScrolled ? "shadow-lg" : ""
-      }`}
+      className={`flex items-center justify-between px-4 sm:px-8 md:px-16 py-[13px] bg-sky-500 text-white shadow-sm font-sans sticky top-0 z-50 transition-all duration-300 ${isScrolled ? "shadow-lg" : ""
+        }`}
     >
       {/* Left: Logo + Hamburger Menu (mobile) */}
       <div className="flex items-center gap-3">

@@ -1430,7 +1430,6 @@ export default function SocialNetworkFeed() {
     setRemovedImages([...removedImages, fullImagePath]);
     setEditPostImages(editPostImages.filter((_, i) => i !== index));
   };
-
   const handleRemoveNewImage = (index) => {
     const newImagesCopy = [...newEditImages];
     URL.revokeObjectURL(newImagesCopy[index].preview);
@@ -2472,9 +2471,11 @@ export default function SocialNetworkFeed() {
           name: userData.name,
           username: userData.username,
           initials: userData.name
-            .split(" ")
-            .map((n) => n[0])
-            .join(""),
+            ? userData.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+            : "UU",
           photo: userData.photo,
         });
         setProfileImage(userData.photo);

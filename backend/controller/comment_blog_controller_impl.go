@@ -32,14 +32,11 @@ func (controller *CommentBlogControllerImpl) Create(writer http.ResponseWriter, 
 		panic(exception.NewBadRequestError("Invalid blog ID format"))
 	}
 
-	userIdString, ok := request.Context().Value("user_id").(string)
-	if !ok {
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
-	userId, err := uuid.Parse(userIdString)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid user ID format"))
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+	if userId == uuid.Nil {
+		helper.NewBadRequestError("Invalid user ID")
+		return
 	}
 
 	commentResponse := controller.CommentBlogService.Create(request.Context(), blogId, userId, createRequest)

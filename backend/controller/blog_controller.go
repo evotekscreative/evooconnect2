@@ -48,7 +48,7 @@ func (c *BlogControllerImpl) Create(writer http.ResponseWriter, request *http.Re
 	if err != nil {
 		http.Error(writer, "Cannot parse multipart form", http.StatusBadRequest)
 		return
-	}
+	} 
 
 	// Ambil form values
 	blogCreateRequest := web.BlogCreateRequest{

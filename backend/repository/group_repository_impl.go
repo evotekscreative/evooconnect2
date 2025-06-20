@@ -18,6 +18,7 @@ func NewGroupRepository() GroupRepository {
 	return &GroupRepositoryImpl{}
 }
 
+// repository/group_repository_impl.go
 func (repository *GroupRepositoryImpl) Create(ctx context.Context, tx *sql.Tx, group domain.Group) domain.Group {
 	// Set timestamps
 	now := time.Now()
@@ -61,6 +62,8 @@ func (repository *GroupRepositoryImpl) Create(ctx context.Context, tx *sql.Tx, g
 
 	return group
 }
+
+
 func (repository *GroupRepositoryImpl) Update(ctx context.Context, tx *sql.Tx, group domain.Group) domain.Group {
     group.UpdatedAt = time.Now()
 

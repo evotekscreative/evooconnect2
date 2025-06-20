@@ -709,7 +709,7 @@ export default function UserProfile() {
                           <p className="text-sm text-gray-500">
                             {formatDate(exp.start_month, exp.start_year)} -{" "}
                             {exp.end_month === "Month" ||
-                            exp.end_year === "Year"
+                              exp.end_year === "Year"
                               ? "Present"
                               : formatDate(exp.end_month, exp.end_year)}
                           </p>
@@ -773,7 +773,7 @@ export default function UserProfile() {
                           <p className="text-sm text-gray-500">
                             {formatDate(edu.start_month, edu.start_year)} -{" "}
                             {edu.end_month === "Month" ||
-                            edu.end_year === "Year"
+                              edu.end_year === "Year"
                               ? "Present"
                               : formatDate(edu.end_month, edu.end_year)}
                           </p>
@@ -1157,8 +1157,8 @@ export default function UserProfile() {
                     {isLoading
                       ? "Saving..."
                       : editingExperience
-                      ? "Update"
-                      : "Save"}
+                        ? "Update"
+                        : "Save"}
                   </button>
                 </div>
               </div>
@@ -1353,8 +1353,8 @@ export default function UserProfile() {
                     {isLoading
                       ? "Saving..."
                       : editingEducation
-                      ? "Update"
-                      : "Save"}
+                        ? "Update"
+                        : "Save"}
                   </button>
                 </div>
               </div>

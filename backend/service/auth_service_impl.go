@@ -10,6 +10,7 @@ import (
 	"evoconnect/backend/model/domain"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
+	"evoconnect/backend/utils"
 	"fmt"
 	"math/rand"
 	"regexp"
@@ -17,7 +18,7 @@ import (
 
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	// "github.com/dgrijalva/jwt-go"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -41,20 +42,20 @@ func NewAuthService(userRepository repository.UserRepository, db *sql.DB, valida
 	}
 }
 
-func (service *AuthServiceImpl) generateToken(user domain.User) string {
-	var expIn int = helper.GetEnvInt("JWT_EXPIRES_IN", 24)
-	claims := jwt.MapClaims{
-		"user_id": user.Id.String(),
-		"email":   user.Email,
-		"exp":     time.Now().Add(time.Duration(expIn) * time.Hour).Unix(),
-	}
+// func (service *AuthServiceImpl) generateToken(user domain.User) string {
+// 	var expIn int = helper.GetEnvInt("JWT_EXPIRES_IN", 24)
+// 	claims := jwt.MapClaims{
+// 		"user_id": user.Id.String(),
+// 		"email":   user.Email,
+// 		"exp":     time.Now().Add(time.Duration(expIn) * time.Hour).Unix(),
+// 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedToken, err := token.SignedString([]byte(service.JWTSecret))
-	helper.PanicIfError(err)
+// 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+// 	signedToken, err := token.SignedString([]byte(service.JWTSecret))
+// 	helper.PanicIfError(err)
 
-	return signedToken
-}
+// 	return signedToken
+// }
 
 // generateRandomToken creates a random token for verification/reset
 func generateRandomToken() string {
@@ -102,7 +103,17 @@ func (service *AuthServiceImpl) GoogleAuth(ctx context.Context, request web.Goog
 	existingUser, err := service.UserRepository.FindByEmail(ctx, tx, email)
 	if err == nil {
 		// User exists, generate token and return
-		jwtToken := service.generateToken(existingUser)
+		jwtToken, err := utils.GenerateToken(
+			existingUser.Id.String(),
+			existingUser.Email,
+			"user",
+			time.Hour*24*7, // 7 days
+		)
+		if err != nil {
+			fmt.Printf("Error generating token: %v\n", err)
+			return web.RegisterResponse{}, err
+		}
+
 		return web.RegisterResponse{
 			Token: jwtToken,
 			User:  existingUser,
@@ -133,7 +144,16 @@ func (service *AuthServiceImpl) GoogleAuth(ctx context.Context, request web.Goog
 
 	// Save new user to database
 	savedUser := service.UserRepository.Save(ctx, tx, newUser)
-	jwtToken := service.generateToken(savedUser)
+	jwtToken, err := utils.GenerateToken(
+		savedUser.Id.String(),
+		savedUser.Email,
+		"user",
+		time.Hour*24*7, // 7 days
+	)
+	if err != nil {
+		fmt.Printf("Error generating token: %v\n", err)
+		return web.RegisterResponse{}, err
+	}
 
 	return web.RegisterResponse{
 		Token: jwtToken,
@@ -215,70 +235,6 @@ func generateRandomString(length int) string {
 	return string(b)
 }
 
-func (service *AuthServiceImpl) Login(ctx context.Context, request web.LoginRequest) web.LoginResponse {
-	err := service.Validate.Struct(request)
-	helper.PanicIfError(err)
-
-	tx, err := service.DB.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
-
-	user, err := service.UserRepository.FindByEmail(ctx, tx, request.Email)
-	if err != nil {
-		panic(exception.NewNotFoundError(err.Error()))
-	}
-
-	// Check if email is verified
-	// if !user.IsVerified {
-	// 	panic(exception.NewUnauthorizedError("Email not verified. Please check your email for verification instructions."))
-	// }
-
-	// Verify password
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password))
-	if err != nil {
-		panic(exception.NewUnauthorizedError("Invalid credentials"))
-	}
-
-	// Check if user is banned or suspended
-	var status string
-	var suspendedUntil *time.Time
-	
-	// Query to get user status and suspended_until
-	query := "SELECT status, suspended_until FROM users WHERE id = $1"
-	err = tx.QueryRowContext(ctx, query, user.Id).Scan(&status, &suspendedUntil)
-	if err != nil && err != sql.ErrNoRows {
-		panic(exception.NewInternalServerError("Failed to check user status: " + err.Error()))
-	}
-	
-	// If user is banned, prevent login
-	if status == "banned" {
-		panic(exception.NewUnauthorizedError("Your account has been banned. Please contact support for more information."))
-	}
-	
-	// If user is suspended, check if suspension period is still active
-	if status == "suspended" && suspendedUntil != nil {
-		if time.Now().Before(*suspendedUntil) {
-			// User is still suspended
-			panic(exception.NewUnauthorizedError(fmt.Sprintf("Your account is suspended until %s", suspendedUntil.Format("2006-01-02 15:04:05"))))
-		} else {
-			// Suspension period has ended, update user status back to active
-			updateQuery := "UPDATE users SET status = 'active', suspended_until = NULL WHERE id = $1"
-			_, err = tx.ExecContext(ctx, updateQuery, user.Id)
-			if err != nil {
-				panic(exception.NewInternalServerError("Failed to update user status: " + err.Error()))
-			}
-		}
-	}
-
-	// Generate JWT token
-	token := service.generateToken(user)
-
-	return web.LoginResponse{
-		Token: token,
-		User:  user,
-	}
-}
-
 func (service *AuthServiceImpl) Register(ctx context.Context, request web.RegisterRequest) web.RegisterResponse {
 	err := service.Validate.Struct(request)
 	helper.PanicIfError(err)
@@ -303,11 +259,12 @@ func (service *AuthServiceImpl) Register(ctx context.Context, request web.Regist
 	helper.PanicIfError(err)
 
 	user := domain.User{
+		Id:         uuid.New(),
 		Name:       request.Name,
 		Email:      request.Email,
 		Username:   request.Username,
 		Password:   string(hashedPassword),
-		IsVerified: false, // Set to false for new registrations
+		IsVerified: false,
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
 	}
@@ -316,7 +273,7 @@ func (service *AuthServiceImpl) Register(ctx context.Context, request web.Regist
 
 	// Generate verification token
 	token := generateRandomToken()
-	expires := time.Now().Add(24 * time.Hour) // Token valid for 24 hours
+	expires := time.Now().Add(24 * time.Hour)
 
 	// Save token to user record
 	err = service.UserRepository.SaveVerificationToken(ctx, tx, user.Id, token, expires)
@@ -328,7 +285,7 @@ func (service *AuthServiceImpl) Register(ctx context.Context, request web.Regist
         <h1>Welcome to EvoConnect!</h1>
         <p>Hello %s,</p>
         <p>Thank you for registering. Please click the link below to verify your email:</p>
-		<p>Your verification token is:  <b>%s</b></p>
+        <p>Your verification token is:  <b>%s</b></p>
         <p>Or, <a href="%s">click here</a> to verify</p>
         <p>This link will expire in 24 hours.</p>
         <p>Thank you!</p>
@@ -336,15 +293,52 @@ func (service *AuthServiceImpl) Register(ctx context.Context, request web.Regist
 
 	err = helper.EmailSender(user.Email, "Welcome to EvoConnect - Verify Your Email", emailBody)
 	if err != nil {
-		// Log the error but don't fail the registration
 		fmt.Printf("Failed to send verification email: %v\n", err)
 	}
 
-	// Generate JWT token
-	jwtToken := service.generateToken(user)
+	// Generate JWT token using the new utility function
+	jwtToken, err := utils.GenerateUserToken(
+		user.Id.String(),
+		user.Email,
+		time.Hour*24*7, // 7 days
+	)
+	helper.PanicIfError(err)
 
 	return web.RegisterResponse{
 		Token: jwtToken,
+		User:  user,
+	}
+}
+
+func (service *AuthServiceImpl) Login(ctx context.Context, request web.LoginRequest) web.LoginResponse {
+	err := service.Validate.Struct(request)
+	helper.PanicIfError(err)
+
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	user, err := service.UserRepository.FindByEmail(ctx, tx, request.Email)
+	if err != nil {
+		panic(exception.NewNotFoundError(err.Error()))
+	}
+
+	// Verify password
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password))
+	if err != nil {
+		panic(exception.NewUnauthorizedError("Invalid credentials"))
+	}
+
+	// Generate JWT token using the new utility function
+	token, err := utils.GenerateUserToken(
+		user.Id.String(),
+		user.Email,
+		time.Hour*24*7, // 7 days
+	)
+	helper.PanicIfError(err)
+
+	return web.LoginResponse{
+		Token: token,
 		User:  user,
 	}
 }
@@ -453,29 +447,54 @@ func (service *AuthServiceImpl) VerifyEmail(ctx context.Context, request web.Ver
 	err := service.Validate.Struct(request)
 	helper.PanicIfError(err)
 
+	// Get client IP for rate limiting
+	clientIP := helper.GetClientIP(ctx)
+
+	// Check rate limiting first
+	rateLimitTx, err := service.DB.Begin()
+	if err != nil {
+		panic(exception.NewInternalServerError("Database error: " + err.Error()))
+	}
+
+	var isLimited bool
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				rateLimitTx.Rollback()
+				panic(r)
+			}
+		}()
+
+		isLimited, err = service.UserRepository.IsRateLimited(ctx, rateLimitTx, clientIP, "email_verification", 5, 5*time.Minute)
+		if err != nil {
+			rateLimitTx.Rollback()
+			isLimited = false
+		} else {
+			rateLimitTx.Commit()
+		}
+	}()
+
+	if isLimited {
+		panic(exception.NewTooManyRequestsError("Too many verification attempts. Please try again later."))
+	}
+
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
-	// Get user_id from the JWT token (added by middleware)
-	_, ok := ctx.Value("user_id").(string)
-	if !ok {
-		fmt.Println("ERROR: user_id not found in context")
-		panic(exception.NewUnauthorizedError("Unauthorized access"))
-	}
-
 	// Check if token is a reasonable length
 	if len(request.Token) != 6 {
+		// Log failed attempt
+		_ = service.UserRepository.LogFailedAttempt(ctx, tx, clientIP, "email_verification", request.Token)
 		panic(exception.NewBadRequestError("Invalid verification token format"))
 	}
 
-	// Get the current user by ID
+	// Get the user by verification token (not from JWT context)
 	user, err := service.UserRepository.FindByVerificationToken(ctx, tx, request.Token)
 	if err != nil {
 		// Log failed attempt
-		clientIP := helper.GetClientIP(ctx)
 		_ = service.UserRepository.LogFailedAttempt(ctx, tx, clientIP, "email_verification", request.Token)
-		panic(exception.NewBadRequestError("Invalid verification token"))
+		panic(exception.NewBadRequestError("Invalid or expired verification token"))
 	}
 
 	// Check if user is already verified
@@ -488,6 +507,13 @@ func (service *AuthServiceImpl) VerifyEmail(ctx context.Context, request web.Ver
 	// Update user's verification status
 	err = service.UserRepository.UpdateVerificationStatus(ctx, tx, user.Id, true)
 	helper.PanicIfError(err)
+
+	// Clear rate limiting for successful verification
+	clearTx, err := service.DB.Begin()
+	if err == nil {
+		_ = service.UserRepository.ClearFailedAttempts(ctx, clearTx, user.Id, "email_verification")
+		clearTx.Commit()
+	}
 
 	return web.MessageResponse{
 		Message: "Email successfully verified",

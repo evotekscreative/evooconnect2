@@ -16,7 +16,7 @@ func SeedAdmin(db *sql.DB) {
 
 	// Check if admin already exists
 	var count int
-	err := db.QueryRow("SELECT COUNT(*) FROM administrators").Scan(&count)
+	err := db.QueryRow("SELECT COUNT(*) FROM admins").Scan(&count)
 	helper.PanicIfError(err)
 
 	if count > 0 {
@@ -26,38 +26,42 @@ func SeedAdmin(db *sql.DB) {
 
 	// Create default admin
 	id := uuid.New()
-	username := "admin"
 	email := "admin@example.com"
 	password, err := utils.HashPassword("admin123")
 	helper.PanicIfError(err)
 	name := "Administrator"
-	role := "super_admin"
 	now := time.Now()
 
-	// PostgreSQL uses $1, $2, etc. instead of ? for parameterized queries
-	query := `INSERT INTO administrators (id, username, email, password, name, role, created_at, updated_at) 
-              VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+	// Use RETURNING to get the inserted ID (more consistent with repository pattern)
+	query := `INSERT INTO admins (id, email, password, name, created_at, updated_at) 
+              VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
 
-	_, err = db.Exec(query, id, username, email, password, name, role, now, now)
+	var insertedId uuid.UUID
+	err = db.QueryRow(query, id, email, password, name, now, now).Scan(&insertedId)
 	helper.PanicIfError(err)
 
 	log.Println("Admin seeder: Default admin created successfully")
+	log.Printf("Default admin credentials - Email: %s, Password: admin123", email)
+	log.Printf("Admin ID: %s", insertedId.String())
 }
 
 func createAdminTable(db *sql.DB) {
 	query := `
-    CREATE TABLE IF NOT EXISTS administrators (
-        id UUID PRIMARY KEY,
-        username VARCHAR(100) NOT NULL UNIQUE,
-        email VARCHAR(100) NOT NULL UNIQUE,
+    CREATE TABLE IF NOT EXISTS admins (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        email VARCHAR(255) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
         name VARCHAR(100) NOT NULL,
-        role VARCHAR(50) NOT NULL,
-        created_at TIMESTAMP NOT NULL,
-        updated_at TIMESTAMP NOT NULL
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
+    
+    -- Create index for better performance
+    CREATE INDEX IF NOT EXISTS idx_admins_email ON admins(email);
     `
 
 	_, err := db.Exec(query)
 	helper.PanicIfError(err)
+
+	log.Println("Admin seeder: Admin table created/verified successfully")
 }

@@ -147,6 +147,7 @@ const CommentSection = ({ slug, blogId }) => {
     setSubmittingComment(true);
 
     try {
+      // Gunakan endpoint yang benar untuk membuat komentar blog
       const res = await axios.post(
         `${apiUrl}/api/blog-comments/${blogId}`,
         { content: newComment },
@@ -313,6 +314,7 @@ const CommentSection = ({ slug, blogId }) => {
     }
 
     try {
+      // Gunakan endpoint yang benar untuk membalas komentar blog
       const res = await axios.post(
         `${apiUrl}/api/blog/comments/${commentId}/replies`,
         { content },

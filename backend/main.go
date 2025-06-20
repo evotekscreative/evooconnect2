@@ -20,8 +20,6 @@ import (
 func main() {
 	log.Println("Starting server...")
 
-	helper.InitTimezone("Asia/Jakarta")
-
 	// ===== Server initialization =====
 	helper.LoadEnv()
 	db := app.NewDB()
@@ -29,9 +27,15 @@ func main() {
 		log.Fatal("Failed to connect to the database")
 		return
 	}
+	helper.InitTimezone("Asia/Jakarta")
 	validate := validator.New()
 	utils.InitPusherClient()
-	jwtSecret := helper.GetEnv("JWT_SECRET_KEY", "your-secret-key")
+
+	// Initialize JWT dengan secret dari environment
+	jwtSecret := helper.GetEnv("JWT_SECRET_KEY", "your-super-secret-jwt-key-at-least-32-characters-long")
+	utils.InitJWT(jwtSecret) // Initialize JWT utils dengan secret
+
+	log.Printf("JWT Secret loaded successfully")
 
 	// ===== Repositories =====
 	// User-related repositories
@@ -74,6 +78,27 @@ func main() {
 	adminNotificationRepository := repository.NewAdminNotificationRepository()
 
 	// Notification service (moved up)
+	// Admin repository
+	adminRepository := repository.NewAdminRepository()
+
+	// Company-related repositories
+	companyRepository := repository.NewCompanyRepository()
+	companySubmissionRepository := repository.NewCompanySubmissionRepository()
+	companyEditRequestRepository := repository.NewCompanyEditRequestRepository()
+	memberCompanyRepository := repository.NewMemberCompanyRepository()
+	companyJoinRequestRepository := repository.NewCompanyJoinRequestRepository()
+	companyPostRepository := repository.NewCompanyPostRepository()
+	companyPostCommentRepository := repository.NewCompanyPostCommentRepository()
+
+	// Add company follower repository
+	companyFollowerRepository := repository.NewCompanyFollowerRepository()
+
+	// Job-related repositories
+	jobVacancyRepository := repository.NewJobVacancyRepository()
+	jobApplicationRepository := repository.NewJobApplicationRepository()
+
+	// ===== Services =====
+	// Notification service (moved up because it's used by many other services)
 	notificationService := service.NewNotificationService(
 		notificationRepository,
 		userRepository,
@@ -83,15 +108,13 @@ func main() {
 
 	// pinned post repository
 	groupPinnedPostRepository := repository.NewGroupPinnedPostRepository()
-
 	groupBlockedMemberRepository := repository.NewGroupBlockedMemberRepository()
 
-	adminRepository := repository.NewAdminRepository()
+	// adminRepository := repository.NewAdminRepository()
 
 	// ===== Services =====
-	// User-related services
 	profileViewService := service.NewProfileViewService(db, profileViewRepository, userRepository, notificationService)
-	connectionService := service.NewConnectionService(connectionRepository, userRepository, notificationService, db, groupInvitationRepository, validate)
+	connectionService := service.NewConnectionService(connectionRepository, userRepository, notificationService, db, groupInvitationRepository , validate)
 	userService := service.NewUserService(userRepository, connectionRepository, profileViewService, db, validate)
 	authService := service.NewAuthService(userRepository, db, validate, jwtSecret)
 
@@ -195,11 +218,105 @@ func main() {
 	)
 
 	adminNotificationService := service.NewAdminNotificationService(
-    adminNotificationRepository,
-    db,
-)
+		adminNotificationRepository,
+		db,
+	)
 
+	// Admin auth service
 	adminAuthService := service.NewAdminAuthService(adminRepository, db, validate)
+
+	// Member company service
+	memberCompanyService := service.NewMemberCompanyService(
+		memberCompanyRepository,
+		userRepository,
+		companyRepository,
+		db,
+		validate,
+	)
+
+	// Company submission service
+	companySubmissionService := service.NewCompanySubmissionService(
+		companySubmissionRepository,
+		companyRepository,
+		userRepository,
+		memberCompanyRepository,
+		adminRepository,
+		notificationService,
+		db,
+		validate,
+	)
+
+	// Company follower service
+	companyFollowerService := service.NewCompanyFollowerService(
+		companyFollowerRepository,
+		companyRepository,
+		userRepository,
+		notificationService,
+		db,
+		validate,
+	)
+
+	// Company management service (updated with follower repository)
+	companyManagementService := service.NewCompanyManagementService(
+		companyRepository,
+		companyEditRequestRepository,
+		companyJoinRequestRepository,
+		memberCompanyRepository,
+		companyFollowerRepository, // Add this parameter
+		userRepository,
+		adminRepository,
+		notificationService,
+		db,
+		validate,
+	)
+
+	companyJoinRequestService := service.NewCompanyJoinRequestService(
+		db,
+		companyJoinRequestRepository,
+		companyRepository,
+		userRepository,
+		memberCompanyRepository,
+		notificationService,
+		validate,
+	)
+
+	companyPostService := service.NewCompanyPostService(
+		db,
+		companyPostRepository,
+		memberCompanyRepository,
+		companyRepository,
+		userRepository,
+		notificationService,
+		validate,
+	)
+
+	companyPostCommentService := service.NewCompanyPostCommentService(
+		db,
+		companyPostCommentRepository,
+		companyPostRepository,
+		memberCompanyRepository,
+		userRepository,
+		notificationService,
+		validate,
+	)
+
+	jobVacancyService := service.NewJobVacancyService(
+		jobVacancyRepository,
+		companyRepository,
+		userRepository,
+		db,
+		validate,
+	)
+
+	jobApplicationService := service.NewJobApplicationService(
+		jobApplicationRepository,
+		jobVacancyRepository,
+		companyRepository,
+		memberCompanyRepository,
+		userRepository,
+		db,
+		validate,
+	)
 
 	// ===== Controllers =====
 	// User-related controllers
@@ -216,6 +333,7 @@ func main() {
 	blogController := controller.NewBlogController(blogService)
 	postController := controller.NewPostController(postService)
 	commentController := controller.NewCommentController(commentService)
+	commentBlogController := controller.NewCommentBlogController(commentBlogService)
 
 	// Professional info controllers
 	educationController := controller.NewEducationController(educationService)
@@ -227,12 +345,8 @@ func main() {
 	// Chat controller
 	chatController := controller.NewChatController(chatService)
 
-	// ✅ Inject all controllers into router including reportController
 	// Report controller
 	reportController := controller.NewReportController(reportService)
-
-	// Comment blog controller
-	commentBlogController := controller.NewCommentBlogController(commentBlogService)
 
 	// Notification controller
 	notificationController := controller.NewNotificationController(notificationService)
@@ -250,9 +364,29 @@ func main() {
 
 	// admin notification controller
 	adminNotificationController := controller.NewAdminNotificationController(adminNotificationService)
+	// Company submission controller
+	companySubmissionController := controller.NewCompanySubmissionController(companySubmissionService)
+
+	companyManagementController := controller.NewCompanyManagementController(companyManagementService)
+	adminCompanyEditController := controller.NewAdminCompanyEditController(companyManagementService)
+
+	// Member company controller
+	memberCompanyController := controller.NewMemberCompanyController(memberCompanyService)
+
+	companyJoinRequestController := controller.NewCompanyJoinRequestController(companyJoinRequestService)
+
+	companyPostController := controller.NewCompanyPostController(companyPostService)
+
+	companyPostCommentController := controller.NewCompanyPostCommentController(companyPostCommentService)
+
+	// Add company follower controller
+	companyFollowerController := controller.NewCompanyFollowerController(companyFollowerService)
+
+	jobVacancyController := controller.NewJobVacancyController(jobVacancyService)
+	jobApplicationController := controller.NewJobApplicationController(jobApplicationService)
 
 	// ===== Router and Middleware =====
-	// Initialize router with all controllers
+	// Initialize router with all controllers and JWT secret
 	router := app.NewRouter(
 		authController,
 		userController,
@@ -273,25 +407,35 @@ func main() {
 		adminReportController,
 		groupPinnedPostController,
 		adminNotificationController,
+		companySubmissionController,
+		companyManagementController,
+		adminCompanyEditController,
+		memberCompanyController,
+		companyJoinRequestController,
+		companyPostController,
+		companyPostCommentController,
+		companyFollowerController,
+		jobVacancyController,
+		jobApplicationController,
 	)
 
+	// Seed admin data
 	seeder.SeedAdmin(db)
+	// seeder.SeedAllData(db)
 
-	// Create middleware chain
+	// Create middleware chain (only CORS needed now since auth is handled per route)
 	var handler http.Handler = router
-	handler = middleware.NewAdminAuthMiddleware(handler)
-	handler = middleware.NewAuthMiddleware(handler, jwtSecret)
 	handler = middleware.CORSMiddleware(handler)
 
-	addres := helper.GetEnv("APP_SERVER", "localhost:3000")
+	address := helper.GetEnv("APP_SERVER", "localhost:3000")
 
 	// ===== Start Server =====
 	server := http.Server{
-		Addr:    addres,
+		Addr:    address,
 		Handler: handler,
 	}
-	// http://localhost:5173/
-	fmt.Println("\nServer starting on ", addres)
+
+	fmt.Println("\nServer starting on ", address)
 	err := server.ListenAndServe()
 	helper.PanicIfError(err)
 }

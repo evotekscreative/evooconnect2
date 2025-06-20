@@ -29,6 +29,77 @@ func ReadFromRequestBody(request *http.Request, result interface{}) error {
     return nil
 }
 
+func ReadFromParams(request *http.Request, result interface{}) {
+	params := request.URL.Query()
+	if len(params) == 0 {
+		PanicIfError(fmt.Errorf("no parameters found in the request"))
+	}
+
+	val := reflect.ValueOf(result).Elem()
+	typ := val.Type()
+
+	for i := 0; i < val.NumField(); i++ {
+		field := val.Field(i)
+		if !field.CanSet() {
+			continue
+		}
+
+		// Get parameter name from json tag or use struct field name
+		fieldType := typ.Field(i)
+		var paramKey string
+
+		jsonTag := fieldType.Tag.Get("json")
+		if jsonTag != "" && jsonTag != "-" {
+			// Extract the field name from the json tag
+			paramKey = strings.Split(jsonTag, ",")[0]
+		} else {
+			paramKey = strings.ToLower(fieldType.Name)
+		}
+
+		// Get parameter value
+		paramValues := params[paramKey]
+		if len(paramValues) == 0 {
+			continue
+		}
+		paramValue := paramValues[0]
+
+		// Set the value based on field type
+		switch field.Kind() {
+		case reflect.String:
+			field.SetString(paramValue)
+		case reflect.Int, reflect.Int64:
+			if intVal, err := strconv.ParseInt(paramValue, 10, 64); err == nil {
+				field.SetInt(intVal)
+			}
+		case reflect.Bool:
+			if boolVal, err := strconv.ParseBool(paramValue); err == nil {
+				field.SetBool(boolVal)
+			}
+		case reflect.Ptr:
+			// Handle pointer fields
+			if field.IsNil() {
+				// Create a new instance of the pointed type
+				field.Set(reflect.New(field.Type().Elem()))
+			}
+
+			// Set the value based on the pointer's underlying type
+			ptrElem := field.Elem()
+			switch ptrElem.Kind() {
+			case reflect.String:
+				ptrElem.SetString(paramValue)
+			case reflect.Int, reflect.Int64:
+				if intVal, err := strconv.ParseInt(paramValue, 10, 64); err == nil {
+					ptrElem.SetInt(intVal)
+				}
+			case reflect.Bool:
+				if boolVal, err := strconv.ParseBool(paramValue); err == nil {
+					ptrElem.SetBool(boolVal)
+				}
+			}
+		}
+	}
+}
+
 func ReadFromRequestForm(request *http.Request, result interface{}) {
 	if err := request.ParseMultipartForm(0); err != nil {
 		PanicIfError(err)

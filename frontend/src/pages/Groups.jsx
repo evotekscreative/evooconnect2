@@ -8,7 +8,7 @@ import GroupsTabs from "../components/Group/GroupsTabs";
 import GroupsContent from "../components/Group/GroupsContent";
 import GroupsSidebar from "../components/Group/GroupsSidebar";
 import CreateGroupModal from "../components/Group/CreateGroupModal";
-import Alert from "../components/Auth/alert";
+import Alert from "../components/Auth/Alert";
 
 const base_url = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 

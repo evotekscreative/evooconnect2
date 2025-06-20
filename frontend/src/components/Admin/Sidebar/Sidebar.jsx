@@ -25,7 +25,7 @@ export default function Sidebar() {
           {/* Brand */}
           <Link
             className="md:block text-left md:pb-2 text-gray-600 mr-0 inline-block whitespace-nowrap text-sm uppercase font-bold p-4 px-0"
-            to="/"
+            to="/admin/dashboard"
           >
             <img src={logoB} alt="" />
           </Link>
@@ -95,16 +95,16 @@ export default function Sidebar() {
                 <Link
                   className={
                     "text-xs uppercase py-3 font-bold block " +
-                    (window.location.href.indexOf("/dashboard") !== -1
+                    (window.location.href.indexOf("/admin/dashboard") !== -1
                       ? "text-sky-500 hover:text-sky-600"
                       : "text-gray-700 hover:text-gray-500")
                   }
-                  to="/dashboard"
+                  to="/admin/dashboard"
                 >
                   <i
                     className={
                       "fas fa-tv mr-2 text-sm " +
-                      (window.location.href.indexOf("/dashboard") !== -1
+                      (window.location.href.indexOf("/admin/dashboard") !== -1
                         ? "opacity-75"
                         : "text-gray-300")
                     }
@@ -117,16 +117,16 @@ export default function Sidebar() {
                 <Link
                   className={
                     "text-xs uppercase py-3 font-bold block " +
-                    (window.location.href.indexOf("/settings") !== -1
+                    (window.location.href.indexOf("/admin/settings") !== -1
                       ? "text-sky-500 hover:text-sky-600"
                       : "text-gray-700 hover:text-gray-500")
                   }
-                  to="/settings"
+                  to="/admin/settings"
                 >
                   <i
                     className={
                       "fas fa-tools mr-2 text-sm " +
-                      (window.location.href.indexOf("/settings") !== -1
+                      (window.location.href.indexOf("/admin/settings") !== -1
                         ? "opacity-75"
                         : "text-gray-300")
                     }
@@ -139,16 +139,16 @@ export default function Sidebar() {
                 <Link
                   className={
                     "text-xs uppercase py-3 font-bold block " +
-                    (window.location.href.indexOf("/tables") !== -1
+                    (window.location.href.indexOf("/admin/tables") !== -1
                       ? "text-sky-500 hover:text-sky-600"
                       : "text-gray-700 hover:text-gray-500")
                   }
-                  to="/tables"
+                  to="/admin/tables"
                 >
                   <i
                     className={
                       "fas fa-table mr-2 text-sm " +
-                      (window.location.href.indexOf("/tables") !== -1
+                      (window.location.href.indexOf("/admin/tables") !== -1
                         ? "opacity-75"
                         : "text-gray-300")
                     }
@@ -157,20 +157,42 @@ export default function Sidebar() {
                 </Link>
               </li>
 
-              <li className="items-center">
+                 <li className="items-center">
                 <Link
                   className={
                     "text-xs uppercase py-3 font-bold block " +
-                    (window.location.href.indexOf("/list-company") !== -1
+                    (window.location.href.indexOf("/admin/report") !== -1
                       ? "text-sky-500 hover:text-sky-600"
                       : "text-gray-700 hover:text-gray-500")
                   }
-                  to="/list-company"
+                  to="/admin/report"
                 >
                   <i
                     className={
                       "fas fa-table mr-2 text-sm " +
-                      (window.location.href.indexOf("/list-company") !== -1
+                      (window.location.href.indexOf("/admin/report") !== -1
+                        ? "opacity-75"
+                        : "text-gray-300")
+                    }
+                  ></i>{" "}
+                  Report
+                </Link>
+              </li>   
+
+              <li className="items-center">
+                <Link
+                  className={
+                    "text-xs uppercase py-3 font-bold block " +
+                    (window.location.href.indexOf("/admin/list-company") !== -1
+                      ? "text-sky-500 hover:text-sky-600"
+                      : "text-gray-700 hover:text-gray-500")
+                  }
+                  to="/admin/list-company"
+                >
+                  <i
+                    className={
+                      "fas fa-table mr-2 text-sm " +
+                      (window.location.href.indexOf("/admin/list-company") !== -1
                         ? "opacity-75"
                         : "text-gray-300")
                     }
