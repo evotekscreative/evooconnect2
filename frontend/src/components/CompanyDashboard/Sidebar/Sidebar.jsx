@@ -96,6 +96,7 @@ export default function Sidebar() {
     const [collapseShow, setCollapseShow] = React.useState("hidden");
     const { companyId } = useParams();
     const [selectedCompany, setSelectedCompany] = useState(null);
+    const navigate = useNavigate(); // Tambahkan useNavigate di Sidebar
 
     // Callback jika company berubah
     const handleCompanyChange = (company) => {
@@ -106,14 +107,13 @@ export default function Sidebar() {
         <>
             <nav className="md:left-0 md:block md:fixed md:top-0 md:bottom-0 md:overflow-y-auto md:flex-row md:flex-nowrap md:overflow-visible shadow-xl bg-white flex flex-wrap items-center justify-between relative md:w-64 z-10 py-4 px-6">
                 <div className="md:flex-col md:items-stretch md:min-h-full md:flex-nowrap px-0 flex flex-wrap items-center justify-between w-full mx-auto">
+                    {/* Tombol Add Company */}
                     <button
-                        className="cursor-pointer text-black opacity-50 md:hidden px-3 py-1 text-xl leading-none bg-transparent rounded border border-solid border-transparent"
-                        type="button"
-                        onClick={() => setCollapseShow("bg-white m-2 py-3 px-6")}
+                        className="mb-2 w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md shadow hover:bg-blue-700 transition"
+                        onClick={() => navigate('/create-company')}
                     >
-                        <i className="fas fa-bars"></i>
+                        + Add Company
                     </button>
-
                     <div className="mb-4">
                         <Dropdown
                             selectedCompany={selectedCompany}
