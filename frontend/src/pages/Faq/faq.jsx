@@ -29,7 +29,7 @@ export default function Faq() {
             question: "How to do a search in EVOConnect?",
             answer: (
                 <div>
-                    Use the search bar located in the navbar (top of the page). You can search for:                  
+                    Use the search bar located in the navbar (top of the page). You can search for:
                     <ul className="list-disc pl-5 mt-2">
                         <li className="mt-4">User (person's name)</li>
                         <li className="mt-2">Company</li>
@@ -40,11 +40,47 @@ export default function Faq() {
                 </div>
             ),
         },
+
         {
             question: "How do I access my profile?",
             answer: "Click your profile icon in the top right corner → select View Profile."
         },
-       
+
+        {
+            question: "How do I edit my profile?",
+            answer: 'Still on the profile page, click the "Edit Profile" button on your profile icon. You can change your photo, bio, work experience, education, and more.'
+        },
+
+        {
+            question: "How to create posts and articles?",
+            answer: (
+                <div>
+                    The create post feature is available at:
+                    <ul className="list-disc pl-5 mt-2">
+                        <li className="mt-4">Feed/homepage (main)</li>
+                        <li className="mt-2">Your own profile page Simply click “Create Post”, enter content (text/image/video), then click “Submit”.</li>
+                    </ul>
+                </div>
+            ),
+        },
+
+        {
+            question: "How to apply for a job vacancy?",
+            answer: 'Go to the Jobs / Job Vacancy menu in the navbar → select the vacancy you are interested in → click "Apply" → complete the form / upload CV.'
+        },
+
+        {
+            question: "How to create or join a company?",
+            answer: (
+                <div>
+                    Go to the Company menu in the Jobs portal →
+                    <ul className="list-disc pl-5 mt-2">
+                        <li className="mt-4">Click "Create Company" if you want to create a new company.</li>
+                        <li className="mt-2">Or search for company name → click "Join" to submit a joining request.</li>
+                    </ul>
+                </div>
+            ),
+        },
     ];
 
     return (
