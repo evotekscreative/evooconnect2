@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams, Link, useLocation } from "react-router-dom";
 import axios from "axios";
@@ -1015,4 +1013,3 @@ const handleCancelRequest = async () => {
     </Case>
   );
 }
->>>>>>> cbef5fac457346bd61be2b9717983dda1a3b4248

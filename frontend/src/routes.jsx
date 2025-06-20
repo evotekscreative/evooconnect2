@@ -7,9 +7,9 @@ import Connections from "./pages/Connections.jsx";
 import PrivacyPolicy from "./pages/PrivacyPolicy.jsx";
 import TermsCondition from "./pages/TermsCondition.jsx";
 import Jobs from "./pages/Jobs/jobs.jsx";
-import JobProfile from "./pages/Profile/job-profile.jsx";
+import JobProfile from "./pages/company-profile/JobProfile.jsx";
 import Faq from "./pages/Faq/faq.jsx";
-import CompanyProfile from "./pages/Profile/company-profile.jsx";
+import CompanyProfile from "./pages/company-profile/CompanyProfile.jsx";
 import Groups from "./pages/Groups.jsx";
 import CreateBlog from "./pages/Blog/CreateBlog.jsx";
 import BlogDetail from "./pages/Blog/BlogDetail.jsx";
@@ -305,6 +305,14 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <MemberList />
+      </ProtectedRoute>
+    ),
+  },
+   {
+    path: "/search",
+    element: (
+      <ProtectedRoute>
+        <SearchResults />
       </ProtectedRoute>
     ),
   },
