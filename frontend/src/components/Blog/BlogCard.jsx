@@ -29,12 +29,14 @@ const BlogCard = ({ article }) => {
   return (
     <Link to={`/blog-detail/${article.slug}`} className="block h-full">
       <div className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition h-full flex flex-col">
-        {/* Gambar Blog */}
-        <img
-          src={article.photo || blogImage}
-          alt="blog banner"
-          className="w-full h-40 sm:h-48 object-cover"
-        />
+        {/* Gambar Blog dengan aspect ratio 4:3 */}
+        <div className="w-full aspect-[4/3] bg-gray-200 overflow-hidden">
+          <img
+            src={article.photo || blogImage}
+            alt="blog banner"
+            className="w-full h-full object-cover"
+          />
+        </div>
 
         <div className="flex-grow flex flex-col px-4 py-3">
           {/* Kategori */}

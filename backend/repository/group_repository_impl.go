@@ -29,8 +29,8 @@ func (repository *GroupRepositoryImpl) Create(ctx context.Context, tx *sql.Tx, g
 		group.Id = uuid.New()
 	}
 
-	SQL := `INSERT INTO groups(id, name, description, rule, creator_id, image, privacy_level, invite_policy, created_at, updated_at) 
-            VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+	SQL := `INSERT INTO groups(id, name, description, rule, creator_id, image, privacy_level, invite_policy, post_approval, created_at, updated_at) 
+            VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
 
 	_, err := tx.ExecContext(ctx, SQL,
 		group.Id,
@@ -41,6 +41,7 @@ func (repository *GroupRepositoryImpl) Create(ctx context.Context, tx *sql.Tx, g
 		group.Image,
 		group.PrivacyLevel,
 		group.InvitePolicy,
+		group.PostApproval, // Tambahkan parameter post_approval
 		group.CreatedAt,
 		group.UpdatedAt,
 	)
@@ -48,7 +49,7 @@ func (repository *GroupRepositoryImpl) Create(ctx context.Context, tx *sql.Tx, g
 
 	// Add creator as admin member
 	memberSQL := `INSERT INTO group_members(group_id, user_id, role, joined_at, is_active) 
-                  VALUES($1, $2, $3, $4, $5)`
+                VALUES($1, $2, $3, $4, $5)`
 	_, err = tx.ExecContext(ctx, memberSQL,
 		group.Id,
 		group.CreatorId,
@@ -61,31 +62,33 @@ func (repository *GroupRepositoryImpl) Create(ctx context.Context, tx *sql.Tx, g
 	return group
 }
 func (repository *GroupRepositoryImpl) Update(ctx context.Context, tx *sql.Tx, group domain.Group) domain.Group {
-	group.UpdatedAt = time.Now()
+    group.UpdatedAt = time.Now()
 
-	SQL := `UPDATE groups SET 
-			name = $1, 
-			description = $2, 
-			rule = $3, 
-			image = $4, 
-			privacy_level = $5, 
-			invite_policy = $6, 
-			updated_at = $7
-			WHERE id = $8`
+    SQL := `UPDATE groups SET 
+            name = $1, 
+            description = $2, 
+            rule = $3, 
+            image = $4, 
+            privacy_level = $5, 
+            invite_policy = $6, 
+            post_approval = $7, 
+            updated_at = $8
+            WHERE id = $9`
 
-	_, err := tx.ExecContext(ctx, SQL,
-		group.Name,
-		group.Description,
-		group.Rule,
-		group.Image,
-		group.PrivacyLevel,
-		group.InvitePolicy,
-		group.UpdatedAt,
-		group.Id,
-	)
-	helper.PanicIfError(err)
+    _, err := tx.ExecContext(ctx, SQL,
+        group.Name,
+        group.Description,
+        group.Rule,
+        group.Image,
+        group.PrivacyLevel,
+        group.InvitePolicy,
+        group.PostApproval, // Tambahkan parameter post_approval
+        group.UpdatedAt,
+        group.Id,
+    )
+    helper.PanicIfError(err)
 
-	return group
+    return group
 }
 
 func (repository *GroupRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx, groupId uuid.UUID) {
@@ -397,55 +400,55 @@ func (repository *GroupRepositoryImpl) FindInvitationsByGroup(ctx context.Contex
 }
 
 func (repository *GroupRepositoryImpl) Search(ctx context.Context, tx *sql.Tx, query string, limit int, offset int) []domain.Group {
-    // Hanya mengembalikan grup publik
-    SQL := `SELECT id, name, description, rule, creator_id, image, privacy_level, invite_policy, created_at, updated_at
+	// Mengembalikan semua grup (publik dan privat)
+	SQL := `SELECT id, name, description, rule, creator_id, image, privacy_level, invite_policy, created_at, updated_at
             FROM groups
             WHERE (LOWER(name) LIKE LOWER($1) OR LOWER(description) LIKE LOWER($1))
-            AND privacy_level = 'public'
             ORDER BY name
             LIMIT $2 OFFSET $3`
-   
-    searchPattern := "%" + query + "%"
-    fmt.Printf("Executing group search SQL with pattern: %s\n", searchPattern)
-   
-    rows, err := tx.QueryContext(ctx, SQL, searchPattern, limit, offset)
-    if err != nil {
-        fmt.Printf("Error executing group search: %v\n", err)
-        return []domain.Group{}
-    }
-    defer rows.Close()
-   
-    var groups []domain.Group
-    for rows.Next() {
-        group := domain.Group{}
-        err := rows.Scan(
-            &group.Id,
-            &group.Name,
-            &group.Description,
-            &group.Rule,
-            &group.CreatorId,
-            &group.Image,
-            &group.PrivacyLevel,
-            &group.InvitePolicy,
-            &group.CreatedAt,
-            &group.UpdatedAt,
-        )
-        if err != nil {
-            fmt.Printf("Error scanning group: %v\n", err)
-            continue
-        }
-        groups = append(groups, group)
-    }
-   
-    return groups
+
+	searchPattern := "%" + query + "%"
+	fmt.Printf("Executing group search SQL with pattern: %s\n", searchPattern)
+
+	rows, err := tx.QueryContext(ctx, SQL, searchPattern, limit, offset)
+	if err != nil {
+		fmt.Printf("Error executing group search: %v\n", err)
+		return []domain.Group{}
+	}
+	defer rows.Close()
+
+	var groups []domain.Group
+	for rows.Next() {
+		group := domain.Group{}
+		err := rows.Scan(
+			&group.Id,
+			&group.Name,
+			&group.Description,
+			&group.Rule,
+			&group.CreatorId,
+			&group.Image,
+			&group.PrivacyLevel,
+			&group.InvitePolicy,
+			&group.CreatedAt,
+			&group.UpdatedAt,
+		)
+		if err != nil {
+			fmt.Printf("Error scanning group: %v\n", err)
+			continue
+		}
+		groups = append(groups, group)
+	}
+
+	return groups
 }
+
 
 // Fungsi baru yang menerima parameter currentUserId
 func (repository *GroupRepositoryImpl) SearchWithPrivacy(ctx context.Context, tx *sql.Tx, query string, limit int, offset int, currentUserId uuid.UUID) []domain.Group {
-    // Query untuk mencari grup yang:
-    // 1. Cocok dengan kata kunci pencarian
-    // 2. Dan (grup bersifat publik ATAU pengguna adalah anggota grup privat)
-    SQL := `SELECT g.id, g.name, g.description, g.rule, g.creator_id, g.image, g.privacy_level, g.invite_policy, g.created_at, g.updated_at
+	// Query untuk mencari grup yang:
+	// 1. Cocok dengan kata kunci pencarian
+	// 2. Dan (grup bersifat publik ATAU pengguna adalah anggota grup privat)
+	SQL := `SELECT g.id, g.name, g.description, g.rule, g.creator_id, g.image, g.privacy_level, g.invite_policy, g.created_at, g.updated_at
             FROM groups g
             WHERE (LOWER(g.name) LIKE LOWER($1) OR LOWER(g.description) LIKE LOWER($1))
             AND (g.privacy_level = 'public' OR 
@@ -457,40 +460,40 @@ func (repository *GroupRepositoryImpl) SearchWithPrivacy(ctx context.Context, tx
             ORDER BY g.name
             LIMIT $2 OFFSET $3`
 
-    searchPattern := "%" + query + "%"
-    fmt.Printf("Executing group search SQL with pattern: %s\n", searchPattern)
+	searchPattern := "%" + query + "%"
+	fmt.Printf("Executing group search SQL with pattern: %s\n", searchPattern)
 
-    rows, err := tx.QueryContext(ctx, SQL, searchPattern, limit, offset, currentUserId)
-    if err != nil {
-        fmt.Printf("Error executing group search: %v\n", err)
-        return []domain.Group{}
-    }
-    defer rows.Close()
+	rows, err := tx.QueryContext(ctx, SQL, searchPattern, limit, offset, currentUserId)
+	if err != nil {
+		fmt.Printf("Error executing group search: %v\n", err)
+		return []domain.Group{}
+	}
+	defer rows.Close()
 
-    var groups []domain.Group
-    for rows.Next() {
-        group := domain.Group{}
-        err := rows.Scan(
-            &group.Id,
-            &group.Name,
-            &group.Description,
-            &group.Rule,
-            &group.CreatorId,
-            &group.Image,
-            &group.PrivacyLevel,
-            &group.InvitePolicy,
-            &group.CreatedAt,
-            &group.UpdatedAt,
-        )
-        if err != nil {
-            fmt.Printf("Error scanning group: %v\n", err)
-            continue
-        }
-        groups = append(groups, group)
-        fmt.Printf("Found group: %s (privacy: %s)\n", group.Name, group.PrivacyLevel)
-    }
+	var groups []domain.Group
+	for rows.Next() {
+		group := domain.Group{}
+		err := rows.Scan(
+			&group.Id,
+			&group.Name,
+			&group.Description,
+			&group.Rule,
+			&group.CreatorId,
+			&group.Image,
+			&group.PrivacyLevel,
+			&group.InvitePolicy,
+			&group.CreatedAt,
+			&group.UpdatedAt,
+		)
+		if err != nil {
+			fmt.Printf("Error scanning group: %v\n", err)
+			continue
+		}
+		groups = append(groups, group)
+		fmt.Printf("Found group: %s (privacy: %s)\n", group.Name, group.PrivacyLevel)
+	}
 
-    return groups
+	return groups
 }
 
 func (repository *GroupRepositoryImpl) CountMembers(ctx context.Context, tx *sql.Tx, groupId uuid.UUID) int {

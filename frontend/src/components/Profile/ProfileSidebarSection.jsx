@@ -12,7 +12,7 @@ export default function ProfileSidebarSection({
   socialPlatforms,
 }) {
   return (
-    <div>
+    <div className="w-full md:w-1/3 space-y-4">
       <ProfileSidebar
         user={user}
         profileImage={profileImage}

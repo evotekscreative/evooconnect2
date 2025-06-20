@@ -515,3 +515,16 @@ func (repository *ConnectionRepositoryImpl) IsPendingRequest(ctx context.Context
 
 	return exists, nil
 }
+
+
+func (repository *ConnectionRepositoryImpl) CountPendingConnectionRequests(ctx context.Context, tx *sql.Tx, receiverId uuid.UUID) (int, error) {
+	SQL := `SELECT COUNT(*) FROM connection_requests WHERE receiver_id = $1 AND status = 'pending'`
+	
+	var count int
+	err := tx.QueryRowContext(ctx, SQL, receiverId).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	
+	return count, nil
+}

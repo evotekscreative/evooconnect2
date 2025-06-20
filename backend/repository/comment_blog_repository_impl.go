@@ -32,7 +32,20 @@ func (repository *CommentBlogRepositoryImpl) Save(ctx context.Context, tx *sql.T
 	var SQL string
 	var args []interface{}
 
-	if comment.ParentId != nil {
+	if comment.ParentId != nil && comment.ReplyToId != nil {
+		SQL = `INSERT INTO comment_blog (id, blog_id, user_id, parent_id, reply_to_id, content, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+		args = []interface{}{
+			comment.Id,
+			comment.BlogId,
+			comment.UserId,
+			comment.ParentId,
+			comment.ReplyToId,
+			comment.Content,
+			comment.CreatedAt,
+			comment.UpdatedAt,
+		}
+	} else if comment.ParentId != nil {
 		SQL = `INSERT INTO comment_blog (id, blog_id, user_id, parent_id, content, created_at, updated_at)
             VALUES ($1, $2, $3, $4, $5, $6, $7)`
 		args = []interface{}{
@@ -66,7 +79,7 @@ func (repository *CommentBlogRepositoryImpl) Save(ctx context.Context, tx *sql.T
 }
 
 func (repository *CommentBlogRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, commentId uuid.UUID) (domain.CommentBlog, error) {
-	SQL := `SELECT c.id, c.blog_id, c.user_id, c.parent_id, c.content, c.created_at, c.updated_at,
+	SQL := `SELECT c.id, c.blog_id, c.user_id, c.parent_id, c.reply_to_id, c.content, c.created_at, c.updated_at,
            u.id, u.name, COALESCE(u.username, '') as username, COALESCE(u.photo, '') as photo
         FROM comment_blog c
         JOIN users u ON c.user_id = u.id
@@ -75,6 +88,7 @@ func (repository *CommentBlogRepositoryImpl) FindById(ctx context.Context, tx *s
 	var comment domain.CommentBlog
 	var user domain.User
 	var parentId sql.NullString
+	var replyToId sql.NullString
 
 	row := tx.QueryRowContext(ctx, SQL, commentId)
 	err := row.Scan(
@@ -82,6 +96,7 @@ func (repository *CommentBlogRepositoryImpl) FindById(ctx context.Context, tx *s
 		&comment.BlogId,
 		&comment.UserId,
 		&parentId,
+		&replyToId,
 		&comment.Content,
 		&comment.CreatedAt,
 		&comment.UpdatedAt,
@@ -102,6 +117,13 @@ func (repository *CommentBlogRepositoryImpl) FindById(ctx context.Context, tx *s
 		parentUUID, err := uuid.Parse(parentId.String)
 		if err == nil {
 			comment.ParentId = &parentUUID
+		}
+	}
+
+	if replyToId.Valid {
+		replyToUUID, err := uuid.Parse(replyToId.String)
+		if err == nil {
+			comment.ReplyToId = &replyToUUID
 		}
 	}
 

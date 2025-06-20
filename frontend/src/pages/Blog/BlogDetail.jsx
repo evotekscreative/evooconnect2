@@ -5,7 +5,7 @@ import axios from "axios";
 import RandomPosts from "../../components/Blog/RandomPosts";
 import EditBlog from "../../components/Blog/EditBlog";
 import DeleteBlog from "../../components/Blog/DeleteBlog";
-import Alert from "../../components/Auth/Alert";
+import Alert from "../../components/Auth/alert";
 import BlogMenu from "../../components/Blog/BlogMenu";
 import ReportModal from "../../components/Blog/ReportModal";
 import CommentSection from "../../components/Blog/CommentSection";
@@ -256,7 +256,7 @@ const BlogDetail = () => {
 
   return (
     <Case>
-      <div className="relative py-10 bg-gray-50">
+      <div className="relative py-10 pb-16 bg-gray-50">
         {/* Alert Component */}
         {alertInfo.show && (
           <div className="fixed top-20 right-4 z-50">
@@ -276,7 +276,7 @@ const BlogDetail = () => {
               {/* Blog Content */}
               <div className="bg-white shadow-md rounded-lg relative">
                 {/* Blog Image */}
-                <div className="relative h-[400px]">
+                <div className="relative aspect-[4/3] w-full bg-gray-200 overflow-hidden">
                   {/* Back button absolute di atas gambar */}
                   <Link
                     to="/blog"

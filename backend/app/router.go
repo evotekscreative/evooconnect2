@@ -28,6 +28,7 @@ func NewRouter(
 	searchController controller.SearchController,
 	adminAuthController controller.AdminAuthController,
 	adminReportController controller.AdminReportController,
+	groupPinnedPostController controller.GroupPinnedPostController,
 ) *httprouter.Router {
 	router := httprouter.New()
 
@@ -106,7 +107,10 @@ func NewRouter(
 	// Post like/unlike
 	router.POST("/api/post-actions/:postId/like", postController.LikePost)
 	router.DELETE("/api/post-actions/:postId/like", postController.UnlikePost)
-
+	// Post pin/unpin
+	router.POST("/api/posts/:postId/pin", postController.PinPost)
+	router.POST("/api/posts/:postId/unpin", postController.UnpinPost)
+	router.GET("/api/groups/:groupId/pinned-posts", groupPinnedPostController.GetPinnedPosts)
 	// User-specific posts
 	router.GET("/api/users/:userId/posts", postController.FindByUserId)
 
@@ -126,9 +130,15 @@ func NewRouter(
 	router.POST("/api/groups", groupController.Create)
 	router.GET("/api/groups", groupController.FindAll)
 	router.GET("/api/my-groups", groupController.FindMyGroups)
+	router.GET("/api/my-joined-groups", groupController.FindMyJoinedGroups)
 	router.GET("/api/groups/:groupId", groupController.FindById)
 	router.PUT("/api/groups/:groupId", groupController.Update)
 	router.DELETE("/api/groups/:groupId", groupController.Delete)
+	router.GET("/api/groups/:groupId/pending-posts", groupController.GetPendingPosts)
+	router.GET("/api/my/pending-posts", postController.FindMyPendingPosts)
+	router.GET("/api/groups/:groupId/my-pending-posts", postController.FindMyPendingPostsByGroupId)
+	router.PUT("/api/posts/:postId/approve", groupController.ApprovePost)
+	router.PUT("/api/posts/:postId/reject", groupController.RejectPost)
 
 	router.POST("/api/groups/:groupId/posts", groupController.CreatePost)
 	router.GET("/api/groups/:groupId/posts", groupController.GetGroupPosts)
@@ -145,6 +155,15 @@ func NewRouter(
 	router.PUT("/api/invitations/:invitationId/reject", groupController.RejectInvitation)
 	router.GET("/api/my-invitations", groupController.FindMyInvitations)
 	router.DELETE("/api/invitations/:invitationId", groupController.CancelInvitation)
+	router.GET("/api/count-request-invitation", connectionController.CountRequestInvitation)
+
+	// Join request group
+	router.POST("/api/groups/:groupId/join-requests", groupController.CreateJoinRequest)
+	router.GET("/api/groups/:groupId/join-requests", groupController.FindJoinRequestsByGroupId)
+	router.PUT("/api/join-requests/:requestId/accept", groupController.AcceptJoinRequest)
+	router.PUT("/api/join-requests/:requestId/reject", groupController.RejectJoinRequest)
+	router.GET("/api/my-join-requests", groupController.FindMyJoinRequests)
+	router.DELETE("/api/join-requests/:requestId", groupController.CancelJoinRequest)
 
 	// Chat routes
 	router.POST("/api/conversations", chatController.CreateConversation)

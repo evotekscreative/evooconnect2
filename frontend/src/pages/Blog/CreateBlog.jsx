@@ -7,8 +7,10 @@ import CategoryStep from '../../components/Blog/CategoryStep';
 import ContentStep from '../../components/Blog/ContentStep';
 import PreviewStep from '../../components/Blog/PreviewStep';
 
+const MAX_CHARACTERS = 1500;
+
 function CreateBlog() {
-            const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+  const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -20,6 +22,8 @@ function CreateBlog() {
     images: [],
     date: new Date().toLocaleDateString(),
   });
+  const [charCount, setCharCount] = useState(0);
+  const [alertInfo, setAlertInfo] = useState({ show: false, type: "", message: "" });
 
   const steps = [
     { id: 1, label: 'Title' },
@@ -36,45 +40,63 @@ function CreateBlog() {
     }
   };
 
+  // Fungsi untuk menghitung karakter dari HTML (CKEditor)
+  const countCharacters = (html) => {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    return tempDiv.textContent.length;
+  };
+
   const handleFormChange = (field, value) => {
     setFormData((prevData) => ({
       ...prevData,
       [field]: value,
     }));
+    if (field === "content") {
+      setCharCount(countCharacters(value));
+    }
   };
 
   const handleSubmit = async () => {
+    if (charCount > MAX_CHARACTERS) {
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: `Content exceeds maximum ${MAX_CHARACTERS} characters!`,
+      });
+      return;
+    }
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem('token');
-      
+
       const formDataToSend = new FormData();
       formDataToSend.append('title', formData.title);
       formDataToSend.append('category', formData.category);
       formDataToSend.append('content', formData.content);
-      
+
       if (formData.images.length > 0 && formData.images[0].file) {
         formDataToSend.append('image', formData.images[0].file);
       }
-      
+
       const response = await axios.post(
         apiUrl + '/api/blogs',
         formDataToSend,
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data', 
+            'Content-Type': 'multipart/form-data',
           },
         }
       );
-      
+
       const blogSlug = response.data.data.slug;
-      
+
       navigate(`/blog-detail/${blogSlug}`, {
         state: { showPublishedToast: true }
       });
       window.scrollTo(0, 0);
-    setAlertInfo({
+      setAlertInfo({
         show: true,
         type: "success",
         message: "Successfully created blog!",
@@ -118,14 +140,26 @@ function CreateBlog() {
         );
       case 3:
         return (
-          <ContentStep
-            content={formData.content}
-            images={formData.images}
-            onContentChange={(value) => handleFormChange('content', value)}
-            onImagesChange={(value) => handleFormChange('images', value)}
-            onNext={() => handleStepChange('next')}
-            onPrev={() => handleStepChange('prev')}
-          />
+          <>
+            <ContentStep
+              content={formData.content}
+              images={formData.images}
+              onContentChange={(value) => {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = value;
+                const count = tempDiv.textContent.length;
+                if (count <= MAX_CHARACTERS) {
+                  handleFormChange('content', value);
+                }
+              }}
+              onImagesChange={(value) => handleFormChange('images', value)}
+              onNext={() => handleStepChange('next')}
+              onPrev={() => handleStepChange('prev')}
+            />
+            {/* <div className={`text-sm mt-2 text-right ${charCount > MAX_CHARACTERS ? 'text-red-500 font-semibold' : 'text-gray-500'}`}>
+              {charCount}/{MAX_CHARACTERS} characters
+            </div> */}
+          </>
         );
       case 4:
         return (
@@ -134,6 +168,7 @@ function CreateBlog() {
             onSubmit={handleSubmit}
             onPrev={() => handleStepChange('prev')}
             isSubmitting={isSubmitting}
+            isDisabled={charCount > MAX_CHARACTERS}
           />
         );
       default:

@@ -67,7 +67,7 @@ const socialPlatforms = [
   { name: "github", icon: <Github className="w-5 h-5" />, color: "text-black" },
 ];
 
-export default function Profile() {
+export default function ProfilePage() {
   const apiUrl =
     import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
@@ -471,6 +471,7 @@ export default function Profile() {
 
         setExperiences((prev) => [...prev, response.data.data]);
         showAlert("success", "Experience added successfully!");
+        showAlert("success", "Experience added successfully!");
       }
 
       setShowExperienceModal(false); // Close modal
@@ -487,6 +488,10 @@ export default function Profile() {
       });
     } catch (error) {
       console.error("Failed to add/update experience:", error);
+      showAlert(
+        "error",
+        `Failed to ${editingExperience ? "update" : "add"} experience. Please try again.`
+      );
       showAlert(
         "error",
         `Failed to ${editingExperience ? "update" : "add"} experience. Please try again.`
@@ -547,6 +552,7 @@ export default function Profile() {
           )
         );
         showAlert("success", "Education updated successfully!");
+        showAlert("success", "Education updated successfully!");
         setEditingEducation(null);
       } else {
         const response = await axios.post(`${apiUrl}/api/education`, formData, {
@@ -557,6 +563,7 @@ export default function Profile() {
         });
 
         setEducation((prev) => [...prev, response.data.data]);
+        showAlert("success", "Education added successfully!");
         showAlert("success", "Education added successfully!");
       }
 
@@ -574,6 +581,10 @@ export default function Profile() {
       });
     } catch (error) {
       console.error("Failed to add/update education:", error);
+      showAlert(
+        "error",
+        `Failed to ${editingEducation ? "update" : "add"} education. Please try again.`
+      );
       showAlert(
         "error",
         `Failed to ${editingEducation ? "update" : "add"} education. Please try again.`
@@ -616,7 +627,7 @@ export default function Profile() {
       showAlert('success', "Education deleted successfully!");
     } catch (error) {
       console.error("Failed to delete education:", error);
-      showAlert('error', "Failed to delete education. Please try again.");
+      showAlert("error", "Failed to delete education. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -723,8 +734,8 @@ export default function Profile() {
   return (
     <ProfileLayout>
       <Case />
-      <div className="w-full mx-auto py-6 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-6 justify-center">
+      <div className="w-full px-4 py-6 mx-auto sm:px-6">
+        <div className="flex flex-col justify-center max-w-6xl gap-6 mx-auto md:flex-row">
           <ProfileAlert alert={alert} onClose={hideAlert} />
           {/* Sidebar */}
           <ProfileSidebarSection

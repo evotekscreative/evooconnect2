@@ -28,6 +28,7 @@ type reportServiceImpl struct {
 	commentRepository     repository.CommentRepository
 	blogRepository        repository.BlogRepository
 	commentBlogRepository repository.CommentBlogRepository
+	groupRepository       repository.GroupRepository
 	db                    *sql.DB
 }
 
@@ -38,6 +39,7 @@ func NewReportService(
 	commentRepo repository.CommentRepository,
 	blogRepo repository.BlogRepository,
 	commentBlogRepo repository.CommentBlogRepository,
+	groupRepo repository.GroupRepository,
 	db *sql.DB,
 ) ReportService {
 	return &reportServiceImpl{
@@ -47,6 +49,7 @@ func NewReportService(
 		commentRepository:     commentRepo,
 		blogRepository:        blogRepo,
 		commentBlogRepository: commentBlogRepo,
+		groupRepository:       groupRepo,
 		db:                    db,
 	}
 }
@@ -85,6 +88,8 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 		_, err = s.commentBlogRepository.FindById(ctx, tx, targetUUID)
 	case "user":
 		_, err = s.userRepository.FindById(ctx, tx, targetUUID)
+	case "group":
+		_, err = s.groupRepository.FindById(ctx, tx, targetUUID)
 	default:
 		return web.ReportResponse{}, errors.New("unrecognized content type")
 	}
@@ -299,8 +304,25 @@ func (s *reportServiceImpl) enrichReportResponse(ctx context.Context, report dom
 				response.TargetContent = truncateText(comment.Content, 100)
 			}
 		}
-	}
+	case "group":
+		targetUUID, err := uuid.Parse(report.TargetID)
+		if err == nil {
+			group, err := s.groupRepository.FindById(ctx, tx, targetUUID)
+			if err == nil {
+				response.TargetTitle = group.Name
+				response.TargetContent = truncateText(group.Description, 100)
+				if group.Image != nil {
+					response.TargetPhoto = *group.Image
+				}
 
+				// Ambil data creator grup
+				creator, err := s.userRepository.FindById(ctx, tx, group.CreatorId)
+				if err == nil {
+					response.TargetAuthorName = creator.Name
+				}
+			}
+		}
+	}
 	return response, nil
 }
 
@@ -418,6 +440,29 @@ func (s *reportServiceImpl) FindById(ctx context.Context, id string) (web.Detail
 					"user_id":    comment.UserId,
 					"content":    comment.Content,
 					"created_at": comment.CreatedAt,
+				}
+			}
+		}
+	case "group":
+		targetUUID, err := uuid.Parse(report.TargetID)
+		if err == nil {
+			group, err := s.groupRepository.FindById(ctx, tx, targetUUID)
+			if err == nil {
+				// Ambil data creator grup
+				creator, _ := s.userRepository.FindById(ctx, tx, group.CreatorId)
+				var creatorName string
+				if creator.Name != "" {
+					creatorName = creator.Name
+				}
+
+				targetDetail = map[string]interface{}{
+					"id":           group.Id,
+					"name":         group.Name,
+					"description":  group.Description,
+					"creator_id":   group.CreatorId,
+					"creator_name": creatorName,
+					"PrivacyLevel": group.PrivacyLevel,
+					"created_at":   group.CreatedAt,
 				}
 			}
 		}
@@ -563,6 +608,59 @@ func (s *reportServiceImpl) TakeAction(ctx context.Context, id string, request w
 				// Take down comment blog
 				query := "UPDATE comment_blog SET status = 'taken_down' WHERE id = $1"
 				_, err = tx.ExecContext(ctx, query, targetUUID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+			}
+		case "group":
+			targetUUID, err := uuid.Parse(report.TargetID)
+			if err != nil {
+				return web.AdminActionResponse{}, err
+			}
+
+			switch request.Action {
+			case "take_down":
+				// Take down group
+				query := "UPDATE groups SET status = 'taken_down' WHERE id = $1"
+				_, err = tx.ExecContext(ctx, query, targetUUID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+			case "ban":
+				// Ban group - hapus semua data terkait
+
+				// 1. Hapus semua post grup
+				_, err = tx.ExecContext(ctx, "DELETE FROM posts WHERE group_id = $1", targetUUID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
+				// 2. Hapus semua pending post grup
+				_, err = tx.ExecContext(ctx, "DELETE FROM pending_posts WHERE group_id = $1", targetUUID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
+				// 3. Hapus semua join request grup
+				_, err = tx.ExecContext(ctx, "DELETE FROM group_join_requests WHERE group_id = $1", targetUUID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
+				// 4. Hapus semua invitation grup
+				_, err = tx.ExecContext(ctx, "DELETE FROM group_invitations WHERE group_id = $1", targetUUID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
+				// 5. Hapus semua member grup
+				_, err = tx.ExecContext(ctx, "DELETE FROM group_members WHERE group_id = $1", targetUUID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
+				// 6. Hapus grup itu sendiri
+				_, err = tx.ExecContext(ctx, "DELETE FROM groups WHERE id = $1", targetUUID)
 				if err != nil {
 					return web.AdminActionResponse{}, err
 				}

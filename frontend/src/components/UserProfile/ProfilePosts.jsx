@@ -1,4 +1,4 @@
-import { Clock, ChevronLeft, ChevronRight, ThumbsUp, MessageCircle, Share2 } from "lucide-react";
+import { Clock, ChevronLeft, ChevronRight, ThumbsUp, MessageCircle, Share2, Globe, Users   } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function ProfilePosts({ userPosts, user, profileImage, apiUrl, username }) {
@@ -8,6 +8,21 @@ export default function ProfilePosts({ userPosts, user, profileImage, apiUrl, us
   const scrollRight = () => {
     document.getElementById("post-container")?.scrollBy({ left: 300, behavior: "smooth" });
   };
+
+  const getVisibilityIcon = (visibility) => {
+    switch (visibility) {
+      case "public":
+        return <Globe size={16} className="text-gray-600" />;
+      case "private":
+        return <LockKeyhole size={16} className="text-gray-600" />;
+      case "connections":
+      case "only connection":
+        return <Users size={16} className="text-gray-600" />;
+      default:
+        return null;
+    }
+  };
+
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-md">
@@ -58,6 +73,7 @@ export default function ProfilePosts({ userPosts, user, profileImage, apiUrl, us
                           {user.name
                             .split(" ")
                             .map((n) => n[0])
+                            .slice(0, 2)
                             .join("")}
                         </span>
                       </div>
@@ -73,7 +89,9 @@ export default function ProfilePosts({ userPosts, user, profileImage, apiUrl, us
                         month: "short",
                         day: "numeric",
                       })}{" "}
-                      • 🌐
+                      <p className="inline-flex items-center gap-1">
+                      • {getVisibilityIcon(post.visibility)}
+                      </p>
                     </p>
                   </div>
                 </div>

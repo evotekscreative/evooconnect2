@@ -7,9 +7,9 @@ import Connections from "./pages/Connection/Connections.jsx";
 import PrivacyPolicy from "./pages/PrivacyPolicy.jsx";
 import TermsCondition from "./pages/TermsCondition.jsx";
 import Jobs from "./pages/Jobs/index.jsx";
-import JobProfile from "./pages/company-profile/JobProfile.jsx";
+import JobProfile from "./pages/CompanyProfile/JobProfile.jsx";
 import Faq from "./pages/Faq/index.jsx";
-import CompanyProfile from "./pages/company-profile/CompanyProfile.jsx";
+import CompanyProfile from "./pages/CompanyProfile/CompanyProfile.jsx";
 import Groups from "./pages/Groups.jsx";
 import CreateBlog from "./pages/Blog/CreateBlog.jsx";
 import BlogDetail from "./pages/Blog/BlogDetail.jsx";
@@ -31,6 +31,7 @@ import UserProfile from "./pages/Profile/UserProfile.jsx";
 import UserPostPage from "./pages/UserPostPage.jsx";
 import MemberList from "./pages/MemberList.jsx";
 import SearchResults from "./pages/SearchResults.jsx";
+import ApprovePost from "./pages/ApprovePost.jsx";
 import CreateCompany from "./pages/Jobs/CreateCompany.jsx";
 import UserListConnection from "./pages/Connection/UserListConnection.jsx";
 import Page404 from "./pages/Blankpage/Page404.jsx";
@@ -292,6 +293,14 @@ const router = createBrowserRouter([
   {
     path: "/post/:postId",
     element: <SinglePost />,
+  },
+  {
+    path: "groups/:groupId/approve-posts",
+    element: (
+      <ProtectedRoute>
+        <ApprovePost />
+      </ProtectedRoute>
+    ),
   },
 
   {

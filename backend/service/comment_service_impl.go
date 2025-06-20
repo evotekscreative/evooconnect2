@@ -16,12 +16,12 @@ import (
 )
 
 type CommentServiceImpl struct {
-	CommentRepository repository.CommentRepository
-	PostRepository    repository.PostRepository
-	UserRepository    repository.UserRepository
+	CommentRepository   repository.CommentRepository
+	PostRepository      repository.PostRepository
+	UserRepository      repository.UserRepository
 	NotificationService NotificationService
-	DB                *sql.DB
-	Validate          *validator.Validate
+	DB                  *sql.DB
+	Validate            *validator.Validate
 }
 
 func NewCommentService(
@@ -32,12 +32,12 @@ func NewCommentService(
 	db *sql.DB,
 	validate *validator.Validate) CommentService {
 	return &CommentServiceImpl{
-		CommentRepository: commentRepository,
-		PostRepository:    postRepository,
-		UserRepository:    userRepository,
+		CommentRepository:   commentRepository,
+		PostRepository:      postRepository,
+		UserRepository:      userRepository,
 		NotificationService: notificationService,
-		DB:                db,
-		Validate:          validate,
+		DB:                  db,
+		Validate:            validate,
 	}
 }
 
@@ -102,41 +102,41 @@ func (service *CommentServiceImpl) Create(ctx context.Context, postId uuid.UUID,
 
 // Mengubah FindByPostId menjadi GetByPostId agar sesuai interface
 func (service *CommentServiceImpl) GetByPostId(ctx context.Context, postId uuid.UUID, limit, offset int) web.CommentListResponse {
-    tx, err := service.DB.Begin()
-    helper.PanicIfError(err)
-    defer helper.CommitOrRollback(tx)
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
 
-    // Check if post exists
-    _, err = service.PostRepository.FindById(ctx, tx, postId)
-    if err != nil {
-        panic(exception.NewNotFoundError("Post not found"))
-    }
+	// Check if post exists
+	_, err = service.PostRepository.FindById(ctx, tx, postId)
+	if err != nil {
+		panic(exception.NewNotFoundError("Post not found"))
+	}
 
-    var nilParentId *uuid.UUID = nil
-    comments, err := service.CommentRepository.FindByPostId(ctx, tx, postId, nilParentId, limit, offset)
-    helper.PanicIfError(err)
-    total, err := service.CommentRepository.CountByPostId(ctx, tx, postId)
-    helper.PanicIfError(err)
+	var nilParentId *uuid.UUID = nil
+	comments, err := service.CommentRepository.FindByPostId(ctx, tx, postId, nilParentId, limit, offset)
+	helper.PanicIfError(err)
+	total, err := service.CommentRepository.CountByPostId(ctx, tx, postId)
+	helper.PanicIfError(err)
 
-    // Hitung jumlah replies untuk setiap komentar
-    commentResponses := make([]web.CommentResponse, 0)
-    for _, comment := range comments {
-        // Konversi ke response
-        commentResponse := helper.ToCommentResponse(comment)
-        
-        // Hitung jumlah replies secara eksplisit
-        repliesCount, err := service.CommentRepository.CountRepliesByParentId(ctx, tx, comment.Id)
-        if err == nil {
-            commentResponse.RepliesCount = repliesCount
-        }
-        
-        commentResponses = append(commentResponses, commentResponse)
-    }
+	// Hitung jumlah replies untuk setiap komentar
+	commentResponses := make([]web.CommentResponse, 0)
+	for _, comment := range comments {
+		// Konversi ke response
+		commentResponse := helper.ToCommentResponse(comment)
 
-    return web.CommentListResponse{
-        Comments: commentResponses,
-        Total:    total,
-    }
+		// Hitung jumlah replies secara eksplisit
+		repliesCount, err := service.CommentRepository.CountRepliesByParentId(ctx, tx, comment.Id)
+		if err == nil {
+			commentResponse.RepliesCount = repliesCount
+		}
+
+		commentResponses = append(commentResponses, commentResponse)
+	}
+
+	return web.CommentListResponse{
+		Comments: commentResponses,
+		Total:    total,
+	}
 }
 
 // Mengubah FindById menjadi GetById agar sesuai interface
@@ -225,12 +225,25 @@ func (service *CommentServiceImpl) Reply(ctx context.Context, commentId uuid.UUI
         panic(exception.NewNotFoundError("Comment not found"))
     }
 
+    // Tentukan parent_id yang benar
+    // Jika komentar yang dibalas adalah komentar utama, gunakan ID-nya sebagai parent_id
+    // Jika komentar yang dibalas adalah balasan, gunakan parent_id dari komentar tersebut
+    var parentId *uuid.UUID
+    if parentComment.ParentId == nil {
+        // Ini adalah komentar utama, jadi gunakan ID-nya sebagai parent_id
+        parentId = &commentId
+    } else {
+        // Ini adalah balasan, jadi gunakan parent_id dari komentar tersebut
+        parentId = parentComment.ParentId
+    }
+
     // Buat komentar baru sebagai balasan
     comment := domain.Comment{
         Id:        uuid.New(),
         PostId:    parentComment.PostId,
         UserId:    userId,
-        ParentId:  &commentId, // Set parent ID ke ID komentar yang dibalas
+        ParentId:  parentId,         // Set parent ID ke ID komentar utama
+        ReplyToId: &commentId,       // Set reply_to_id ke ID komentar yang dibalas langsung
         Content:   request.Content,
         CreatedAt: time.Now(),
         UpdatedAt: time.Now(),
@@ -270,6 +283,7 @@ func (service *CommentServiceImpl) Reply(ctx context.Context, commentId uuid.UUI
             Id:           parentComment.Id,
             Content:      parentComment.Content,
             Username:     parentUser.Username,
+            Name:         parentUser.Name,
             ProfilePhoto: parentUser.Photo,
         },
     }
@@ -290,18 +304,12 @@ func (service *CommentServiceImpl) GetReplies(ctx context.Context, commentId uui
     }
 
     // Ambil balasan komentar
-    // Gunakan FindRepliesByParentId yang hanya menerima 3 parameter
-    replies := service.CommentRepository.FindRepliesByParentId(ctx, tx, commentId)
+    replies, err := service.CommentRepository.FindRepliesByParentIdSafe(ctx, tx, commentId)
+    helper.PanicIfError(err)
     
     // Hitung total balasan
     count, err := service.CommentRepository.CountRepliesByParentId(ctx, tx, commentId)
     helper.PanicIfError(err)
-
-    // Ambil informasi user untuk komentar yang dibalas
-    parentUser, err := service.UserRepository.FindById(ctx, tx, parentComment.UserId)
-    if err != nil {
-        panic(exception.NewNotFoundError("Parent comment user not found"))
-    }
 
     // Buat response
     var replyResponses []web.CommentResponse
@@ -310,6 +318,31 @@ func (service *CommentServiceImpl) GetReplies(ctx context.Context, commentId uui
         user, err := service.UserRepository.FindById(ctx, tx, reply.UserId)
         if err != nil {
             continue // Skip jika user tidak ditemukan
+        }
+
+        // Tentukan komentar yang dibalas
+        var replyToComment domain.Comment
+        var replyToUser domain.User
+        
+        if reply.ReplyToId != nil {
+            // Jika ada reply_to_id, ambil komentar yang dibalas langsung
+            replyToComment, err = service.CommentRepository.FindById(ctx, tx, *reply.ReplyToId)
+            if err == nil {
+                // Ambil user dari komentar yang dibalas
+                replyToUser, err = service.UserRepository.FindById(ctx, tx, replyToComment.UserId)
+                if err != nil {
+                    // Jika user tidak ditemukan, gunakan parent comment
+                    replyToUser = *parentComment.User
+                }
+            } else {
+                // Jika komentar yang dibalas tidak ditemukan, gunakan parent comment
+                replyToComment = parentComment
+                replyToUser = *parentComment.User
+            }
+        } else {
+            // Jika tidak ada reply_to_id, gunakan parent comment
+            replyToComment = parentComment
+            replyToUser = *parentComment.User
         }
 
         replyResponse := web.CommentResponse{
@@ -327,10 +360,11 @@ func (service *CommentServiceImpl) GetReplies(ctx context.Context, commentId uui
             RepliesCount: 0, // Balasan tidak memiliki balasan lagi
             ParentId:     reply.ParentId,
             ReplyTo: &web.ReplyToInfo{
-                Id:           parentComment.Id,
-                Content:      parentComment.Content,
-                Username:     parentUser.Username,
-                ProfilePhoto: parentUser.Photo,
+                Id:           replyToComment.Id,
+                Content:      replyToComment.Content,
+                Username:     replyToUser.Username,
+                Name:         replyToUser.Name,
+                ProfilePhoto: replyToUser.Photo,
             },
         }
 

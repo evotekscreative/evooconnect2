@@ -28,11 +28,12 @@ func optionalStringPtr(s string) *string {
 }
 
 type ConnectionServiceImpl struct {
-	ConnectionRepository repository.ConnectionRepository
-	UserRepository       repository.UserRepository
-	NotificationService  NotificationService
-	DB                   *sql.DB
-	Validate             *validator.Validate
+	ConnectionRepository      repository.ConnectionRepository
+	UserRepository            repository.UserRepository
+	NotificationService       NotificationService
+	DB                        *sql.DB
+	GroupInvitationRepository repository.GroupInvitationRepository
+	Validate                  *validator.Validate
 }
 
 func NewConnectionService(
@@ -40,6 +41,7 @@ func NewConnectionService(
 	userRepository repository.UserRepository,
 	notificationService NotificationService,
 	DB *sql.DB,
+	groupInvitationRepository repository.GroupInvitationRepository,
 	validate *validator.Validate,
 ) ConnectionService {
 	return &ConnectionServiceImpl{
@@ -47,6 +49,7 @@ func NewConnectionService(
 		UserRepository:       userRepository,
 		NotificationService:  notificationService,
 		DB:                   DB,
+		GroupInvitationRepository: groupInvitationRepository,
 		Validate:             validate,
 	}
 }
@@ -446,4 +449,27 @@ func (service *ConnectionServiceImpl) CancelConnectionRequest(ctx context.Contex
 	}
 
 	return "Connection request canceled successfully"
+}
+
+func (service *ConnectionServiceImpl) CountRequestInvitation(ctx context.Context, userId uuid.UUID) web.RequestCountResponse {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Hitung jumlah permintaan koneksi yang pending
+	connectionRequests, err := service.ConnectionRepository.CountPendingConnectionRequests(ctx, tx, userId)
+	helper.PanicIfError(err)
+
+	// Hitung jumlah undangan grup yang pending
+	groupInvitations, err := service.GroupInvitationRepository.CountPendingInvitationsByInviteeId(ctx, tx, userId)
+	helper.PanicIfError(err)
+
+	// Hitung total
+	total := connectionRequests + groupInvitations
+
+	return web.RequestCountResponse{
+		ConnectionRequests: connectionRequests,
+		GroupInvitations:   groupInvitations,
+		Total:              total,
+	}
 }

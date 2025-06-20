@@ -11,7 +11,7 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Profile from "../../assets/img/logo-evo-2.png";
 import NetworkManager from "../../components/NetworkManager.jsx"
-import Alert from "../../components/Auth/Alert.jsx";
+import Alert from "../../components/Auth/alert.jsx";
 
 
 export default function ConnectionList() {

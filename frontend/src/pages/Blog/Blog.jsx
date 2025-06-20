@@ -64,7 +64,7 @@ const Blog = () => {
   return (
     <Case>
       <BlogHeader />
-      <div className="bg-white max-w-7xl mx-auto px-4 py-10">
+      <div className="bg-white max-w-7xl mx-auto px-4 py-10 pb-16 md:pb-0 mb-10">
         <h2 className="h-[80px] sm:h-[120px] text-2xl font-semibold text-center text-gray-800">
           Latest Articles
         </h2>

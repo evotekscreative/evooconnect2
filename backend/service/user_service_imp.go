@@ -129,25 +129,26 @@ func (service *UserServiceImpl) UpdateProfile(ctx context.Context, userId uuid.U
 }
 
 func (service *UserServiceImpl) GetByUsername(ctx context.Context, username string) web.UserProfileResponse {
-	tx, err := service.DB.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
+    tx, err := service.DB.Begin()
+    helper.PanicIfError(err)
+    defer helper.CommitOrRollback(tx)
 
-	user, err := service.UserRepository.FindByUsername(ctx, tx, username)
-	if err != nil {
-		panic(exception.NewNotFoundError("User not found"))
-	}
+    user, err := service.UserRepository.FindByUsername(ctx, tx, username)
+    if err != nil {
+        panic(exception.NewNotFoundError("User not found"))
+    }
 
-	// Cek apakah user saat ini sedang melihat profil orang lain
-	currentUserIdStr, ok := ctx.Value("user_id").(string)
-	var isConnected bool
-	var isConnectedRequest string = "none"
+    // Cek apakah user saat ini sedang melihat profil orang lain
+    currentUserIdStr, ok := ctx.Value("user_id").(string)
+    var isConnected bool
+    var isConnectedRequest string = "none"
 
-	if ok {
+    if ok {
         // User sedang login, cek status koneksi
         currentUserId, err := uuid.Parse(currentUserIdStr)
         if err == nil && currentUserId != user.Id {
-            // Rekam view secara langsung
+            // Rekam view secara langsung (tanpa goroutine)
+            // Ini akan mencegah duplikasi data
             service.ProfileViewService.RecordView(ctx, user.Id, currentUserId)
 
             // Hanya cek koneksi jika bukan profil sendiri

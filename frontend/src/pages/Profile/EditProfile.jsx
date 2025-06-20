@@ -27,7 +27,7 @@ import {
   Building,
   AlignLeft,
 } from "lucide-react";
-import Alert from "@/components/Auth/Alert";
+import Alert from "@/components/Auth/alert";
 import axios from "axios";
 
 const base_url =
@@ -745,11 +745,16 @@ export default function EditProfile() {
                           className="w-full pl-10 border-gray-200 focus:ring-blue-500"
                           value={phone}
                           onChange={(e) => {
-                            const onlyNums = e.target.value.replace(
-                              /[^0-9]/g,
-                              ""
-                            );
-                            setPhone(onlyNums);
+                            let val = e.target.value.replace(/[^0-9]/g, "");
+                            // Jika user mengetik 08 di awal, otomatis ubah ke +628
+                            if (val.startsWith("08")) {
+                              val = "62" + val.slice(1);
+                            }
+                            // Tambahkan + di depan jika belum ada
+                            if (val && !val.startsWith("+")) {
+                              val = "+" + val;
+                            }
+                            setPhone(val);
                           }}
                           onKeyDown={(e) => {
                             const allowedKeys = [

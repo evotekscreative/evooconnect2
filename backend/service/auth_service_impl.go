@@ -239,6 +239,37 @@ func (service *AuthServiceImpl) Login(ctx context.Context, request web.LoginRequ
 		panic(exception.NewUnauthorizedError("Invalid credentials"))
 	}
 
+	// Check if user is banned or suspended
+	var status string
+	var suspendedUntil *time.Time
+	
+	// Query to get user status and suspended_until
+	query := "SELECT status, suspended_until FROM users WHERE id = $1"
+	err = tx.QueryRowContext(ctx, query, user.Id).Scan(&status, &suspendedUntil)
+	if err != nil && err != sql.ErrNoRows {
+		panic(exception.NewInternalServerError("Failed to check user status: " + err.Error()))
+	}
+	
+	// If user is banned, prevent login
+	if status == "banned" {
+		panic(exception.NewUnauthorizedError("Your account has been banned. Please contact support for more information."))
+	}
+	
+	// If user is suspended, check if suspension period is still active
+	if status == "suspended" && suspendedUntil != nil {
+		if time.Now().Before(*suspendedUntil) {
+			// User is still suspended
+			panic(exception.NewUnauthorizedError(fmt.Sprintf("Your account is suspended until %s", suspendedUntil.Format("2006-01-02 15:04:05"))))
+		} else {
+			// Suspension period has ended, update user status back to active
+			updateQuery := "UPDATE users SET status = 'active', suspended_until = NULL WHERE id = $1"
+			_, err = tx.ExecContext(ctx, updateQuery, user.Id)
+			if err != nil {
+				panic(exception.NewInternalServerError("Failed to update user status: " + err.Error()))
+			}
+		}
+	}
+
 	// Generate JWT token
 	token := service.generateToken(user)
 

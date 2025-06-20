@@ -92,6 +92,7 @@ export default function ProfilePosts({ userPosts, apiUrl, user, profileImage, us
                           {user.name
                             .split(" ")
                             .map((n) => n[0])
+                            .slice(0, 2)
                             .join("")}
                         </span>
                       </div>
@@ -107,7 +108,9 @@ export default function ProfilePosts({ userPosts, apiUrl, user, profileImage, us
                         month: "short",
                         day: "numeric",
                       })}{" "}
+                      <p className="inline-flex items-center gap-1">
                       • {getVisibilityIcon(post.visibility)}
+                      </p>
                     </p>
                   </div>
                 </div>

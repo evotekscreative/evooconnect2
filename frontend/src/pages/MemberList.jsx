@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
-import Alert from "../components/Auth/Alert";
+import Alert from "../components/Auth/alert";
 import Case from "../components/Case";
 import {
   MoreHorizontal,

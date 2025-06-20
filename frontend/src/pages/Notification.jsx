@@ -14,9 +14,19 @@ import {
   Trash2,
   Eye,
   Grid,
+  Check,
+  X
 } from "lucide-react";
 import Case from "../components/Case";
-import Alert from "../components/Auth/Alert";
+import Alert from "../components/Auth/alert";
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+import relativeTime from 'dayjs/plugin/relativeTime'; // Tambahkan import ini
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.extend(relativeTime); 
 
 const NotificationPage = () => {
   const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
@@ -49,6 +59,9 @@ const NotificationPage = () => {
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
   const [pusherChannel, setPusherChannel] = useState(null);
+  const [processingAction, setProcessingAction] = useState(null); // Track which notification is being processed
+  const [connectionStatus, setConnectionStatus] = useState({});
+
 
   const [alertInfo, setAlertInfo] = React.useState({
     show: false,
@@ -99,33 +112,130 @@ const NotificationPage = () => {
     }
   };
 
-  // Function to format time as "X time ago"
-  const formatTimeAgo = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const seconds = Math.floor((now - date) / 1000);
+  // Tambahkan fungsi handleAcceptConnection// Tambahkan state untuk melacak status koneksi
 
-    let interval = Math.floor(seconds / 31536000);
-    if (interval >= 1)
-      return `${interval} year${interval === 1 ? "" : "s"} ago`;
+  // Modifikasi fungsi handleAcceptConnection
+  const handleAcceptConnection = async (notification) => {
+    const token = localStorage.getItem("token");
 
-    interval = Math.floor(seconds / 2592000);
-    if (interval >= 1)
-      return `${interval} month${interval === 1 ? "" : "s"} ago`;
+    try {
+      setProcessingAction(notification.id);
 
-    interval = Math.floor(seconds / 86400);
-    if (interval >= 1) return `${interval} day${interval === 1 ? "" : "s"} ago`;
+      // Panggil API untuk menerima permintaan koneksi
+      await axios.put(
+        `${apiUrl}/api/connections/requests/${notification.referenceId}/accept`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-    interval = Math.floor(seconds / 3600);
-    if (interval >= 1)
-      return `${interval} hour${interval === 1 ? "" : "s"} ago`;
+      // Update status koneksi untuk notifikasi ini
+      setConnectionStatus(prev => ({
+        ...prev,
+        [notification.id]: 'accepted'
+      }));
 
-    interval = Math.floor(seconds / 60);
-    if (interval >= 1)
-      return `${interval} minute${interval === 1 ? "" : "s"} ago`;
+      // Update notifikasi dengan status koneksi baru
+      setNotifications(prev =>
+        prev.map(n =>
+          n.id === notification.id
+            ? { ...n, connectionStatus: 'accepted' }
+            : n
+        )
+      );
 
-    return "Just now";
+      // Tampilkan pesan sukses
+      setAlertInfo({
+        show: true,
+        type: "success",
+        message: "Connection request accepted successfully!"
+      });
+
+    } catch (error) {
+      console.error("Failed to accept connection:", error);
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: error.response?.data?.message || "Failed to accept connection request"
+      });
+    } finally {
+      setProcessingAction(null);
+    }
   };
+
+  // Modifikasi fungsi handleRejectConnection
+  const handleRejectConnection = async (notification) => {
+    const token = localStorage.getItem("token");
+
+    try {
+      setProcessingAction(notification.id);
+
+      // Panggil API untuk menolak permintaan koneksi
+      await axios.put(
+        `${apiUrl}/api/connections/requests/${notification.referenceId}/reject`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Update status koneksi untuk notifikasi ini
+      setConnectionStatus(prev => ({
+        ...prev,
+        [notification.id]: 'rejected'
+      }));
+
+      // Update notifikasi dengan status koneksi baru
+      setNotifications(prev =>
+        prev.map(n =>
+          n.id === notification.id
+            ? { ...n, connectionStatus: 'rejected' }
+            : n
+        )
+      );
+
+      // Tampilkan pesan sukses
+      setAlertInfo({
+        show: true,
+        type: "success",
+        message: "Connection request rejected"
+      });
+
+    } catch (error) {
+      console.error("Failed to reject connection:", error);
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: error.response?.data?.message || "Failed to reject connection request"
+      });
+    } finally {
+      setProcessingAction(null);
+    }
+  };
+
+
+
+const formatPostTime = (dateString) => {
+  if (!dateString) return "";
+
+  try {
+    const utcDate = dayjs.utc(dateString);
+
+    if (!utcDate.isValid()) {
+      console.warn("Invalid date:", dateString);
+      return "";
+    }
+
+    const now = dayjs.utc();
+    const diffInHours = now.diff(utcDate, 'hour');
+
+    if (diffInHours < 24) {
+     return utcDate.format('h:mm A'); // hasil: 2:49 AM // Format 24 jam, misal: 02:49
+    } else {
+      return utcDate.format('MMM D [at] HH:mm'); // Misal: Jun 5 at 02:49
+    }
+  } catch (error) {
+    console.error("Time formatting error:", error);
+    return "";
+  }
+};
 
   // Inisialisasi Pusher
   useEffect(() => {
@@ -134,7 +244,6 @@ const NotificationPage = () => {
 
     if (!userId) return;
 
-    // Konfigurasi Pusher
     const pusher = new Pusher("a579dc17c814f8b723ea", {
       cluster: "ap1",
       authorizer: (channel) => {
@@ -172,13 +281,14 @@ const NotificationPage = () => {
 
       const newNotification = {
         id: notif.id,
-        type: notif.category, // <-- PENTING!
+        type: notif.category,
         title: notif.title,
         desc: notif.message,
-        time: formatTimeAgo(notif.created_at),
+        time: formatPostTime(notif.created_at),
         icon: getNotificationIcon(notif.category),
         actor: notif.actor,
         status: notif.status,
+        referenceId: notif.reference_id, // Add reference ID for connection requests
       };
 
       setNotifications((prev) => [newNotification, ...prev]);
@@ -215,41 +325,56 @@ const NotificationPage = () => {
     }
   };
 
-  const fetchNotifications = async () => {
-    const token = localStorage.getItem("token");
-    setLoading(true);
-    try {
-      const res = await axios.get(apiUrl + "/api/notifications", {
-        params: {
-          limit: 99,
-          offset: 0,
-          category: notifTab === "all" ? undefined : notifTab,
-        },
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+const fetchNotifications = async () => {
+  const token = localStorage.getItem("token");
+  setLoading(true);
+  try {
+    const res = await axios.get(apiUrl + "/api/notifications", {
+      params: {
+        limit: 99,
+        offset: 0,
+        category: notifTab === "all" ? undefined : notifTab,
+      },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-      const notifData = res.data.data.notifications.map((n) => ({
+    const notifData = res.data.data.notifications.map((n) => {
+      // Deteksi lebih akurat untuk permintaan koneksi masuk
+      const isConnectionRequest = 
+        n.category === "connection" && 
+        n.reference_id && 
+        (n.title.toLowerCase().includes("wants to connect") || 
+         n.message.toLowerCase().includes("wants to connect")) &&
+        // Pastikan ini adalah permintaan yang belum diproses
+        !n.connection_status;
+      
+      return {
         id: n.id,
         type: n.category,
         title: n.title,
         desc: n.message,
-        time: formatTimeAgo(n.created_at),
+        time: formatPostTime(n.created_at),
         icon: getNotificationIcon(n.category),
         actor: n.actor,
         status: n.status,
-      }));
+        referenceId: n.reference_id,
+        connectionStatus: n.connection_status || null,
+        isConnectionRequest: isConnectionRequest
+      };
+    });
 
-      setNotifications(notifData);
-      setUnreadCount(res.data.data.unread_count);
-    } catch (error) {
-      console.error("FETCH ERROR", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    setNotifications(notifData);
+    setUnreadCount(res.data.data.unread_count);
+  } catch (error) {
+    console.error("FETCH ERROR", error);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   useEffect(() => {
     fetchNotifications();
@@ -269,7 +394,6 @@ const NotificationPage = () => {
         }
       );
 
-      // Update status notifikasi di local state
       setNotifications((prev) =>
         prev.map((n) =>
           n.id === notificationId ? { ...n, status: "read" } : n
@@ -294,7 +418,6 @@ const NotificationPage = () => {
         }
       );
 
-      // Update semua notifikasi ke status read
       setNotifications((prev) => prev.map((n) => ({ ...n, status: "read" })));
       setUnreadCount(0);
 
@@ -354,7 +477,7 @@ const NotificationPage = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-      setNotifications([]); // Kosongkan notifikasi di state
+      setNotifications([]);
       setModalOpen(false);
       setSelectedNotifId(null);
       setAlertInfo({
@@ -378,7 +501,6 @@ const NotificationPage = () => {
     setSelectedToDelete([]);
   };
 
-  // Handle checkbox change
   const handleCheckboxChange = (id) => {
     setSelectedToDelete((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
@@ -398,7 +520,6 @@ const NotificationPage = () => {
           },
         }
       );
-      // Hapus notifikasi di state sesuai kategori
       setNotifications((prev) => prev.filter((n) => n.type !== category));
       setAlertInfo({
         show: true,
@@ -507,8 +628,8 @@ const NotificationPage = () => {
                           key={tab.key}
                           onClick={() => setNotifTab(tab.key)}
                           className={`flex flex-col items-center min-w-[64px] px-2 py-2 rounded-lg transition ${notifTab === tab.key
-                              ? "text-sky-600 bg-sky-50"
-                              : "text-gray-600"
+                            ? "text-sky-600 bg-sky-50"
+                            : "text-gray-600"
                             }`}
                         >
                           {tab.icon ? (
@@ -529,11 +650,10 @@ const NotificationPage = () => {
                         key={tab.key}
                         onClick={() => setNotifTab(tab.key)}
                         className={`flex items-center px-4 py-1.5 rounded-full border-2 transition font-semibold text-sm
-                        ${
-                          notifTab === tab.key
+                        ${notifTab === tab.key
                             ? "border-sky-400 text-sky-600 bg-sky-50"
                             : "border-sky-300 text-sky-500 hover:border-sky-400 bg-white"
-                        }`}
+                          }`}
                         style={{ minWidth: 80, maxWidth: "100%" }}
                       >
                         {tab.icon && React.cloneElement(tab.icon, { size: 18, className: "mr-2" })}
@@ -668,6 +788,71 @@ const NotificationPage = () => {
                                 )}
                               </div>
                             </div>
+
+                            {/* Add Accept/Reject buttons fornnection requests */}
+                           {/* Add Accept/Reject buttons for connection requests */}
+{n.isConnectionRequest && (
+  <div className="flex gap-2 mt-2">
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        handleAcceptConnection(n);
+      }}
+      disabled={processingAction === n.id}
+      className="flex items-center gap-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs transition disabled:opacity-50"
+    >
+      {processingAction === n.id ? (
+        "Processing..."
+      ) : (
+        <>
+          <Check size={14} />
+          Accept
+        </>
+      )}
+    </button>
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        handleRejectConnection(n);
+      }}
+      disabled={processingAction === n.id}
+      className="flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs transition disabled:opacity-50"
+    >
+      {processingAction === n.id ? (
+        "Processing..."
+      ) : (
+        <>
+          <X size={14} />
+          Reject
+        </>
+      )}
+    </button>
+  </div>
+)}
+
+
+
+                            {/* Show status after action */}
+                            {n.type === "connection" &&
+                              (connectionStatus[n.id] === 'accepted' || n.connectionStatus === 'accepted') && (
+                                <div className="mt-2">
+                                  <span className="inline-flex items-center gap-1 bg-green-100 text-green-800 px-3 py-1 rounded text-xs">
+                                    <Check size={14} />
+                                    Accepted
+                                  </span>
+                                </div>
+                              )}
+
+                            {n.type === "connection" &&
+                              (connectionStatus[n.id] === 'rejected' || n.connectionStatus === 'rejected') && (
+                                <div className="mt-2">
+                                  <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-800 px-3 py-1 rounded text-xs">
+                                    <X size={14} />
+                                    Rejected
+                                  </span>
+                                </div>
+                              )}
+
                           </div>
                         </div>
                       ))

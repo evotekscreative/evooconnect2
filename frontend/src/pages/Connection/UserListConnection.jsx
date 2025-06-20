@@ -11,7 +11,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import Profile from "../../assets/img/logo-evo-2.png";
 import NetworkManager from "../../components/NetworkManager.jsx";
-import Alert from "../../components/Auth/Alert.jsx";
+import Alert from "../../components/Auth/alert.jsx";
 
 // Avatar component for displaying profile photo or initials
 function Avatar({ src, name, size = 64 }) {

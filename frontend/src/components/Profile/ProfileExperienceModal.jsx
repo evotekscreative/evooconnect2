@@ -42,13 +42,13 @@ export default function ProfileExperienceModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4 sm:px-0">
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 sm:px-0">
           <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
             <div className="mb-4">
-              <h2 className="text-lg font-semibold mb-2">Delete Experience</h2>
+              <h2 className="text-sm font-semibold mb-2">Delete Experience</h2>
               <p>Are you sure you want to delete this experience?</p>
             </div>
             <div className="flex justify-end gap-2">
@@ -69,7 +69,7 @@ export default function ProfileExperienceModal({
         </div>
       )}
 
-      <div className="bg-white max-h-[90vh] overflow-y-auto p-6 rounded-lg shadow-lg w-full max-w-lg">
+      <div className="bg-white max-h-[70vh] overflow-y-auto p-6 rounded-lg shadow-lg w-full max-w-lg">
         <form onSubmit={handleExperienceSubmit}>
           {/* Header */}
           <div className="flex justify-between items-start mb-4">
@@ -95,7 +95,7 @@ export default function ProfileExperienceModal({
               name="job_title"
               value={experienceForm.job_title}
               onChange={handleExperienceChange}
-              placeholder="Job Title *"
+              placeholder="Job Title "
               className="w-full p-2 border rounded"
               required
             />
@@ -104,7 +104,7 @@ export default function ProfileExperienceModal({
               name="company_name"
               value={experienceForm.company_name}
               onChange={handleExperienceChange}
-              placeholder="Company Name *"
+              placeholder="Company Name "
               className="w-full p-2 border rounded"
               required
             />
@@ -120,7 +120,7 @@ export default function ProfileExperienceModal({
             {/* Dates */}
             <div className="flex gap-4">
               <div className="flex-1">
-                <label className="block text-sm font-medium mb-1">Start Date *</label>
+                <label className="block text-sm font-medium mb-1">Start Date</label>
                 <div className="flex gap-2">
                   <select
                     name="start_month"
@@ -129,8 +129,9 @@ export default function ProfileExperienceModal({
                     className="w-full p-2 border rounded"
                     required
                   >
+                    <option value="Month" disabled>Month</option>
                     {[
-                      "Month", "January", "February", "March", "April", "May", "June",
+                      "January", "February", "March", "April", "May", "June",
                       "July", "August", "September", "October", "November", "December"
                     ].map((month) => (
                       <option key={month} value={month}>{month}</option>
@@ -143,14 +144,15 @@ export default function ProfileExperienceModal({
                     className="w-full p-2 border rounded"
                     required
                   >
-                    {["Year", ...Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i)].map((year) => (
+                    <option value="Year" disabled>Year</option>
+                    {[...Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i)].map((year) => (
                       <option key={year} value={year}>{year}</option>
                     ))}
                   </select>
                 </div>
               </div>
               <div className="flex-1">
-                <label className="block text-sm font-medium mb-1">End Date</label>
+                <label className="block text-sm font-medium mb-1">End Date <span className="text-gray-300 text-xs">(Optional)</span></label>
                 <div className="flex gap-2">
                   <select
                     name="end_month"
@@ -231,7 +233,7 @@ export default function ProfileExperienceModal({
               <button
                 type="button"
                 onClick={() => setShowDeleteModal(true)}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                className="px-3 py-3 text-xs sm:px-4 sm:py-3 sm:text-base bg-red-500 text-white rounded hover:bg-red-600"
               >
                 Delete Experience
               </button>
@@ -240,16 +242,17 @@ export default function ProfileExperienceModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 bg-gray-300 rounded"
+                className="px-3 py-2 text-xs sm:px-4 sm:py-2 sm:text-base bg-gray-300 rounded"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className={`px-4 py-2 rounded ${experienceForm.caption.length > 1000
+                className={`px-3 py-1 text-xs sm:px-4 sm:py-2 sm:text-base rounded ${
+                  experienceForm.caption.length > 1000
                     ? "bg-gray-300 text-gray-400 cursor-not-allowed"
                     : "bg-blue-600 text-white hover:bg-blue-700"
-                  }`}
+                }`}
                 disabled={experienceForm.caption.length > 1000}
               >
                 Save

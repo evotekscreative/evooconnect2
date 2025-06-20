@@ -150,19 +150,21 @@ const EditBlog = ({ article, setArticle, onClose, onSuccess, showToast }) => {
               className="w-full px-3 py-2 rounded border"
             />
             <div className="mt-3">
-              {imageFile ? (
-                <img
-                  src={URL.createObjectURL(imageFile)}
-                  alt="Preview"
-                  className="rounded max-h-60 object-cover"
-                />
-              ) : article.photo ? (
-                <img
-                  src={article.photo}
-                  alt="Current Image"
-                  className="rounded max-h-60 object-cover"
-                />
-              ) : null}
+              <div className="aspect-[4/3] w-full max-h-[400px] rounded overflow-hidden bg-gray-100 flex items-center justify-center">
+                {imageFile ? (
+                  <img
+                    src={URL.createObjectURL(imageFile)}
+                    alt="Preview"
+                    className="object-contain w-full h-full"
+                  />
+                ) : article.photo ? (
+                  <img
+                    src={article.photo}
+                    alt="Current Image"
+                    className="rounded w-full h-full object-cover"
+                  />
+                ) : null}
+              </div>
             </div>
           </div>
           <div>

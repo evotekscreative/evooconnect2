@@ -1,4 +1,4 @@
-import Alert from "@/components/Auth/Alert";
+import Alert from "@/components/Auth/alert";
 
 export default function ProfileAlert({ alert, onClose }) {
   if (!alert.show) return null;

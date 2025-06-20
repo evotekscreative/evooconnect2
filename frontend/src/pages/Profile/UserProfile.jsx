@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import Case from "../../components/Case";
-import Alert from "../../components/Auth/Alert";
+import Alert from "../../components/Auth/alert";
 import ProfileSidebar from "../../components/UserProfile/ProfileSidebar";
 import ProfileAbout from "../../components/UserProfile/ProfileAbout";
 import ProfileExperience from "../../components/UserProfile/ProfileExperience";
