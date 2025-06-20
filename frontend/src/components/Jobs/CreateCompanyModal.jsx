@@ -122,18 +122,6 @@ export default function CreateCompanyModal({
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Headquarters</label>
-                        <Input
-                            type="text"
-                            className="w-full"
-                            placeholder="Enter Headquarters"
-                            name="headquarters"
-                            value={companyForm.headquarters}
-                            onChange={handleCompanyInputChange}
-                        />
-                    </div>
-
-                    <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Company Type</label>
                         <Input
                             type="text"

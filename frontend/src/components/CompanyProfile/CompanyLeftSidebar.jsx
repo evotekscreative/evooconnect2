@@ -100,7 +100,9 @@ export default function CompanyLeftSidebar({ company }) {
       />
 
       <div className="flex flex-col items-center bg-white p-6 rounded-md shadow">
-        <img src={job1} alt="Company Logo" className="w-40 h-40" />
+        <img src={'http://localhost:3000/' + company.logo}
+        alt="Company Logo" 
+        className="w-40 h-40" />
         <h2 className="text-lg font-bold mt-4">{company.name}</h2>
         <p className="text-gray-600 text-center p-4">{company.caption}</p>
         <hr className="border-t-2 border-gray-300 my-4 w-full" />

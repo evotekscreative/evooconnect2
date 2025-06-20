@@ -46,15 +46,17 @@ import ReportUser from "./pages/Admin/Report/ReportUser.jsx";
 
 import CreateCompanyStatus from "./pages/CreateCompanyStatus.jsx";
 import CompanyDetail from "./pages/CompanyCard/CompanyDetail.jsx";
+import MyCompanies from "./pages/CompanyCard/MyCompanies.jsx";
 import CompanyPending from "./pages/CompanyCard/CompanyPending.jsx";
 import CompanyEdit from "./pages/CompanyCard/CompanyEdit.jsx"
-// import ProtectedCompanyRoute from "./components/Auth/protectedCompanyRoute.jsx";
+import CompanyEditRequest from "./pages/Admin/Admin1/ListEditRequest.jsx";
 
 import CompanyDashboard from "./pages/CompanyDashboard/CompanyDashboard.jsx";
 import ManagePost from "./pages/CompanyDashboard/ManagePost.jsx";
 import ManageVacancy from "./pages/CompanyDashboard/ManageVacancy.jsx";
 import CompanySetting from "./pages/CompanyDashboard/CompanySetting.jsx";
 import ListApplicants from "./pages/CompanyDashboard/ListApplicants/ListApplicants.jsx";
+import ManageMember from "./pages/CompanyDashboard/ManageMember.jsx";
 
 const router = createBrowserRouter([
   {
@@ -166,14 +168,6 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/company-profile/:companyId",
-    element: (
-      <ProtectedRoute>
-        <CompanyProfile />
-      </ProtectedRoute>
-    ),
-  },
-  {
     path: "/groups",
     element: (
       <ProtectedRoute>
@@ -276,7 +270,7 @@ const router = createBrowserRouter([
         <UserPostPage />
       </ProtectedRoute>
     ),
-  
+
   },
   {
     path: "/post-page/:username",
@@ -314,7 +308,7 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-   {
+  {
     path: "/search",
     element: (
       <ProtectedRoute>
@@ -389,12 +383,18 @@ const router = createBrowserRouter([
   },
 
   {
-    // path: "/company-management/:companyId",
+    path: "company-detail/:company_id",
+    element:
+      <ProtectedRoute>
+        <CompanyDetail />,
+      </ProtectedRoute>
+  },
+  {
     path: "/company-management",
     children: [
       {
-        path: "company-detail",
-        element: <CompanyDetail />,
+        path: "my-company",
+        element: <MyCompanies />,
       },
       {
         path: "company-pending",
@@ -404,15 +404,18 @@ const router = createBrowserRouter([
         path: "company-edit",
         element: <CompanyEdit />,
       },
+      {
+        path: "company-edit-request",
+        element: <CompanyEditRequest />,
+      }
     ],
   },
-
   {
     // path: "/company-dashboard/:companyId",
     path: "/company-dashboard",
     children: [
       {
-        path: "dashboard",
+        path: ":company_id",
         element: <CompanyDashboard />,
       },
       {
@@ -431,7 +434,12 @@ const router = createBrowserRouter([
         path: "list-applicants",
         element: <ListApplicants />,
       },
-    ],
+
+      {
+        path: "company-dashboard/manage-member/:company_id",
+        element: <ManageMember />
+      }
+    ]
   }
 ]);
 
