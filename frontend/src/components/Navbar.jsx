@@ -8,6 +8,7 @@ import SearchBar from "./Navbar/SearchBar";
 import MessageDropdown from "./Navbar/MessageDropdown";
 import NotificationDropdown from "./Navbar/NotificationDropdown";
 import UserDropdown from "./Navbar/UserDropdown";
+import Other from "./Navbar/Other";
 
 const Navbar = () => {
   const apiUrl =
@@ -149,6 +150,8 @@ const Navbar = () => {
       <div className="flex items-center gap-4">
         <NavLinks />
 
+        <Other />
+        
         <div className="flex items-center gap-4 sm:gap-6">
           {/* Message Dropdown */} <MessageDropdown />
           {/* Notification Dropdown */}

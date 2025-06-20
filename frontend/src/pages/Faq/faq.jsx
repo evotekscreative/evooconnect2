@@ -3,123 +3,48 @@ import Navbar from "../../components/Navbar";
 import { Search } from "lucide-react";
 
 export default function Faq() {
-    const [openIndexBasics, setOpenIndexBasics] = useState(null);
-    const [openIndexJobs, setOpenIndexJobs] = useState(null);
-    const [openIndexAccount, setOpenIndexAccount] = useState(null);
-    const [openIndexPrivacy, setOpenIndexPrivacy] = useState(null);
+    const [openIndexGeneral, setOpenIndexGeneral] = useState(null);
 
     const toggleOpen = (index, section) => {
-        if (section === "basics") {
-            setOpenIndexBasics(openIndexBasics === index ? null : index);
-        } else if (section === "jobs") {
-            setOpenIndexJobs(openIndexJobs === index ? null : index);
-        } else if (section === "account") {
-            setOpenIndexAccount(openIndexAccount === index ? null : index);
-        } else if (section === "privacy") {
-            setOpenIndexPrivacy(openIndexPrivacy === index ? null : index);
+        if (section === "General") {
+            setOpenIndexGeneral(openIndexGeneral === index ? null : index);
         }
     };
 
-    const basics = [
+    const General = [
         {
-            question: "Is my data safe on this platform?",
-            answer: "Yes, we are committed to keeping your data secure. We use a variety of protection measures to ensure that your personal information and data remain safe.",
-        },
-        {
-            question: "What are the requirements for using this service?",
-            answer: "You only need a device with an internet connection and a registered account to start using our services.",
-        },
-        {
-            question: "How do I update my profile?",
-            answer: "You can update your profile by going to edit profile, then editing information such as name, profile photo, and other details.",
-        },
-        {
-            question: "Is this service free or paid?",
-            answer: "We provide a free package with basic features, as well as paid packages with additional features for broader needs. You can choose the package that suits your needs.",
-        },
-    ];
-
-    const jobs = [
-        {
-            question: "How to apply for a job on this website?",
-            answer: 'Click the "Jobs" tab at the top of EVOConnect, use keywords or category filters, click on a job or save it for later, and enable the "Notifications" feature to receive updates from companies.',
-        },
-        {
-            question: "How do I connect with other people on this website?",
-            answer: "Search for the person's name you want to connect with, click 'Connect' and add a short message if needed. You can also follow someone without connecting.",
-        },
-        {
-            question: "Do I need to create an account to apply for a job?",
-            answer: "Yes, to access the full features, including applying for jobs, saving openings, and getting notifications, you need to create an account and log in to the platform.",
-        },
-        {
-            question: "Is there a fee to apply for a job?",
-            answer: "No, applying for jobs on this platform is completely free. However, beware of job scams that ask for payment.",
-        },
-        {
-            question: "How do I know if I am qualified for a job?",
-            answer: "Each job posting lists requirements, such as experience, skills, and education needed. Make sure you read the job description carefully before applying.",
-        },
-        {
-            question: "How do I make my profile stand out to recruiters?",
-            answer: "Use a professional photo, write an attractive profile summary, and add relevant work experience and skills.",
-        },
-    ];
-
-    const account = [
-        {
-            question: "How do I reset my password?",
-            answer: 'On the login page there is a text "Forgot Password". After that, the "Reset Password" page will appear with a column to enter an email. Next, the user will receive a message via email to reset the password.',
-        },
-        {
-            question: "How to long out?",
-            answer: 'Click "profile" then select the "logout" description, and after that you will return to the login page.',
-        },
-        {
-            question: "How do i change my personal data?",
-            answer: 'You just need to go to the "Edit Profile" page, then update your personal data.',
-        },
-        {
-            question: "I forgot my password. How do i reset it?",
+            question: "What is the user experience like on EVOConnect?",
             answer: (
-                <ol className="list-decimal ml-5 space-y-1">
-                    <li>On the login page, click "Forgot Password".</li>
-                    <li>Enter your registered email address, then click "Send".</li>
-                    <li>Check your email, and click "Reset Password".</li>
-                    <li>Enter your new password, then confirm the change.</li>
-                    <li>Once done, try logging in again with the new password.</li>
-                </ol>
+                <div>
+                    EVOConnect is designed to make it easy for you to find ideas, start conversations, and explore topics relevant to your professional life. When you log in, you will be taken directly to the homepage which contains:
+                    <ul className="list-disc pl-5 mt-2">
+                        <li className="mt-4">Feed: displays posts from your connections, companies you follow, and groups you belong to.</li>
+                        <li className="mt-2">Main navigation: includes access to profile, connections, private messages and recent notifications.</li>
+                        <li className="mt-2">Job Portal: users can directly open the Jobs tab from the navbar, view the latest job vacancies from companies, use search filters, and apply directly in just a few clicks.</li>
+                    </ul>
+                </div>
             ),
-
-        },
-    ];
-
-    const privacy = [
-        {
-            question: "Can i specify my own private key?",
-            answer: 'On the login page there is a text "Forgot Password". After that, the "Reset Password" page will appear with a column to enter an email. Next, the user will receive a message via email to reset the password.',
         },
         {
-            question: "How to long out?",
-            answer: 'Click "profile" then select the "logout" description, and after that you will return to the login page.',
-        },
-        {
-            question: "How do i change my personal data?",
-            answer: 'You just need to go to the "Edit Profile" page, then update your personal data.',
-        },
-        {
-            question: "I forgot my password. How do i reset it?",
+            question: "How to do a search in EVOConnect?",
             answer: (
-                <ol className="list-decimal ml-5 space-y-1">
-                    <li>On the login page, click "Forgot Password".</li>
-                    <li>Enter your registered email address, then click "Send".</li>
-                    <li>Check your email, and click "Reset Password".</li>
-                    <li>Enter your new password, then confirm the change.</li>
-                    <li>Once done, try logging in again with the new password.</li>
-                </ol>
+                <div>
+                    Use the search bar located in the navbar (top of the page). You can search for:                  
+                    <ul className="list-disc pl-5 mt-2">
+                        <li className="mt-4">User (person's name)</li>
+                        <li className="mt-2">Company</li>
+                        <li className="mt-2">Community groups</li>
+                        <li className="mt-2">Job vacancy</li>
+                        <li className="mt-2">Posts As you type, you'll see auto-suggestions, or press enter to see the full results.</li>
+                    </ul>
+                </div>
             ),
-
         },
+        {
+            question: "How do I access my profile?",
+            answer: "Click your profile icon in the top right corner → select View Profile."
+        },
+       
     ];
 
     return (
@@ -150,36 +75,12 @@ export default function Faq() {
             </div>
 
             <div className="bg-gray-100 py-10 px-8 md:px-40 lg:px-60 space-y-10">
-                {/* Basics Section */}
+                {/* General Section */}
                 <Section
-                    title="Basics"
-                    data={basics}
-                    openIndex={openIndexBasics}
-                    toggleOpen={(i) => toggleOpen(i, "basics")}
-                />
-
-                {/* Jobs Section */}
-                <Section
-                    title="Jobs"
-                    data={jobs}
-                    openIndex={openIndexJobs}
-                    toggleOpen={(i) => toggleOpen(i, "jobs")}
-                />
-
-                {/* Account Section */}
-                <Section
-                    title="Account"
-                    data={account}
-                    openIndex={openIndexAccount}
-                    toggleOpen={(i) => toggleOpen(i, "account")}
-                />
-
-                {/* Privacy Section */}
-                <Section
-                    title="Privacy"
-                    data={privacy}
-                    openIndex={openIndexPrivacy}
-                    toggleOpen={(i) => toggleOpen(i, "privacy")}
+                    title="General"
+                    data={General}
+                    openIndex={openIndexGeneral}
+                    toggleOpen={(i) => toggleOpen(i, "General")}
                 />
             </div>
         </>
@@ -203,7 +104,7 @@ function Section({ title, data, openIndex, toggleOpen }) {
                             </span>
                         </button>
                         <div
-                            className={`px-4 overflow-hidden transition-all duration-300 ease-in-out text-sm text-gray-600 ${openIndex === index ? "max-h-40 pb-4" : "max-h-0"
+                            className={`px-4 transition-all duration-300 ease-in-out text-sm text-gray-600 ${openIndex === index ? " pb-4" : "max-h-0"
                                 }`}
                         >
                             {openIndex === index && <div>{item.answer}</div>}

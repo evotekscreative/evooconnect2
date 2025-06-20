@@ -1,9 +1,104 @@
-import React from 'react';
+import React, { useState } from "react";
 import job1 from "../../assets/img/job1.png";
+import { Card, CardContent } from "../../components/Card";
+import { Button } from "../../components/Button";
+import PostJobModal from "../../components/Jobs/PostJobModal.jsx";
 
 export default function CompanyLeftSidebar({ company }) {
+
+  const [showPostAJobModal, setShowPostAJobModal] = useState(false);
+
+  const [jobForm, setJobForm] = useState({
+    jobTitle: "",
+    position: "",
+    location: "",
+    salary: "",
+    description: "",
+    rating: 4.5,
+    seniorityLevel: "",
+    industry: "",
+    employmentType: "Full-time",
+    jobFunction: "",
+    company: "EvoConnect",
+    photo: null,
+    photoPreview: null
+  });
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setJobForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handlePhotoUpload = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const fileReader = new FileReader();
+
+      fileReader.onload = (event) => {
+        setJobForm(prev => ({
+          ...prev,
+          photo: file,
+          photoPreview: event.target.result
+        }));
+      };
+
+      fileReader.readAsDataURL(file);
+    }
+  };
+
+
+  const handleJobSubmit = (e) => {
+    e.preventDefault();
+
+    const newJob = {
+      id: jobs.length + 1,
+      jobTitle: jobForm.jobTitle,
+      company: jobForm.company,
+      location: jobForm.location,
+      description: jobForm.description,
+      rating: parseFloat(jobForm.rating),
+      employmentType: jobForm.employmentType,
+      postedDays: 0,
+      logo: jobForm.photoPreview || "https://cdn-icons-png.flaticon.com/512/174/174857.png",
+      photoUrl: jobForm.photoPreview
+    };
+
+    setJobs(prev => [newJob, ...prev]);
+
+    setJobForm({
+      jobTitle: "",
+      position: "",
+      location: "",
+      salary: "",
+      description: "",
+      rating: 4.5,
+      seniorityLevel: "",
+      industry: "",
+      employmentType: "Full-time",
+      jobFunction: "",
+      company: "EvoConnect",
+      photo: null,
+      photoPreview: null
+    });
+
+    setShowPostAJobModal(false);
+    toast.success("Job posted successfully!");
+  };
   return (
     <div className="lg:col-span-3 space-y-6">
+
+      <PostJobModal
+        showModal={showPostAJobModal}
+        setShowModal={setShowPostAJobModal}
+        jobForm={jobForm}
+        handleInputChange={handleInputChange}
+        handlePhotoUpload={handlePhotoUpload}
+        handleJobSubmit={handleJobSubmit}
+      />
+
       <div className="flex flex-col items-center bg-white p-6 rounded-md shadow">
         <img src={job1} alt="Company Logo" className="w-40 h-40" />
         <h2 className="text-lg font-bold mt-4">{company.name}</h2>
@@ -20,6 +115,27 @@ export default function CompanyLeftSidebar({ company }) {
           </div>
         </div>
       </div>
+
+
+      {/* Post Job Button */}
+
+      <Card className="shadow-md rounded-xl bg-white">
+        <CardContent className="p-4 text-center">
+          <img
+            src={job1}
+            alt="EVOCONNECT"
+            className="rounded-xl w-full object-cover mb-4"
+          />
+          <h2 className="font-bold text-md mb-1">EVOConnect Solutions</h2>
+          <p className="text-sm text-gray-600 mb-4">Looking for talent?</p>
+          <Button
+            className="bg-[#0A66C2] hover:bg-blue-700 text-white px-4 py-1 text-sm rounded"
+            onClick={() => setShowPostAJobModal(true)}
+          >
+            Post a Job
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }
