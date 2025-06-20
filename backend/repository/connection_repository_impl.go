@@ -6,9 +6,10 @@ import (
 	"errors"
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/domain"
+	"fmt"
+	"github.com/google/uuid"
 	"sort"
 	"time"
-	"github.com/google/uuid"
 )
 
 type ConnectionRepositoryImpl struct {
@@ -16,9 +17,9 @@ type ConnectionRepositoryImpl struct {
 }
 
 func NewConnectionRepository(db *sql.DB) ConnectionRepository {
-    return &ConnectionRepositoryImpl{
-        Db: db,
-    }
+	return &ConnectionRepositoryImpl{
+		Db: db,
+	}
 }
 
 func (repository *ConnectionRepositoryImpl) SaveConnectionRequest(ctx context.Context, tx *sql.Tx, request domain.ConnectionRequest) domain.ConnectionRequest {
@@ -205,6 +206,10 @@ func (repository *ConnectionRepositoryImpl) FindConnectionRequestsByReceiverId(c
 }
 
 func (repository *ConnectionRepositoryImpl) FindConnectionRequestBySenderIdAndReceiverId(ctx context.Context, tx *sql.Tx, senderId, receiverId uuid.UUID) (domain.ConnectionRequest, error) {
+	// Log untuk debugging
+	fmt.Printf("DEBUG: FindConnectionRequestBySenderIdAndReceiverId called with senderId=%s, receiverId=%s\n",
+		senderId.String(), receiverId.String())
+
 	SQL := `SELECT id, sender_id, receiver_id, message, status, created_at, updated_at
             FROM connection_requests
             WHERE (sender_id = $1 AND receiver_id = $2) OR (sender_id = $2 AND receiver_id = $1)
@@ -212,7 +217,10 @@ func (repository *ConnectionRepositoryImpl) FindConnectionRequestBySenderIdAndRe
             LIMIT 1`
 
 	rows, err := tx.QueryContext(ctx, SQL, senderId, receiverId)
-	helper.PanicIfError(err)
+	if err != nil {
+		fmt.Printf("DEBUG: Error querying connection requests: %v\n", err)
+		return domain.ConnectionRequest{}, err
+	}
 	defer rows.Close()
 
 	var request domain.ConnectionRequest
@@ -221,7 +229,10 @@ func (repository *ConnectionRepositoryImpl) FindConnectionRequestBySenderIdAndRe
 		err := rows.Scan(
 			&request.Id, &request.SenderId, &request.ReceiverId, &message, &request.Status, &request.CreatedAt, &request.UpdatedAt,
 		)
-		helper.PanicIfError(err)
+		if err != nil {
+			fmt.Printf("DEBUG: Error scanning connection request: %v\n", err)
+			return domain.ConnectionRequest{}, err
+		}
 
 		// Set message if it exists - message is a pointer field
 		if message.Valid {
@@ -229,8 +240,10 @@ func (repository *ConnectionRepositoryImpl) FindConnectionRequestBySenderIdAndRe
 			request.Message = &messageStr
 		}
 
+		fmt.Printf("DEBUG: Found connection request with status: %s\n", request.Status)
 		return request, nil
 	} else {
+		fmt.Printf("DEBUG: No connection request found\n")
 		return domain.ConnectionRequest{}, errors.New("connection request not found")
 	}
 }
@@ -351,60 +364,60 @@ func (repository *ConnectionRepositoryImpl) FindConnectionsByUserId(ctx context.
 }
 
 func (repository *ConnectionRepositoryImpl) IsConnected(ctx context.Context, tx *sql.Tx, currentUserId, userId uuid.UUID) bool {
-    // Jika kedua ID sama, user tidak bisa terhubung dengan dirinya sendiri
-    if currentUserId == userId {
-        return false
-    }
+	// Jika kedua ID sama, user tidak bisa terhubung dengan dirinya sendiri
+	if currentUserId == userId {
+		return false
+	}
 
-    // Jika tx nil dan kita memiliki akses ke DB, buat transaksi baru
-    var err error
-    var localTx *sql.Tx
-    var needsCommit bool
+	// Jika tx nil dan kita memiliki akses ke DB, buat transaksi baru
+	var err error
+	var localTx *sql.Tx
+	var needsCommit bool
 
-    if tx == nil {
-        if repository.Db == nil {
-            return false
-        }
-        localTx, err = repository.Db.BeginTx(ctx, nil)
-        if err != nil {
-            return false
-        }
-        tx = localTx
-        needsCommit = true
-        defer func() {
-            if needsCommit {
-                localTx.Rollback()
-            }
-        }()
-    }
+	if tx == nil {
+		if repository.Db == nil {
+			return false
+		}
+		localTx, err = repository.Db.BeginTx(ctx, nil)
+		if err != nil {
+			return false
+		}
+		tx = localTx
+		needsCommit = true
+		defer func() {
+			if needsCommit {
+				localTx.Rollback()
+			}
+		}()
+	}
 
-    // Pastikan ID pengguna diurutkan secara konsisten untuk keunikan
-    userIds := []uuid.UUID{currentUserId, userId}
-    sort.Slice(userIds, func(i, j int) bool {
-        return userIds[i].String() < userIds[j].String()
-    })
+	// Pastikan ID pengguna diurutkan secara konsisten untuk keunikan
+	userIds := []uuid.UUID{currentUserId, userId}
+	sort.Slice(userIds, func(i, j int) bool {
+		return userIds[i].String() < userIds[j].String()
+	})
 
-    SQL := `SELECT EXISTS (
+	SQL := `SELECT EXISTS (
             SELECT 1 FROM connections 
             WHERE (user_id_1 = $1 AND user_id_2 = $2) OR
                 (user_id_1 = $2 AND user_id_2 = $1)
         )`
 
-    var exists bool
-    err = tx.QueryRowContext(ctx, SQL, userIds[0], userIds[1]).Scan(&exists)
-    if err != nil {
-        return false
-    }
+	var exists bool
+	err = tx.QueryRowContext(ctx, SQL, userIds[0], userIds[1]).Scan(&exists)
+	if err != nil {
+		return false
+	}
 
-    if needsCommit {
-        err = localTx.Commit()
-        if err != nil {
-            // Log error
-        }
-        needsCommit = false
-    }
+	if needsCommit {
+		err = localTx.Commit()
+		if err != nil {
+			// Log error
+		}
+		needsCommit = false
+	}
 
-    return exists
+	return exists
 }
 
 func (repository *ConnectionRepositoryImpl) UpdateRequest(ctx context.Context, tx *sql.Tx, request domain.ConnectionRequest) domain.ConnectionRequest {
@@ -480,4 +493,38 @@ func (repository *ConnectionRepositoryImpl) DeleteConnectionRequest(ctx context.
 		return err
 	}
 	return nil
+}
+
+func (repository *ConnectionRepositoryImpl) IsPendingRequest(ctx context.Context, tx *sql.Tx, senderId, receiverId uuid.UUID) (bool, error) {
+	// Ensure user IDs are consistently ordered for uniqueness
+	userIds := []uuid.UUID{senderId, receiverId}
+	sort.Slice(userIds, func(i, j int) bool {
+		return userIds[i].String() < userIds[j].String()
+	})
+
+	SQL := `SELECT EXISTS (
+			SELECT 1 FROM connection_requests 
+			WHERE (sender_id = $1 AND receiver_id = $2) AND status = 'pending'
+		)`
+
+	var exists bool
+	err := tx.QueryRowContext(ctx, SQL, userIds[0], userIds[1]).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}
+
+
+func (repository *ConnectionRepositoryImpl) CountPendingConnectionRequests(ctx context.Context, tx *sql.Tx, receiverId uuid.UUID) (int, error) {
+	SQL := `SELECT COUNT(*) FROM connection_requests WHERE receiver_id = $1 AND status = 'pending'`
+	
+	var count int
+	err := tx.QueryRowContext(ctx, SQL, receiverId).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	
+	return count, nil
 }

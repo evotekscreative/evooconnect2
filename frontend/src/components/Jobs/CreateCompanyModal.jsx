@@ -1,5 +1,6 @@
 import { Input } from "../../components/Input.jsx";
 import { Button } from "../../components/Button.jsx";
+import Case from "../Case.jsx";
 
 export default function CreateCompanyModal({ 
     showModal, 

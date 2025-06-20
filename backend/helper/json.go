@@ -8,22 +8,25 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"errors"
 )
 
-func ReadFromRequestBody(request *http.Request, result interface{}) {
-	if request.Body == nil {
-		PanicIfError(fmt.Errorf("request body is empty"))
-	}
-
-	body, err := io.ReadAll(request.Body)
-	PanicIfError(err)
-
-	if len(body) == 0 {
-		PanicIfError(fmt.Errorf("request body is empty"))
-	}
-
-	err = json.Unmarshal(body, result)
-	PanicIfError(err)
+func ReadFromRequestBody(request *http.Request, result interface{}) error {
+    // Periksa apakah body kosong
+    if request.Body == nil {
+        return errors.New("request body is empty")
+    }
+    
+    decoder := json.NewDecoder(request.Body)
+    err := decoder.Decode(result)
+    if err != nil {
+        // Jika body kosong atau tidak valid JSON, berikan error yang lebih deskriptif
+        if err == io.EOF {
+            return errors.New("request body is empty")
+        }
+        return err
+    }
+    return nil
 }
 
 func ReadFromParams(request *http.Request, result interface{}) {
@@ -185,3 +188,5 @@ func ReadFromMultipartForm(request *http.Request, result interface{}) {
 		}
 	}
 }
+
+

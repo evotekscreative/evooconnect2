@@ -27,6 +27,9 @@ export default function MemberList() {
   const [selectedRole, setSelectedRole] = useState("member");
   const [showOptionsMenu, setShowOptionsMenu] = useState(null);
   const [group, setGroup] = useState({});
+  const [showReasonInput, setShowReasonInput] = useState(false);
+const [reasonText, setReasonText] = useState("");
+
   const [alert, setAlert] = useState({
     show: false,
     type: "success",
@@ -123,30 +126,41 @@ export default function MemberList() {
     }
   };
 
-  const handleRemoveMember = async () => {
-    if (!selectedMember) return;
+ const handleRemoveMember = async () => {
+  if (!selectedMember) return;
 
-    try {
-      const token = localStorage.getItem("token");
-      await axios.delete(
-        `${apiUrl}/api/groups/${groupId}/members/${selectedMember.user.id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+  try {
+    const token = localStorage.getItem("token");
 
-      setMembers((prev) =>
-        prev.filter((member) => member.user.id !== selectedMember.user.id)
-      );
-      showAlert("success", "Member removed successfully");
-      setShowRemoveModal(false);
-    } catch (error) {
-      console.error("Error removing member:", error);
-      showAlert("error", "Failed to remove member");
+    const payload = {};
+    if (showReasonInput) {
+      payload.block = true;
+      payload.reason = reasonText;
     }
-  };
+
+    await axios.delete(
+      `${apiUrl}/api/groups/${groupId}/members/${selectedMember.user.id}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        data: payload,  // <-- tambahkan data di request body!
+      }
+    );
+
+    setMembers((prev) =>
+      prev.filter((member) => member.user.id !== selectedMember.user.id)
+    );
+    showAlert("success", "Member removed successfully");
+    setShowRemoveModal(false);
+    setReasonText(""); // Reset reason text
+    setShowReasonInput(false); // Reset checkbox
+  } catch (error) {
+    console.error("Error removing member:", error);
+    showAlert("error", "Failed to remove member");
+  }
+};
+
 
   const openOptionsMenu = (memberId, e) => {
     e.stopPropagation();
@@ -356,53 +370,84 @@ export default function MemberList() {
         </div>
       )}
 
-      {/* Remove Member Modal */}
       {showRemoveModal && selectedMember && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium">Remove Member</h3>
-              <button
-                onClick={() => setShowRemoveModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X size={20} />
-              </button>
-            </div>
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white rounded-lg p-6 w-full max-w-md">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-medium">Remove Member</h3>
+        <button
+          onClick={() => setShowRemoveModal(false)}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          <X size={20} />
+        </button>
+      </div>
 
-            <div className="mb-6">
-              <p>
-                Are you sure you want to remove{" "}
-                <span className="font-semibold">{selectedMember.user.name}</span>{" "}
-                from the group?
-              </p>
-              {selectedMember.role === "admin" && (
-                <p className="mt-2 text-yellow-600 text-sm">
-                  Note: This user is an admin. Removing them will revoke their
-                  admin privileges.
-                </p>
-              )}
-            </div>
+      <div className="mb-6">
+        <p>
+          Are you sure you want to remove{" "}
+          <span className="font-semibold">{selectedMember.user.name}</span>{" "}
+          from the group?
+        </p>
+        {selectedMember.role === "admin" && (
+          <p className="mt-2 text-yellow-600 text-sm">
+            Note: This user is an admin. Removing them will revoke their
+            admin privileges.
+          </p>
+        )}
 
-            <div className="flex justify-end space-x-3">
-              <button
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                onClick={() => setShowRemoveModal(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-                onClick={handleRemoveMember}
-              >
-                Remove
-              </button>
-            </div>
-          </div>
+        {/* Checkbox */}
+        <div className="mt-4">
+          <label className="inline-flex items-center">
+            <input
+              type="checkbox"
+              checked={showReasonInput}
+              onChange={() => setShowReasonInput(!showReasonInput)}
+              className="form-checkbox h-4 w-4 text-blue-600"
+            />
+            <span className="ml-2 text-sm text-gray-700">
+              Add to user block
+            </span>
+          </label>
         </div>
-      )}
+
+        {/* Conditional Reason Text */}
+        {showReasonInput && (
+          <div className="mt-3">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Reason:
+            </label>
+            <input
+              type="text"
+              value={reasonText}
+              onChange={(e) => setReasonText(e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:border-blue-300"
+              placeholder="Enter the reason here..."
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="flex justify-end space-x-3">
+        <button
+          className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+          onClick={() => setShowRemoveModal(false)}
+        >
+          Cancel
+        </button>
+        <button
+          className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+          onClick={handleRemoveMember}
+        >
+          Remove
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
     </Case>
   );
   
 }
+

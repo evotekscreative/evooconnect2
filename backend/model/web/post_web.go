@@ -34,11 +34,34 @@ type PostResponse struct {
 	User          UserShort      `json:"user"`
 	GroupId       *uuid.UUID     `json:"group_id,omitempty"`
 	Group         *GroupResponse `json:"group,omitempty"`
+	Status        string         `json:"status"`
 	CreatedAt     time.Time      `json:"created_at"`
 	UpdatedAt     time.Time      `json:"updated_at"`
+	IsPinned      bool           `json:"is_pinned"`
+	PinnedAt      *time.Time     `json:"pinned_at,omitempty"`
+	IsReported    bool           `json:"is_reported"`
 }
 
 // Add this struct to the file
 type UploadPostImagesResponse struct {
 	Filenames []string `json:"filenames"`
+}
+
+type PendingPostResponse struct {
+	Id        uuid.UUID    `json:"id"`
+	PostId    uuid.UUID    `json:"post_id"`
+	GroupId   uuid.UUID    `json:"group_id"`
+	Status    string       `json:"status"`
+	Post      PostResponse `json:"post"`
+	CreatedAt time.Time    `json:"created_at"`
+	UpdatedAt time.Time    `json:"updated_at"`
+}
+
+type PostApprovalRequest struct {
+	Status string `json:"status" validate:"required,oneof=approved rejected"`
+}
+
+type PostListResponse struct {
+    Posts []PostResponse `json:"posts"`
+    Total int            `json:"total"`
 }

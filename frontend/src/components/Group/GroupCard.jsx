@@ -4,6 +4,25 @@ import { Trash2, LogOut } from "lucide-react";
 const base_url =
   import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
+// Format date to display in day, month, year format
+const formatDate = (dateString) => {
+  if (!dateString) return "";
+  
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    
+    return date.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric"
+    });
+  } catch (error) {
+    console.error("Date formatting error:", error);
+    return dateString;
+  }
+};
+
 export default function GroupCard({ group, isAdmin, onDelete, onLeave }) {
   return (
     <div className="bg-white rounded-xl shadow p-3 sm:p-4 flex flex-col justify-between h-36 sm:h-40 border border-gray-200 hover:border-blue-300 transition-colors">
@@ -33,8 +52,8 @@ export default function GroupCard({ group, isAdmin, onDelete, onLeave }) {
             } px-1.5 py-0.5 rounded whitespace-nowrap`}
           >
             {isAdmin
-              ? `Created on ${group.createdDate}`
-              : `Joined on ${group.joinedDate}`}
+              ? `Created on ${formatDate(group.created_at)}`
+              : `Joined on ${formatDate(group.joined_at)}`}
           </span>
         </div>
       </div>

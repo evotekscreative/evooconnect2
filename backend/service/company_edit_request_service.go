@@ -11,6 +11,7 @@ type CompanyManagementService interface {
 	// User Company Management
 	GetAllCompanies(ctx context.Context, userId uuid.UUID, limit, offset int) web.CompanyListResponse
 	GetMyCompanies(ctx context.Context, userId uuid.UUID) []web.CompanyManagementResponse
+	// GetCompanyById(ctx context.Context, companyId uuid.UUID, userId uuid.UUID) web.CompanyPublicResponse
 	GetCompanyDetail(ctx context.Context, companyId uuid.UUID, userId uuid.UUID) web.CompanyDetailResponse
 	RequestEdit(ctx context.Context, companyId uuid.UUID, userId uuid.UUID, request web.CreateCompanyEditRequestRequest, logoFile *multipart.FileHeader) web.CompanyEditRequestResponse
 	GetMyEditRequests(ctx context.Context, userId uuid.UUID) []web.CompanyEditRequestResponse

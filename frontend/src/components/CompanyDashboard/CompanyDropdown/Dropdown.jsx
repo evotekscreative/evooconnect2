@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import { ChevronDown, User, Settings, LogOut, SquareArrowOutUpRight } from "lucide-react";
 
 const CompanyDropdown = () => {
@@ -42,7 +43,9 @@ const CompanyDropdown = () => {
                     <ChevronDown
                         className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${open ? "transform rotate-180" : ""}`}
                     />
-                    <SquareArrowOutUpRight className="w-4 h-4 text-gray-500 transition-transform duration-200" />
+                    <Link to={"/company-profile/1"}>
+                        <SquareArrowOutUpRight className="w-4 h-4 text-gray-500 transition-transform duration-200" />
+                    </Link>
                 </div>
             </button>
 
