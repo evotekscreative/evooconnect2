@@ -29,21 +29,21 @@ func (controller *JobVacancyControllerImpl) Create(writer http.ResponseWriter, r
 		panic(exception.NewUnauthorizedError("Invalid or missing token"))
 	}
 
+	// Set company ID from path parameter if not provided in body
+	var companyId uuid.UUID
+	if companyIdParam := params.ByName("companyId"); companyIdParam != "" {
+		companyId, err = uuid.Parse(companyIdParam)
+		if err != nil {
+			panic(exception.NewBadRequestError("Invalid company ID"))
+		}
+	}
+
 	// Parse request body
 	var createRequest web.CreateJobVacancyRequest
 	helper.ReadFromRequestBody(request, &createRequest)
 
-	// Set company ID from path parameter if not provided in body
-	if companyIdParam := params.ByName("companyId"); companyIdParam != "" {
-		companyId, err := uuid.Parse(companyIdParam)
-		if err != nil {
-			panic(exception.NewBadRequestError("Invalid company ID"))
-		}
-		createRequest.CompanyId = companyId
-	}
-
 	// Create job vacancy
-	jobVacancyResponse := controller.JobVacancyService.Create(request.Context(), createRequest, userId)
+	jobVacancyResponse := controller.JobVacancyService.Create(request.Context(), createRequest, companyId, userId)
 
 	webResponse := web.WebResponse{
 		Code:   201,
@@ -132,65 +132,103 @@ func (controller *JobVacancyControllerImpl) FindById(writer http.ResponseWriter,
 
 func (controller *JobVacancyControllerImpl) FindByCompanyId(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Get company ID from path
-	companyId, err := uuid.Parse(params.ByName("companyId"))
+	companyIdStr := params.ByName("companyId")
+	companyId, err := uuid.Parse(companyIdStr)
 	if err != nil {
-		panic(exception.NewBadRequestError("Invalid company ID"))
+		webResponse := web.WebResponse{
+			Code:   400,
+			Status: "BAD REQUEST",
+			Data:   "Invalid company ID format",
+		}
+		helper.WriteToResponseBody(writer, webResponse)
+		return
 	}
 
 	// Get pagination parameters
-	page, pageSize, err := helper.GetPaginationParams(request)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid pagination parameters"))
+	limitStr := request.URL.Query().Get("limit")
+	offsetStr := request.URL.Query().Get("offset")
+	statusFilter := request.URL.Query().Get("status")
+
+	limit := 10 // default
+	if limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
+			limit = l
+		}
+	}
+
+	offset := 0 // default
+	if offsetStr != "" {
+		if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
+			offset = o
+		}
 	}
 
 	// Convert offset to page number
-	if page == 0 {
-		page = 1
-	}
-	if pageSize == 0 {
-		pageSize = 10
+	page := (offset / limit) + 1
+
+	// Map API status to database status
+	var dbStatus string
+	switch statusFilter {
+	case "published":
+		dbStatus = "active"
+	case "draft":
+		dbStatus = "draft"
+	case "closed":
+		dbStatus = "closed"
+	case "archived":
+		dbStatus = "archived"
+	default:
+		dbStatus = "" // No filter
 	}
 
-	// Find job vacancies by company
-	jobVacanciesResponse := controller.JobVacancyService.FindByCompanyId(request.Context(), companyId, page, pageSize)
+	// Find job vacancies by company with status filter
+	var jobVacancyResponse web.JobVacancyListResponse
+	if dbStatus != "" {
+		jobVacancyResponse = controller.JobVacancyService.FindByCompanyIdWithStatus(request.Context(), companyId, dbStatus, page, limit)
+	} else {
+		jobVacancyResponse = controller.JobVacancyService.FindByCompanyId(request.Context(), companyId, page, limit)
+	}
 
 	webResponse := web.WebResponse{
 		Code:   200,
 		Status: "OK",
-		Data:   jobVacanciesResponse,
+		Data:   jobVacancyResponse,
 	}
 
 	helper.WriteToResponseBody(writer, webResponse)
 }
 
 func (controller *JobVacancyControllerImpl) FindByCreatorId(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	// Get user ID from context
 	userId, err := helper.GetUserIdFromToken(request)
 	if err != nil {
 		panic(exception.NewUnauthorizedError("Invalid or missing token"))
 	}
 
 	// Get pagination parameters
-	page, pageSize, err := helper.GetPaginationParams(request)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid pagination parameters"))
+	limitStr := request.URL.Query().Get("limit")
+	pageStr := request.URL.Query().Get("page")
+
+	limit := 10 // default
+	if limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 {
+			limit = l
+		}
 	}
 
-	// Convert offset to page number
-	if page == 0 {
-		page = 1
-	}
-	if pageSize == 0 {
-		pageSize = 10
+	page := 1 // default
+	if pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = p
+		}
 	}
 
 	// Find job vacancies by creator
-	jobVacanciesResponse := controller.JobVacancyService.FindByCreatorId(request.Context(), userId, page, pageSize)
+	jobVacancyResponse := controller.JobVacancyService.FindByCreatorId(request.Context(), userId, page, limit)
 
 	webResponse := web.WebResponse{
 		Code:   200,
 		Status: "OK",
-		Data:   jobVacanciesResponse,
+		Data:   jobVacancyResponse,
 	}
 
 	helper.WriteToResponseBody(writer, webResponse)
@@ -198,26 +236,30 @@ func (controller *JobVacancyControllerImpl) FindByCreatorId(writer http.Response
 
 func (controller *JobVacancyControllerImpl) FindAll(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Get pagination parameters
-	page, pageSize, err := helper.GetPaginationParams(request)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid pagination parameters"))
+	limitStr := request.URL.Query().Get("limit")
+	pageStr := request.URL.Query().Get("page")
+
+	limit := 10 // default
+	if limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 {
+			limit = l
+		}
 	}
 
-	// Convert offset to page number
-	if page == 0 {
-		page = 1
-	}
-	if pageSize == 0 {
-		pageSize = 10
+	page := 1 // default
+	if pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = p
+		}
 	}
 
 	// Find all job vacancies
-	jobVacanciesResponse := controller.JobVacancyService.FindAll(request.Context(), page, pageSize)
+	jobVacancyResponse := controller.JobVacancyService.FindAll(request.Context(), page, limit)
 
 	webResponse := web.WebResponse{
 		Code:   200,
 		Status: "OK",
-		Data:   jobVacanciesResponse,
+		Data:   jobVacancyResponse,
 	}
 
 	helper.WriteToResponseBody(writer, webResponse)
@@ -225,26 +267,30 @@ func (controller *JobVacancyControllerImpl) FindAll(writer http.ResponseWriter, 
 
 func (controller *JobVacancyControllerImpl) FindActiveJobs(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Get pagination parameters
-	page, pageSize, err := helper.GetPaginationParams(request)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid pagination parameters"))
+	limitStr := request.URL.Query().Get("limit")
+	pageStr := request.URL.Query().Get("page")
+
+	limit := 10 // default
+	if limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 {
+			limit = l
+		}
 	}
 
-	// Convert offset to page number
-	if page == 0 {
-		page = 1
-	}
-	if pageSize == 0 {
-		pageSize = 10
+	page := 1 // default
+	if pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = p
+		}
 	}
 
 	// Find active job vacancies
-	jobVacanciesResponse := controller.JobVacancyService.FindActiveJobs(request.Context(), page, pageSize)
+	jobVacancyResponse := controller.JobVacancyService.FindActiveJobs(request.Context(), page, limit)
 
 	webResponse := web.WebResponse{
 		Code:   200,
 		Status: "OK",
-		Data:   jobVacanciesResponse,
+		Data:   jobVacancyResponse,
 	}
 
 	helper.WriteToResponseBody(writer, webResponse)
@@ -324,7 +370,7 @@ func (controller *JobVacancyControllerImpl) UpdateStatus(writer http.ResponseWri
 
 func (controller *JobVacancyControllerImpl) GetPublicJobDetail(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Get job vacancy ID from path
-	jobVacancyId, err := uuid.Parse(params.ByName("jobVacancyId"))
+	jobVacancyId, err := uuid.Parse(params.ByName("vacancyId"))
 	if err != nil {
 		panic(exception.NewBadRequestError("Invalid job vacancy ID"))
 	}

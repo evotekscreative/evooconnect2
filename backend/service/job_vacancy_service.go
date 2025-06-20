@@ -8,11 +8,12 @@ import (
 )
 
 type JobVacancyService interface {
-	Create(ctx context.Context, request web.CreateJobVacancyRequest, creatorId uuid.UUID) web.JobVacancyResponse
+	Create(ctx context.Context, request web.CreateJobVacancyRequest, companyId, creatorId uuid.UUID) web.JobVacancyResponse
 	Update(ctx context.Context, request web.UpdateJobVacancyRequest, jobVacancyId uuid.UUID, userId uuid.UUID) web.JobVacancyResponse
 	Delete(ctx context.Context, jobVacancyId uuid.UUID, userId uuid.UUID) error
 	FindById(ctx context.Context, jobVacancyId uuid.UUID) web.JobVacancyResponse
 	FindByCompanyId(ctx context.Context, companyId uuid.UUID, page, pageSize int) web.JobVacancyListResponse
+	FindByCompanyIdWithStatus(ctx context.Context, companyId uuid.UUID, status string, page, pageSize int) web.JobVacancyListResponse
 	FindByCreatorId(ctx context.Context, creatorId uuid.UUID, page, pageSize int) web.JobVacancyListResponse
 	FindAll(ctx context.Context, page, pageSize int) web.JobVacancyListResponse
 	FindActiveJobs(ctx context.Context, page, pageSize int) web.JobVacancyListResponse

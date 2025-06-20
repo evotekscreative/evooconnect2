@@ -8,22 +8,22 @@ import (
 
 // Request models
 type CreateJobVacancyRequest struct {
-	Title               string    `json:"title" validate:"required,min=5,max=200"`
-	Description         string    `json:"description" validate:"required,min=50"`
-	Requirements        string    `json:"requirements" validate:"required,min=20"`
-	Location            string    `json:"location" validate:"required,min=2,max=100"`
-	JobType             string    `json:"job_type" validate:"required,oneof=full-time part-time contract internship freelance"`
-	ExperienceLevel     string    `json:"experience_level" validate:"required,oneof=entry mid senior lead executive"`
-	MinSalary           *float64  `json:"min_salary" validate:"omitempty,min=0"`
-	MaxSalary           *float64  `json:"max_salary" validate:"omitempty,min=0"`
-	Currency            string    `json:"currency" validate:"required,oneof=USD IDR EUR GBP"`
-	Skills              []string  `json:"skills" validate:"required,min=1,max=20,dive,min=1,max=50"`
-	Benefits            string    `json:"benefits" validate:"omitempty,max=1000"`
-	WorkType            string    `json:"work_type" validate:"required,oneof=remote hybrid in-office"`
-	ApplicationDeadline *string   `json:"application_deadline" validate:"omitempty"`
-	TypeApply           string    `json:"type_apply" validate:"required,oneof=simple_apply external_apply"`
-	ExternalLink        *string   `json:"external_link" validate:"required_if=TypeApply external_apply,omitempty,url"`
-	CompanyId           uuid.UUID `json:"company_id" validate:"required,uuid"`
+	Title               string   `json:"title" validate:"required,min=5,max=200"`
+	Description         string   `json:"description" validate:"required,min=50"`
+	Requirements        string   `json:"requirements" validate:"required,min=20"`
+	Location            string   `json:"location" validate:"required,min=2,max=100"`
+	JobType             string   `json:"job_type" validate:"required,oneof=full-time part-time contract internship freelance"`
+	ExperienceLevel     string   `json:"experience_level" validate:"required,oneof=entry mid senior lead executive"`
+	MinSalary           *float64 `json:"min_salary" validate:"omitempty,min=0"`
+	MaxSalary           *float64 `json:"max_salary" validate:"omitempty,min=0"`
+	Currency            string   `json:"currency" validate:"required,oneof=USD IDR EUR GBP"`
+	Skills              []string `json:"skills" validate:"required,min=1,max=20,dive,min=1,max=50"`
+	Benefits            string   `json:"benefits" validate:"omitempty,max=1000"`
+	WorkType            string   `json:"work_type" validate:"required,oneof=remote hybrid in-office"`
+	ApplicationDeadline *string  `json:"application_deadline" validate:"omitempty"`
+	TypeApply           string   `json:"type_apply" validate:"required,oneof=simple_apply external_apply"`
+	ExternalLink        *string  `json:"external_link" validate:"required_if=TypeApply external_apply,omitempty,url"`
+	// CompanyId           uuid.UUID `json:"company_id" validate:"required,uuid"`
 }
 
 type UpdateJobVacancyRequest struct {
@@ -46,33 +46,34 @@ type UpdateJobVacancyRequest struct {
 }
 
 // Response models
-	type JobVacancyResponse struct {
-		Id                  string     `json:"id"`
-		CompanyId           string     `json:"company_id"`
-		CreatorId           *string    `json:"creator_id"`
-		Title               string     `json:"title"`
-		Description         string     `json:"description"`
-		Requirements        string     `json:"requirements"`
-		Location            string     `json:"location"`
-		JobType             string     `json:"job_type"`
-		ExperienceLevel     string     `json:"experience_level"`
-		MinSalary           *float64   `json:"min_salary"`
-		MaxSalary           *float64   `json:"max_salary"`
-		Currency            string     `json:"currency"`
-		Skills              []string   `json:"skills"`
-		Benefits            string     `json:"benefits"`
-		WorkType            string     `json:"work_type"`
-		ApplicationDeadline *time.Time `json:"application_deadline"`
-		Status              string     `json:"status"`
-		TypeApply           string     `json:"type_apply"`
-		ExternalLink        *string    `json:"external_link"`
-		CreatedAt           time.Time  `json:"created_at"`
-		UpdatedAt           time.Time  `json:"updated_at"`
+type JobVacancyResponse struct {
+	Id                  string     `json:"id"`
+	CompanyId           string     `json:"company_id"`
+	CreatorId           *string    `json:"creator_id"`
+	Title               string     `json:"title"`
+	Description         string     `json:"description"`
+	Requirements        string     `json:"requirements"`
+	Location            string     `json:"location"`
+	JobType             string     `json:"job_type"`
+	ExperienceLevel     string     `json:"experience_level"`
+	MinSalary           *float64   `json:"min_salary"`
+	MaxSalary           *float64   `json:"max_salary"`
+	Currency            string     `json:"currency"`
+	Skills              []string   `json:"skills"`
+	Benefits            string     `json:"benefits"`
+	WorkType            string     `json:"work_type"`
+	ApplicationDeadline *time.Time `json:"application_deadline"`
+	Status              string     `json:"status"`
+	TypeApply           string     `json:"type_apply"`
+	ExternalLink        *string    `json:"external_link"`
+	HasApplied          bool       `json:"has_applied"`
+	CreatedAt           time.Time  `json:"created_at"`
+	UpdatedAt           time.Time  `json:"updated_at"`
 
-		// Relations
-		Company *CompanyBasicResponse `json:"company,omitempty"`
-		Creator *UserBasicResponse    `json:"creator,omitempty"`
-	}
+	// Relations
+	Company *CompanyBasicResponse `json:"company,omitempty"`
+	Creator *UserBasicResponse    `json:"creator,omitempty"`
+}
 
 type CompanyBasicResponse struct {
 	Id       string  `json:"id"`
@@ -134,4 +135,12 @@ type JobVacancySearchRequest struct {
 	CompanyId       *string  `json:"company_id"`
 	Page            int      `json:"page"`
 	PageSize        int      `json:"page_size"`
+}
+
+type JobVacancyBriefResponse struct {
+	Id       uuid.UUID             `json:"id"`
+	Title    string                `json:"title"`
+	JobType  string                `json:"job_type"`
+	Location string                `json:"location"`
+	Company  *CompanyBriefResponse `json:"company,omitempty"`
 }

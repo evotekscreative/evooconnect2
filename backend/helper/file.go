@@ -245,3 +245,11 @@ func SaveUploadedFile(file multipart.File, category string, userId string, fileE
 	// Return relative path with forward slashes for consistency across platforms
 	return strings.ReplaceAll(filepath, "\\", "/")
 }
+
+func GetFileHeaderFromForm(request *http.Request, fieldName string) (*multipart.FileHeader, error) {
+	fileHeaders := request.MultipartForm.File[fieldName]
+	if len(fileHeaders) == 0 {
+		return nil, fmt.Errorf("no file found for field: %s", fieldName)
+	}
+	return fileHeaders[0], nil
+}
