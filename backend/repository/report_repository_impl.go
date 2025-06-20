@@ -7,7 +7,7 @@ import (
 	"fmt"
 )
 
-type reportRepositoryImpl struct {
+type reportRepositoryImpl struct  {
 	db *sql.DB
 }
 

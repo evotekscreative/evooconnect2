@@ -135,18 +135,20 @@ export default function CreateGroupModal({
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Group Image
-                </label>
-                <div className="flex items-center gap-3 p-3 bg-blue-50/50 rounded-lg border border-blue-200/50">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="text-sm text-gray-600 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-gradient-to-r file:from-sky-500 file:to-cyan-400 file:text-white hover:file:cursor-pointer"
-                  />
-                </div>
-              </div>
+  <label className="block text-sm font-semibold text-gray-700 mb-1">
+    Group Image <span className="text-red-500">*</span>
+  </label>
+  <div className="flex items-center gap-3 p-3 bg-blue-50/50 rounded-lg border border-blue-200/50">
+    <input
+      type="file"
+      accept="image/*"
+      onChange={handleFileChange}
+      className="text-sm text-gray-600 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-gradient-to-r file:from-sky-500 file:to-cyan-400 file:text-white hover:file:cursor-pointer"
+      required
+    />
+  </div>
+</div>
+
 
               <div className="flex justify-end gap-3 pt-4 border-t border-blue-200/50">
                 <button

@@ -29,6 +29,7 @@ func NewRouter(
 	adminAuthController controller.AdminAuthController,
 	adminReportController controller.AdminReportController,
 	groupPinnedPostController controller.GroupPinnedPostController,
+	adminNotificationController controller.AdminNotificationController,
 ) *httprouter.Router {
 	router := httprouter.New()
 
@@ -189,6 +190,12 @@ func NewRouter(
 	router.POST("/api/notifications/mark-all-read", notificationController.MarkAllAsRead)
 	router.DELETE("/api/notifications", notificationController.DeleteNotifications)
 	router.DELETE("/api/notifications/selected", notificationController.DeleteSelectedNotifications)
+
+	// Admin notification routes
+	router.GET("/api/admin/notifications", adminNotificationController.GetNotifications)
+router.POST("/api/admin/notifications/mark-read", adminNotificationController.MarkAsRead)
+router.POST("/api/admin/notifications/mark-all-read", adminNotificationController.MarkAllAsRead)
+router.DELETE("/api/admin/notifications", adminNotificationController.DeleteNotifications)
 
 	// search
 	router.GET("/api/search", searchController.Search)

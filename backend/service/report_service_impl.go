@@ -29,6 +29,7 @@ type reportServiceImpl struct {
 	blogRepository        repository.BlogRepository
 	commentBlogRepository repository.CommentBlogRepository
 	groupRepository       repository.GroupRepository
+	notificationService   NotificationService // Tambahkan ini
 	db                    *sql.DB
 }
 
@@ -40,6 +41,7 @@ func NewReportService(
 	blogRepo repository.BlogRepository,
 	commentBlogRepo repository.CommentBlogRepository,
 	groupRepo repository.GroupRepository,
+	notificationService NotificationService, // Tambahkan ini
 	db *sql.DB,
 ) ReportService {
 	return &reportServiceImpl{
@@ -50,6 +52,7 @@ func NewReportService(
 		blogRepository:        blogRepo,
 		commentBlogRepository: commentBlogRepo,
 		groupRepository:       groupRepo,
+		notificationService:   notificationService, // Tambahkan ini
 		db:                    db,
 	}
 }
@@ -565,21 +568,69 @@ func (s *reportServiceImpl) TakeAction(ctx context.Context, id string, request w
 					return web.AdminActionResponse{}, err
 				}
 
+				// Ambil informasi post sebelum di-take down untuk notifikasi
+				post, err := s.postRepository.FindById(ctx, tx, targetUUID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
 				// Take down post
 				query := "UPDATE posts SET status = 'taken_down' WHERE id = $1"
 				_, err = tx.ExecContext(ctx, query, targetUUID)
 				if err != nil {
 					return web.AdminActionResponse{}, err
 				}
+
+				// Kirim notifikasi ke pemilik post
+				if s.notificationService != nil {
+					refType := "post_taken_down"
+					s.notificationService.Create(
+						ctx,
+						post.UserId,
+						string(domain.NotificationCategoryPost),
+						"post_taken_down",
+						"Post Taken Down",
+						fmt.Sprintf("Admin Evoconnect has taken down your post: %s", request.Reason),
+						&targetUUID,
+						&refType,
+						nil, // actorId nil untuk admin
+					)
+				}
 			}
 
 		case "blog":
 			if request.Action == "take_down" {
+				// Ambil informasi blog sebelum di-take down untuk notifikasi
+				blog, err := s.blogRepository.FindByID(ctx, report.TargetID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
 				// Take down blog
 				query := "UPDATE tb_blog SET status = 'taken_down' WHERE id = $1"
 				_, err = tx.ExecContext(ctx, query, report.TargetID)
 				if err != nil {
 					return web.AdminActionResponse{}, err
+				}
+
+				// Kirim notifikasi ke pemilik blog
+				if s.notificationService != nil {
+					// Parse userID dari string ke UUID
+					userUUID, err := uuid.Parse(blog.UserID)
+					if err == nil {
+						refType := "blog_taken_down"
+						s.notificationService.Create(
+							ctx,
+							userUUID,
+							string(domain.NotificationCategoryPost), // Atau bisa pakai category "blog" jika ada
+							"blog_taken_down",
+							"Blog Taken Down",
+							fmt.Sprintf("Admin Evoconnect has taken down your blog '%s': %s", blog.Title, request.Reason),
+							nil,
+							&refType,
+							nil, // actorId nil untuk admin
+						)
+					}
 				}
 			}
 
@@ -590,11 +641,33 @@ func (s *reportServiceImpl) TakeAction(ctx context.Context, id string, request w
 					return web.AdminActionResponse{}, err
 				}
 
+				// Ambil informasi comment sebelum di-take down untuk notifikasi
+				comment, err := s.commentRepository.FindById(ctx, tx, targetUUID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
 				// Take down comment
 				query := "UPDATE comments SET status = 'taken_down' WHERE id = $1"
 				_, err = tx.ExecContext(ctx, query, targetUUID)
 				if err != nil {
 					return web.AdminActionResponse{}, err
+				}
+
+				// Kirim notifikasi ke pemilik comment
+				if s.notificationService != nil {
+					refType := "comment_taken_down"
+					s.notificationService.Create(
+						ctx,
+						comment.UserId,
+						string(domain.NotificationCategoryPost),
+						"comment_taken_down",
+						"Comment Taken Down",
+						fmt.Sprintf("Admin Evoconnect has taken down your comment: %s", request.Reason),
+						&targetUUID,
+						&refType,
+						nil, // actorId nil untuk admin
+					)
 				}
 			}
 
@@ -605,15 +678,44 @@ func (s *reportServiceImpl) TakeAction(ctx context.Context, id string, request w
 					return web.AdminActionResponse{}, err
 				}
 
+				// Ambil informasi comment blog sebelum di-take down untuk notifikasi
+				comment, err := s.commentBlogRepository.FindById(ctx, tx, targetUUID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
 				// Take down comment blog
 				query := "UPDATE comment_blog SET status = 'taken_down' WHERE id = $1"
 				_, err = tx.ExecContext(ctx, query, targetUUID)
 				if err != nil {
 					return web.AdminActionResponse{}, err
 				}
+
+				// Kirim notifikasi ke pemilik comment blog
+				if s.notificationService != nil {
+					refType := "comment_blog_taken_down"
+					s.notificationService.Create(
+						ctx,
+						comment.UserId,
+						string(domain.NotificationCategoryPost),
+						"comment_blog_taken_down",
+						"Blog Comment Taken Down",
+						fmt.Sprintf("Admin Evoconnect has taken down your blog comment: %s", request.Reason),
+						&targetUUID,
+						&refType,
+						nil, // actorId nil untuk admin
+					)
+				}
 			}
+
 		case "group":
 			targetUUID, err := uuid.Parse(report.TargetID)
+			if err != nil {
+				return web.AdminActionResponse{}, err
+			}
+
+			// Ambil informasi grup sebelum dihapus untuk notifikasi
+			group, err := s.groupRepository.FindById(ctx, tx, targetUUID)
 			if err != nil {
 				return web.AdminActionResponse{}, err
 			}
@@ -626,9 +728,64 @@ func (s *reportServiceImpl) TakeAction(ctx context.Context, id string, request w
 				if err != nil {
 					return web.AdminActionResponse{}, err
 				}
-			case "ban":
-				// Ban group - hapus semua data terkait
 
+				// Kirim notifikasi ke creator grup
+				if s.notificationService != nil {
+					refType := "group_taken_down"
+					s.notificationService.Create(
+						ctx,
+						group.CreatorId,
+						string(domain.NotificationCategoryGroup),
+						"group_taken_down",
+						"Group Taken Down",
+						fmt.Sprintf("Admin Evoconnect has taken down your group '%s': %s", group.Name, request.Reason),
+						&targetUUID,
+						&refType,
+						nil,
+					)
+				}
+
+			case "ban":
+				// Kirim notifikasi ke creator grup sebelum menghapus data
+				if s.notificationService != nil {
+					refType := "group_banned"
+					s.notificationService.Create(
+						ctx,
+						group.CreatorId,
+						string(domain.NotificationCategoryGroup),
+						"group_banned",
+						"Group Banned",
+						fmt.Sprintf("Admin Evoconnect has banned your group '%s': %s", group.Name, request.Reason),
+						nil,
+						&refType,
+						nil,
+					)
+
+					// Kirim notifikasi ke admin/moderator grup
+					query := "SELECT user_id FROM group_members WHERE group_id = $1 AND role IN ('admin', 'moderator') AND user_id != $2"
+					rows, err := tx.QueryContext(ctx, query, targetUUID, group.CreatorId)
+					if err == nil {
+						defer rows.Close()
+						for rows.Next() {
+							var memberId uuid.UUID
+							if err := rows.Scan(&memberId); err == nil {
+								s.notificationService.Create(
+									ctx,
+									memberId,
+									string(domain.NotificationCategoryGroup),
+									"group_banned",
+									"Group Banned",
+									fmt.Sprintf("Admin Evoconnect has banned group '%s': %s", group.Name, request.Reason),
+									nil,
+									&refType,
+									nil,
+								)
+							}
+						}
+					}
+				}
+
+				// Ban group - hapus semua data terkait
 				// 1. Hapus semua post grup
 				_, err = tx.ExecContext(ctx, "DELETE FROM posts WHERE group_id = $1", targetUUID)
 				if err != nil {

@@ -73,6 +73,98 @@ const NotificationPage = () => {
     },
   ];
 
+  const [profileViews, setProfileViews] = useState({
+  thisWeek: 0,
+  lastWeek: 0,
+  percentageChange: 0,
+  dailyViews: [],
+  chartData: {
+    labels: [],
+    data: []
+  }
+});
+
+useEffect(() => {
+  fetchProfileViews();
+}, []);
+
+const fetchProfileViews = async () => {
+  try {
+    const userToken = localStorage.getItem("token");
+
+    const [thisWeekResponse, lastWeekResponse] = await Promise.all([
+      axios.get(apiUrl + "/api/user/profile/views/this-week", {
+        headers: { Authorization: `Bearer ${userToken}` },
+      }),
+      axios.get(apiUrl + "/api/user/profile/views/last-week", {
+        headers: { Authorization: `Bearer ${userToken}` },
+      }),
+    ]);
+
+    const thisWeekData = thisWeekResponse.data.data || {};
+    const lastWeekData = lastWeekResponse.data.data || {};
+
+    const days = [];
+    const dailyCounts = [];
+
+    // Prepare last 7 days
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const formattedDate = date.toISOString().split('T')[0];
+      days.push(formattedDate);
+
+      // Count views per day
+      const dailyViews =
+        thisWeekData.viewers?.filter(
+          (viewer) => new Date(viewer.viewed_at).toISOString().split('T')[0] === formattedDate
+        ) || [];
+
+      dailyCounts.push(dailyViews.length);
+    }
+
+    setProfileViews((prev) => {
+      const newThisWeek = thisWeekData.count || 0;
+      const newLastWeek = lastWeekData.count || 0;
+
+      // If data is the same as before, don't update
+      if (prev.thisWeek === newThisWeek && prev.lastWeek === newLastWeek) {
+        return prev;
+      }
+
+      // Calculate change only if data is different
+      let percentageChange = 0;
+      if (newLastWeek > 0) {
+        percentageChange = ((newThisWeek - newLastWeek) / newLastWeek) * 100;
+      } else if (newThisWeek > 0) {
+        percentageChange = 100;
+      }
+
+      return {
+        thisWeek: newThisWeek,
+        lastWeek: newLastWeek,
+        percentageChange: Math.round(percentageChange),
+        dailyViews: thisWeekData.viewers || [],
+        chartData: {
+          labels: days.map(date => {
+            const d = new Date(date);
+            return d.toLocaleDateString('en-US', { weekday: 'short' });
+          }),
+          data: dailyCounts,
+        },
+      };
+    });
+  } catch (error) {
+    console.error("Failed to fetch profile views:", error);
+    // Fallback to local data if available
+    const cachedViews = localStorage.getItem("profileViewsData");
+    if (cachedViews) {
+      setProfileViews(JSON.parse(cachedViews));
+    }
+  }
+};
+
+
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const tab = searchParams.get('tab') || 'all';
@@ -818,31 +910,56 @@ const NotificationPage = () => {
               </div>
 
               <div className="bg-white rounded-lg shadow">
-                <div className="p-4">
-                  <h2 className="text-xl font-semibold mb-4">
-                    Who viewed your profile
-                  </h2>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="w-12 h-12 mr-3 rounded-full bg-gray-200 overflow-hidden">
-                        <img
-                          src="/api/placeholder/48/48"
-                          alt="Profile"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div>
-                        <p className="font-semibold">Sophia Lee</p>
-                        <p className="text-gray-600 text-sm">@Harvard</p>
-                      </div>
-                    </div>
-                    <button className="border border-blue-500 text-blue-500 rounded-full px-4 py-1">
-                      Connect
-                    </button>
-                  </div>
+  <div className="p-4">
+    <h2 className="text-xl font-semibold mb-4">
+      Who viewed your profile
+    </h2>
+    
+    {profileViews.dailyViews && profileViews.dailyViews.length > 0 ? (
+      profileViews.dailyViews.slice(0, 3).map((viewer) => (
+        <div key={viewer.id} className="flex items-center justify-between mb-3">
+          <div className="flex items-center">
+            <div className="w-12 h-12 mr-3 rounded-full bg-gray-200 overflow-hidden">
+              {viewer.photo ? (
+                <img
+                  src={`${apiUrl}/${viewer.photo}`}
+                  alt={viewer.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gray-300">
+                  <span className="text-sm font-bold text-gray-600">
+                    {viewer.name.split(" ").map(n => n[0]).join("")}
+                  </span>
                 </div>
-              </div>
+              )}
+            </div>
+            <div>
+              <p className="font-semibold">{viewer.name}</p>
+              <p className="text-gray-600 text-sm">@{viewer.username}</p>
+            </div>
+          </div>
+          <button className="border border-blue-500 text-blue-500 rounded-full px-4 py-1">
+            Connect
+          </button>
+        </div>
+      ))
+    ) : (
+      <div className="text-center text-gray-400 py-4">
+        No profile views yet
+      </div>
+    )}
+    
+    {profileViews.dailyViews && profileViews.dailyViews.length > 3 && (
+      <div className="text-center mt-2">
+        <button className="text-blue-600 text-sm hover:underline">
+          See all {profileViews.dailyViews.length} viewers
+        </button>
+      </div>
+    )}
+  </div>
+</div>
+
             </div>
           </div>
         </div>

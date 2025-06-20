@@ -70,6 +70,9 @@ func main() {
 	// Notification repository
 	notificationRepository := repository.NewNotificationRepository()
 
+	// Admin notification repository
+	adminNotificationRepository := repository.NewAdminNotificationRepository()
+
 	// Notification service (moved up)
 	notificationService := service.NewNotificationService(
 		notificationRepository,
@@ -176,6 +179,7 @@ func main() {
 		blogRepository,
 		commentBlogRepository,
 		groupRepository,
+		notificationService, // Tambahkan ini
 		db,
 	)
 
@@ -187,7 +191,13 @@ func main() {
 		blogRepository,
 		groupRepository,
 		connectionRepository,
+		groupJoinRequestRepository,
 	)
+
+	adminNotificationService := service.NewAdminNotificationService(
+    adminNotificationRepository,
+    db,
+)
 
 	adminAuthService := service.NewAdminAuthService(adminRepository, db, validate)
 
@@ -238,6 +248,9 @@ func main() {
 	// pinned post controller
 	groupPinnedPostController := controller.NewGroupPinnedPostController(groupPinnedPostService)
 
+	// admin notification controller
+	adminNotificationController := controller.NewAdminNotificationController(adminNotificationService)
+
 	// ===== Router and Middleware =====
 	// Initialize router with all controllers
 	router := app.NewRouter(
@@ -259,6 +272,7 @@ func main() {
 		adminAuthController,
 		adminReportController,
 		groupPinnedPostController,
+		adminNotificationController,
 	)
 
 	seeder.SeedAdmin(db)

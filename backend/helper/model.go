@@ -6,6 +6,7 @@ import (
 	"evoconnect/backend/model/web"
 	"fmt"
 	"github.com/google/uuid"
+	
 	// "evoconnect/backend/repository"
 )
 
@@ -413,4 +414,20 @@ func ToJoinRequestResponse(request domain.GroupJoinRequest) web.JoinRequestRespo
 	}
 
 	return response
+}
+
+func ToNotificationResponse(notification domain.Notification) web.NotificationResponse {
+    return web.NotificationResponse{
+        Id:           notification.Id,
+        Category:     string(notification.Category),
+        Type:         string(notification.Type),
+        Title:        notification.Title,
+        Message:      notification.Message,
+        Status:       string(notification.Status),
+        ReferenceId:  notification.ReferenceId,
+        ReferenceType: notification.ReferenceType,
+        CreatedAt:    notification.CreatedAt,
+        UpdatedAt:    notification.UpdatedAt,
+        Actor:        nil, // Untuk sementara set nil, nanti bisa diisi jika diperlukan
+    }
 }

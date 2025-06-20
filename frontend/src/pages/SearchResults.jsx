@@ -8,8 +8,10 @@ import {
   Users,
   Search,
   ChevronRight,
+  Clock,
 } from "lucide-react";
 import Case from "../components/Case";
+import Alert from "../components/Auth/Alert";
 
 const base_url =
   import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
@@ -25,10 +27,34 @@ export default function SearchResults() {
     posts: [],
     blogs: [],
   });
+  const [alert, setAlert] = useState({ 
+  show: false, 
+  type: "success", 
+  message: "" 
+});
+
+// Function to show alert
+const showAlert = (type, message) => {
+  setAlert({ show: true, type, message });
+};
+
+// Function to hide alert
+const hideAlert = () => {
+  setAlert({ ...alert, show: false });
+};
+
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("all");
   const [searchInput, setSearchInput] = useState(query || "");
+  const [pendingJoinRequests, setPendingJoinRequests] = useState({});
+ const [pendingRequestIds, setPendingRequestIds] = useState({});
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [selectedRequestId, setSelectedRequestId] = useState(null);
+  const [selectedGroupId, setSelectedGroupId] = useState(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  
 
   // Refs for each section
   const usersRef = useRef(null);
@@ -36,6 +62,47 @@ export default function SearchResults() {
   const jobsRef = useRef(null);
   const postsRef = useRef(null);
   const blogsRef = useRef(null);
+
+  // Fetch join requests to know which groups have pending requests
+  const fetchJoinRequests = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const response = await axios.get(
+        `${base_url}/api/my-join-requests`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data && response.data.data) {
+        // Process join requests
+        const requests = response.data.data.filter(req => req.status === "pending");
+
+        // Create maps for pending requests
+        const pendingMap = {};
+        const requestIdsMap = {};
+
+        requests.forEach(request => {
+          pendingMap[request.group_id] = true;
+          requestIdsMap[request.group_id] = request.id;
+        });
+
+        setPendingJoinRequests(pendingMap);
+        setPendingRequestIds(requestIdsMap);
+      }
+    } catch (error) {
+      console.error("Error fetching join requests:", error);
+    }
+  };
+
+  useEffect(() => {
+    // Fetch join requests when component mounts
+    fetchJoinRequests();
+  }, []);
 
   useEffect(() => {
     const fetchSearchResults = async () => {
@@ -65,8 +132,6 @@ export default function SearchResults() {
           blogs: data.blogs || [],
         });
 
-        // console.log("Search Results:", data);
-        // console.log(results);
       } catch (error) {
         console.error("Error fetching search results:", error);
         setError("Failed to fetch search results. Please try again.");
@@ -74,8 +139,6 @@ export default function SearchResults() {
         setLoading(false);
       }
     };
-
-    console.log(query);
 
     fetchSearchResults();
   }, [query]);
@@ -87,35 +150,132 @@ export default function SearchResults() {
     }
   };
 
-  const handleJoinGroup = async (groupId) => {
-    try {
-      const token = localStorage.getItem("token");
-      await axios.post(
-        `${base_url}/api/groups/${groupId}/join`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+ const handleJoinGroup = async (groupId) => {
+  try {
+    const token = localStorage.getItem("token");
+    const group = results.groups.find(g => g.id === groupId);
+    const isPrivate = group.privacy_level === "private";
+    
+    // Use different endpoints for private and public groups
+    const endpoint = isPrivate
+      ? `${base_url}/api/groups/${groupId}/join-requests`
+      : `${base_url}/api/groups/${groupId}/join`;
+    
+    const response = await axios.post(
+      endpoint,
+      {},
+      {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+      }
+    );
 
-      // Update the local state to reflect the change
-      setResults((prev) => ({
+    // For private groups, store the request ID
+    if (isPrivate && response.data && response.data.data) {
+      setPendingJoinRequests(prev => ({
         ...prev,
-        groups: prev.groups.map((group) =>
-          group.id === groupId
-            ? {
-                ...group,
-                is_member: true,
-                member_count: group.member_count + 1,
-              }
-            : group
-        ),
+        [groupId]: true
       }));
-    } catch (error) {
-      console.error("Error joining group:", error);
-      // You might want to show an error message to the user
+      
+      setPendingRequestIds(prev => ({
+        ...prev,
+        [groupId]: response.data.data.id
+      }));
+      
+      showAlert("success", "Join request sent! Waiting for admin accepted.");
+    } else {
+      showAlert("success", "Successfully joined the group!");
     }
-  };
+
+    // Update the local state to reflect the change
+    setResults((prev) => ({
+      ...prev,
+      groups: prev.groups.map((group) =>
+        group.id === groupId
+          ? {
+            ...group,
+            is_member: isPrivate ? false : true,
+            join_request_status: isPrivate ? "pending" : null,
+            member_count: isPrivate ? group.member_count : group.member_count + 1,
+          }
+          : group
+      ),
+    })); 
+  } catch (error) {
+    console.error("Error joining group:", error);
+    showAlert("error", error.response?.data?.message || "Failed to join group");
+  }
+};
+
+
+  // Function to open cancel confirmation modal
+const openCancelModal = (groupId) => {
+  const reqId = pendingRequestIds[groupId];
+  if (reqId) {
+    setSelectedRequestId(reqId);
+    setSelectedGroupId(groupId);
+    setShowCancelModal(true);
+  }
+};
+
+// Function to handle cancelling a join request
+const handleCancelRequest = async () => {
+  if (!selectedRequestId) return;
+  
+  try {
+    setIsCancelling(true);
+    const token = localStorage.getItem("token");
+    
+    const response = await axios.delete(
+      `${base_url}/api/join-requests/${selectedRequestId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    
+    if (response.status === 200) {
+      // Update UI to remove pending status
+      if (selectedGroupId) {
+        setPendingJoinRequests(prev => {
+          const updated = { ...prev };
+          delete updated[selectedGroupId];
+          return updated;
+        });
+        
+        setPendingRequestIds(prev => {
+          const updated = { ...prev };
+          delete updated[selectedGroupId];
+          return updated;
+        });
+        
+        // Update the results state to reflect the change
+        setResults(prev => ({
+          ...prev,
+          groups: prev.groups.map(group => 
+            group.id === selectedGroupId 
+              ? { ...group, join_request_status: null }
+              : group
+          )
+        }));
+      }
+      
+      showAlert("success", "Join request cancelled successfully");
+    }
+  } catch (error) {
+    console.error("Error cancelling join request:", error);
+    showAlert("error", error.response?.data?.message || "Failed to cancel join request");
+  } finally {
+    setIsCancelling(false);
+    setShowCancelModal(false);
+    setSelectedRequestId(null);
+    setSelectedGroupId(null);
+  }
+};
+
 
   const handleConnect = async (userId) => {
     try {
@@ -153,9 +313,12 @@ export default function SearchResults() {
 
   return (
     <Case>
+    
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        
         {/* Header Section */}
         <div className="bg-white shadow-sm border-b">
+        
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
             <div className="flex items-center space-x-3 mb-4">
               <div className="p-2 bg-blue-100 rounded-lg">
@@ -370,22 +533,20 @@ export default function SearchResults() {
                     <div className="flex space-x-2 min-w-max">
                       <button
                         onClick={() => setActiveTab("all")}
-                        className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
-                          activeTab === "all"
-                            ? "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 text-white"
-                            : "text-gray-700 hover:bg-gray-100"
-                        }`}
+                        className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${activeTab === "all"
+                          ? "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 text-white"
+                          : "text-gray-700 hover:bg-gray-100"
+                          }`}
                       >
                         All ({totalResults})
                       </button>
                       {results.users.length > 0 && (
                         <button
                           onClick={() => setActiveTab("users")}
-                          className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
-                            activeTab === "users"
-                              ? "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 text-white shadow-lg"
-                              : "text-gray-700 hover:bg-gray-100"
-                          }`}
+                          className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${activeTab === "users"
+                            ? "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 text-white shadow-lg"
+                            : "text-gray-700 hover:bg-gray-100"
+                            }`}
                         >
                           People ({results.users.length})
                         </button>
@@ -393,11 +554,10 @@ export default function SearchResults() {
                       {results.groups.length > 0 && (
                         <button
                           onClick={() => setActiveTab("groups")}
-                          className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
-                            activeTab === "groups"
-                              ? "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 text-white shadow-lg"
-                              : "text-gray-700 hover:bg-gray-100"
-                          }`}
+                          className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${activeTab === "groups"
+                            ? "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 text-white shadow-lg"
+                            : "text-gray-700 hover:bg-gray-100"
+                            }`}
                         >
                           Groups ({results.groups.length})
                         </button>
@@ -405,11 +565,10 @@ export default function SearchResults() {
                       {results.jobs.length > 0 && (
                         <button
                           onClick={() => setActiveTab("jobs")}
-                          className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
-                            activeTab === "jobs"
-                              ? "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 text-white shadow-lg"
-                              : "text-gray-700 hover:bg-gray-100"
-                          }`}
+                          className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${activeTab === "jobs"
+                            ? "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 text-white shadow-lg"
+                            : "text-gray-700 hover:bg-gray-100"
+                            }`}
                         >
                           Jobs ({results.jobs.length})
                         </button>
@@ -417,11 +576,10 @@ export default function SearchResults() {
                       {results.posts.length > 0 && (
                         <button
                           onClick={() => setActiveTab("posts")}
-                          className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
-                            activeTab === "posts"
-                              ? "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 text-white shadow-lg"
-                              : "text-gray-700 hover:bg-gray-100"
-                          }`}
+                          className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${activeTab === "posts"
+                            ? "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 text-white shadow-lg"
+                            : "text-gray-700 hover:bg-gray-100"
+                            }`}
                         >
                           Posts ({results.posts.length})
                         </button>
@@ -429,11 +587,10 @@ export default function SearchResults() {
                       {results.blogs.length > 0 && (
                         <button
                           onClick={() => setActiveTab("blogs")}
-                          className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
-                            activeTab === "blogs"
-                              ? "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 text-white shadow-lg"
-                              : "text-gray-700 hover:bg-gray-100"
-                          }`}
+                          className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${activeTab === "blogs"
+                            ? "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 text-white shadow-lg"
+                            : "text-gray-700 hover:bg-gray-100"
+                            }`}
                         >
                           Blogs ({results.blogs.length})
                         </button>
@@ -475,7 +632,7 @@ export default function SearchResults() {
                                           src={`${base_url}/${user.photo}`}
                                           alt={user.name}
                                           className="w-full h-full object-cover"
-                                          onError={(e) => {}}
+                                          onError={(e) => { }}
                                         />
                                       ) : (
                                         <div className="w-full h-full flex items-center justify-center bg-gray-300 text-white text-xl font-bold">
@@ -583,20 +740,32 @@ export default function SearchResults() {
                                   </Link>
 
                                   {group.is_member ? (
-                                    <button className="ml-4 px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-500  text-white rounded-lg font-semibold border-2 border-gray-200">
-                                      Joined
-                                    </button>
-                                  ) : (
-                                    <button
-                                      className="ml-4 px-6 py-2 bg-gradient-to-r from-blue-500 to-cyan-400  text-white rounded-lg font-semibold hover:from-blue-600 hover:to-cyan-500 transform hover:scale-105 transition-all duration-200 shadow-lg"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        handleJoinGroup(group.id);
-                                      }}
-                                    >
-                                      Join Group
-                                    </button>
-                                  )}
+  <button className="ml-4 px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg font-semibold border-2 border-gray-200">
+    Joined
+  </button>
+) : pendingJoinRequests[group.id] || group.join_request_status === "pending" ? (
+  <button 
+    onClick={(e) => {
+      e.preventDefault();
+      openCancelModal(group.id);
+    }}
+    className="ml-4 px-6 py-2 bg-yellow-100 text-yellow-600 rounded-lg font-semibold border-2 border-yellow-200 flex items-center hover:bg-yellow-200"
+  >
+    <Clock size={14} className="mr-1" /> Pending
+  </button>
+) : (
+  <button
+    className="ml-4 px-6 py-2 bg-gradient-to-r from-blue-500 to-cyan-400 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-cyan-500 transform hover:scale-105 transition-all duration-200 shadow-lg"
+    onClick={(e) => {
+      e.preventDefault();
+      handleJoinGroup(group.id);
+    }}
+  >
+    {group.privacy_level === "private" ? "Request Join" : "Join Group"}
+  </button>
+)}
+
+
                                 </div>
                               ))}
                             </div>
@@ -697,12 +866,12 @@ export default function SearchResults() {
                                         {blog.content
                                           ? blog.content.length > 100
                                             ? blog.content
-                                                .substring(0, 100)
-                                                .replace(/<[^>]*>/g, "") + "..."
+                                              .substring(0, 100)
+                                              .replace(/<[^>]*>/g, "") + "..."
                                             : blog.content.replace(
-                                                /<[^>]*>/g,
-                                                ""
-                                              )
+                                              /<[^>]*>/g,
+                                              ""
+                                            )
                                           : "No content"}
                                       </p>
                                       <div className="flex items-center text-sm text-gray-500 space-x-4">
@@ -759,12 +928,12 @@ export default function SearchResults() {
                                         {post.content
                                           ? post.content.length > 100
                                             ? post.content
-                                                .substring(0, 100)
-                                                .replace(/<[^>]*>/g, "") + "..."
+                                              .substring(0, 100)
+                                              .replace(/<[^>]*>/g, "") + "..."
                                             : post.content.replace(
-                                                /<[^>]*>/g,
-                                                ""
-                                              )
+                                              /<[^>]*>/g,
+                                              ""
+                                            )
                                           : "No content"}
                                       </p>
                                       <div className="flex items-center text-sm text-gray-500 space-x-4">
@@ -794,6 +963,52 @@ export default function SearchResults() {
             </div>
           </div>
         </div>
+        {/* Cancel Request Confirmation Modal */}
+{showCancelModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white rounded-lg p-6 max-w-sm w-full">
+      <h3 className="text-lg font-medium mb-4">Cancel Join Request</h3>
+      <p className="text-gray-600 mb-6">
+        Are you sure you want to cancel your request to join this group?
+      </p>
+      <div className="flex justify-end gap-3">
+        <button
+          onClick={() => setShowCancelModal(false)}
+          className="px-2 py-1 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+          disabled={isCancelling}
+        >
+          No, Keep Request
+        </button>
+        <button
+          onClick={handleCancelRequest}
+          className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center"
+          disabled={isCancelling}
+        >
+          {isCancelling ? (
+            <>
+              <div className="animate-spin rounded-full h-2 w-4 border-b-2 border-white mr-2"></div>
+              Cancelling...
+            </>
+          ) : (
+            "Yes, Cancel Request"
+          )}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+ {alert.show && (
+      <div className="fixed top-4 right-4 z-50 w-full max-w-sm">
+        <Alert
+          type={alert.type}
+          message={alert.message}
+          onClose={hideAlert}
+          isVisible={alert.show}
+        />
+      </div>
+    )}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100"></div>
+
       </div>
     </Case>
   );

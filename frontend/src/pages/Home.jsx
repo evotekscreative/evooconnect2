@@ -17,7 +17,7 @@ import { CKEditor } from "@ckeditor/ckeditor5-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Alert from "../components/Auth/Alert";
 import { Line } from "react-chartjs-2";
-import "../assets/css/style.css"; 
+import "../assets/css/style.css";
 import {
   SquarePen,
   NotebookPen,
@@ -150,10 +150,10 @@ export default function SocialNetworkFeed() {
   });
   const [connections, setConnections] = useState([]);
   const [reportTarget, setReportTarget] = useState({
-  userId: null,
-  targetType: null,
-  targetId: null
-});
+    userId: null,
+    targetType: null,
+    targetId: null
+  });
 
   const fetchSuggestedConnections = async () => {
     try {
@@ -178,9 +178,9 @@ export default function SocialNetworkFeed() {
           username: person.username || "unknown",
           initials: person.name
             ? person.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
+              .split(" ")
+              .map((n) => n[0])
+              .join("")
             : "UU",
           photo: person.photo || null,
           headline: person.headline || "No headline specified",
@@ -283,9 +283,9 @@ export default function SocialNetworkFeed() {
         username: connection.user.username || "unknown",
         initials: connection.user.name
           ? connection.user.name
-              .split(" ")
-              .map((n) => n[0])
-              .join("")
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
           : "UU",
         photo: connection.user.photo || null,
         status: connection.status,
@@ -508,9 +508,9 @@ export default function SocialNetworkFeed() {
             response.data.data?.user?.username || tempConnection.username,
           initials: response.data.data?.user?.name
             ? response.data.data.user.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
+              .split(" ")
+              .map((n) => n[0])
+              .join("")
             : tempConnection.initials,
           photo: response.data.data?.user?.photo || tempConnection.photo,
           status: response.data.data?.status || "connected",
@@ -578,24 +578,24 @@ export default function SocialNetworkFeed() {
         if (response.data?.data) {
           // Transformasi data setelah fetch
           const formattedPosts = response.data.data.map((post) => ({
-  id: post.id,
-  content: post.content,
-  images: post.images?.map((img) => 
-    img.startsWith("http") ? img : `${apiUrl}/${img}`
-  ) || [],
-  user: post.user || {
-    id: post.user_id,
-    name: "Unknown User",
-    initials: "UU",
-    username: "unknown",
-  },
-  group: post.group || null,
-  likes_count: post.likes_count || 0,
-  comments_count: post.comments_count || 0,
-  created_at: post.created_at, // Jangan beri fallback
-  visibility: post.visibility || "public",
-  isLiked: post.is_liked || false,
-}));
+            id: post.id,
+            content: post.content,
+            images: post.images?.map((img) =>
+              img.startsWith("http") ? img : `${apiUrl}/${img}`
+            ) || [],
+            user: post.user || {
+              id: post.user_id,
+              name: "Unknown User",
+              initials: "UU",
+              username: "unknown",
+            },
+            group: post.group || null,
+            likes_count: post.likes_count || 0,
+            comments_count: post.comments_count || 0,
+            created_at: post.created_at, // Jangan beri fallback
+            visibility: post.visibility || "public",
+            isLiked: post.is_liked || false,
+          }));
 
           // Update state posts
           if (append) {
@@ -605,11 +605,17 @@ export default function SocialNetworkFeed() {
           }
 
           // Periksa apakah masih ada data yang bisa dimuat
-          setHasMore(formattedPosts.length === limit);
+        if (formattedPosts.length < limit) {
+          setHasMore(false);
+        } else {  
+          setHasMore(true);
+          }
 
           if (pageNum > 0) {
             setPage(pageNum);
           }
+        } else {  
+          setHasMore(false);  
         }
       } catch (err) {
         console.error("Failed to fetch posts:", err);
@@ -702,30 +708,30 @@ export default function SocialNetworkFeed() {
     }
   };
 
- const formatPostTime = (dateString) => {
-  if (!dateString) return "";
+  const formatPostTime = (dateString) => {
+    if (!dateString) return "";
 
-  try {
-    const utcDate = dayjs.utc(dateString);
+    try {
+      const utcDate = dayjs.utc(dateString);
 
-    if (!utcDate.isValid()) {
-      console.warn("Invalid date:", dateString);
+      if (!utcDate.isValid()) {
+        console.warn("Invalid date:", dateString);
+        return "";
+      }
+
+      const now = dayjs.utc();
+      const diffInHours = now.diff(utcDate, 'hour');
+
+      if (diffInHours < 24) {
+        return utcDate.format('h:mm A'); // hasil: 2:49 AM // Format 24 jam, misal: 02:49
+      } else {
+        return utcDate.format('MMM D [at] HH:mm'); // Misal: Jun 5 at 02:49
+      }
+    } catch (error) {
+      console.error("Time formatting error:", error);
       return "";
     }
-
-    const now = dayjs.utc();
-    const diffInHours = now.diff(utcDate, 'hour');
-
-    if (diffInHours < 24) {
-     return utcDate.format('h:mm A'); // hasil: 2:49 AM // Format 24 jam, misal: 02:49
-    } else {
-      return utcDate.format('MMM D [at] HH:mm'); // Misal: Jun 5 at 02:49
-    }
-  } catch (error) {
-    console.error("Time formatting error:", error);
-    return "";
-  }
-};
+  };
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
@@ -743,91 +749,91 @@ export default function SocialNetworkFeed() {
   };
 
   const handlePostSubmit = async () => {
-  if (selectedPostId) {
-    await handleUpdatePost();
-    return;
-  }
-
-  setIsLoading(true);
-  setError(null);
-
-  try {
-    const content = activeTab === "update" ? postContent : articleContent;
-    const userToken = localStorage.getItem("token");
-
-    const formData = new FormData();
-    formData.append("content", content);
-    formData.append("visibility", postVisibility);
-
-    // Tambahkan semua gambar ke FormData
-    newPostImages.forEach((img) => {
-      if (img.file) {
-        formData.append("images", img.file);
-      }
-    });
-
-    const response = await axios.post(apiUrl + "/api/posts", formData, {
-      headers: {
-        Authorization: `Bearer ${userToken}`,
-        "Content-Type": "multipart/form-data",
-      },
-    });
-
-    if (!response.data || !response.data.data) {
-      throw new Error("Invalid response from server");
+    if (selectedPostId) {
+      await handleUpdatePost();
+      return;
     }
 
-    // Pastikan response.data.data.images adalah array URL gambar
-    const images = response.data.data.images || [];
-    
-    // Gunakan waktu saat ini untuk memastikan waktu postingan langsung muncul
-    const currentTime = new Date().toISOString();
+    setIsLoading(true);
+    setError(null);
 
-    const newPost = {
-      id: response.data.data.id,
-      content: response.data.data.content || content,
-      images: images.map((img) => {
-        // Pastikan URL gambar lengkap jika backend hanya mengembalikan nama file
-        return img.startsWith("http") ? img : `${apiUrl}/${img}`;
-      }),
-      visibility: response.data.data.visibility || postVisibility,
-      likes_count: response.data.data.likes_count || 0,
-      comments_count: response.data.data.comments_count || 0,
-      created_at: response.data.data.created_at || currentTime, // Gunakan created_at bukan createdAt
-      user: response.data.data.user || {
-        id: currentUserId,
-        name: user.name || "Current User",
-        photo: user.photo || "",
-        initials: user.initials || "CU",
-        username: user.username || "user",
-      },
-    };
+    try {
+      const content = activeTab === "update" ? postContent : articleContent;
+      const userToken = localStorage.getItem("token");
 
-    setPosts((prevPosts) => [newPost, ...prevPosts]);
-    setPostContent("");
-    setArticleContent("");
-    setNewPostImages([]); // Reset gambar setelah posting
+      const formData = new FormData();
+      formData.append("content", content);
+      formData.append("visibility", postVisibility);
 
-    setAlertInfo({
-      show: true,
-      type: "success",
-      message: "Successfully created post!",
-    });
-  } catch (error) {
-    setAlertInfo({
-      show: true,
-      type: "error",
-      message: "Field is required",
-    });
-    setError(
-      error.response?.data?.message ||
+      // Tambahkan semua gambar ke FormData
+      newPostImages.forEach((img) => {
+        if (img.file) {
+          formData.append("images", img.file);
+        }
+      });
+
+      const response = await axios.post(apiUrl + "/api/posts", formData, {
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (!response.data || !response.data.data) {
+        throw new Error("Invalid response from server");
+      }
+
+      // Pastikan response.data.data.images adalah array URL gambar
+      const images = response.data.data.images || [];
+
+      // Gunakan waktu saat ini untuk memastikan waktu postingan langsung muncul
+      const currentTime = new Date().toISOString();
+
+      const newPost = {
+        id: response.data.data.id,
+        content: response.data.data.content || content,
+        images: images.map((img) => {
+          // Pastikan URL gambar lengkap jika backend hanya mengembalikan nama file
+          return img.startsWith("http") ? img : `${apiUrl}/${img}`;
+        }),
+        visibility: response.data.data.visibility || postVisibility,
+        likes_count: response.data.data.likes_count || 0,
+        comments_count: response.data.data.comments_count || 0,
+        created_at: response.data.data.created_at || currentTime, // Gunakan created_at bukan createdAt
+        user: response.data.data.user || {
+          id: currentUserId,
+          name: user.name || "Current User",
+          photo: user.photo || "",
+          initials: user.initials || "CU",
+          username: user.username || "user",
+        },
+      };
+
+      setPosts((prevPosts) => [newPost, ...prevPosts]);
+      setPostContent("");
+      setArticleContent("");
+      setNewPostImages([]); // Reset gambar setelah posting
+
+      setAlertInfo({
+        show: true,
+        type: "success",
+        message: "Successfully created post!",
+      });
+    } catch (error) {
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: "Field is required",
+      });
+      setError(
+        error.response?.data?.message ||
         error.message ||
         "Failed to create post. Please try again."
-    );
-  } finally {
-    setIsLoading(false);
-  }
-};
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
 
   const closeCommentModal = () => {
@@ -867,8 +873,8 @@ export default function SocialNetworkFeed() {
           const replies = cachedReplies
             ? JSON.parse(cachedReplies)
             : Array.isArray(comment.replies)
-            ? comment.replies
-            : [];
+              ? comment.replies
+              : [];
 
           return {
             id: comment.id || Math.random().toString(36).substr(2, 9),
@@ -903,7 +909,7 @@ export default function SocialNetworkFeed() {
     }
   };
 
- const fetchReplies = async (commentId) => {
+  const fetchReplies = async (commentId) => {
     try {
       const userToken = localStorage.getItem("token");
       const response = await axios.get(
@@ -920,35 +926,35 @@ export default function SocialNetworkFeed() {
         // Create initials for the reply user
         user: reply.user
           ? {
-              ...reply.user,
-              initials: reply.user.name
-                ? reply.user.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                : "UU",
-            }
+            ...reply.user,
+            initials: reply.user.name
+              ? reply.user.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+              : "UU",
+          }
           : { name: "Unknown User", initials: "UU" },
         // Ensure replyTo has complete user data including initials
         replyTo: reply.reply_to_id
           ? replies.find((r) => r.id === reply.reply_to_id)?.user
             ? {
-                id: replies.find((r) => r.id === reply.reply_to_id).user.id,
-                name:
-                  replies.find((r) => r.id === reply.reply_to_id).user.name ||
-                  "Unknown User",
-                username:
-                  replies.find((r) => r.id === reply.reply_to_id).user
-                    .username || "unknown",
-                initials: replies.find((r) => r.id === reply.reply_to_id).user
-                  .name
-                  ? replies
-                      .find((r) => r.id === reply.reply_to_id)
-                      .user.name.split(" ")
-                      .map((n) => n[0])
-                      .join("")
-                  : "UU",
-              }
+              id: replies.find((r) => r.id === reply.reply_to_id).user.id,
+              name:
+                replies.find((r) => r.id === reply.reply_to_id).user.name ||
+                "Unknown User",
+              username:
+                replies.find((r) => r.id === reply.reply_to_id).user
+                  .username || "unknown",
+              initials: replies.find((r) => r.id === reply.reply_to_id).user
+                .name
+                ? replies
+                  .find((r) => r.id === reply.reply_to_id)
+                  .user.name.split(" ")
+                  .map((n) => n[0])
+                  .join("")
+                : "UU",
+            }
             : null
           : null,
       }));
@@ -978,45 +984,45 @@ export default function SocialNetworkFeed() {
 
       const replies = Array.isArray(response.data?.data)
         ? response.data.data.map((reply) => ({
-            ...reply,
-            // Create initials for the reply user
-            user: reply.user
+          ...reply,
+          // Create initials for the reply user
+          user: reply.user
+            ? {
+              ...reply.user,
+              initials: reply.user.name
+                ? reply.user.name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")
+                : "UU",
+            }
+            : { name: "Unknown User", initials: "UU" },
+          // Ensure replyTo has complete user data including initials
+          replyTo: reply.reply_to_id
+            ? response.data.data.find((r) => r.id === reply.reply_to_id)?.user
               ? {
-                  ...reply.user,
-                  initials: reply.user.name
-                    ? reply.user.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")
-                    : "UU",
-                }
-              : { name: "Unknown User", initials: "UU" },
-            // Ensure replyTo has complete user data including initials
-            replyTo: reply.reply_to_id
-              ? response.data.data.find((r) => r.id === reply.reply_to_id)?.user
-                ? {
-                    id: response.data.data.find(
-                      (r) => r.id === reply.reply_to_id
-                    ).user.id,
-                    name:
-                      response.data.data.find((r) => r.id === reply.reply_to_id)
-                        .user.name || "Unknown User",
-                    username:
-                      response.data.data.find((r) => r.id === reply.reply_to_id)
-                        .user.username || "unknown",
-                    initials: response.data.data.find(
-                      (r) => r.id === reply.reply_to_id
-                    ).user.name
-                      ? response.data.data
-                          .find((r) => r.id === reply.reply_to_id)
-                          .user.name.split(" ")
-                          .map((n) => n[0])
-                          .join("")
-                      : "UU",
-                  }
-                : null
-              : null,
-          }))
+                id: response.data.data.find(
+                  (r) => r.id === reply.reply_to_id
+                ).user.id,
+                name:
+                  response.data.data.find((r) => r.id === reply.reply_to_id)
+                    .user.name || "Unknown User",
+                username:
+                  response.data.data.find((r) => r.id === reply.reply_to_id)
+                    .user.username || "unknown",
+                initials: response.data.data.find(
+                  (r) => r.id === reply.reply_to_id
+                ).user.name
+                  ? response.data.data
+                    .find((r) => r.id === reply.reply_to_id)
+                    .user.name.split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                  : "UU",
+              }
+              : null
+            : null,
+        }))
         : [];
 
       setAllReplies((prev) => ({
@@ -1131,12 +1137,12 @@ export default function SocialNetworkFeed() {
       });
       setCommentError(
         error.response?.data?.message ||
-          "Terjadi kesalahan saat menambahkan komentar. Silakan coba lagi."
+        "Terjadi kesalahan saat menambahkan komentar. Silakan coba lagi."
       );
     }
   };
 
-const handleReply = async (commentId, replyToUser = null) => {
+  const handleReply = async (commentId, replyToUser = null) => {
     if (!commentId || !replyText.trim()) return;
 
     try {
@@ -1167,18 +1173,18 @@ const handleReply = async (commentId, replyToUser = null) => {
           ...response.data.data.user,
           initials: response.data.data.user?.name
             ? response.data.data.user.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
+              .split(" ")
+              .map((n) => n[0])
+              .join("")
             : "CU",
         },
         replyTo: replyToUser
           ? {
-              id: replyToUser.id,
-              name: replyToUser.name,
-              username: replyToUser.username,
-              initials: getInitials(replyToUser.name),
-            }
+            id: replyToUser.id,
+            name: replyToUser.name,
+            username: replyToUser.username,
+            initials: getInitials(replyToUser.name),
+          }
           : null,
       };
 
@@ -1214,7 +1220,7 @@ const handleReply = async (commentId, replyToUser = null) => {
       addAlert("error", "Failed to add reply");
       setCommentError(
         error.response?.data?.message ||
-          "Failed to add reply. Please try again."
+        "Failed to add reply. Please try again."
       );
     }
   };
@@ -1372,12 +1378,12 @@ const handleReply = async (commentId, replyToUser = null) => {
         prevPosts.map((post) =>
           post.id === editingPost.id
             ? {
-                ...response.data.data,
-                // Pastikan URL gambar lengkap
-                images: (response.data.data.images || []).map((img) =>
-                  img.startsWith("http") ? img : `${apiUrl}/${img}`
-                ),
-              }
+              ...response.data.data,
+              // Pastikan URL gambar lengkap
+              images: (response.data.data.images || []).map((img) =>
+                img.startsWith("http") ? img : `${apiUrl}/${img}`
+              ),
+            }
             : post
         )
       );
@@ -1484,27 +1490,27 @@ const handleReply = async (commentId, replyToUser = null) => {
               </>
             ) : (
               <>
-              
-<button
-  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
-  onClick={() => {
-    const post = posts.find((p) => p.id === selectedPostId);
-    if (post && post.user && post.id) {
-      handleReportClick(post.user.id, "post", post.id);
-    } else {
-      console.error("Invalid post data for report:", post);
-      setAlertInfo({
-        show: true,
-        type: "error",
-        message: "Cannot report this post. Missing required information.",
-      });
-    }
-    handleClosePostOptions();
-  }}
->
-  <TriangleAlert size={16} className="mr-2" />
-  Report Post
-</button>
+
+                <button
+                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
+                  onClick={() => {
+                    const post = posts.find((p) => p.id === selectedPostId);
+                    if (post && post.user && post.id) {
+                      handleReportClick(post.user.id, "post", post.id);
+                    } else {
+                      console.error("Invalid post data for report:", post);
+                      setAlertInfo({
+                        show: true,
+                        type: "error",
+                        message: "Cannot report this post. Missing required information.",
+                      });
+                    }
+                    handleClosePostOptions();
+                  }}
+                >
+                  <TriangleAlert size={16} className="mr-2" />
+                  Report Post
+                </button>
 
                 {!isConnected && (
                   <button
@@ -1782,14 +1788,14 @@ const handleReply = async (commentId, replyToUser = null) => {
   };
 
   // Fix for handleReportClick to properly set target IDs
-const handleReportClick = (userId, targetType, targetId) => {
-  setReportTarget({
-    userId,
-    targetType,
-    targetId
-  });
-  setShowReportModal(true);
-};
+  const handleReportClick = (userId, targetType, targetId) => {
+    setReportTarget({
+      userId,
+      targetType,
+      targetId
+    });
+    setShowReportModal(true);
+  };
 
 
   const renderCommentOptionsModal = () => {
@@ -2103,156 +2109,153 @@ const handleReportClick = (userId, targetType, targetId) => {
       });
     }
   };
-const ReportModal = ({
-  showReportModal,
-  setShowReportModal,
-  selectedReason,
-  setSelectedReason,
-  customReason,
-  setCustomReason,
-  setAlertInfo,
-  reportTarget // Tambahkan prop reportTarget
-}) => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const ReportModal = ({
+    showReportModal,
+    setShowReportModal,
+    selectedReason,
+    setSelectedReason,
+    customReason,
+    setCustomReason,
+    setAlertInfo,
+    reportTarget // Tambahkan prop reportTarget
+  }) => {
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmitReport = async () => {
-    if (!selectedReason) {
-      setAlertInfo({
-        show: true,
-        type: "error",
-        message: "Please select a reason for reporting"
-      });
-      return;
-    }
-
-    const reasonText = selectedReason === "Other" ? customReason : selectedReason;
-    
-    try {
-      setIsSubmitting(true);
-      const userToken = localStorage.getItem("token");
-      
-      const response = await axios.post(
-        `${apiUrl}/api/reports/${reportTarget.userId}/${reportTarget.targetType}/${reportTarget.targetId}`,
-        { reason: reasonText },
-        {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-            "Content-Type": "application/json"
-          }
-        }
-      );
-
-      if (response.data?.code === 201) {
+    const handleSubmitReport = async () => {
+      if (!selectedReason) {
         setAlertInfo({
           show: true,
-          type: "success",
-          message: "Report submitted successfully!"
+          type: "error",
+          message: "Please select a reason for reporting"
         });
-        setShowReportModal(false);
-        setSelectedReason("");
-        setCustomReason("");
-      } else {
-        throw new Error("Failed to submit report");
+        return;
       }
-    } catch (error) {
-      console.error("Failed to submit report:", error);
-      setAlertInfo({
-        show: true,
-        type: "error",
-        message: error.response?.data?.message || "Failed to submit report"
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
-  return (
-    <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] ${
-      showReportModal ? "block" : "hidden"
-    }`}>
-      <div className="bg-white rounded-lg w-full max-w-md mx-4 p-5">
-        <h3 className="text-lg font-semibold mb-4">Report this content</h3>
-        <p className="mb-3 text-sm text-gray-600">
-          Please select a reason for reporting
-        </p>
+      const reasonText = selectedReason === "Other" ? customReason : selectedReason;
 
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          {[
-            "Harassment",
-            "Fraud",
-            "Spam",
-            "Misinformation",
-            "Hate speech",
-            "Threats or violence",
-            "Self-harm",
-            "Graphic content",
-            "Extremist organizations",
-            "Sexual content",
-            "Fake account",
-            "Child exploitation",
-            "Illegal products",
-            "Violation",
-            "Other",
-          ].map((reason) => (
+      try {
+        setIsSubmitting(true);
+        const userToken = localStorage.getItem("token");
+
+        const response = await axios.post(
+          `${apiUrl}/api/reports/${reportTarget.userId}/${reportTarget.targetType}/${reportTarget.targetId}`,
+          { reason: reasonText },
+          {
+            headers: {
+              Authorization: `Bearer ${userToken}`,
+              "Content-Type": "application/json"
+            }
+          }
+        );
+
+        if (response.data?.code === 201) {
+          setAlertInfo({
+            show: true,
+            type: "success",
+            message: "Report submitted successfully!"
+          });
+          setShowReportModal(false);
+          setSelectedReason("");
+          setCustomReason("");
+        } else {
+          throw new Error("Failed to submit report");
+        }
+      } catch (error) {
+        console.error("Failed to submit report:", error);
+        setAlertInfo({
+          show: true,
+          type: "error",
+          message: error.response?.data?.message || "Failed to submit report"
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
+    return (
+      <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] ${showReportModal ? "block" : "hidden"
+        }`}>
+        <div className="bg-white rounded-lg w-full max-w-md mx-4 p-5">
+          <h3 className="text-lg font-semibold mb-4">Report this content</h3>
+          <p className="mb-3 text-sm text-gray-600">
+            Please select a reason for reporting
+          </p>
+
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            {[
+              "Harassment",
+              "Fraud",
+              "Spam",
+              "Misinformation",
+              "Hate speech",
+              "Threats or violence",
+              "Self-harm",
+              "Graphic content",
+              "Extremist organizations",
+              "Sexual content",
+              "Fake account",
+              "Child exploitation",
+              "Illegal products",
+              "Violation",
+              "Other",
+            ].map((reason) => (
+              <button
+                key={reason}
+                className={`py-2 px-3 text-sm border rounded-full ${selectedReason === reason
+                    ? "bg-blue-100 border-blue-500 text-blue-700"
+                    : "bg-white hover:bg-gray-100"
+                  }`}
+                onClick={() => setSelectedReason(reason)}
+              >
+                {reason}
+              </button>
+            ))}
+          </div>
+
+          {selectedReason === "Other" && (
+            <textarea
+              className="w-full p-2 border rounded mb-3 text-sm"
+              rows={3}
+              placeholder="Please describe the reason for your report"
+              value={customReason}
+              onChange={(e) => setCustomReason(e.target.value)}
+            />
+          )}
+
+          <div className="flex justify-end gap-2">
             <button
-              key={reason}
-              className={`py-2 px-3 text-sm border rounded-full ${
-                selectedReason === reason
-                  ? "bg-blue-100 border-blue-500 text-blue-700"
-                  : "bg-white hover:bg-gray-100"
-              }`}
-              onClick={() => setSelectedReason(reason)}
+              className="text-gray-500 hover:text-gray-700"
+              onClick={() => {
+                setShowReportModal(false);
+                setSelectedReason("");
+                setCustomReason("");
+              }}
+              disabled={isSubmitting}
             >
-              {reason}
+              Cancel
             </button>
-          ))}
-        </div>
-
-        {selectedReason === "Other" && (
-          <textarea
-            className="w-full p-2 border rounded mb-3 text-sm"
-            rows={3}
-            placeholder="Please describe the reason for your report"
-            value={customReason}
-            onChange={(e) => setCustomReason(e.target.value)}
-          />
-        )}
-
-        <div className="flex justify-end gap-2">
-          <button
-            className="text-gray-500 hover:text-gray-700"
-            onClick={() => {
-              setShowReportModal(false);
-              setSelectedReason("");
-              setCustomReason("");
-            }}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </button>
-          <button
-            className={`px-4 py-2 rounded text-white ${
-              selectedReason
-                ? "bg-blue-600 hover:bg-blue-700"
-                : "bg-gray-300 cursor-not-allowed"
-            }`}
-            disabled={!selectedReason || isSubmitting}
-            onClick={handleSubmitReport}
-          >
-            {isSubmitting ? (
-              <div className="flex items-center justify-center">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                Submitting...
-              </div>
-            ) : (
-              "Report"
-            )}
-          </button>
+            <button
+              className={`px-4 py-2 rounded text-white ${selectedReason
+                  ? "bg-blue-600 hover:bg-blue-700"
+                  : "bg-gray-300 cursor-not-allowed"
+                }`}
+              disabled={!selectedReason || isSubmitting}
+              onClick={handleSubmitReport}
+            >
+              {isSubmitting ? (
+                <div className="flex items-center justify-center">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Submitting...
+                </div>
+              ) : (
+                "Report"
+              )}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
   const handleDeleteComment = async (commentId) => {
     try {
@@ -2595,11 +2598,10 @@ const ReportModal = ({
             </div>
             <div className="text-center">
               <div
-                className={`text-xl font-semibold flex items-center justify-center ${
-                  profileViews.percentageChange >= 0
+                className={`text-xl font-semibold flex items-center justify-center ${profileViews.percentageChange >= 0
                     ? "text-green-500"
                     : "text-red-500"
-                }`}
+                  }`}
               >
                 {profileViews.percentageChange >= 0 ? (
                   <TrendingUp size={16} className="mr-1" />
@@ -2621,9 +2623,8 @@ const ReportModal = ({
 
       {/* Main Content - Feed */}
       <div
-        className={`w-full ${
-          showMobileMenu ? "hidden" : "block"
-        } md:block md:w-full lg:w-1/2 px-0 md:px-1`}
+        className={`w-full ${showMobileMenu ? "hidden" : "block"
+          } md:block md:w-full lg:w-1/2 px-0 md:px-1`}
       >
         <div
           id="post-form"
@@ -2632,11 +2633,10 @@ const ReportModal = ({
           {/* Tabs */}
           <div className="flex border-b pb-2 space-x-1">
             <button
-              className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${
-                activeTab === "update"
+              className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${activeTab === "update"
                   ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
                   : "text-gray-500 hover:text-blue-500"
-              }`}
+                }`}
               onClick={() => setActiveTab("update")}
             >
               <SquarePen size={16} className="mr-2" />
@@ -2644,11 +2644,10 @@ const ReportModal = ({
               <span className="sm:hidden">Update</span>
             </button>
             <button
-              className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${
-                activeTab === "article"
+              className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${activeTab === "article"
                   ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
                   : "text-gray-500 hover:text-blue-500"
-              }`}
+                }`}
               onClick={() => setActiveTab("article")}
             >
               <NotebookPen size={16} className="mr-2" />
@@ -2709,11 +2708,10 @@ const ReportModal = ({
                     >
                       <span
                         onClick={() => handleVisibilityChange(type)}
-                        className={`p-1 rounded-full cursor-pointer transition ${
-                          postVisibility === type
+                        className={`p-1 rounded-full cursor-pointer transition ${postVisibility === type
                             ? "bg-blue-600"
                             : "bg-gray-400"
-                        } text-white`}
+                          } text-white`}
                       >
                         {icon}
                       </span>
@@ -2727,11 +2725,10 @@ const ReportModal = ({
                 </div>
 
                 <Button
-                  className={`px-4 py-2 text-sm transition-colors duration-300 ease-in-out ${
-                    isLoading
+                  className={`px-4 py-2 text-sm transition-colors duration-300 ease-in-out ${isLoading
                       ? "bg-gray-400 text-white cursor-not-allowed"
                       : "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700"
-                  }`}
+                    }`}
                   onClick={handlePostSubmit}
                   disabled={isLoading}
                 >
@@ -2850,11 +2847,10 @@ const ReportModal = ({
                     >
                       <span
                         onClick={() => handleVisibilityChange(type)}
-                        className={`p-1 rounded-full cursor-pointer transition ${
-                          postVisibility === type
+                        className={`p-1 rounded-full cursor-pointer transition ${postVisibility === type
                             ? "bg-blue-600"
                             : "bg-gray-400"
-                        } text-white`}
+                          } text-white`}
                       >
                         {icon}
                       </span>
@@ -2937,11 +2933,10 @@ const ReportModal = ({
                       <div className="flex items-start">
                         {/* User photo */}
                         <div
-                          className={`${
-                            post?.group
+                          className={`${post?.group
                               ? "relative z-10 ml-4 mt-2 transform translate-y-2"
                               : ""
-                          }`}
+                            }`}
                         >
                           {post.user?.photo ? (
                             <Link to={`/user-profile/${post.user.username}`}>
@@ -2984,8 +2979,8 @@ const ReportModal = ({
                           </h6>
                           <div className="flex items-center">
                             <small className="text-gray-500 text-xs">
-  {formatPostTime(post.created_at)}
-</small>
+                              {formatPostTime(post.created_at)}
+                            </small>
                             <span className="text-gray-400 mx-1 text-xs">
                               •
                             </span>
@@ -3031,15 +3026,15 @@ const ReportModal = ({
                   {/* Post Content */}
                   {post.content && (
                     // Tambahkan class khusus untuk konten post
-                   <div 
-  className="ck-content ml-1 text-gray-600 break-words whitespace-pre-line" 
-  style={{ 
-    maxWidth: '100%',
-    color: '#374151',
-    padding: '0.5rem'
-  }}
-  dangerouslySetInnerHTML={{ __html: post.content }}
-/>
+                    <div
+                      className="ck-content ml-1 text-gray-600 break-words whitespace-pre-line"
+                      style={{
+                        maxWidth: '100%',
+                        color: '#374151',
+                        padding: '0.5rem'
+                      }}
+                      dangerouslySetInnerHTML={{ __html: post.content }}
+                    />
 
                   )}
 
@@ -3067,11 +3062,10 @@ const ReportModal = ({
                     {/* Post Actions */}
                     <div className="border-t border-gray-200 px-4 py-2 flex justify-between">
                       <button
-                        className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${
-                          post.isLiked
+                        className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${post.isLiked
                             ? "text-blue-600 bg-blue-50"
                             : "text-black hover:bg-gray-100"
-                        }`}
+                          }`}
                         onClick={() => handleLikePost(post.id, post.isLiked)}
                       >
                         <ThumbsUp size={14} className="mr-2" />
@@ -3217,22 +3211,20 @@ const ReportModal = ({
             {/* Tabs untuk modal edit */}
             <div className="flex border-b pb-2 space-x-1 mb-4">
               <button
-                className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${
-                  editActiveTab === "update"
+                className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${editActiveTab === "update"
                     ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
                     : "text-gray-500 hover:text-blue-500"
-                }`}
+                  }`}
                 onClick={() => setEditActiveTab("update")}
               >
                 <SquarePen size={16} className="mr-2" />
                 Simple Text
               </button>
               <button
-                className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${
-                  editActiveTab === "article"
+                className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${editActiveTab === "article"
                     ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
                     : "text-gray-500 hover:text-blue-500"
-                }`}
+                  }`}
                 onClick={() => setEditActiveTab("article")}
               >
                 <NotebookPen size={16} className="mr-2" />
@@ -3423,11 +3415,10 @@ const ReportModal = ({
                   <button
                     key={type}
                     onClick={() => setPostVisibility(type)}
-                    className={`flex items-center px-3 py-2 rounded-md text-sm ${
-                      postVisibility === type
+                    className={`flex items-center px-3 py-2 rounded-md text-sm ${postVisibility === type
                         ? "bg-blue-100 text-blue-700"
                         : "bg-gray-100 text-gray-700"
-                    }`}
+                      }`}
                   >
                     {icon}
                     <span className="ml-2">{label}</span>
@@ -3465,9 +3456,8 @@ const ReportModal = ({
 
       {/* Right Sidebar */}
       <div
-        className={`${
-          showMobileMenu ? "block" : "hidden"
-        } md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pl-2 lg:pr-4`}
+        className={`${showMobileMenu ? "block" : "hidden"
+          } md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pl-2 lg:pr-4`}
       >
         {/* People You Might Know */}
         <div className="bg-white rounded-xl shadow-sm border p-4 mb-6 transition-all duration-300">
@@ -3836,9 +3826,8 @@ const ReportModal = ({
                 {selectedPost.images.map((_, index) => (
                   <button
                     key={index}
-                    className={`w-2 h-2 md:w-3 md:h-3 rounded-full ${
-                      selectedImageIndex === index ? "bg-white" : "bg-gray-500"
-                    }`}
+                    className={`w-2 h-2 md:w-3 md:h-3 rounded-full ${selectedImageIndex === index ? "bg-white" : "bg-gray-500"
+                      }`}
                     onClick={() => setSelectedImageIndex(index)}
                   />
                 ))}
@@ -3849,17 +3838,17 @@ const ReportModal = ({
       )}
 
       {showReportModal && (
-  <ReportModal
-    showReportModal={showReportModal}
-    setShowReportModal={setShowReportModal}
-    selectedReason={selectedReason}
-    setSelectedReason={setSelectedReason}
-    customReason={customReason}
-    setCustomReason={setCustomReason}
-    setAlertInfo={setAlertInfo}
-    reportTarget={reportTarget} // Tambahkan reportTarget
-  />
-)}
+        <ReportModal
+          showReportModal={showReportModal}
+          setShowReportModal={setShowReportModal}
+          selectedReason={selectedReason}
+          setSelectedReason={setSelectedReason}
+          customReason={customReason}
+          setCustomReason={setCustomReason}
+          setAlertInfo={setAlertInfo}
+          reportTarget={reportTarget} // Tambahkan reportTarget
+        />
+      )}
 
       {/* Comment Modal */}
       {showCommentModal && (
@@ -4045,15 +4034,15 @@ const ReportModal = ({
 
                               {(comment.repliesCount > 0 ||
                                 allReplies[comment.id]?.length > 0) && (
-                                <button
-                                  className="text-xs text-gray-500 hover:text-blue-500"
-                                  onClick={() => toggleReplies(comment.id)}
-                                >
-                                  {expandedReplies[comment.id]
-                                    ? "Hide replies"
-                                    : `Show replies (${comment.repliesCount})`}
-                                </button>
-                              )}
+                                  <button
+                                    className="text-xs text-gray-500 hover:text-blue-500"
+                                    onClick={() => toggleReplies(comment.id)}
+                                  >
+                                    {expandedReplies[comment.id]
+                                      ? "Hide replies"
+                                      : `Show replies (${comment.repliesCount})`}
+                                  </button>
+                                )}
                             </div>
                           </div>
 
@@ -4063,9 +4052,8 @@ const ReportModal = ({
                               <input
                                 type="text"
                                 className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                placeholder={`Reply to ${
-                                  replyToUser?.name || comment.user.name
-                                }...`}
+                                placeholder={`Reply to ${replyToUser?.name || comment.user.name
+                                  }...`}
                                 value={replyText}
                                 onChange={(e) => setReplyText(e.target.value)}
                                 autoFocus
@@ -4144,8 +4132,8 @@ const ReportModal = ({
                                               </Link>
                                               {reply.reply_to &&
                                                 reply.parent_id !==
-                                                  reply.reply_to
-                                                    .reply_to_id && (
+                                                reply.reply_to
+                                                  .reply_to_id && (
                                                   <span className="text-xs text-gray-500 ml-1 flex items-center">
                                                     <svg
                                                       xmlns="http://www.w3.org/2000/svg"
@@ -4262,10 +4250,9 @@ const ReportModal = ({
                                             <input
                                               type="text"
                                               className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                              placeholder={`Reply to ${
-                                                replyToUser?.name ||
+                                              placeholder={`Reply to ${replyToUser?.name ||
                                                 reply.user.name
-                                              }...`}
+                                                }...`}
                                               value={replyText}
                                               onChange={(e) =>
                                                 setReplyText(e.target.value)

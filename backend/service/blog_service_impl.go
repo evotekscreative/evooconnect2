@@ -136,21 +136,6 @@ func (s *BlogServiceImpl) sendBlogNotifications(ctx context.Context, blog domain
         return
     }
 
-    userUUID, err := uuid.Parse(blog.UserID)
-    if err != nil {
-        fmt.Printf("DEBUG: Failed to parse user ID: %v\n", err)
-        return
-    }
-
-    blogId, err := uuid.Parse(blog.ID)
-    if err != nil {
-        fmt.Printf("DEBUG: Failed to parse blog ID: %v\n", err)
-        return
-    }
-
-    userName := user.Name
-    blogTitle := blog.Title
-    
     // Hanya kirim notifikasi dengan probabilitas tertentu (70%)
     if rand.Intn(100) > 70 {
         fmt.Println("DEBUG: Skipping notifications for this blog (random)")
@@ -158,20 +143,7 @@ func (s *BlogServiceImpl) sendBlogNotifications(ctx context.Context, blog domain
     }
     
     // Kirim notifikasi ke koneksi pengguna
-    refType := "blog_new"
-    
-    // Kirim notifikasi langsung tanpa menggunakan koneksi database
-    s.NotificationService.Create(
-        context.Background(),
-        userUUID, // Kirim ke diri sendiri untuk testing
-        "blog",
-        "blog_new",
-        "New Blog",
-        fmt.Sprintf("%s published a new blog: '%s'", userName, blogTitle),
-        &blogId,
-        &refType,
-        &userUUID,
-    )
+    // TODO: Implementasi untuk mengirim ke connections/followers
 }
 
 func (s *BlogServiceImpl) FindAll(ctx context.Context) ([]web.BlogResponse, error) {

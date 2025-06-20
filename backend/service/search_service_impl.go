@@ -4,20 +4,21 @@ import (
 	"context"
 	"database/sql"
 	"evoconnect/backend/helper"
+	"evoconnect/backend/model/domain"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
 	"fmt"
 	"github.com/google/uuid"
-	"evoconnect/backend/model/domain"
 )
 
 type SearchServiceImpl struct {
-	DB                   *sql.DB
-	UserRepository       repository.UserRepository
-	PostRepository       repository.PostRepository
-	BlogRepository       repository.BlogRepository
-	GroupRepository      repository.GroupRepository
-	ConnectionRepository repository.ConnectionRepository
+	DB                         *sql.DB
+	UserRepository             repository.UserRepository
+	PostRepository             repository.PostRepository
+	BlogRepository             repository.BlogRepository
+	GroupRepository            repository.GroupRepository
+	ConnectionRepository       repository.ConnectionRepository
+	GroupJoinRequestRepository repository.GroupJoinRequestRepository // Tambah ini
 }
 
 func NewSearchService(
@@ -27,14 +28,16 @@ func NewSearchService(
 	blogRepository repository.BlogRepository,
 	groupRepository repository.GroupRepository,
 	connectionRepository repository.ConnectionRepository,
+	groupJoinRequestRepository repository.GroupJoinRequestRepository, // Tambah ini
 ) SearchService {
 	return &SearchServiceImpl{
-		DB:                   db,
-		UserRepository:       userRepository,
-		PostRepository:       postRepository,
-		BlogRepository:       blogRepository,
-		GroupRepository:      groupRepository,
-		ConnectionRepository: connectionRepository,
+		DB:                         db,
+		UserRepository:             userRepository,
+		PostRepository:             postRepository,
+		BlogRepository:             blogRepository,
+		GroupRepository:            groupRepository,
+		ConnectionRepository:       connectionRepository,
+		GroupJoinRequestRepository: groupJoinRequestRepository, // Tambah ini
 	}
 }
 
@@ -86,73 +89,73 @@ func (service *SearchServiceImpl) Search(ctx context.Context, query string, sear
 }
 
 func (service *SearchServiceImpl) searchUsers(ctx context.Context, query string, limit int, offset int, currentUserId uuid.UUID) []web.UserSearchResult {
-    tx, err := service.DB.Begin()
-    if err != nil {
-        fmt.Printf("Error starting transaction for user search: %v\n", err)
-        return []web.UserSearchResult{}
-    }
+	tx, err := service.DB.Begin()
+	if err != nil {
+		fmt.Printf("Error starting transaction for user search: %v\n", err)
+		return []web.UserSearchResult{}
+	}
 
-    fmt.Printf("Searching users with query: '%s'\n", query)
-    users := service.UserRepository.Search(ctx, tx, query, limit, offset)
-    fmt.Printf("User repository returned %d users\n", len(users))
+	fmt.Printf("Searching users with query: '%s'\n", query)
+	users := service.UserRepository.Search(ctx, tx, query, limit, offset)
+	fmt.Printf("User repository returned %d users\n", len(users))
 
-    var results []web.UserSearchResult
-    for _, user := range users {
-        // Log user IDs untuk debugging
-        fmt.Printf("DEBUG: Checking connection between currentUserId=%s and userId=%s\n", 
-                  currentUserId.String(), user.Id.String())
-        
-        isConnected := service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, user.Id)
-        fmt.Printf("DEBUG: isConnected=%v\n", isConnected)
+	var results []web.UserSearchResult
+	for _, user := range users {
+		// Log user IDs untuk debugging
+		fmt.Printf("DEBUG: Checking connection between currentUserId=%s and userId=%s\n",
+			currentUserId.String(), user.Id.String())
 
-        // Check for connection request status
-        var isConnectedRequest string = "none"
+		isConnected := service.ConnectionRepository.CheckConnectionExists(ctx, tx, currentUserId, user.Id)
+		fmt.Printf("DEBUG: isConnected=%v\n", isConnected)
 
-        // Jika sudah terhubung, set status ke "accepted"
-        if isConnected {
-            isConnectedRequest = "accepted"
-            fmt.Printf("DEBUG: Users are connected, setting isConnectedRequest to 'accepted'\n")
-        } else {
-            // Jika belum terhubung, cek apakah ada permintaan koneksi
-            fmt.Printf("DEBUG: Checking connection request from currentUser to user\n")
-            request, err := service.ConnectionRepository.FindConnectionRequestBySenderIdAndReceiverId(ctx, tx, currentUserId, user.Id)
-            if err == nil {
-                // Request ditemukan, set status
-                isConnectedRequest = string(request.Status)
-                fmt.Printf("DEBUG: Found request from currentUser to user with status: %s\n", isConnectedRequest)
-            } else {
-                // Cek apakah ada permintaan dari user ini ke current user
-                fmt.Printf("DEBUG: Checking connection request from user to currentUser\n")
-                request, err = service.ConnectionRepository.FindConnectionRequestBySenderIdAndReceiverId(ctx, tx, user.Id, currentUserId)
-                if err == nil {
-                    isConnectedRequest = string(request.Status)
-                    fmt.Printf("DEBUG: Found request from user to currentUser with status: %s\n", isConnectedRequest)
-                } else {
-                    fmt.Printf("DEBUG: No connection request found in either direction\n")
-                }
-            }
-        }
+		// Check for connection request status
+		var isConnectedRequest string = "none"
 
-        result := web.UserSearchResult{
-            Id:                 user.Id.String(),
-            Name:               user.Name,
-            Username:           user.Username,
-            Photo:              user.Photo,
-            Headline:           &user.Headline,
-            IsConnected:        isConnected,
-            IsConnectedRequest: isConnectedRequest,
-        }
-        results = append(results, result)
-        fmt.Printf("Added user to results: %s (%s), isConnected: %v, isConnectedRequest: %s\n",
-            user.Name, user.Username, isConnected, isConnectedRequest)
-    }
+		// Jika sudah terhubung, set status ke "accepted"
+		if isConnected {
+			isConnectedRequest = "accepted"
+			fmt.Printf("DEBUG: Users are connected, setting isConnectedRequest to 'accepted'\n")
+		} else {
+			// Jika belum terhubung, cek apakah ada permintaan koneksi
+			fmt.Printf("DEBUG: Checking connection request from currentUser to user\n")
+			request, err := service.ConnectionRepository.FindConnectionRequestBySenderIdAndReceiverId(ctx, tx, currentUserId, user.Id)
+			if err == nil {
+				// Request ditemukan, set status
+				isConnectedRequest = string(request.Status)
+				fmt.Printf("DEBUG: Found request from currentUser to user with status: %s\n", isConnectedRequest)
+			} else {
+				// Cek apakah ada permintaan dari user ini ke current user
+				fmt.Printf("DEBUG: Checking connection request from user to currentUser\n")
+				request, err = service.ConnectionRepository.FindConnectionRequestBySenderIdAndReceiverId(ctx, tx, user.Id, currentUserId)
+				if err == nil {
+					isConnectedRequest = string(request.Status)
+					fmt.Printf("DEBUG: Found request from user to currentUser with status: %s\n", isConnectedRequest)
+				} else {
+					fmt.Printf("DEBUG: No connection request found in either direction\n")
+				}
+			}
+		}
 
-    err = tx.Commit()
-    if err != nil {
-        fmt.Printf("Error committing transaction for user search: %v\n", err)
-        tx.Rollback()
-    }
-    return results
+		result := web.UserSearchResult{
+			Id:                 user.Id.String(),
+			Name:               user.Name,
+			Username:           user.Username,
+			Photo:              user.Photo,
+			Headline:           &user.Headline,
+			IsConnected:        isConnected,
+			IsConnectedRequest: isConnectedRequest,
+		}
+		results = append(results, result)
+		fmt.Printf("Added user to results: %s (%s), isConnected: %v, isConnectedRequest: %s\n",
+			user.Name, user.Username, isConnected, isConnectedRequest)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		fmt.Printf("Error committing transaction for user search: %v\n", err)
+		tx.Rollback()
+	}
+	return results
 }
 
 func (service *SearchServiceImpl) searchPosts(ctx context.Context, query string, limit int, offset int, currentUserId uuid.UUID) []web.PostSearchResult {
@@ -255,7 +258,7 @@ func (service *SearchServiceImpl) searchGroups(ctx context.Context, query string
 	defer helper.CommitOrRollback(tx)
 
 	fmt.Printf("Searching groups with query: '%s'\n", query)
-	
+
 	// Ubah ini untuk menggunakan SQL yang menampilkan semua grup
 	SQL := `SELECT id, name, description, rule, creator_id, image, privacy_level, invite_policy, created_at, updated_at
             FROM groups
@@ -296,7 +299,7 @@ func (service *SearchServiceImpl) searchGroups(ctx context.Context, query string
 		group.Image = imagePtr
 		groups = append(groups, group)
 	}
-	
+
 	fmt.Printf("Direct SQL query returned %d groups\n", len(groups))
 
 	var results []web.GroupSearchResult
@@ -304,22 +307,35 @@ func (service *SearchServiceImpl) searchGroups(ctx context.Context, query string
 		memberCount := service.GroupRepository.CountMembers(ctx, tx, group.Id)
 		isMember := service.GroupRepository.IsMember(ctx, tx, group.Id, currentUserId)
 
-		// Tangani kasus image nil
+		// Check join request status
+		var isJoined string = "false"
+		if isMember {
+			isJoined = "true"
+		} else {
+			// Check if there's a pending join request
+			joinRequest, err := service.GroupJoinRequestRepository.FindByGroupIdAndUserId(ctx, tx, group.Id, currentUserId)
+			if err == nil && joinRequest.Status == "pending" {
+				isJoined = "pending"
+			}
+		}
+
+		// Handle image nil case
 		var imageStr string
 		if group.Image != nil {
 			imageStr = *group.Image
 		}
 
 		result := web.GroupSearchResult{
-			Id:          group.Id.String(),
-			Name:        group.Name,
-			Description: group.Description,
-			Image:       imageStr, // Gunakan string yang sudah ditangani
-			MemberCount: memberCount,
-			IsMember:    isMember,
+			Id:           group.Id.String(),
+			Name:         group.Name,
+			Description:  group.Description,
+			Image:        imageStr,
+			MemberCount:  memberCount,
+			IsMember:     isMember,
+			IsJoined:     isJoined,
+			PrivacyLevel: group.PrivacyLevel,
 		}
 		results = append(results, result)
-		fmt.Printf("Added group to results: %s (members: %d, isMember: %v)\n", group.Name, memberCount, isMember)
 	}
 
 	return results
