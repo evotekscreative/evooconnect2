@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS job_vacancies (
     job_description TEXT NOT NULL,
     requirements TEXT NOT NULL,
     benefits TEXT,
-    skills_required JSONB DEFAULT '[]'::jsonb,
+    skills JSONB DEFAULT '[]'::jsonb,
     application_deadline TIMESTAMP,
     status VARCHAR(20) NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'published', 'closed', 'archived')),
     is_urgent BOOLEAN DEFAULT false,

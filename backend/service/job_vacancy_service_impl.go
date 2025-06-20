@@ -33,7 +33,7 @@ func NewJobVacancyService(jobVacancyRepository repository.JobVacancyRepository, 
 	}
 }
 
-func (service *JobVacancyServiceImpl) Create(ctx context.Context, request web.CreateJobVacancyRequest, creatorId uuid.UUID) web.JobVacancyResponse {
+func (service *JobVacancyServiceImpl) Create(ctx context.Context, request web.CreateJobVacancyRequest, companyId, creatorId uuid.UUID) web.JobVacancyResponse {
 	err := service.Validate.Struct(request)
 	helper.PanicIfError(err)
 
@@ -54,7 +54,7 @@ func (service *JobVacancyServiceImpl) Create(ctx context.Context, request web.Cr
 	defer helper.CommitOrRollback(tx)
 
 	// Verify company exists and user has permission
-	company, err := service.CompanyRepository.FindById(ctx, tx, uuid.MustParse(request.CompanyId.String()))
+	company, err := service.CompanyRepository.FindById(ctx, tx, companyId)
 	if err != nil {
 		panic(exception.NewNotFoundError("Company not found"))
 	}
@@ -80,13 +80,13 @@ func (service *JobVacancyServiceImpl) Create(ctx context.Context, request web.Cr
 	// Create job vacancy domain
 	jobVacancy := domain.JobVacancy{
 		Id:                  uuid.New(),
-		CompanyId:           uuid.MustParse(request.CompanyId.String()),
+		CompanyId:           companyId,
 		CreatorId:           &creatorId,
 		Title:               request.Title,
 		Description:         request.Description,
 		Requirements:        request.Requirements,
 		Location:            request.Location,
-		JobType:             domain.JobType(request.JobType),
+		JobType:             request.JobType,
 		ExperienceLevel:     domain.ExperienceLevel(request.ExperienceLevel),
 		MinSalary:           request.MinSalary,
 		MaxSalary:           request.MaxSalary,
@@ -95,7 +95,7 @@ func (service *JobVacancyServiceImpl) Create(ctx context.Context, request web.Cr
 		Benefits:            request.Benefits,
 		WorkType:            domain.WorkType(request.WorkType),
 		ApplicationDeadline: applicationDeadline,
-		Status:              domain.JobVacancyStatusDraft,
+		Status:              domain.JobVacancyStatusActive,
 		TypeApply:           domain.JobApplyType(request.TypeApply),
 		ExternalLink:        request.ExternalLink,
 	}
@@ -166,7 +166,7 @@ func (service *JobVacancyServiceImpl) Update(ctx context.Context, request web.Up
 		Description:         request.Description,
 		Requirements:        request.Requirements,
 		Location:            request.Location,
-		JobType:             domain.JobType(request.JobType),
+		JobType:             request.JobType,
 		ExperienceLevel:     domain.ExperienceLevel(request.ExperienceLevel),
 		MinSalary:           request.MinSalary,
 		MaxSalary:           request.MaxSalary,
@@ -230,25 +230,25 @@ func (service *JobVacancyServiceImpl) FindById(ctx context.Context, jobVacancyId
 }
 
 func (service *JobVacancyServiceImpl) FindByCompanyId(ctx context.Context, companyId uuid.UUID, page, pageSize int) web.JobVacancyListResponse {
+	// Calculate offset
+	offset := (page - 1) * pageSize
+
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
-
-	// Calculate offset
-	offset := (page - 1) * pageSize
 
 	// Get job vacancies
 	jobVacancies := service.JobVacancyRepository.FindByCompanyId(ctx, tx, companyId, pageSize, offset)
 	totalCount := service.JobVacancyRepository.CountByCompanyId(ctx, tx, companyId)
 
 	// Convert to response
-	var jobResponses []web.JobVacancyResponse
-	for _, job := range jobVacancies {
-		jobResponses = append(jobResponses, toJobVacancyResponse(job))
+	var responses []web.JobVacancyResponse
+	for _, jobVacancy := range jobVacancies {
+		responses = append(responses, toJobVacancyResponse(jobVacancy))
 	}
 
 	return web.JobVacancyListResponse{
-		Jobs:       jobResponses,
+		Jobs:       responses,
 		TotalCount: totalCount,
 		Page:       page,
 		PageSize:   pageSize,
@@ -258,82 +258,107 @@ func (service *JobVacancyServiceImpl) FindByCompanyId(ctx context.Context, compa
 
 func (service *JobVacancyServiceImpl) FindByCreatorId(ctx context.Context, creatorId uuid.UUID, page, pageSize int) web.JobVacancyListResponse {
 	tx, err := service.DB.Begin()
-	helper.PanicIfError(err)
+	if err != nil {
+		panic(exception.NewInternalServerError(err.Error()))
+	}
 	defer helper.CommitOrRollback(tx)
 
-	// Calculate offset
+	// Fix pagination calculation - convert page to offset
 	offset := (page - 1) * pageSize
+	if offset < 0 {
+		offset = 0
+	}
 
-	// Get job vacancies
+	// Get job vacancies by creator
 	jobVacancies := service.JobVacancyRepository.FindByCreatorId(ctx, tx, creatorId, pageSize, offset)
+
+	// Get total count
 	totalCount := service.JobVacancyRepository.CountByCreatorId(ctx, tx, creatorId)
 
-	// Convert to response
-	var jobResponses []web.JobVacancyResponse
-	for _, job := range jobVacancies {
-		jobResponses = append(jobResponses, toJobVacancyResponse(job))
+	// Calculate total pages
+	totalPages := int((totalCount + pageSize - 1) / pageSize)
+	if totalPages < 1 {
+		totalPages = 1
 	}
+
+	// Convert to response
+	jobResponses := helper.ToJobVacancyResponses(jobVacancies)
 
 	return web.JobVacancyListResponse{
 		Jobs:       jobResponses,
 		TotalCount: totalCount,
 		Page:       page,
 		PageSize:   pageSize,
-		TotalPages: int(math.Ceil(float64(totalCount) / float64(pageSize))),
+		TotalPages: totalPages,
 	}
 }
 
 func (service *JobVacancyServiceImpl) FindAll(ctx context.Context, page, pageSize int) web.JobVacancyListResponse {
 	tx, err := service.DB.Begin()
-	helper.PanicIfError(err)
+	if err != nil {
+		panic(exception.NewInternalServerError(err.Error()))
+	}
 	defer helper.CommitOrRollback(tx)
 
-	// Calculate offset
+	// Fix pagination calculation - convert page to offset
 	offset := (page - 1) * pageSize
+	if offset < 0 {
+		offset = 0
+	}
 
-	// Get job vacancies
+	// Get all job vacancies
 	jobVacancies := service.JobVacancyRepository.FindAll(ctx, tx, pageSize, offset)
-	totalCount := service.JobVacancyRepository.CountAll(ctx, tx)
+
+	// Get total count
+	totalCount := service.JobVacancyRepository.CountActiveJobs(ctx, tx)
+
+	// Calculate total pages
+	totalPages := int((totalCount + pageSize - 1) / pageSize)
+	if totalPages < 1 {
+		totalPages = 1
+	}
 
 	// Convert to response
-	var jobResponses []web.JobVacancyResponse
-	for _, job := range jobVacancies {
-		jobResponses = append(jobResponses, toJobVacancyResponse(job))
-	}
+	jobResponses := helper.ToJobVacancyResponses(jobVacancies)
 
 	return web.JobVacancyListResponse{
 		Jobs:       jobResponses,
 		TotalCount: totalCount,
 		Page:       page,
 		PageSize:   pageSize,
-		TotalPages: int(math.Ceil(float64(totalCount) / float64(pageSize))),
+		TotalPages: totalPages,
 	}
 }
 
 func (service *JobVacancyServiceImpl) FindActiveJobs(ctx context.Context, page, pageSize int) web.JobVacancyListResponse {
+	// Fix pagination calculation - convert page to offset
+	offset := (page - 1) * pageSize
+
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
-	// Calculate offset
-	offset := (page - 1) * pageSize
-
 	// Get active job vacancies
 	jobVacancies := service.JobVacancyRepository.FindActiveJobs(ctx, tx, pageSize, offset)
+
+	// Get total count
 	totalCount := service.JobVacancyRepository.CountActiveJobs(ctx, tx)
 
+	// Calculate total pages
+	totalPages := int(math.Ceil(float64(totalCount) / float64(pageSize)))
+
 	// Convert to response
-	var jobResponses []web.JobVacancyResponse
-	for _, job := range jobVacancies {
-		jobResponses = append(jobResponses, toJobVacancyResponse(job))
+	var responses []web.JobVacancyResponse
+	for _, jobVacancy := range jobVacancies {
+		responses = append(responses, toJobVacancyResponse(jobVacancy))
 	}
 
 	return web.JobVacancyListResponse{
-		Jobs:       jobResponses,
+		Jobs:       responses,
 		TotalCount: totalCount,
 		Page:       page,
 		PageSize:   pageSize,
-		TotalPages: int(math.Ceil(float64(totalCount) / float64(pageSize))),
+		TotalPages: totalPages,
 	}
 }
 
@@ -450,10 +475,51 @@ func (service *JobVacancyServiceImpl) GetPublicJobDetail(ctx context.Context, jo
 
 	// Only return active jobs for public view
 	if jobVacancy.Status != domain.JobVacancyStatusActive {
-		panic(exception.NewNotFoundError("Job vacancy not available"))
+		panic(exception.NewNotFoundError("Job vacancy not found"))
 	}
 
 	return toJobVacancyPublicResponse(jobVacancy)
+}
+
+// FindByCompanyIdWithStatus
+func (service *JobVacancyServiceImpl) FindByCompanyIdWithStatus(ctx context.Context, companyId uuid.UUID, status string, page, pageSize int) web.JobVacancyListResponse {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Validate status
+	validStatuses := []string{"draft", "active", "closed", "archived"}
+	isValidStatus := false
+	for _, validStatus := range validStatuses {
+		if status == validStatus {
+			isValidStatus = true
+			break
+		}
+	}
+	if !isValidStatus {
+		panic(exception.NewBadRequestError("Invalid status"))
+	}
+
+	// Calculate offset
+	offset := (page - 1) * pageSize
+
+	// Get job vacancies by company and status
+	jobVacancies := service.JobVacancyRepository.FindByCompanyIdWithStatus(ctx, tx, companyId, domain.JobVacancyStatus(status), pageSize, offset)
+	totalCount := service.JobVacancyRepository.CountByCompanyIdWithStatus(ctx, tx, companyId, domain.JobVacancyStatus(status))
+
+	// Convert to response
+	var jobResponses []web.JobVacancyResponse
+	for _, job := range jobVacancies {
+		jobResponses = append(jobResponses, toJobVacancyResponse(job))
+	}
+
+	return web.JobVacancyListResponse{
+		Jobs:       jobResponses,
+		TotalCount: totalCount,
+		Page:       page,
+		PageSize:   pageSize,
+		TotalPages: int(math.Ceil(float64(totalCount) / float64(pageSize))),
+	}
 }
 
 // Helper functions
@@ -509,33 +575,31 @@ func toJobVacancyResponse(jobVacancy domain.JobVacancy) web.JobVacancyResponse {
 }
 
 func toJobVacancyPublicResponse(jobVacancy domain.JobVacancy) web.JobVacancyPublicResponse {
-	response := web.JobVacancyPublicResponse{
+	var companyInfo *web.CompanyBasicResponse
+	if jobVacancy.Company != nil {
+		companyInfo = &web.CompanyBasicResponse{
+			Id:   jobVacancy.Company.Id.String(),
+			Name: jobVacancy.Company.Name,
+			Logo: &jobVacancy.Company.Logo,
+		}
+	}
+
+	return web.JobVacancyPublicResponse{
 		Id:                  jobVacancy.Id.String(),
-		CompanyId:           jobVacancy.CompanyId.String(),
 		Title:               jobVacancy.Title,
 		Description:         jobVacancy.Description,
 		Location:            jobVacancy.Location,
-		JobType:             string(jobVacancy.JobType),
+		JobType:             jobVacancy.JobType,
 		ExperienceLevel:     string(jobVacancy.ExperienceLevel),
 		MinSalary:           jobVacancy.MinSalary,
 		MaxSalary:           jobVacancy.MaxSalary,
 		Currency:            jobVacancy.Currency,
-		Skills:              []string(jobVacancy.Skills),
+		Skills:              jobVacancy.Skills,
 		WorkType:            string(jobVacancy.WorkType),
 		ApplicationDeadline: jobVacancy.ApplicationDeadline,
 		TypeApply:           string(jobVacancy.TypeApply),
 		ExternalLink:        jobVacancy.ExternalLink,
 		CreatedAt:           jobVacancy.CreatedAt,
+		Company:             companyInfo,
 	}
-
-	if jobVacancy.Company != nil {
-		response.Company = &web.CompanyBasicResponse{
-			Id:       jobVacancy.Company.Id.String(),
-			Name:     jobVacancy.Company.Name,
-			Logo:     &jobVacancy.Company.Logo,
-			Industry: jobVacancy.Company.Industry,
-		}
-	}
-
-	return response
 }

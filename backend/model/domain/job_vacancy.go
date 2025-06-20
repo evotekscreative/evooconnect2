@@ -8,7 +8,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type JobType string
 type ExperienceLevel string
 type JobVacancyStatus string
 type WorkType string
@@ -16,11 +15,11 @@ type JobApplyType string
 
 const (
 	// Job Types
-	JobTypeFullTime   JobType = "full-time"
-	JobTypePartTime   JobType = "part-time"
-	JobTypeContract   JobType = "contract"
-	JobTypeInternship JobType = "internship"
-	JobTypeFreelance  JobType = "freelance"
+	JobTypeFullTime   string = "full-time"
+	JobTypePartTime   string = "part-time"
+	JobTypeContract   string = "contract"
+	JobTypeInternship string = "internship"
+	JobTypeFreelance  string = "freelance"
 
 	// Experience Levels
 	ExperienceLevelEntry     ExperienceLevel = "entry"
@@ -53,7 +52,7 @@ type JobVacancy struct {
 	Description         string           `json:"description"`
 	Requirements        string           `json:"requirements"`
 	Location            string           `json:"location"`
-	JobType             JobType          `json:"job_type"`
+	JobType             string           `json:"job_type"`
 	ExperienceLevel     ExperienceLevel  `json:"experience_level"`
 	MinSalary           *float64         `json:"min_salary"`
 	MaxSalary           *float64         `json:"max_salary"`
@@ -65,6 +64,7 @@ type JobVacancy struct {
 	Status              JobVacancyStatus `json:"status"`
 	TypeApply           JobApplyType     `json:"type_apply"`
 	ExternalLink        *string          `json:"external_link"`
+	HasApplied          bool             `json:"has_applied"`
 	CreatedAt           time.Time        `json:"created_at"`
 	UpdatedAt           time.Time        `json:"updated_at"`
 

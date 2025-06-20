@@ -6,7 +6,6 @@ import (
 	"evoconnect/backend/service"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
@@ -23,21 +22,91 @@ func NewJobApplicationController(jobApplicationService service.JobApplicationSer
 }
 
 func (controller *JobApplicationControllerImpl) Create(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	jobVacancyIdParam := params.ByName("vacancyId")
-	jobVacancyId, err := uuid.Parse(jobVacancyIdParam)
-	helper.PanicIfError(err)
-
-	// Get user from context
+	// Get authenticated user
 	userId, err := helper.GetUserIdFromToken(request)
 	helper.PanicIfError(err)
 
-	jobApplicationCreateRequest := web.CreateJobApplicationRequest{}
-	helper.ReadFromRequestBody(request, &jobApplicationCreateRequest)
+	// Parse job vacancy ID from URL
+	jobVacancyIdStr := params.ByName("jobVacancyId")
+	jobVacancyId, err := uuid.Parse(jobVacancyIdStr)
+	if err != nil {
+		helper.WriteToResponseBody(writer, web.WebResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD REQUEST",
+			Data:   "Invalid job vacancy ID format",
+		})
+		return
+	}
 
-	jobApplicationResponse := controller.JobApplicationService.Create(request.Context(), jobApplicationCreateRequest, jobVacancyId, userId)
+	// Parse multipart form for file upload
+	err = request.ParseMultipartForm(10 << 20) // 10MB limit
+	if err != nil {
+		helper.WriteToResponseBody(writer, web.WebResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD REQUEST",
+			Data:   "Failed to parse form data",
+		})
+		return
+	}
+
+	// Create request object
+	applicationRequest := web.CreateJobApplicationRequest{}
+
+	// Handle CV file upload
+	cvFile, _, err := request.FormFile("cv_file")
+	if err == nil {
+		defer cvFile.Close()
+		fileHeader, err := helper.GetFileHeaderFromForm(request, "cv_file")
+		helper.PanicIfError(err)
+		applicationRequest.CvFile = fileHeader
+	}
+
+	// Parse existing CV path if no file uploaded
+	if applicationRequest.CvFile == nil {
+		existingCvPath := request.FormValue("existing_cv_path")
+		if existingCvPath != "" {
+			applicationRequest.ExistingCvPath = &existingCvPath
+		}
+	}
+
+	// Parse contact info
+	applicationRequest.ContactInfo = web.ContactInfoRequest{
+		Phone:    request.FormValue("contact_phone"),
+		Email:    request.FormValue("contact_email"),
+		Address:  request.FormValue("contact_address"),
+		LinkedIn: request.FormValue("contact_linkedin"),
+	}
+
+	// Parse optional fields
+	motivationLetter := request.FormValue("motivation_letter")
+	if motivationLetter != "" {
+		applicationRequest.MotivationLetter = &motivationLetter
+	}
+
+	coverLetter := request.FormValue("cover_letter")
+	if coverLetter != "" {
+		applicationRequest.CoverLetter = &coverLetter
+	}
+
+	expectedSalaryStr := request.FormValue("expected_salary")
+	if expectedSalaryStr != "" {
+		if expectedSalary, err := strconv.ParseFloat(expectedSalaryStr, 64); err == nil {
+			applicationRequest.ExpectedSalary = &expectedSalary
+		}
+	}
+
+	availableStartDateStr := request.FormValue("available_start_date")
+	if availableStartDateStr != "" {
+		if availableStartDate, err := helper.ParseDateString(availableStartDateStr); err == nil {
+			applicationRequest.AvailableStartDate = &availableStartDate
+		}
+	}
+
+	// Create application
+	jobApplicationResponse := controller.JobApplicationService.Create(request.Context(), applicationRequest, jobVacancyId, userId)
 
 	webResponse := web.WebResponse{
-		Code:   201,
+		Code:   http.StatusCreated,
 		Status: "CREATED",
 		Data:   jobApplicationResponse,
 	}
@@ -46,21 +115,91 @@ func (controller *JobApplicationControllerImpl) Create(writer http.ResponseWrite
 }
 
 func (controller *JobApplicationControllerImpl) Update(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	applicationIdParam := params.ByName("applicationId")
-	applicationId, err := uuid.Parse(applicationIdParam)
-	helper.PanicIfError(err)
-
-	// Get user from context
+	// Get authenticated user
 	userId, err := helper.GetUserIdFromToken(request)
 	helper.PanicIfError(err)
 
-	jobApplicationUpdateRequest := web.UpdateJobApplicationRequest{}
-	helper.ReadFromRequestBody(request, &jobApplicationUpdateRequest)
+	// Parse application ID from URL
+	applicationIdStr := params.ByName("applicationId")
+	applicationId, err := uuid.Parse(applicationIdStr)
+	if err != nil {
+		helper.WriteToResponseBody(writer, web.WebResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD REQUEST",
+			Data:   "Invalid application ID format",
+		})
+		return
+	}
 
-	jobApplicationResponse := controller.JobApplicationService.Update(request.Context(), jobApplicationUpdateRequest, applicationId, userId)
+	// Parse multipart form for file upload
+	err = request.ParseMultipartForm(10 << 20) // 10MB limit
+	if err != nil {
+		helper.WriteToResponseBody(writer, web.WebResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD REQUEST",
+			Data:   "Failed to parse form data",
+		})
+		return
+	}
+
+	// Create request object
+	applicationRequest := web.UpdateJobApplicationRequest{}
+
+	// Handle CV file upload
+	cvFile, _, err := request.FormFile("cv_file")
+	if err == nil {
+		defer cvFile.Close()
+		fileHeader, err := helper.GetFileHeaderFromForm(request, "cv_file")
+		helper.PanicIfError(err)
+		applicationRequest.CvFile = fileHeader
+	}
+
+	// Parse existing CV path if no file uploaded
+	if applicationRequest.CvFile == nil {
+		existingCvPath := request.FormValue("existing_cv_path")
+		if existingCvPath != "" {
+			applicationRequest.ExistingCvPath = &existingCvPath
+		}
+	}
+
+	// Parse contact info
+	applicationRequest.ContactInfo = web.ContactInfoRequest{
+		Phone:    request.FormValue("contact_phone"),
+		Email:    request.FormValue("contact_email"),
+		Address:  request.FormValue("contact_address"),
+		LinkedIn: request.FormValue("contact_linkedin"),
+	}
+
+	// Parse optional fields
+	motivationLetter := request.FormValue("motivation_letter")
+	if motivationLetter != "" {
+		applicationRequest.MotivationLetter = &motivationLetter
+	}
+
+	coverLetter := request.FormValue("cover_letter")
+	if coverLetter != "" {
+		applicationRequest.CoverLetter = &coverLetter
+	}
+
+	expectedSalaryStr := request.FormValue("expected_salary")
+	if expectedSalaryStr != "" {
+		if expectedSalary, err := strconv.ParseFloat(expectedSalaryStr, 64); err == nil {
+			applicationRequest.ExpectedSalary = &expectedSalary
+		}
+	}
+
+	availableStartDateStr := request.FormValue("available_start_date")
+	if availableStartDateStr != "" {
+		if availableStartDate, err := helper.ParseDateString(availableStartDateStr); err == nil {
+			applicationRequest.AvailableStartDate = &availableStartDate
+		}
+	}
+
+	// Update application
+	jobApplicationResponse := controller.JobApplicationService.Update(request.Context(), applicationRequest, applicationId, userId)
 
 	webResponse := web.WebResponse{
-		Code:   200,
+		Code:   http.StatusOK,
 		Status: "OK",
 		Data:   jobApplicationResponse,
 	}
@@ -69,33 +208,50 @@ func (controller *JobApplicationControllerImpl) Update(writer http.ResponseWrite
 }
 
 func (controller *JobApplicationControllerImpl) Delete(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	applicationIdParam := params.ByName("applicationId")
-	applicationId, err := uuid.Parse(applicationIdParam)
-	helper.PanicIfError(err)
-
-	// Get user from context
+	// Get authenticated user
 	userId, err := helper.GetUserIdFromToken(request)
 	helper.PanicIfError(err)
+
+	// Parse application ID from URL
+	applicationIdStr := params.ByName("applicationId")
+	applicationId, err := uuid.Parse(applicationIdStr)
+	if err != nil {
+		helper.WriteToResponseBody(writer, web.WebResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD REQUEST",
+			Data:   "Invalid application ID format",
+		})
+		return
+	}
 
 	controller.JobApplicationService.Delete(request.Context(), applicationId, userId)
 
 	webResponse := web.WebResponse{
-		Code:   200,
+		Code:   http.StatusOK,
 		Status: "OK",
+		Data:   "Application deleted successfully",
 	}
 
 	helper.WriteToResponseBody(writer, webResponse)
 }
 
 func (controller *JobApplicationControllerImpl) FindById(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	applicationIdParam := params.ByName("applicationId")
-	applicationId, err := uuid.Parse(applicationIdParam)
-	helper.PanicIfError(err)
+	// Parse application ID from URL
+	applicationIdStr := params.ByName("applicationId")
+	applicationId, err := uuid.Parse(applicationIdStr)
+	if err != nil {
+		helper.WriteToResponseBody(writer, web.WebResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD REQUEST",
+			Data:   "Invalid application ID format",
+		})
+		return
+	}
 
 	jobApplicationResponse := controller.JobApplicationService.FindById(request.Context(), applicationId)
 
 	webResponse := web.WebResponse{
-		Code:   200,
+		Code:   http.StatusOK,
 		Status: "OK",
 		Data:   jobApplicationResponse,
 	}
@@ -104,31 +260,41 @@ func (controller *JobApplicationControllerImpl) FindById(writer http.ResponseWri
 }
 
 func (controller *JobApplicationControllerImpl) FindByJobVacancy(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	jobVacancyIdParam := params.ByName("vacancyId")
-	jobVacancyId, err := uuid.Parse(jobVacancyIdParam)
-	helper.PanicIfError(err)
+	// Parse job vacancy ID from URL
+	jobVacancyIdStr := params.ByName("jobVacancyId")
+	jobVacancyId, err := uuid.Parse(jobVacancyIdStr)
+	if err != nil {
+		helper.WriteToResponseBody(writer, web.WebResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD REQUEST",
+			Data:   "Invalid job vacancy ID format",
+		})
+		return
+	}
 
-	// Get query parameters
+	// Parse query parameters
 	status := request.URL.Query().Get("status")
 	limitStr := request.URL.Query().Get("limit")
 	offsetStr := request.URL.Query().Get("offset")
 
-	limit := 10
+	limit := 10 // default
 	if limitStr != "" {
-		limit, err = strconv.Atoi(limitStr)
-		helper.PanicIfError(err)
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
+			limit = parsedLimit
+		}
 	}
 
-	offset := 0
+	offset := 0 // default
 	if offsetStr != "" {
-		offset, err = strconv.Atoi(offsetStr)
-		helper.PanicIfError(err)
+		if parsedOffset, err := strconv.Atoi(offsetStr); err == nil && parsedOffset >= 0 {
+			offset = parsedOffset
+		}
 	}
 
-	jobApplicationResponse := controller.JobApplicationService.FindByJobVacancy(request.Context(), jobVacancyId, status, limit, offset)
+	jobApplicationResponse := controller.JobApplicationService.FindByJobVacancyId(request.Context(), jobVacancyId, status, limit, offset)
 
 	webResponse := web.WebResponse{
-		Code:   200,
+		Code:   http.StatusOK,
 		Status: "OK",
 		Data:   jobApplicationResponse,
 	}
@@ -136,32 +302,62 @@ func (controller *JobApplicationControllerImpl) FindByJobVacancy(writer http.Res
 	helper.WriteToResponseBody(writer, webResponse)
 }
 
-func (controller *JobApplicationControllerImpl) FindMyApplications(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	// Get user from context
+func (controller *JobApplicationControllerImpl) FindByApplicant(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Get authenticated user
 	userId, err := helper.GetUserIdFromToken(request)
 	helper.PanicIfError(err)
 
-	// Get query parameters
+	// Parse applicant ID from URL (optional, defaults to current user)
+	applicantIdStr := params.ByName("applicantId")
+	var applicantId uuid.UUID
+
+	if applicantIdStr != "" {
+		applicantId, err = uuid.Parse(applicantIdStr)
+		if err != nil {
+			helper.WriteToResponseBody(writer, web.WebResponse{
+				Code:   http.StatusBadRequest,
+				Status: "BAD REQUEST",
+				Data:   "Invalid applicant ID format",
+			})
+			return
+		}
+	} else {
+		applicantId = userId
+	}
+
+	// Check authorization
+	if applicantId != userId {
+		helper.WriteToResponseBody(writer, web.WebResponse{
+			Code:   http.StatusForbidden,
+			Status: "FORBIDDEN",
+			Data:   "You can only view your own applications",
+		})
+		return
+	}
+
+	// Parse query parameters
 	status := request.URL.Query().Get("status")
 	limitStr := request.URL.Query().Get("limit")
 	offsetStr := request.URL.Query().Get("offset")
 
-	limit := 10
+	limit := 10 // default
 	if limitStr != "" {
-		limit, err = strconv.Atoi(limitStr)
-		helper.PanicIfError(err)
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
+			limit = parsedLimit
+		}
 	}
 
-	offset := 0
+	offset := 0 // default
 	if offsetStr != "" {
-		offset, err = strconv.Atoi(offsetStr)
-		helper.PanicIfError(err)
+		if parsedOffset, err := strconv.Atoi(offsetStr); err == nil && parsedOffset >= 0 {
+			offset = parsedOffset
+		}
 	}
 
-	jobApplicationResponse := controller.JobApplicationService.FindByApplicant(request.Context(), userId, status, limit, offset)
+	jobApplicationResponse := controller.JobApplicationService.FindByApplicantId(request.Context(), applicantId, status, limit, offset)
 
 	webResponse := web.WebResponse{
-		Code:   200,
+		Code:   http.StatusOK,
 		Status: "OK",
 		Data:   jobApplicationResponse,
 	}
@@ -170,31 +366,66 @@ func (controller *JobApplicationControllerImpl) FindMyApplications(writer http.R
 }
 
 func (controller *JobApplicationControllerImpl) FindByCompany(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	companyIdParam := params.ByName("companyId")
-	companyId, err := uuid.Parse(companyIdParam)
+	// Get authenticated user
+	_, err := helper.GetUserIdFromToken(request)
 	helper.PanicIfError(err)
 
-	// Get query parameters
+	// Parse company ID from URL (optional, defaults to user's company)
+	companyIdStr := params.ByName("companyId")
+	var companyId uuid.UUID
+
+	if companyIdStr != "" {
+		companyId, err = uuid.Parse(companyIdStr)
+		if err != nil {
+			helper.WriteToResponseBody(writer, web.WebResponse{
+				Code:   http.StatusBadRequest,
+				Status: "BAD REQUEST",
+				Data:   "Invalid company ID format",
+			})
+			return
+		}
+	} else {
+		helper.WriteToResponseBody(writer, web.WebResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD REQUEST",
+			Data:   "Company ID is required",
+		})
+		return
+	}
+
+	// Check authorization
+	// if userClaims.CompanyId != nil && *userClaims.CompanyId != companyId {
+	// 	helper.WriteToResponseBody(writer, web.WebResponse{
+	// 		Code:   http.StatusForbidden,
+	// 		Status: "FORBIDDEN",
+	// 		Data:   "You can only view applications for your company",
+	// 	})
+	// 	return
+	// }
+
+	// Parse query parameters
 	status := request.URL.Query().Get("status")
 	limitStr := request.URL.Query().Get("limit")
 	offsetStr := request.URL.Query().Get("offset")
 
-	limit := 10
+	limit := 10 // default
 	if limitStr != "" {
-		limit, err = strconv.Atoi(limitStr)
-		helper.PanicIfError(err)
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
+			limit = parsedLimit
+		}
 	}
 
-	offset := 0
+	offset := 0 // default
 	if offsetStr != "" {
-		offset, err = strconv.Atoi(offsetStr)
-		helper.PanicIfError(err)
+		if parsedOffset, err := strconv.Atoi(offsetStr); err == nil && parsedOffset >= 0 {
+			offset = parsedOffset
+		}
 	}
 
-	jobApplicationResponse := controller.JobApplicationService.FindByCompany(request.Context(), companyId, status, limit, offset)
+	jobApplicationResponse := controller.JobApplicationService.FindByCompanyId(request.Context(), companyId, status, limit, offset)
 
 	webResponse := web.WebResponse{
-		Code:   200,
+		Code:   http.StatusOK,
 		Status: "OK",
 		Data:   jobApplicationResponse,
 	}
@@ -203,18 +434,60 @@ func (controller *JobApplicationControllerImpl) FindByCompany(writer http.Respon
 }
 
 func (controller *JobApplicationControllerImpl) FindWithFilters(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	jobApplicationFilterRequest := web.JobApplicationFilterRequest{}
-	helper.ReadFromRequestBody(request, &jobApplicationFilterRequest)
+	// Parse query parameters
+	var filterRequest web.JobApplicationFilterRequest
 
-	// Set default values
-	if jobApplicationFilterRequest.Limit == 0 {
-		jobApplicationFilterRequest.Limit = 10
+	// Parse UUID parameters
+	if jobVacancyIdStr := request.URL.Query().Get("job_vacancy_id"); jobVacancyIdStr != "" {
+		if jobVacancyId, err := uuid.Parse(jobVacancyIdStr); err == nil {
+			filterRequest.JobVacancyId = &jobVacancyId
+		}
 	}
 
-	jobApplicationResponse := controller.JobApplicationService.FindWithFilters(request.Context(), jobApplicationFilterRequest)
+	if applicantIdStr := request.URL.Query().Get("applicant_id"); applicantIdStr != "" {
+		if applicantId, err := uuid.Parse(applicantIdStr); err == nil {
+			filterRequest.ApplicantId = &applicantId
+		}
+	}
+
+	if reviewedByStr := request.URL.Query().Get("reviewed_by"); reviewedByStr != "" {
+		if reviewedBy, err := uuid.Parse(reviewedByStr); err == nil {
+			filterRequest.ReviewedBy = &reviewedBy
+		}
+	}
+
+	if companyIdStr := request.URL.Query().Get("company_id"); companyIdStr != "" {
+		if companyId, err := uuid.Parse(companyIdStr); err == nil {
+			filterRequest.CompanyId = &companyId
+		}
+	}
+
+	// Parse string parameters
+	filterRequest.Status = request.URL.Query().Get("status")
+	filterRequest.Search = request.URL.Query().Get("search")
+
+	// Parse pagination
+	limitStr := request.URL.Query().Get("limit")
+	offsetStr := request.URL.Query().Get("offset")
+
+	filterRequest.Limit = 10 // default
+	if limitStr != "" {
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
+			filterRequest.Limit = parsedLimit
+		}
+	}
+
+	filterRequest.Offset = 0 // default
+	if offsetStr != "" {
+		if parsedOffset, err := strconv.Atoi(offsetStr); err == nil && parsedOffset >= 0 {
+			filterRequest.Offset = parsedOffset
+		}
+	}
+
+	jobApplicationResponse := controller.JobApplicationService.FindWithFilters(request.Context(), filterRequest)
 
 	webResponse := web.WebResponse{
-		Code:   200,
+		Code:   http.StatusOK,
 		Status: "OK",
 		Data:   jobApplicationResponse,
 	}
@@ -223,13 +496,21 @@ func (controller *JobApplicationControllerImpl) FindWithFilters(writer http.Resp
 }
 
 func (controller *JobApplicationControllerImpl) ReviewApplication(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	applicationIdParam := params.ByName("applicationId")
-	applicationId, err := uuid.Parse(applicationIdParam)
-	helper.PanicIfError(err)
-
-	// Get user from context
+	// Get authenticated user
 	userId, err := helper.GetUserIdFromToken(request)
 	helper.PanicIfError(err)
+
+	// Parse application ID from URL
+	applicationIdStr := params.ByName("applicationId")
+	applicationId, err := uuid.Parse(applicationIdStr)
+	if err != nil {
+		helper.WriteToResponseBody(writer, web.WebResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD REQUEST",
+			Data:   "Invalid application ID format",
+		})
+		return
+	}
 
 	reviewRequest := web.ReviewJobApplicationRequest{}
 	helper.ReadFromRequestBody(request, &reviewRequest)
@@ -237,43 +518,7 @@ func (controller *JobApplicationControllerImpl) ReviewApplication(writer http.Re
 	jobApplicationResponse := controller.JobApplicationService.ReviewApplication(request.Context(), reviewRequest, applicationId, userId)
 
 	webResponse := web.WebResponse{
-		Code:   200,
-		Status: "OK",
-		Data:   jobApplicationResponse,
-	}
-
-	helper.WriteToResponseBody(writer, webResponse)
-}
-
-func (controller *JobApplicationControllerImpl) UploadCV(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	applicationIdParam := params.ByName("applicationId")
-	applicationId, err := uuid.Parse(applicationIdParam)
-	helper.PanicIfError(err)
-
-	// Get user from context
-	userId, err := helper.GetUserIdFromToken(request)
-	helper.PanicIfError(err)
-
-	// Parse multipart form
-	err = request.ParseMultipartForm(10 << 20) // 10 MB max
-	helper.PanicIfError(err)
-
-	file, fileHeader, err := request.FormFile("cv")
-	helper.PanicIfError(err)
-	defer file.Close()
-
-	fileExt := fileHeader.Filename[strings.LastIndex(fileHeader.Filename, ".")+1:]
-	if fileExt != "pdf" && fileExt != "docx" && fileExt != "txt" {
-		helper.PanicIfError(helper.NewBadRequestError("Invalid file type. Only PDF, DOCX, and TXT are allowed."))
-	}
-
-	// Save file using helper
-	filePath := helper.SaveUploadedFile(file, "cv", userId.String(), fileExt)
-
-	jobApplicationResponse := controller.JobApplicationService.UploadCV(request.Context(), applicationId, userId, filePath)
-
-	webResponse := web.WebResponse{
-		Code:   200,
+		Code:   http.StatusOK,
 		Status: "OK",
 		Data:   jobApplicationResponse,
 	}
@@ -282,18 +527,45 @@ func (controller *JobApplicationControllerImpl) UploadCV(writer http.ResponseWri
 }
 
 func (controller *JobApplicationControllerImpl) GetStats(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Get authenticated user
+	_, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+
 	var companyId *uuid.UUID
-	companyIdParam := request.URL.Query().Get("company_id")
-	if companyIdParam != "" {
-		id, err := uuid.Parse(companyIdParam)
-		helper.PanicIfError(err)
-		companyId = &id
+
+	// Parse company ID from URL or use user's company
+	companyIdStr := params.ByName("companyId")
+	if companyIdStr != "" {
+		if parsedCompanyId, err := uuid.Parse(companyIdStr); err == nil {
+			companyId = &parsedCompanyId
+		}
 	}
+
+	// Check authorization for company-specific stats
+	// if companyId != nil {
+	// 	if userClaims.Role != "hr" && userClaims.Role != "company_admin" && userClaims.Role != "super_admin" {
+	// 		helper.WriteToResponseBody(writer, web.WebResponse{
+	// 			Code:   http.StatusForbidden,
+	// 			Status: "FORBIDDEN",
+	// 			Data:   "You don't have permission to view company statistics",
+	// 		})
+	// 		return
+	// 	}
+
+	// 	if userClaims.Role != "super_admin" && userClaims.CompanyId != nil && *userClaims.CompanyId != *companyId {
+	// 		helper.WriteToResponseBody(writer, web.WebResponse{
+	// 			Code:   http.StatusForbidden,
+	// 			Status: "FORBIDDEN",
+	// 			Data:   "You can only view statistics for your company",
+	// 		})
+	// 		return
+	// 	}
+	// }
 
 	statsResponse := controller.JobApplicationService.GetStats(request.Context(), companyId)
 
 	webResponse := web.WebResponse{
-		Code:   200,
+		Code:   http.StatusOK,
 		Status: "OK",
 		Data:   statsResponse,
 	}
@@ -302,18 +574,26 @@ func (controller *JobApplicationControllerImpl) GetStats(writer http.ResponseWri
 }
 
 func (controller *JobApplicationControllerImpl) CheckApplicationStatus(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	jobVacancyIdParam := params.ByName("applicationId")
-	jobVacancyId, err := uuid.Parse(jobVacancyIdParam)
-	helper.PanicIfError(err)
-
-	// Get user from context
+	// Get authenticated user
 	userId, err := helper.GetUserIdFromToken(request)
 	helper.PanicIfError(err)
+
+	// Parse job vacancy ID from URL
+	jobVacancyIdStr := params.ByName("jobVacancyId")
+	jobVacancyId, err := uuid.Parse(jobVacancyIdStr)
+	if err != nil {
+		helper.WriteToResponseBody(writer, web.WebResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD REQUEST",
+			Data:   "Invalid job vacancy ID format",
+		})
+		return
+	}
 
 	hasApplied := controller.JobApplicationService.HasApplied(request.Context(), jobVacancyId, userId)
 
 	webResponse := web.WebResponse{
-		Code:   200,
+		Code:   http.StatusOK,
 		Status: "OK",
 		Data: map[string]bool{
 			"has_applied": hasApplied,

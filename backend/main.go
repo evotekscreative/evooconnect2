@@ -96,6 +96,7 @@ func main() {
 	// Job-related repositories
 	jobVacancyRepository := repository.NewJobVacancyRepository()
 	jobApplicationRepository := repository.NewJobApplicationRepository()
+	userCvStorageRepository := repository.NewUserCvStorageRepository()
 
 	// ===== Services =====
 	// Notification service (moved up because it's used by many other services)
@@ -307,16 +308,17 @@ func main() {
 		db,
 		validate,
 	)
-
 	jobApplicationService := service.NewJobApplicationService(
 		jobApplicationRepository,
+		userCvStorageRepository,
 		jobVacancyRepository,
-		companyRepository,
-		memberCompanyRepository,
 		userRepository,
+		memberCompanyRepository,
 		db,
 		validate,
 	)
+
+	userCvStorageService := service.NewUserCvStorageService(userCvStorageRepository, userRepository, db, validate)
 
 	// ===== Controllers =====
 	// User-related controllers
@@ -384,6 +386,7 @@ func main() {
 
 	jobVacancyController := controller.NewJobVacancyController(jobVacancyService)
 	jobApplicationController := controller.NewJobApplicationController(jobApplicationService)
+	userCvStorageController := controller.NewUserCvStorageController(userCvStorageService)
 
 	// ===== Router and Middleware =====
 	// Initialize router with all controllers and JWT secret
@@ -417,6 +420,7 @@ func main() {
 		companyFollowerController,
 		jobVacancyController,
 		jobApplicationController,
+		userCvStorageController,
 	)
 
 	// Seed admin data

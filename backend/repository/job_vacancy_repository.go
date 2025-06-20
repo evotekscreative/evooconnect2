@@ -14,6 +14,7 @@ type JobVacancyRepository interface {
 	Delete(ctx context.Context, tx *sql.Tx, jobVacancyId uuid.UUID) error
 	FindById(ctx context.Context, tx *sql.Tx, jobVacancyId uuid.UUID) (domain.JobVacancy, error)
 	FindByCompanyId(ctx context.Context, tx *sql.Tx, companyId uuid.UUID, limit, offset int) []domain.JobVacancy
+	FindByCompanyIdWithStatus(ctx context.Context, tx *sql.Tx, companyId uuid.UUID, status domain.JobVacancyStatus, limit, offset int) []domain.JobVacancy
 	FindByCreatorId(ctx context.Context, tx *sql.Tx, creatorId uuid.UUID, limit, offset int) []domain.JobVacancy
 	FindAll(ctx context.Context, tx *sql.Tx, limit, offset int) []domain.JobVacancy
 	FindActiveJobs(ctx context.Context, tx *sql.Tx, limit, offset int) []domain.JobVacancy
@@ -23,5 +24,6 @@ type JobVacancyRepository interface {
 	CountAll(ctx context.Context, tx *sql.Tx) int
 	CountActiveJobs(ctx context.Context, tx *sql.Tx) int
 	CountSearchResults(ctx context.Context, tx *sql.Tx, filters map[string]interface{}) int
+	CountByCompanyIdWithStatus(ctx context.Context, tx *sql.Tx, companyId uuid.UUID, status domain.JobVacancyStatus) int
 	UpdateStatus(ctx context.Context, tx *sql.Tx, jobVacancyId uuid.UUID, status domain.JobVacancyStatus) error
 }
