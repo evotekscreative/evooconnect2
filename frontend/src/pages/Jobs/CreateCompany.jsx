@@ -35,6 +35,7 @@ export default function CreateCompany() {
 
       if (!adminToken) {
         toast.error("Admin token not found.");
+        setIsLoadingStatus(false);
         return;
       }
 

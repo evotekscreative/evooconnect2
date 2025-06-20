@@ -15,4 +15,5 @@ type ConnectionService interface {
 	GetConnections(ctx context.Context, userId, currentUserId uuid.UUID, limit, offset int) web.ConnectionListResponse
 	Disconnect(ctx context.Context, userId, targetUserId uuid.UUID) web.DisconnectResponse
 	CancelConnectionRequest(ctx context.Context, userId, toUserId uuid.UUID) string
+	CountRequestInvitation(ctx context.Context, userId uuid.UUID) web.RequestCountResponse
 }

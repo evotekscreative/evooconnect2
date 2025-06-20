@@ -213,23 +213,31 @@ func (service *CommentBlogServiceImpl) Reply(ctx context.Context, commentId uuid
     helper.PanicIfError(err)
     defer helper.CommitOrRollback(tx)
 
-    // Periksa apakah komentar induk ada
+    // Periksa apakah komentar yang akan dibalas ada
     parentComment, err := service.CommentBlogRepository.FindById(ctx, tx, commentId)
     if err != nil {
-        panic(exception.NewNotFoundError("Parent comment not found"))
+        panic(exception.NewNotFoundError("Comment not found"))
     }
 
-    // Periksa apakah komentar induk sudah merupakan balasan
-    if parentComment.ParentId != nil {
-        panic(exception.NewBadRequestError("Cannot reply to a reply"))
+    // Tentukan parent_id yang benar
+    // Jika komentar yang dibalas adalah komentar utama, gunakan ID-nya sebagai parent_id
+    // Jika komentar yang dibalas adalah balasan, gunakan parent_id dari komentar tersebut
+    var parentId *uuid.UUID
+    if parentComment.ParentId == nil {
+        // Ini adalah komentar utama, jadi gunakan ID-nya sebagai parent_id
+        parentId = &commentId
+    } else {
+        // Ini adalah balasan, jadi gunakan parent_id dari komentar tersebut
+        parentId = parentComment.ParentId
     }
 
-    // Buat balasan komentar
+    // Buat komentar baru sebagai balasan
     reply := domain.CommentBlog{
         Id:        uuid.New(),
         BlogId:    parentComment.BlogId,
         UserId:    userId,
-        ParentId:  &commentId, // Set parent ID
+        ParentId:  parentId,         // Set parent ID ke ID komentar utama
+        ReplyToId: &commentId,       // Set reply_to_id ke ID komentar yang dibalas langsung
         Content:   request.Content,
         CreatedAt: time.Now(),
         UpdatedAt: time.Now(),
@@ -244,6 +252,12 @@ func (service *CommentBlogServiceImpl) Reply(ctx context.Context, commentId uuid
     }
     newReply.User = &user
 
+    // Get parent comment user info
+    parentUser, err := service.UserRepository.FindById(ctx, tx, parentComment.UserId)
+    if err != nil {
+        panic(exception.NewNotFoundError("Parent comment user not found"))
+    }
+
     // Kirim notifikasi ke pemilik komentar jika bukan diri sendiri
     if parentComment.UserId != userId && service.NotificationService != nil {
         // Ambil data yang diperlukan
@@ -252,7 +266,7 @@ func (service *CommentBlogServiceImpl) Reply(ctx context.Context, commentId uuid
         blogId := parentComment.BlogId
         
         // Ambil data blog untuk judul
-        blog, err := service.BlogRepository.FindByID(ctx, blogId.String()) // Gunakan FindByID bukan FindById
+        blog, err := service.BlogRepository.FindByID(ctx, blogId.String())
         blogTitle := "a blog"
         if err == nil {
             blogTitle = blog.Title
@@ -266,8 +280,8 @@ func (service *CommentBlogServiceImpl) Reply(ctx context.Context, commentId uuid
             service.NotificationService.Create(
                 context.Background(),
                 parentUserId,
-                "blog", // Gunakan string literal karena konstanta belum didefinisikan
-                "blog_comment_reply", // Gunakan string literal karena konstanta belum didefinisikan
+                "blog",
+                "blog_comment_reply",
                 "Blog Comment Reply",
                 fmt.Sprintf("%s replied to your comment on '%s'", userName, blogTitle),
                 &blogId,
@@ -277,26 +291,70 @@ func (service *CommentBlogServiceImpl) Reply(ctx context.Context, commentId uuid
         }()
     }
 
-    return helper.ToCommentBlogResponse(newReply)
+    // Buat response dengan ReplyTo
+    response := helper.ToCommentBlogResponse(newReply)
+    response.ReplyTo = &web.ReplyToInfo{
+        Id:           parentComment.Id,
+        Content:      parentComment.Content,
+        Username:     parentUser.Username,
+        Name:         parentUser.Name,
+        ProfilePhoto: parentUser.Photo,
+    }
+
+    return response
 }
 
 func (service *CommentBlogServiceImpl) GetReplies(ctx context.Context, commentId uuid.UUID, limit, offset int) web.CommentBlogListResponse {
-	tx, err := service.DB.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
+    tx, err := service.DB.Begin()
+    helper.PanicIfError(err)
+    defer helper.CommitOrRollback(tx)
 
-	_, err = service.CommentBlogRepository.FindById(ctx, tx, commentId)
-	if err != nil {
-		panic(exception.NewNotFoundError("Parent comment not found"))
-	}
+    // Cari komentar yang akan diambil balasannya
+    parentComment, err := service.CommentBlogRepository.FindById(ctx, tx, commentId)
+    if err != nil {
+        panic(exception.NewNotFoundError("Parent comment not found"))
+    }
 
-	replies := service.CommentBlogRepository.FindRepliesByParentId(ctx, tx, commentId)
+    // Ambil balasan komentar
+    replies := service.CommentBlogRepository.FindRepliesByParentId(ctx, tx, commentId)
+    
+    // Hitung total balasan
+    total, err := service.CommentBlogRepository.CountRepliesByParentId(ctx, tx, commentId)
+    helper.PanicIfError(err)
 
-	total, err := service.CommentBlogRepository.CountRepliesByParentId(ctx, tx, commentId)
-	helper.PanicIfError(err)
+    // Ambil informasi user untuk komentar yang dibalas
+    parentUser, err := service.UserRepository.FindById(ctx, tx, parentComment.UserId)
+    if err != nil {
+        panic(exception.NewNotFoundError("Parent comment user not found"))
+    }
 
-	return web.CommentBlogListResponse{
-		Comments: helper.ToCommentBlogResponses(replies),
-		Total:    total,
-	}
+    // Buat response
+    var replyResponses []web.CommentBlogResponse
+    for _, reply := range replies {
+        // Ambil informasi user untuk balasan
+        user, err := service.UserRepository.FindById(ctx, tx, reply.UserId)
+        if err != nil {
+            continue // Skip jika user tidak ditemukan
+        }
+        reply.User = &user
+
+        // Konversi ke response
+        replyResponse := helper.ToCommentBlogResponse(reply)
+        
+        // Tambahkan informasi ReplyTo
+        replyResponse.ReplyTo = &web.ReplyToInfo{
+            Id:           parentComment.Id,
+            Content:      parentComment.Content,
+            Username:     parentUser.Username,
+            Name:         parentUser.Name,
+            ProfilePhoto: parentUser.Photo,
+        }
+        
+        replyResponses = append(replyResponses, replyResponse)
+    }
+
+    return web.CommentBlogListResponse{
+        Comments: replyResponses,
+        Total:    total,
+    }
 }

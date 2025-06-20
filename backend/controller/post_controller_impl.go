@@ -157,6 +157,7 @@ func (controller *PostControllerImpl) FindAll(writer http.ResponseWriter, reques
 		}
 	}
 
+	// Ubah urutan parameter sesuai dengan yang diharapkan service
 	postResponses := controller.PostService.FindAll(request.Context(), limit, offset, userId)
 
 	webResponse := web.WebResponse{
@@ -254,4 +255,155 @@ func (controller *PostControllerImpl) UnlikePost(writer http.ResponseWriter, req
 	}
 
 	helper.WriteToResponseBody(writer, webResponse)
+}
+
+func (controller *PostControllerImpl) PinPost(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Ambil post_id dari URL params
+	postId, err := uuid.Parse(params.ByName("postId"))
+	if err != nil {
+		panic(exception.NewBadRequestError("Invalid post ID format"))
+	}
+
+	// Ambil user_id dari token JWT
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+
+	// Panggil service untuk menyematkan post
+	postResponse := controller.PostService.PinPost(request.Context(), postId, userId)
+
+	// Buat response
+	webResponse := web.WebResponse{
+		Code:   200,
+		Status: "OK",
+		Data:   postResponse,
+	}
+
+	// Kirim response
+	helper.WriteToResponseBody(writer, webResponse)
+}
+
+func (controller *PostControllerImpl) UnpinPost(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Ambil post_id dari URL params
+	postId, err := uuid.Parse(params.ByName("postId"))
+	if err != nil {
+		panic(exception.NewBadRequestError("Invalid post ID format"))
+	}
+
+	// Ambil user_id dari token JWT
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+
+	// Panggil service untuk melepas pin post
+	postResponse := controller.PostService.UnpinPost(request.Context(), postId, userId)
+
+	// Buat response
+	webResponse := web.WebResponse{
+		Code:   200,
+		Status: "OK",
+		Data:   postResponse,
+	}
+
+	// Kirim response
+	helper.WriteToResponseBody(writer, webResponse)
+}
+
+
+func (controller *PostControllerImpl) FindMyPendingPosts(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+    // Get user ID from token
+    userIdStr, ok := request.Context().Value("user_id").(string)
+    if !ok {
+        panic(exception.NewUnauthorizedError("Unauthorized"))
+    }
+    
+    userId, err := uuid.Parse(userIdStr)
+    if err != nil {
+        panic(exception.NewUnauthorizedError("Invalid user ID"))
+    }
+
+    // Get query parameters for pagination
+    limitStr := request.URL.Query().Get("limit")
+    offsetStr := request.URL.Query().Get("offset")
+
+    limit := 10 // Default limit
+    offset := 0 // Default offset
+
+    if limitStr != "" {
+        limitInt, err := strconv.Atoi(limitStr)
+        if err == nil && limitInt > 0 {
+            limit = limitInt
+        }
+    }
+
+    if offsetStr != "" {
+        offsetInt, err := strconv.Atoi(offsetStr)
+        if err == nil && offsetInt >= 0 {
+            offset = offsetInt
+        }
+    }
+
+    // Get pending posts for the user
+    pendingPosts := controller.PostService.FindPendingPostsByUserId(request.Context(), userId, limit, offset)
+
+    // Create response
+    webResponse := web.WebResponse{
+        Code:   200,
+        Status: "OK",
+        Data:   pendingPosts,
+    }
+
+    // Send response
+    helper.WriteToResponseBody(writer, webResponse)
+}
+
+func (controller *PostControllerImpl) FindMyPendingPostsByGroupId(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+    // Get user ID from token
+    userIdStr, ok := request.Context().Value("user_id").(string)
+    if !ok {
+        panic(exception.NewUnauthorizedError("Unauthorized"))
+    }
+    
+    userId, err := uuid.Parse(userIdStr)
+    if err != nil {
+        panic(exception.NewUnauthorizedError("Invalid user ID"))
+    }
+
+    // Get group ID from URL params
+    groupId, err := uuid.Parse(params.ByName("groupId"))
+    if err != nil {
+        panic(exception.NewBadRequestError("Invalid group ID format"))
+    }
+
+    // Get query parameters for pagination
+    limitStr := request.URL.Query().Get("limit")
+    offsetStr := request.URL.Query().Get("offset")
+
+    limit := 10 // Default limit
+    offset := 0 // Default offset
+
+    if limitStr != "" {
+        limitInt, err := strconv.Atoi(limitStr)
+        if err == nil && limitInt > 0 {
+            limit = limitInt
+        }
+    }
+
+    if offsetStr != "" {
+        offsetInt, err := strconv.Atoi(offsetStr)
+        if err == nil && offsetInt >= 0 {
+            offset = offsetInt
+        }
+    }
+
+    // Get pending posts for the user in the specified group
+    pendingPosts := controller.PostService.FindPendingPostsByUserIdAndGroupId(request.Context(), userId, groupId, limit, offset)
+
+    // Create response
+    webResponse := web.WebResponse{
+        Code:   200,
+        Status: "OK",
+        Data:   pendingPosts,
+    }
+
+    // Send response
+    helper.WriteToResponseBody(writer, webResponse)
 }

@@ -13,6 +13,8 @@ type GroupController interface {
 	Delete(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	FindById(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	FindAll(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+	FindMyJoinedGroups(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+	FindMyJoinRequests(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	FindMyGroups(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 
 	// Group post management
@@ -33,4 +35,14 @@ type GroupController interface {
 	RejectInvitation(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	FindMyInvitations(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	CancelInvitation(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+
+	CreateJoinRequest(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+    FindJoinRequestsByGroupId(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+    AcceptJoinRequest(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+    RejectJoinRequest(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+
+	GetPendingPosts(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+	ApprovePost(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+	RejectPost(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+	 CancelJoinRequest(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 }

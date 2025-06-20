@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"evoconnect/backend/model/domain"
 	"evoconnect/backend/model/web"
+	"fmt"
+	"github.com/google/uuid"
+	
 	// "evoconnect/backend/repository"
 )
 
@@ -58,41 +61,55 @@ func ToUserProfileResponse(user domain.User, isConnected ...bool) web.UserProfil
 	}
 
 	connected := false
+	var connectedRequest string = ""
+
 	if len(isConnected) > 0 {
 		connected = isConnected[0]
 	}
 
+	// Buat response dengan field baru
 	return web.UserProfileResponse{
-		ID:           user.Id,
-		Name:         user.Name,
-		Email:        user.Email,
-		Username:     user.Username,
-		Birthdate:    birthdate,
-		Gender:       user.Gender,
-		Location:     user.Location,
-		Organization: user.Organization,
-		Website:      user.Website,
-		Phone:        user.Phone,
-		Headline:     user.Headline,
-		About:        user.About,
-		Skills:       skillsInterface,
-		Socials:      socialsInterface,
-		Photo:        user.Photo,
-		IsVerified:   user.IsVerified,
-		IsConnected:  connected,
-		CreatedAt:    user.CreatedAt.Format("2006-01-02T15:04:05Z"),
-		UpdatedAt:    user.UpdatedAt.Format("2006-01-02T15:04:05Z"),
+		ID:                 user.Id,
+		Name:               user.Name,
+		Email:              user.Email,
+		Username:           user.Username,
+		Birthdate:          birthdate,
+		Gender:             user.Gender,
+		Location:           user.Location,
+		Organization:       user.Organization,
+		Website:            user.Website,
+		Phone:              user.Phone,
+		Headline:           user.Headline,
+		About:              user.About,
+		Skills:             skillsInterface,
+		Socials:            socialsInterface,
+		Photo:              user.Photo,
+		IsVerified:         user.IsVerified,
+		IsConnected:        connected,
+		IsConnectedRequest: connectedRequest,
+		CreatedAt:          user.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		UpdatedAt:          user.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 	}
 }
 
-func ToUserShortResponse(user domain.User, isConnected bool) web.UserShort {
+func ToUserShortResponse(user domain.User, isConnected bool, isConnectedRequest string) web.UserShort {
+	// Tambahkan log untuk debugging
+	fmt.Printf("ToUserShortResponse: user=%s, isConnected=%v, isConnectedRequest=%s\n",
+		user.Name, isConnected, isConnectedRequest)
+
+	// Jika isConnectedRequest kosong, berikan nilai default "none"
+	if isConnectedRequest == "" {
+		isConnectedRequest = "none"
+	}
+
 	return web.UserShort{
-		Id:          user.Id,
-		Name:        user.Name,
-		Username:    user.Username,
-		Photo:       &user.Photo,
-		Headline:    &user.Headline,
-		IsConnected: isConnected,
+		Id:                 user.Id,
+		Name:               user.Name,
+		Username:           user.Username,
+		Photo:              &user.Photo,
+		Headline:           &user.Headline,
+		IsConnected:        isConnected,
+		IsConnectedRequest: isConnectedRequest,
 	}
 }
 
@@ -109,22 +126,44 @@ func ToPostResponse(post domain.Post) web.PostResponse {
 		LikesCount:    post.LikesCount,
 		CommentsCount: post.CommentsCount,
 		GroupId:       post.GroupId,
+		IsPinned:      post.IsPinned,
+		PinnedAt:      post.PinnedAt,
+		Status:        post.Status,
+		IsReported:    post.IsReported,
 	}
 
-	if post.User != nil {
+	// Perbaikan: Pastikan user tidak nil dan memiliki data yang valid
+	if post.User != nil && post.User.Id != uuid.Nil {
+		photo := post.User.Photo
+		headline := post.User.Headline
+
 		postResponse.User = web.UserShort{
-			Id:          post.User.Id,
-			Name:        post.User.Name,
-			Username:    post.User.Username,
-			Photo:       &post.User.Photo,
-			Headline:    &post.User.Headline,
-			IsConnected: post.User.IsConnected,
+			Id:                 post.User.Id,
+			Name:               post.User.Name,
+			Username:           post.User.Username,
+			Photo:              &photo,
+			Headline:           &headline,
+			IsConnected:        post.User.IsConnected,
+			IsConnectedRequest: "",
 		}
 	}
 
 	if post.Group != nil {
-		group := ToGroupResponse(*post.Group)
-		postResponse.Group = &group
+		// Buat struct baru yang hanya berisi field yang kita inginkan
+		postResponse.Group = &web.GroupResponse{
+			Id:           post.Group.Id,
+			Name:         post.Group.Name,
+			Description:  post.Group.Description,
+			Rule:         post.Group.Rule,
+			PrivacyLevel: post.Group.PrivacyLevel,
+			InvitePolicy: post.Group.InvitePolicy,
+			PostApproval: post.Group.PostApproval,
+			CreatorId:    post.Group.CreatorId,
+		}
+
+		if post.Group.Image != nil && *post.Group.Image != "" {
+			postResponse.Group.Image = post.Group.Image
+		}
 	}
 
 	return postResponse
@@ -159,6 +198,17 @@ func ToCommentResponse(comment domain.Comment) web.CommentResponse {
 			Name:     comment.User.Name,
 			Username: comment.User.Username,
 			Photo:    comment.User.Photo,
+		}
+	}
+
+	// Tambahkan informasi ReplyTo jika ada ReplyToId
+	if comment.ReplyToId != nil && comment.ReplyTo != nil && comment.ReplyTo.User != nil {
+		commentResponse.ReplyTo = &web.ReplyToInfo{
+			Id:           *comment.ReplyToId,
+			Content:      comment.ReplyTo.Content,
+			Username:     comment.ReplyTo.User.Username,
+			Name:         comment.ReplyTo.User.Name,
+			ProfilePhoto: comment.ReplyTo.User.Photo,
 		}
 	}
 
@@ -243,9 +293,11 @@ func ToGroupResponse(group domain.Group) web.GroupResponse {
 		Image:        group.Image,
 		PrivacyLevel: group.PrivacyLevel,
 		InvitePolicy: group.InvitePolicy,
+		PostApproval: group.PostApproval,
 		CreatorId:    group.CreatorId,
 		CreatedAt:    group.CreatedAt,
 		UpdatedAt:    group.UpdatedAt,
+		IsJoined:     false, // Default value
 	}
 
 	if group.Creator != nil {
@@ -272,15 +324,6 @@ func ToUserBriefResponse(user domain.User, isConnected ...bool) web.UserBriefRes
 		IsConnected: connected, // Gunakan nilai dari parameter
 		CreatedAt:   user.CreatedAt.Format("2006-01-02T15:04:05Z"),
 		UpdatedAt:   user.UpdatedAt.Format("2006-01-02T15:04:05Z"),
-	}
-}
-
-func ToAdminResponseBrief(admin domain.Admin) web.AdminResponse {
-	return web.AdminResponse{
-		ID:        admin.Id,
-		Name:      admin.Name,
-		Email:     admin.Email,
-		CreatedAt: admin.CreatedAt,
 	}
 }
 
@@ -328,63 +371,231 @@ func ToGroupInvitationResponses(invitations []domain.GroupInvitation) []web.Grou
 	return responses
 }
 
-func ToCompanySubmissionResponse(submission domain.CompanySubmission) web.CompanySubmissionResponse {
-	response := web.CompanySubmissionResponse{
-		ID:              submission.Id,
-		UserId:          submission.UserId,
-		Name:            submission.Name,
-		LinkedinUrl:     submission.LinkedinUrl,
-		Website:         submission.Website,
-		Industry:        submission.Industry,
-		Size:            submission.Size,
-		Type:            submission.Type,
-		Logo:            submission.Logo,
-		Tagline:         submission.Tagline,
-		Status:          string(submission.Status),
-		RejectionReason: submission.RejectionReason,
-		ReviewedBy:      submission.ReviewedBy,
-		ReviewedAt:      submission.ReviewedAt,
-		CreatedAt:       submission.CreatedAt,
-		UpdatedAt:       submission.UpdatedAt,
+func ToJoinRequestResponse(request domain.GroupJoinRequest) web.JoinRequestResponse {
+	response := web.JoinRequestResponse{
+		Id:        request.Id,
+		GroupId:   request.GroupId,
+		UserId:    request.UserId,
+		Status:    request.Status,
+		Message:   request.Message,
+		CreatedAt: request.CreatedAt,
+		UpdatedAt: request.UpdatedAt,
 	}
 
-	if submission.User != nil {
-		userResponse := ToUserBriefResponse(*submission.User)
-		response.User = &userResponse
+	if request.User != nil {
+		response.User = web.UserShort{
+			Id:       request.User.Id,
+			Name:     request.User.Name,
+			Username: request.User.Username,
+		}
+
+		if request.User.Photo != "" {
+			photo := request.User.Photo
+			response.User.Photo = &photo
+		}
+
+		if request.User.Headline != "" {
+			headline := request.User.Headline
+			response.User.Headline = &headline
+		}
 	}
 
-	if submission.ReviewedByAdmin != nil {
-		adminResponse := ToAdminResponseBrief(*submission.ReviewedByAdmin)
-		response.ReviewedByAdmin = &adminResponse
+	if request.Group != nil {
+		response.Group = &web.GroupResponse{
+			Id:           request.Group.Id,
+			Name:         request.Group.Name,
+			Description:  request.Group.Description,
+			PrivacyLevel: request.Group.PrivacyLevel,
+		}
+
+		if request.Group.CreatorId != uuid.Nil {
+			response.Group.CreatorId = request.Group.CreatorId
+		}
 	}
 
 	return response
 }
 
-func ToCompanyResponse(company domain.Company) web.CompanyResponse {
-	response := web.CompanyResponse{
-		ID:          company.Id,
-		OwnerId:     company.OwnerId,
-		Name:        company.Name,
-		LinkedinUrl: company.LinkedinUrl,
-		Website:     company.Website,
-		Industry:    company.Industry,
-		Size:        company.Size,
-		Type:        company.Type,
-		Logo:        company.Logo,
-		Tagline:     company.Tagline,
-		Description: company.Description,
-		IsVerified:  company.IsVerified,
-		CreatedAt:   company.CreatedAt,
-		UpdatedAt:   company.UpdatedAt,
+func ToNotificationResponse(notification domain.Notification) web.NotificationResponse {
+    return web.NotificationResponse{
+        Id:           notification.Id,
+        Category:     string(notification.Category),
+        Type:         string(notification.Type),
+        Title:        notification.Title,
+        Message:      notification.Message,
+        Status:       string(notification.Status),
+        ReferenceId:  notification.ReferenceId,
+        ReferenceType: notification.ReferenceType,
+        CreatedAt:    notification.CreatedAt,
+        UpdatedAt:    notification.UpdatedAt,
+        Actor:        nil, // Untuk sementara set nil, nanti bisa diisi jika diperlukan
+    }}
+func ToCompanyFollowerResponse(follower domain.CompanyFollower) web.CompanyFollowerResponse {
+	response := web.CompanyFollowerResponse{
+		Id:        follower.Id.String(),
+		CompanyId: follower.CompanyId.String(),
+		UserId:    follower.UserId.String(),
+		CreatedAt: follower.CreatedAt,
 	}
 
-	if company.Owner != nil {
-		ownerResponse := ToUserBriefResponse(*company.Owner)
-		response.Owner = &ownerResponse
+	// Set company info if available
+	if follower.Company != nil {
+		response.Company = &web.CompanyBasicInfo{
+			Id:   follower.Company.Id.String(),
+			Name: follower.Company.Name,
+			Logo: follower.Company.Logo,
+		}
+	}
+
+	// Set user info if available
+	if follower.User != nil {
+		response.User = &web.UserBasicInfo{
+			Id:       follower.User.Id.String(),
+			Name:     follower.User.Name,
+			Username: follower.User.Username,
+			Photo:    follower.User.Photo,
+		}
 	}
 
 	return response
+}
+
+func ToCompanyFollowerResponses(followers []domain.CompanyFollower) []web.CompanyFollowerResponse {
+	var responses []web.CompanyFollowerResponse
+	for _, follower := range followers {
+		responses = append(responses, ToCompanyFollowerResponse(follower))
+	}
+	return responses
+}
+
+func ToJobApplicationResponse(jobApplication domain.JobApplication) web.JobApplicationResponse {
+	response := web.JobApplicationResponse{
+		Id:                 jobApplication.Id.String(),
+		JobVacancyId:       jobApplication.JobVacancyId.String(),
+		ApplicantId:        jobApplication.ApplicantId.String(),
+		ContactInfo:        ToContactInfoResponse(jobApplication.ContactInfo),
+		CvFilePath:         jobApplication.CvFilePath,
+		MotivationLetter:   jobApplication.MotivationLetter,
+		CoverLetter:        jobApplication.CoverLetter,
+		ExpectedSalary:     jobApplication.ExpectedSalary,
+		AvailableStartDate: jobApplication.AvailableStartDate,
+		Status:             string(jobApplication.Status),
+		RejectionReason:    jobApplication.RejectionReason,
+		Notes:              jobApplication.Notes,
+		ReviewedAt:         jobApplication.ReviewedAt,
+		SubmittedAt:        jobApplication.SubmittedAt,
+		CreatedAt:          jobApplication.CreatedAt,
+		UpdatedAt:          jobApplication.UpdatedAt,
+	}
+
+	if jobApplication.ReviewedBy != nil {
+		reviewedById := jobApplication.ReviewedBy.String()
+		response.ReviewedBy = &reviewedById
+	}
+
+	if jobApplication.JobVacancy != nil {
+		jobVacancyBrief := &web.JobVacancyBriefResponse{
+			Id:       jobApplication.JobVacancy.Id.String(),
+			Title:    jobApplication.JobVacancy.Title,
+			Location: jobApplication.JobVacancy.Location,
+			JobType:  string(jobApplication.JobVacancy.JobType),
+		}
+		if jobApplication.JobVacancy.Company != nil {
+			jobVacancyBrief.Company = jobApplication.JobVacancy.Company.Name
+		}
+		response.JobVacancy = jobVacancyBrief
+	}
+
+	if jobApplication.Applicant != nil {
+		applicant := ToUserProfileResponse(*jobApplication.Applicant)
+		response.Applicant = &applicant
+	}
+
+	if jobApplication.Reviewer != nil {
+		response.Reviewer = &web.UserMinimal{
+			Id:       jobApplication.Reviewer.Id,
+			Name:     jobApplication.Reviewer.Name,
+			Username: jobApplication.Reviewer.Username,
+			Photo:    jobApplication.Reviewer.Photo,
+		}
+	}
+
+	return response
+}
+
+func ToJobApplicationResponses(jobApplications []domain.JobApplication) []web.JobApplicationResponse {
+	var responses []web.JobApplicationResponse
+	for _, jobApplication := range jobApplications {
+		responses = append(responses, ToJobApplicationResponse(jobApplication))
+	}
+	return responses
+}
+
+func ToContactInfoResponse(contactInfo domain.ContactInfo) web.ContactInfoResponse {
+	return web.ContactInfoResponse{
+		Phone:    contactInfo.Phone,
+		Email:    contactInfo.Email,
+		LinkedIn: contactInfo.LinkedIn,
+		Address:  contactInfo.Address,
+	}
+}
+
+func ToJobVacancyResponse(jobVacancy domain.JobVacancy) web.JobVacancyResponse {
+	response := web.JobVacancyResponse{
+		Id:                  jobVacancy.Id.String(),
+		CompanyId:           jobVacancy.CompanyId.String(),
+		Title:               jobVacancy.Title,
+		Description:         jobVacancy.Description,
+		Requirements:        jobVacancy.Requirements,
+		Location:            jobVacancy.Location,
+		JobType:             string(jobVacancy.JobType),
+		ExperienceLevel:     string(jobVacancy.ExperienceLevel),
+		MinSalary:           jobVacancy.MinSalary,
+		MaxSalary:           jobVacancy.MaxSalary,
+		Currency:            jobVacancy.Currency,
+		Skills:              []string(jobVacancy.Skills),
+		Benefits:            jobVacancy.Benefits,
+		WorkType:            string(jobVacancy.WorkType),
+		ApplicationDeadline: jobVacancy.ApplicationDeadline,
+		Status:              string(jobVacancy.Status),
+		TypeApply:           string(jobVacancy.TypeApply),
+		ExternalLink:        jobVacancy.ExternalLink,
+		CreatedAt:           jobVacancy.CreatedAt,
+		UpdatedAt:           jobVacancy.UpdatedAt,
+	}
+
+	// Set creator ID if available
+	if jobVacancy.CreatorId != nil {
+		creatorIdStr := jobVacancy.CreatorId.String()
+		response.CreatorId = &creatorIdStr
+	}
+
+	// Set company info if available
+	if jobVacancy.Company != nil {
+		response.Company = &web.CompanyBasicResponse{
+			Id:   jobVacancy.Company.Id.String(),
+			Name: jobVacancy.Company.Name,
+			Logo: &jobVacancy.Company.Logo,
+		}
+	}
+
+	// Set creator info if available
+	if jobVacancy.Creator != nil {
+		response.Creator = &web.UserBasicResponse{
+			Id:   jobVacancy.Creator.Id.String(),
+			Name: jobVacancy.Creator.Name,
+		}
+	}
+
+	return response
+}
+
+func ToJobVacancyResponses(jobVacancies []domain.JobVacancy) []web.JobVacancyResponse {
+	var responses []web.JobVacancyResponse
+	for _, jobVacancy := range jobVacancies {
+		responses = append(responses, ToJobVacancyResponse(jobVacancy))
+	}
+	return responses
 }
 
 func ToAdminResponse(admin domain.Admin) web.AdminResponse {
@@ -444,40 +655,44 @@ func ToCompanyJoinRequestResponse(request domain.CompanyJoinRequest) web.Company
 	return response
 }
 
-func ToCompanyFollowerResponse(follower domain.CompanyFollower) web.CompanyFollowerResponse {
-	response := web.CompanyFollowerResponse{
-		Id:        follower.Id.String(),
-		CompanyId: follower.CompanyId.String(),
-		UserId:    follower.UserId.String(),
-		CreatedAt: follower.CreatedAt,
+func ToCompanySubmissionResponse(submission domain.CompanySubmission) web.CompanySubmissionResponse {
+	response := web.CompanySubmissionResponse{
+		ID:              submission.Id,
+		UserId:          submission.UserId,
+		Name:            submission.Name,
+		LinkedinUrl:     submission.LinkedinUrl,
+		Website:         submission.Website,
+		Industry:        submission.Industry,
+		Size:            submission.Size,
+		Type:            submission.Type,
+		Logo:            submission.Logo,
+		Tagline:         submission.Tagline,
+		Status:          string(submission.Status),
+		RejectionReason: submission.RejectionReason,
+		ReviewedBy:      submission.ReviewedBy,
+		ReviewedAt:      submission.ReviewedAt,
+		CreatedAt:       submission.CreatedAt,
+		UpdatedAt:       submission.UpdatedAt,
 	}
 
-	// Set company info if available
-	if follower.Company != nil {
-		response.Company = &web.CompanyBasicInfo{
-			Id:   follower.Company.Id.String(),
-			Name: follower.Company.Name,
-			Logo: follower.Company.Logo,
-		}
+	if submission.User != nil {
+		userResponse := ToUserBriefResponse(*submission.User)
+		response.User = &userResponse
 	}
 
-	// Set user info if available
-	if follower.User != nil {
-		response.User = &web.UserBasicInfo{
-			Id:       follower.User.Id.String(),
-			Name:     follower.User.Name,
-			Username: follower.User.Username,
-			Photo:    follower.User.Photo,
-		}
+	if submission.ReviewedByAdmin != nil {
+		adminResponse := ToAdminResponseBrief(*submission.ReviewedByAdmin)
+		response.ReviewedByAdmin = &adminResponse
 	}
 
 	return response
 }
 
-func ToCompanyFollowerResponses(followers []domain.CompanyFollower) []web.CompanyFollowerResponse {
-	var responses []web.CompanyFollowerResponse
-	for _, follower := range followers {
-		responses = append(responses, ToCompanyFollowerResponse(follower))
+func ToAdminResponseBrief(admin domain.Admin) web.AdminResponse {
+	return web.AdminResponse{
+		ID:        admin.Id,
+		Name:      admin.Name,
+		Email:     admin.Email,
+		CreatedAt: admin.CreatedAt,
 	}
-	return responses
 }

@@ -16,14 +16,14 @@ type Group struct {
 	Creator      *User     `gorm:"foreignkey:CreatorId;association_foreignkey:Id"`
 	PrivacyLevel string    `gorm:"size:20;not null;default:'public'"` // public, private
 	InvitePolicy string    `gorm:"size:20;not null;default:'admin'"`  // admin, all_members
+	PostApproval bool      `gorm:"not null;default:false"`            // Tambahkan field ini
 	CreatedAt    time.Time `gorm:"not null"`
 	UpdatedAt    time.Time `gorm:"not null"`
 }
-
 type GroupMember struct {
 	GroupId  uuid.UUID `gorm:"type:uuid;primary_key"`
 	UserId   uuid.UUID `gorm:"type:uuid;primary_key"`
-	Role     string    `gorm:"size:20;not null;default:'member'"` // admin, member
+	Role     string    `gorm:"size:20;not null;default:'member'"` // admin, moderator, member
 	JoinedAt time.Time `gorm:"not null"`
 	IsActive bool      `gorm:"not null;default:true"`
 }
