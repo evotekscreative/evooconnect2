@@ -34,6 +34,7 @@ func setupUserRoutes(
 	jobVacancyController controller.JobVacancyController,
 	jobApplicationController controller.JobApplicationController,
 	userCvStorageController controller.UserCvStorageController,
+	savedJobController controller.SavedJobController,
 ) {
 	// Create user middleware
 	userAuth := middleware.NewUserAuthMiddleware()
@@ -46,6 +47,12 @@ func setupUserRoutes(
 	router.POST("/api/auth/verify", authController.VerifyEmail)
 	router.POST("/api/auth/forgot-password", authController.ForgotPassword)
 	router.POST("/api/auth/reset-password", authController.ResetPassword)
+
+	// ========== SAVED JOBS ROUTES ==========
+	router.GET("/api/saved-jobs", userAuth(savedJobController.FindSavedJobs))
+	router.POST("/api/saved-jobs/:jobVacancyId", userAuth(savedJobController.SaveJob))
+	router.DELETE("/api/saved-jobs/:jobVacancyId", userAuth(savedJobController.UnsaveJob))
+	router.GET("/api/saved-jobs/:jobVacancyId/status", userAuth(savedJobController.IsJobSaved))
 
 	// ========== PUBLIC JOB VACANCY ROUTES ==========
 	// All specific routes MUST come before wildcard routes

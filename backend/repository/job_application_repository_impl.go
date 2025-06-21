@@ -277,7 +277,7 @@ func (repository *JobApplicationRepositoryImpl) FindByApplicantId(ctx context.Co
                 ja.motivation_letter, ja.cover_letter, ja.expected_salary, ja.available_start_date,
                 ja.status, ja.rejection_reason, ja.notes, ja.reviewed_by, ja.reviewed_at,
                 ja.interview_scheduled_at, ja.submitted_at, ja.created_at, ja.updated_at,
-                jv.title as job_title, jv.job_type, jv.location, c.name as company_name, c.logo as company_logo
+                jv.title as job_title, jv.job_type, jv.location, c.id as company_id, c.name as company_name, c.logo as company_logo
                 FROM job_applications ja
                 LEFT JOIN job_vacancies jv ON ja.job_vacancy_id = jv.id
                 LEFT JOIN companies c ON jv.company_id = c.id
@@ -316,7 +316,7 @@ func (repository *JobApplicationRepositoryImpl) FindByApplicantId(ctx context.Co
 			&motivationLetter, &coverLetter, &expectedSalary, &availableStartDate,
 			&app.Status, &rejectionReason, &notes, &app.ReviewedBy, &app.ReviewedAt,
 			&app.InterviewScheduledAt, &app.SubmittedAt, &app.CreatedAt, &app.UpdatedAt,
-			&jobVacancy.Title, &jobVacancy.JobType, &jobVacancy.Location, &company.Name, &companyLogo)
+			&jobVacancy.Title, &jobVacancy.JobType, &jobVacancy.Location, &company.Id, &company.Name, &companyLogo)
 
 		if err != nil {
 			return nil, 0, err
@@ -344,7 +344,6 @@ func (repository *JobApplicationRepositoryImpl) FindByApplicantId(ctx context.Co
 
 		// Set relations
 		jobVacancy.Id = app.JobVacancyId
-		company.Id = jobVacancy.CompanyId
 		if companyLogo.Valid {
 			company.Logo = companyLogo.String
 		}

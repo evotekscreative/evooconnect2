@@ -67,6 +67,7 @@ type JobVacancyResponse struct {
 	TypeApply           string     `json:"type_apply"`
 	ExternalLink        *string    `json:"external_link"`
 	HasApplied          bool       `json:"has_applied"`
+	IsSaved             bool       `json:"is_saved"`
 	CreatedAt           time.Time  `json:"created_at"`
 	UpdatedAt           time.Time  `json:"updated_at"`
 
@@ -105,6 +106,7 @@ type JobVacancyPublicResponse struct {
 	CompanyId           string     `json:"company_id"`
 	Title               string     `json:"title"`
 	Description         string     `json:"description"`
+	Requirements        string     `json:"requirements"`
 	Location            string     `json:"location"`
 	JobType             string     `json:"job_type"`
 	ExperienceLevel     string     `json:"experience_level"`
@@ -112,35 +114,38 @@ type JobVacancyPublicResponse struct {
 	MaxSalary           *float64   `json:"max_salary"`
 	Currency            string     `json:"currency"`
 	Skills              []string   `json:"skills"`
+	Benefits            string     `json:"benefits"`
 	WorkType            string     `json:"work_type"`
 	ApplicationDeadline *time.Time `json:"application_deadline"`
 	TypeApply           string     `json:"type_apply"`
 	ExternalLink        *string    `json:"external_link"`
+	HasApplied          bool       `json:"has_applied"`
+	IsSaved             bool       `json:"is_saved"`
 	CreatedAt           time.Time  `json:"created_at"`
 
-	// Relations
 	Company *CompanyBasicResponse `json:"company,omitempty"`
 }
 
 // Search and filter models
 type JobVacancySearchRequest struct {
-	Query           string   `json:"query"`
+	Search          string   `json:"search"`
 	Location        string   `json:"location"`
-	JobType         []string `json:"job_type"`
-	ExperienceLevel []string `json:"experience_level"`
-	WorkType        []string `json:"work_type"`
+	JobType         string   `json:"job_type"`
+	ExperienceLevel string   `json:"experience_level"`
+	WorkType        string   `json:"work_type"`
 	MinSalary       *float64 `json:"min_salary"`
 	MaxSalary       *float64 `json:"max_salary"`
 	Skills          []string `json:"skills"`
-	CompanyId       *string  `json:"company_id"`
 	Page            int      `json:"page"`
 	PageSize        int      `json:"page_size"`
 }
 
 type JobVacancyBriefResponse struct {
-	Id       uuid.UUID             `json:"id"`
-	Title    string                `json:"title"`
-	JobType  string                `json:"job_type"`
-	Location string                `json:"location"`
-	Company  *CompanyBriefResponse `json:"company,omitempty"`
+	Id         uuid.UUID             `json:"id"`
+	Title      string                `json:"title"`
+	JobType    string                `json:"job_type"`
+	Location   string                `json:"location"`
+	Company    *CompanyBriefResponse `json:"company,omitempty"`
+	HasApplied bool                  `json:"has_applied"`
+	IsSaved    bool                  `json:"is_saved"`
 }

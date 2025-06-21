@@ -38,7 +38,7 @@ func NewRouter(
 	jobVacancyController controller.JobVacancyController,
 	jobApplicationController controller.JobApplicationController,
 	userCvStorageController controller.UserCvStorageController,
-
+	savedJobController controller.SavedJobController,
 ) *httprouter.Router {
 	router := httprouter.New()
 
@@ -70,6 +70,7 @@ func NewRouter(
 		jobVacancyController,
 		jobApplicationController,
 		userCvStorageController,
+		savedJobController,
 	)
 
 	// Setup admin routes

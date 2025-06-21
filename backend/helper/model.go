@@ -645,3 +645,27 @@ func ToJobVacancyResponses(jobVacancies []domain.JobVacancy) []web.JobVacancyRes
 	}
 	return responses
 }
+
+func ToSavedJobResponse(savedJob domain.SavedJob) web.SavedJobResponse {
+	response := web.SavedJobResponse{
+		Id:           savedJob.Id,
+		UserId:       savedJob.UserId,
+		JobVacancyId: savedJob.JobVacancyId,
+		CreatedAt:    savedJob.CreatedAt,
+	}
+
+	if savedJob.JobVacancy != nil {
+		jobVacancyResponse := ToJobVacancyResponse(*savedJob.JobVacancy)
+		response.JobVacancy = &jobVacancyResponse
+	}
+
+	return response
+}
+
+func ToSavedJobResponses(savedJobs []domain.SavedJob) []web.SavedJobResponse {
+	var savedJobResponses []web.SavedJobResponse
+	for _, savedJob := range savedJobs {
+		savedJobResponses = append(savedJobResponses, ToSavedJobResponse(savedJob))
+	}
+	return savedJobResponses
+}

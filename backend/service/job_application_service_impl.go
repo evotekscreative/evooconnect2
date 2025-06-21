@@ -49,9 +49,6 @@ func NewJobApplicationService(
 }
 
 func (service *JobApplicationServiceImpl) Create(ctx context.Context, request web.CreateJobApplicationRequest, jobVacancyId, applicantId uuid.UUID) web.JobApplicationResponse {
-	fmt.Printf("DEBUG: Job application Create called\n")
-	fmt.Printf("DEBUG: JobVacancyId: %s, ApplicantId: %s\n", jobVacancyId.String(), applicantId.String())
-
 	err := service.Validate.Struct(request)
 	helper.PanicIfError(err)
 
@@ -60,15 +57,17 @@ func (service *JobApplicationServiceImpl) Create(ctx context.Context, request we
 	defer helper.CommitOrRollback(tx)
 
 	// Check if job vacancy exists and is active
-	fmt.Printf("DEBUG: About to call JobVacancyRepository.FindById\n")
 	jobVacancy, err := service.JobVacancyRepository.FindById(ctx, tx, jobVacancyId)
 	if err != nil {
-		fmt.Printf("DEBUG: Error in JobVacancyRepository.FindById: %v\n", err)
 		panic(exception.NewNotFoundError(fmt.Sprintf("Job vacancy not found: %v", err)))
 	}
-	fmt.Printf("DEBUG: JobVacancyRepository.FindById completed successfully\n")
 
-	fmt.Println("checking if user is member of company")
+	// Check External Apply Type
+	if jobVacancy.TypeApply == domain.JobApplyTypeExternal {
+		// For external applications, return error
+		panic(exception.NewBadRequestError("This job vacancy requires external application. Please apply through the external link provided."))
+	}
+
 	_, err = service.MemberCompanyReRepository.IsUserMemberOfCompany(ctx, tx, jobVacancy.CompanyId, applicantId)
 	if err != nil {
 		panic(exception.NewForbiddenError("You are not authorized to apply for this job"))
@@ -79,7 +78,6 @@ func (service *JobApplicationServiceImpl) Create(ctx context.Context, request we
 	}
 
 	// Check if user already applied
-	fmt.Println("checking if user has already applied")
 	hasApplied := service.JobApplicationRepository.HasApplied(ctx, tx, jobVacancyId, applicantId)
 	if hasApplied {
 		panic(exception.NewBadRequestError("You have already applied to this job"))
@@ -131,10 +129,8 @@ func (service *JobApplicationServiceImpl) Create(ctx context.Context, request we
 		UpdatedAt:          time.Now(),
 	}
 
-	fmt.Println("Creating job application in repository")
 	jobApplication = service.JobApplicationRepository.Create(ctx, tx, jobApplication)
 
-	fmt.Println("Job application created successfully:", jobApplication.Id)
 	// Load relations for response
 	jobApplication, err = service.JobApplicationRepository.FindById(ctx, tx, jobApplication.Id)
 	helper.PanicIfError(err)
