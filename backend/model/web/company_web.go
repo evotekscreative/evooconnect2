@@ -41,6 +41,42 @@ type CompanyManagementResponse struct {
 	FollowingCount int  `json:"following_count"`
 }
 
+type CompanyPublicResponse struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+
+	LinkedinUrl string    `json:"linkedin_url"`
+	Website     string    `json:"website"`
+	Industry    string    `json:"industry"`
+	Size        string    `json:"size"`
+	Type        string    `json:"type"`
+	Logo        string    `json:"logo"`
+	Tagline     string    `json:"tagline"`
+	IsVerified  bool      `json:"is_verified"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+
+	// Owner information
+	Owner *UserBasicInfo `json:"owner,omitempty"`
+	// Follow information
+	IsFollowing    bool `json:"is_following,omitempty"`
+	FollowersCount int  `json:"followers_count,omitempty"`
+	FollowingCount int  `json:"following_count,omitempty"`
+	// Membership information
+	IsPendingJoinRequest bool   `json:"is_pending_join_request,omitempty"`
+	IsMemberOfCompany    bool   `json:"is_member_of_company,omitempty"`
+	UserRole             string `json:"user_role,omitempty"`
+	// Edit information
+	HasPendingEdit bool   `json:"has_pending_edit,omitempty"`
+	PendingEditId  string `json:"pending_edit_id,omitempty"`
+	// Additional info for management
+	EditRequests []CompanyEditRequestResponse `json:"edit_requests,omitempty"`
+	// Additional info for public view
+	IsPublic bool `json:"is_public,omitempty"` // Indicates if the company is publicly listed
+	// Additional info for company detail view
+	HasJobVacancies bool `json:"has_job_vacancies,omitempty"` // Indicates if the company has job vacancies
+}
+
 // Add new response for company details with follow info
 type CompanyDetailResponse struct {
 	Id          string    `json:"id"`

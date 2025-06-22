@@ -102,10 +102,18 @@ func (service *AuthServiceImpl) GoogleAuth(ctx context.Context, request web.Goog
 	// Check if user exists by email
 	existingUser, err := service.UserRepository.FindByEmail(ctx, tx, email)
 	if err == nil {
-		// User exists, generate token and return
+		// User exists, update their profile information from Google
+		existingUser.Name = name
+		existingUser.Photo = picture
+		existingUser.UpdatedAt = time.Now()
+
+		// Update user in database
+		updatedUser := service.UserRepository.Update(ctx, tx, existingUser)
+
+		// Generate token and return
 		jwtToken, err := utils.GenerateToken(
-			existingUser.Id.String(),
-			existingUser.Email,
+			updatedUser.Id.String(),
+			updatedUser.Email,
 			"user",
 			time.Hour*24*7, // 7 days
 		)
@@ -116,7 +124,7 @@ func (service *AuthServiceImpl) GoogleAuth(ctx context.Context, request web.Goog
 
 		return web.RegisterResponse{
 			Token: jwtToken,
-			User:  existingUser,
+			User:  updatedUser,
 		}, nil
 	}
 

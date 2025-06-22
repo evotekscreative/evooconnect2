@@ -86,6 +86,13 @@ func main() {
 	// Add company follower repository
 	companyFollowerRepository := repository.NewCompanyFollowerRepository()
 
+	// Job-related repositories
+	jobVacancyRepository := repository.NewJobVacancyRepository()
+	jobApplicationRepository := repository.NewJobApplicationRepository()
+	userCvStorageRepository := repository.NewUserCvStorageRepository()
+
+	savedJobRepository := repository.NewSavedJobRepository()
+
 	// ===== Services =====
 	// Notification service (moved up because it's used by many other services)
 	notificationService := service.NewNotificationService(
@@ -259,6 +266,34 @@ func main() {
 		validate,
 	)
 
+	jobVacancyService := service.NewJobVacancyService(
+		jobVacancyRepository,
+		companyRepository,
+		userRepository,
+		savedJobRepository,
+		jobApplicationRepository,
+		db,
+		validate,
+	)
+	jobApplicationService := service.NewJobApplicationService(
+		jobApplicationRepository,
+		userCvStorageRepository,
+		jobVacancyRepository,
+		userRepository,
+		memberCompanyRepository,
+		db,
+		validate,
+	)
+
+	userCvStorageService := service.NewUserCvStorageService(userCvStorageRepository, userRepository, db, validate)
+
+	savedJobService := service.NewSavedJobService(
+		savedJobRepository,
+		jobVacancyRepository,
+		db,
+		validate,
+	)
+
 	// ===== Controllers =====
 	// User-related controllers
 	userController := controller.NewUserController(
@@ -315,6 +350,13 @@ func main() {
 	// Add company follower controller
 	companyFollowerController := controller.NewCompanyFollowerController(companyFollowerService)
 
+	jobVacancyController := controller.NewJobVacancyController(jobVacancyService)
+	jobApplicationController := controller.NewJobApplicationController(jobApplicationService)
+	userCvStorageController := controller.NewUserCvStorageController(userCvStorageService)
+
+	// Add to the controllers section:
+	savedJobController := controller.NewSavedJobController(savedJobService)
+
 	// ===== Router and Middleware =====
 	// Initialize router with all controllers and JWT secret
 	router := app.NewRouter(
@@ -342,6 +384,10 @@ func main() {
 		companyPostController,
 		companyPostCommentController,
 		companyFollowerController,
+		jobVacancyController,
+		jobApplicationController,
+		userCvStorageController,
+		savedJobController,
 	)
 
 	// Seed admin data
@@ -360,7 +406,7 @@ func main() {
 		Handler: handler,
 	}
 
-	fmt.Println("\nServer starting on ", address)
+	fmt.Println("\nServer starting on", "http://"+address)
 	err := server.ListenAndServe()
 	helper.PanicIfError(err)
 }

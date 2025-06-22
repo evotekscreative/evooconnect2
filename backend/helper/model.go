@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"evoconnect/backend/model/domain"
 	"evoconnect/backend/model/web"
+	"time"
 	// "evoconnect/backend/repository"
 )
 
@@ -480,4 +481,191 @@ func ToCompanyFollowerResponses(followers []domain.CompanyFollower) []web.Compan
 		responses = append(responses, ToCompanyFollowerResponse(follower))
 	}
 	return responses
+}
+
+func ToJobApplicationResponse(jobApplication domain.JobApplication) web.JobApplicationResponse {
+	response := web.JobApplicationResponse{
+		Id:                 jobApplication.Id,
+		JobVacancyId:       jobApplication.JobVacancyId,
+		ApplicantId:        jobApplication.ApplicantId,
+		ContactInfo:        ToContactInfoResponse(jobApplication.ContactInfo),
+		CvFilePath:         jobApplication.CvFilePath,
+		MotivationLetter:   jobApplication.MotivationLetter,
+		CoverLetter:        jobApplication.CoverLetter,
+		ExpectedSalary:     jobApplication.ExpectedSalary,
+		AvailableStartDate: jobApplication.AvailableStartDate,
+		Status:             string(jobApplication.Status),
+		RejectionReason:    jobApplication.RejectionReason,
+		Notes:              jobApplication.Notes,
+		ReviewedAt:         jobApplication.ReviewedAt,
+		SubmittedAt:        jobApplication.SubmittedAt,
+		CreatedAt:          jobApplication.CreatedAt,
+		UpdatedAt:          jobApplication.UpdatedAt,
+	}
+
+	if jobApplication.ReviewedBy != nil {
+		response.ReviewedBy = jobApplication.ReviewedBy
+	}
+
+	if jobApplication.JobVacancy != nil {
+		jobVacancyBrief := &web.JobVacancyBriefResponse{
+			Id:       jobApplication.JobVacancy.Id,
+			Title:    jobApplication.JobVacancy.Title,
+			Location: jobApplication.JobVacancy.Location,
+			JobType:  string(jobApplication.JobVacancy.JobType),
+		}
+		if jobApplication.JobVacancy.Company != nil {
+			jobVacancyBrief.Company = &web.CompanyBriefResponse{
+				Id:       jobApplication.JobVacancy.Company.Id,
+				Name:     jobApplication.JobVacancy.Company.Name,
+				Logo:     &jobApplication.JobVacancy.Company.Logo,
+				Industry: jobApplication.JobVacancy.Company.Industry,
+				Website:  &jobApplication.JobVacancy.Company.Website,
+			}
+		}
+		response.JobVacancy = jobVacancyBrief
+	}
+
+	if jobApplication.Applicant != nil {
+		response.Applicant = &web.UserBriefResponse{
+			Id:       jobApplication.Applicant.Id,
+			Name:     jobApplication.Applicant.Name,
+			Username: jobApplication.Applicant.Username,
+			Photo:    jobApplication.Applicant.Photo,
+			Headline: jobApplication.Applicant.Headline,
+		}
+	}
+
+	if jobApplication.Reviewer != nil {
+		response.Reviewer = &web.UserBriefResponse{
+			Id:       jobApplication.Reviewer.Id,
+			Name:     jobApplication.Reviewer.Name,
+			Username: jobApplication.Reviewer.Username,
+			Photo:    jobApplication.Reviewer.Photo,
+		}
+	}
+
+	return response
+}
+
+func ToJobApplicationResponses(jobApplications []domain.JobApplication) []web.JobApplicationResponse {
+	var responses []web.JobApplicationResponse
+	for _, jobApplication := range jobApplications {
+		responses = append(responses, ToJobApplicationResponse(jobApplication))
+	}
+	return responses
+}
+
+func ToContactInfoResponse(contactInfo domain.ContactInfo) web.ContactInfoResponse {
+	return web.ContactInfoResponse{
+		Phone:    contactInfo.Phone,
+		Email:    contactInfo.Email,
+		LinkedIn: contactInfo.LinkedIn,
+		Address:  contactInfo.Address,
+	}
+}
+
+func ToJobVacancyResponse(jobVacancy domain.JobVacancy) web.JobVacancyResponse {
+	var companyInfo *web.CompanyBasicInfo
+	if jobVacancy.Company != nil {
+		companyInfo = &web.CompanyBasicInfo{
+			Id:   jobVacancy.Company.Id.String(),
+			Name: jobVacancy.Company.Name,
+			Logo: jobVacancy.Company.Logo,
+		}
+	}
+
+	var creatorInfo *web.UserBasicInfo
+	if jobVacancy.Creator != nil {
+		creatorInfo = &web.UserBasicInfo{
+			Id:       jobVacancy.Creator.Id.String(),
+			Name:     jobVacancy.Creator.Name,
+			Username: jobVacancy.Creator.Username,
+			Photo:    jobVacancy.Creator.Photo,
+		}
+	}
+
+	var applicationDeadline *time.Time
+	if jobVacancy.ApplicationDeadline != nil {
+		applicationDeadline = jobVacancy.ApplicationDeadline
+	}
+
+	var companyResponse *web.CompanyBasicResponse
+	if companyInfo != nil {
+		companyResponse = &web.CompanyBasicResponse{
+			Id:   companyInfo.Id,
+			Name: companyInfo.Name,
+			Logo: &companyInfo.Logo,
+		}
+	}
+
+	var creatorResponse *web.UserBasicResponse
+	if creatorInfo != nil {
+		creatorResponse = &web.UserBasicResponse{
+			Id:       creatorInfo.Id,
+			Name:     creatorInfo.Name,
+			Username: creatorInfo.Username,
+			Photo:    &creatorInfo.Photo,
+		}
+	}
+
+	creatorIdStr := jobVacancy.CreatorId.String()
+
+	return web.JobVacancyResponse{
+		Id:                  jobVacancy.Id.String(),
+		CompanyId:           jobVacancy.CompanyId.String(),
+		CreatorId:           &creatorIdStr,
+		Title:               jobVacancy.Title,
+		Description:         jobVacancy.Description,
+		Requirements:        jobVacancy.Requirements,
+		Location:            jobVacancy.Location,
+		JobType:             jobVacancy.JobType,
+		ExperienceLevel:     string(jobVacancy.ExperienceLevel),
+		MinSalary:           jobVacancy.MinSalary,
+		MaxSalary:           jobVacancy.MaxSalary,
+		Currency:            jobVacancy.Currency,
+		Skills:              jobVacancy.Skills,
+		Benefits:            jobVacancy.Benefits,
+		WorkType:            string(jobVacancy.WorkType),
+		ApplicationDeadline: applicationDeadline,
+		Status:              string(jobVacancy.Status),
+		TypeApply:           string(jobVacancy.TypeApply),
+		ExternalLink:        jobVacancy.ExternalLink,
+		CreatedAt:           jobVacancy.CreatedAt,
+		UpdatedAt:           jobVacancy.UpdatedAt,
+		Company:             companyResponse,
+		Creator:             creatorResponse,
+	}
+}
+
+func ToJobVacancyResponses(jobVacancies []domain.JobVacancy) []web.JobVacancyResponse {
+	var responses []web.JobVacancyResponse
+	for _, jobVacancy := range jobVacancies {
+		responses = append(responses, ToJobVacancyResponse(jobVacancy))
+	}
+	return responses
+}
+
+func ToSavedJobResponse(savedJob domain.SavedJob) web.SavedJobResponse {
+	response := web.SavedJobResponse{
+		Id:           savedJob.Id,
+		UserId:       savedJob.UserId,
+		JobVacancyId: savedJob.JobVacancyId,
+		CreatedAt:    savedJob.CreatedAt,
+	}
+
+	if savedJob.JobVacancy != nil {
+		jobVacancyResponse := ToJobVacancyResponse(*savedJob.JobVacancy)
+		response.JobVacancy = &jobVacancyResponse
+	}
+
+	return response
+}
+
+func ToSavedJobResponses(savedJobs []domain.SavedJob) []web.SavedJobResponse {
+	var savedJobResponses []web.SavedJobResponse
+	for _, savedJob := range savedJobs {
+		savedJobResponses = append(savedJobResponses, ToSavedJobResponse(savedJob))
+	}
+	return savedJobResponses
 }

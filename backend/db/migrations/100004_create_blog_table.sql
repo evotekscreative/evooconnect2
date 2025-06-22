@@ -1,4 +1,6 @@
 -- SQLBook: Code
+-- +goose Up
+-- +goose StatementBegin
 CREATE TABLE tb_blog (
     id UUID PRIMARY KEY,
     title TEXT NOT NULL,
@@ -10,3 +12,13 @@ CREATE TABLE tb_blog (
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+-- Add index for faster lookups
+CREATE INDEX idx_blog_user_id ON tb_blog(user_id);
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+DROP TABLE IF EXISTS tb_blog CASCADE;
+-- +goose StatementEnd
+-- SQLBook: Code

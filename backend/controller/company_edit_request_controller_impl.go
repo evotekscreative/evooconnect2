@@ -66,6 +66,33 @@ func (controller *CompanyManagementControllerImpl) GetMyCompanies(writer http.Re
 	})
 }
 
+// func (controller *CompanyManagementControllerImpl) GetCompanyById(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+// 	companyIdStr := params.ByName("companyId")
+// 	companyId, err := uuid.Parse(companyIdStr)
+// 	if err != nil {
+// 		helper.WriteJSON(writer, http.StatusBadRequest, web.APIResponse{
+// 			Code:   http.StatusBadRequest,
+// 			Status: "BAD_REQUEST",
+// 			Error:  "Invalid company ID",
+// 		})
+// 		return
+// 	}
+// 	userId, err := helper.GetUserIdFromToken(request)
+// 	helper.PanicIfError(err)
+// 	if userId == uuid.Nil {
+// 		helper.NewBadRequestError("Invalid user ID")
+// 		return
+// 	}
+// 	company := controller.CompanyManagementService.GetCompanyById(request.Context(), companyId, userId)
+
+// 	// If company found, return 200 OK with company data
+// 	helper.WriteJSON(writer, http.StatusOK, web.APIResponse{
+// 		Code:   http.StatusOK,
+// 		Status: "OK",
+// 		Data:   company,
+// 	})
+// }
+
 func (controller *CompanyManagementControllerImpl) GetCompanyDetail(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	companyIdStr := params.ByName("companyId")
 	companyId, err := uuid.Parse(companyIdStr)
