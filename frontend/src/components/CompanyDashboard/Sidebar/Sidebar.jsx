@@ -96,6 +96,7 @@ export default function Sidebar() {
     const [collapseShow, setCollapseShow] = React.useState("hidden");
     const { companyId } = useParams();
     const [selectedCompany, setSelectedCompany] = useState(null);
+    const navigate = useNavigate(); // Tambahkan useNavigate di Sidebar
 
     // Callback jika company berubah
     const handleCompanyChange = (company) => {
@@ -106,14 +107,13 @@ export default function Sidebar() {
         <>
             <nav className="md:left-0 md:block md:fixed md:top-0 md:bottom-0 md:overflow-y-auto md:flex-row md:flex-nowrap md:overflow-visible shadow-xl bg-white flex flex-wrap items-center justify-between relative md:w-64 z-10 py-4 px-6">
                 <div className="md:flex-col md:items-stretch md:min-h-full md:flex-nowrap px-0 flex flex-wrap items-center justify-between w-full mx-auto">
+                    {/* Tombol Add Company */}
                     <button
-                        className="cursor-pointer text-black opacity-50 md:hidden px-3 py-1 text-xl leading-none bg-transparent rounded border border-solid border-transparent"
-                        type="button"
-                        onClick={() => setCollapseShow("bg-white m-2 py-3 px-6")}
+                        className="mb-2 w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md shadow hover:bg-blue-700 transition"
+                        onClick={() => navigate('/create-company')}
                     >
-                        <i className="fas fa-bars"></i>
+                        + Add Company
                     </button>
-
                     <div className="mb-4">
                         <Dropdown
                             selectedCompany={selectedCompany}
@@ -159,23 +159,48 @@ export default function Sidebar() {
 
                             <li className="items-center">
                                 <Link
-                                    className="text-xs uppercase py-3 font-bold block text-gray-700 hover:text-gray-500"
-                                    to="#"
+                                    className={
+                                        "text-xs uppercase py-3 font-bold block " +
+                                        (window.location.href.indexOf("/company-dashboard/manage-post") !== -1
+                                            ? "text-sky-500 hover:text-sky-600"
+                                            : "text-gray-700 hover:text-gray-500")
+                                    }
+                                    to="/company-dashboard/manage-post"
                                 >
-                                    <i className="fas fa-tools mr-2 text-sm text-gray-300"></i>{" "}
+                                    <i
+                                        className={
+                                            "fas fa-tools mr-2 text-sm " +
+                                            (window.location.href.indexOf("/company-dashboard/manage-post") !== -1
+                                                ? "opacity-75"
+                                                : "text-gray-300")
+                                        }
+                                    ></i>{" "}
                                     Manage Post
                                 </Link>
                             </li>
 
-                            <li className="items-center">
-                                <Link
-                                    className="text-xs uppercase py-3 font-bold block text-gray-700 hover:text-gray-500"
-                                    to="#"
-                                >
-                                    <i className="fas fa-table mr-2 text-sm text-gray-300"></i>{" "}
-                                    Manage Vacancy
-                                </Link>
-                            </li>
+                           <li className="items-center">
+    <Link
+        className={
+            "text-xs uppercase py-3 font-bold block " +
+            (window.location.href.indexOf("/company-dashboard/manage-vacancy") !== -1
+                ? "text-sky-500 hover:text-sky-600"
+                : "text-gray-700 hover:text-gray-500")
+        }
+        to={`/company-dashboard/${selectedCompany ? selectedCompany.id : ""}/manage-vacancy`}
+    >
+        <i
+            className={
+                "fas fa-table mr-2 text-sm " +
+                (window.location.href.indexOf("/company-dashboard/manage-vacancy") !== -1
+                    ? "opacity-75"
+                    : "text-gray-300")
+            }
+        ></i>{" "}
+        Manage Vacancy
+    </Link>
+</li>
+
 
                             <li className="items-center">
                                 <Link
@@ -192,10 +217,22 @@ export default function Sidebar() {
 
                             <li className="items-center">
                                 <Link
-                                    className="text-xs uppercase py-3 font-bold block text-gray-700 hover:text-gray-500"
-                                    to="#"
+                                    className={
+                                        "text-xs uppercase py-3 font-bold block " +
+                                        (window.location.href.indexOf("/company-dashboard/company-setting") !== -1
+                                            ? "text-sky-500 hover:text-sky-600"
+                                            : "text-gray-700 hover:text-gray-500")
+                                    }
+                                    to="/company-dashboard/company-setting"
                                 >
-                                    <i className="fas fa-table mr-2 text-sm text-gray-300"></i>{" "}
+                                    <i
+                                        className={
+                                            "fas fa-table mr-2 text-sm " +
+                                            (window.location.href.indexOf("/company-dashboard/company-setting") !== -1
+                                                ? "opacity-75"
+                                                : "text-gray-300")
+                                        }
+                                    ></i>{" "}
                                     Company Setting
                                 </Link>
                             </li>

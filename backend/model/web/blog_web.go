@@ -23,6 +23,7 @@ type BlogResponse struct {
 	Content   string           `json:"content"`
 	Photo     string           `json:"photo"`
 	UserID    string           `json:"user_id"`
+	Warning   string    		`json:"warning,omitempty"`
 	CreatedAt string           `json:"created_at"`
 	UpdatedAt string           `json:"updated_at"`
 	User      BlogUserResponse `json:"user"`

@@ -1,10 +1,15 @@
+import React from "react";
+import { Link } from "react-router-dom";
+import { RefreshCw } from "lucide-react";
+
 export default function GroupsSidebar({
   adminGroups,
   joinedGroups,
   suggestedGroups,
   loadingSuggestions,
   handleJoinGroup,
-  base_url
+  base_url,
+  fetchSuggestedGroups  
 }) {
   return (
     <div className="space-y-4">
@@ -45,7 +50,18 @@ export default function GroupsSidebar({
 
       {/* Suggested Groups */}
       <div className="bg-white rounded-xl shadow p-4">
-        <h3 className="font-medium mb-2 border-b pb-4">Groups You Might Like</h3>
+       <div className="flex justify-between items-center mb-2 border-b pb-4">
+          <h3 className="font-medium">Groups You Might Like</h3>
+          <button
+            onClick={fetchSuggestedGroups}
+            disabled={loadingSuggestions}
+            className="flex items-center gap-1 text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors duration-200 disabled:opacity-50"
+          >
+            <RefreshCw
+              className={`w-4 h-4 ${loadingSuggestions ? "animate-spin" : ""}`}
+            />
+          </button>
+        </div>
         {loadingSuggestions ? (
           <div className="flex justify-center py-4">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
@@ -56,7 +72,7 @@ export default function GroupsSidebar({
               <div key={`suggested-${group.id}`} className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
                 <div className="flex-shrink-0">
                   <img
-                    className="w-10 h-10 rounded-full"
+                    className="w-10 h-10 object-cover rounded-full"
                     src={group.image ? `${base_url}/${group.image}` : "/default-group.png"}
                     alt="Group"
                     onError={(e) => {
@@ -65,7 +81,9 @@ export default function GroupsSidebar({
                   />
                 </div>
                 <div className="flex-1 min-w-0">
+                <Link to={`/groups/${group.id}`}>
                   <h4 className="text-sm font-medium text-gray-900 truncate">{group.name}</h4>
+    </Link>
                   <p className="text-xs text-gray-500 truncate">{group.description}</p>
                   <p className="text-xs text-gray-500 mt-1">{group.members_count} members</p>
                   <p className="text-xs text-blue-500 mt-1">

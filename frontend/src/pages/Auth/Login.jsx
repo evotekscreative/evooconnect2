@@ -124,39 +124,52 @@ function Login() {
 
 
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setAlertInfo({ show: false, type: "", message: "" });
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  setAlertInfo({ show: false, type: "", message: "" });
 
-    if (!validate()) return;
+  if (!validate()) return;
 
-    setLoading(true);
+  setLoading(true);
 
-    try {
-      const response = await axios.post(
-        apiUrl + "/api/auth/login",
-        formData
-      );
+  try {
+    const response = await axios.post(
+      apiUrl + "/api/auth/login",
+      formData
+    );
 
-      // Simpan token dan data user
-      localStorage.setItem("token", response.data.data.token);
- 
+    // Simpan token dan data user
+    localStorage.setItem("token", response.data.data.token);
 
+    setAlertInfo({
+      show: true,
+      type: "success",
+      message: "Login successful!",
+    });
+
+    const navigateTo = location.state?.from?.pathname || "/";
+    navigate(navigateTo, {
+      state: {
+        showAlert: true,
+        alertType: "success",
+        alertMessage: "Login successful!",
+      },
+    });
+  } catch (error) {
+    // Check for account suspension
+    if (
+      error.response?.status === 401 &&
+      error.response?.data?.status === "UNAUTHORIZED" &&
+      error.response?.data?.data?.includes("Your account is suspended")
+    ) {
+      // Extract suspension date from the message
+      const suspensionMessage = error.response.data.data;
       setAlertInfo({
         show: true,
-        type: "success",
-        message: "Login successful!",
+        type: "info",
+        message: suspensionMessage,
       });
-
-      const navigateTo = location.state?.from?.pathname || "/";
-      navigate(navigateTo, {
-        state: {
-          showAlert: true,
-          alertType: "success",
-          alertMessage: "Login successful!",
-        },
-      });
-    } catch (error) {
+    } else {
       setAlertInfo({
         show: true,
         type: "error",
@@ -164,10 +177,12 @@ function Login() {
           error.response?.data?.message ||
           "Login failed. Please check your credentials.",
       });
-    } finally {
-      setLoading(false);
     }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="bg-white min-h-screen">

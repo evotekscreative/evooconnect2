@@ -3,8 +3,10 @@ import axios from "axios";
 import dayjs from "dayjs";
 import { Tooltip as ChartTooltip } from "chart.js";
 import { Link, useParams } from "react-router-dom";
-import { Line } from "react-chartjs-2";
 import Case from "../components/Case.jsx";
+import { CKEditor } from "@ckeditor/ckeditor5-react";
+import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
+
 import {
   SquarePen,
   ThumbsUp,
@@ -24,6 +26,10 @@ import {
   UserPlus,
   Check,
   RefreshCw,
+  NotebookPen,
+  Share2,
+  MoreHorizontal,
+  TriangleAlert,
 } from "lucide-react";
 import {
   Chart as ChartJS,
@@ -33,7 +39,7 @@ import {
   LineElement,
   Legend,
 } from "chart.js";
-import { toast } from "sonner";
+import Alert from "../components/Auth/alert";
 
 ChartJS.register(
   CategoryScale,
@@ -49,27 +55,15 @@ export default function SocialNetworkFeed() {
     import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
   const clientUrl =
     import.meta.env.VITE_APP_CLIENT_URL || "http://localhost:5173";
-  const [postContent, setPostContent] = useState("");
-  const [articleContent, setArticleContent] = useState("");
+  const [userPosts, setUserPosts] = useState([]);
   const [selectedPost, setSelectedPost] = useState(null);
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [activeTab, setActiveTab] = useState("update");
-  const [articleImages, setArticleImages] = useState([]);
   const [currentPostId, setCurrentPostId] = useState(null);
-  const [commentText, setCommentText] = useState("");
-  const [comments, setComments] = useState({});
-  const [loadingComments, setLoadingComments] = useState({});
-  const [commentError, setCommentError] = useState(null);
-  const [expandedReplies, setExpandedReplies] = useState({});
-  const [replyText, setReplyText] = useState("");
-  const [replyingTo, setReplyingTo] = useState(null);
   const [showNotification, setShowNotification] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [postVisibility, setPostVisibility] = useState("public");
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [sharePostId, setSharePostId] = useState(null);
-  const [replyToUser, setReplyToUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [posts, setPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
@@ -79,29 +73,59 @@ export default function SocialNetworkFeed() {
   const [showPostOptions, setShowPostOptions] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingPost, setEditingPost] = useState(null);
-  const [newImages, setNewImages] = useState([]);
-  const [removedImages, setRemovedImages] = useState([]);
   const { postId } = useParams();
-  const [selectedComment, setSelectedComment] = useState(null);
-  const [showCommentOptions, setShowCommentOptions] = useState(false);
-  const [editingCommentId, setEditingCommentId] = useState(null);
-  const [showcaseReplies, setShowcaseReplies] = useState([]);
-  const [showShowcase, setShowShowcase] = useState(false);
-  const [allReplies, setAllReplies] = useState({});
   const [connections, setConnections] = useState([]);
-  const [connectionsCount, setConnectionsCount] = useState(0);
-  const [profileImage, setProfileImage] = useState(null);
   const [suggestedConnections, setSuggestedConnections] = useState([]);
   const [loadingSuggested, setLoadingSuggested] = useState(false);
   const [user, setUser] = useState(null);
-  const [profileViews, setProfileViews] = useState({
-    thisWeek: 0,
-    lastWeek: 0,
-    percentageChange: 0,
-    dailyViews: [],
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingPost, setEditingPost] = useState(null);
+  const [editPostContent, setEditPostContent] = useState("");
+  const [editArticleContent, setEditArticleContent] = useState("");
+  const [editPostImages, setEditPostImages] = useState([]);
+  const [newEditImages, setNewEditImages] = useState([]);
+  const [removedImages, setRemovedImages] = useState([]);
+  const [postVisibility, setPostVisibility] = useState("public");
+  const [editActiveTab, setEditActiveTab] = useState("update");
+  const [likeLoading, setLikeLoading] = useState({});
+  const [expandedReplies, setExpandedReplies] = useState({});
+  const [replyText, setReplyText] = useState("");
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [replyToUser, setReplyToUser] = useState(null);
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [allReplies, setAllReplies] = useState({});
+  const [allRepliesLoaded, setAllRepliesLoaded] = useState({});
+  const [selectedComment, setSelectedComment] = useState(null);
+  const [showCommentOptions, setShowCommentOptions] = useState(false);
+  const [selectedReply, setSelectedReply] = useState(null);
+  const [showReplyOptions, setShowReplyOptions] = useState(false);
+  const [editingReplyId, setEditingReplyId] = useState(null);
+  const [loadingComments, setLoadingComments] = useState({});
+  const [comments, setComments] = useState({});
+  const [commentError, setCommentError] = useState(null);
+  const [commentText, setCommentText] = useState("");
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [selectedReason, setSelectedReason] = useState("");
+  const [customReason, setCustomReason] = useState("");
+  const [reportTargetUserId, setReportTargetUserId] = useState(null);
+
+  const [alertInfo, setAlertInfo] = useState({
+    show: false,
+    type: "success",
+    message: "",
   });
+  const showAlert = (type, message) => {
+    setAlertInfo({
+      show: true,
+      type,
+      message,
+    });
+
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+      setAlertInfo((prev) => ({ ...prev, show: false }));
+    }, 5000);
+  };
 
   // Fetch suggested connections
   const fetchSuggestedConnections = async () => {
@@ -137,7 +161,7 @@ export default function SocialNetworkFeed() {
       }
     } catch (error) {
       console.error("Failed to fetch suggested connections:", error);
-      toast.error("Failed to load suggested connections");
+      showAlert("error", "Failed to load suggested connections");
     } finally {
       setLoadingSuggested(false);
     }
@@ -157,12 +181,12 @@ export default function SocialNetworkFeed() {
         }
       );
 
-      toast.success("Connection request sent successfully");
+      showAlert("success", "Connection request sent successfully");
       fetchConnections();
       fetchSuggestedConnections();
     } catch (error) {
       console.error("Failed to connect with user:", error);
-      toast.error("Failed to send connection request");
+      showAlert("error", "Failed to send connection request");
     }
   };
 
@@ -181,74 +205,14 @@ export default function SocialNetworkFeed() {
       );
       const connectionsData = response.data.data.connections || [];
       setConnections(connectionsData);
-      setConnectionsCount(response.data.data.total || 0);
     } catch (error) {
       console.error("Failed to fetch connections:", error);
-      toast.error("Failed to load connections");
+      showAlert("error", "Failed to load connections");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Fetch profile views
-  const fetchProfileViews = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const [thisWeekResponse, lastWeekResponse] = await Promise.all([
-        axios.get(`${apiUrl}/api/user/profile/views/this-week`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        axios.get(`${apiUrl}/api/user/profile/views/last-week`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
-
-      const thisWeekData = thisWeekResponse.data.data || {};
-      const lastWeekData = lastWeekResponse.data.data || {};
-
-      const days = [];
-      const dailyCounts = [];
-
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const formattedDate = date.toISOString().split("T")[0];
-        days.push(formattedDate);
-
-        const dailyViews =
-          thisWeekData.viewers?.filter(
-            (viewer) =>
-              new Date(viewer.viewed_at).toISOString().split("T")[0] ===
-              formattedDate
-          ) || [];
-
-        dailyCounts.push(dailyViews.length);
-      }
-
-      const thisWeekTotal = thisWeekData.count || 0;
-      const lastWeekTotal = lastWeekData.count || 0;
-
-      let percentageChange = 0;
-      if (lastWeekTotal > 0) {
-        percentageChange =
-          ((thisWeekTotal - lastWeekTotal) / lastWeekTotal) * 100;
-      } else if (thisWeekTotal > 0) {
-        percentageChange = 100;
-      }
-
-      setProfileViews({
-        thisWeek: thisWeekTotal,
-        lastWeek: lastWeekTotal,
-        percentageChange: Math.round(percentageChange),
-        dailyViews: thisWeekData.viewers || [],
-      });
-    } catch (error) {
-      console.error("Failed to fetch profile views:", error);
-      toast.error("Failed to load profile views");
-    }
-  };
-
-  // Initialize user data and fetch connections/views
   useEffect(() => {
     const userData = localStorage.getItem("user");
     if (userData) {
@@ -258,11 +222,9 @@ export default function SocialNetworkFeed() {
     }
   }, []);
 
-  // Fetch data when currentUserId changes
   useEffect(() => {
     if (currentUserId) {
       fetchConnections();
-  
       fetchSuggestedConnections();
     }
   }, [currentUserId]);
@@ -275,57 +237,6 @@ export default function SocialNetworkFeed() {
   const handleClosePostOptions = () => {
     setShowPostOptions(false);
     setSelectedPostId(null);
-  };
-
-  const getLast7DaysData = () => {
-    const { labels, data } = profileViews.chartData || { labels: [], data: [] };
-    if (labels.length > 0 && data.length > 0) {
-      return { labels, data };
-    }
-
-    // Fallback to default data
-    return {
-      labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-      data: [0, 0, 0, 0, 0, 0, 0],
-    };
-  };
-
-  const { labels, data } = getLast7DaysData();
-
-  const chartData = {
-    labels,
-    datasets: [
-      {
-        label: "Profile Views",
-        data,
-        fill: false,
-        borderColor: "#06b6d4",
-        backgroundColor: "#06b6d4",
-        tension: 0.4,
-      },
-    ],
-  };
-
-  const chartOptions = {
-    responsive: true,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: function (context) {
-            return `${context.dataset.label}: ${context.raw}`;
-          },
-        },
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          precision: 0,
-        },
-      },
-    },
   };
 
   const handlePostAction = (action) => {
@@ -428,17 +339,37 @@ export default function SocialNetworkFeed() {
 
   const formatPostTime = (timestamp) => {
     if (!timestamp) return "Just now";
+
+    let postTime;
+    try {
+      postTime = dayjs(timestamp);
+      if (!postTime.isValid()) {
+        postTime = dayjs(new Date(timestamp));
+      }
+    } catch (e) {
+      console.error("Error parsing timestamp:", timestamp, e);
+      return "Just now";
+    }
+
+    if (!postTime.isValid()) {
+      return "Just now";
+    }
+
     const now = dayjs();
-    const postTime = dayjs(timestamp);
     const diffInSeconds = now.diff(postTime, "second");
     const diffInMinutes = now.diff(postTime, "minute");
     const diffInHours = now.diff(postTime, "hour");
     const diffInDays = now.diff(postTime, "day");
 
+    // Handle future dates or timezone issues by showing "Just now" instead of negative values
+    if (diffInSeconds < 0) return "Just now";
+
     if (diffInSeconds < 60) return `${diffInSeconds}s ago`;
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInHours < 24) return `${diffInHours}h ago`;
     if (diffInDays < 7) return `${diffInDays}d ago`;
+
+    // For older dates, return formatted date (e.g. "MMM D, YYYY")
     return postTime.format("MMM D, YYYY");
   };
 
@@ -447,37 +378,33 @@ export default function SocialNetworkFeed() {
       setLoadingComments((prev) => ({ ...prev, [postId]: true }));
       setCommentError(null);
 
-      const userToken = localStorage.getItem("token");
+      const token = localStorage.getItem("token");
       const response = await axios.get(
         `${apiUrl}/api/post-comments/${postId}?limit=10&offset=0&includeReplies=true`,
         {
           headers: {
-            Authorization: `Bearer ${userToken}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       );
 
-      // Separate top-level comments and replies
-      const commentsData = response.data?.data?.comments || [];
-      const topLevelComments = commentsData.filter(
-        (comment) => !comment.parent_id
+      const commentsWithReplies = (response.data?.data?.comments || []).map(
+        (comment) => {
+          return {
+            id: comment.id || Math.random().toString(36).substr(2, 9),
+            content: comment.content || "",
+            user: comment.user || {
+              name: "Unknown User",
+              initials: "UU",
+              username: "unknown",
+              profile_photo: null,
+            },
+            replies: Array.isArray(comment.replies) ? comment.replies : [],
+            repliesCount: comment.replies_count || 0,
+            created_at: comment.created_at,
+          };
+        }
       );
-      const replies = commentsData.filter((comment) => comment.parent_id);
-
-      // Organize replies under their parent comments
-      const commentsWithReplies = topLevelComments.map((comment) => {
-        return {
-          ...comment,
-          user: comment.user || {
-            name: "Unknown User",
-            initials: "UU",
-            username: "unknown",
-            profile_photo: null,
-          },
-          replies: replies.filter((reply) => reply.parent_id === comment.id),
-          repliesCount: comment.replies_count || 0,
-        };
-      });
 
       setComments((prev) => ({
         ...prev,
@@ -490,6 +417,66 @@ export default function SocialNetworkFeed() {
       setLoadingComments((prev) => ({ ...prev, [postId]: false }));
     }
   };
+
+  const fetchReplies = async (commentId) => {
+    try {
+      const userToken = localStorage.getItem("token");
+      const response = await axios.get(
+        `${apiUrl}/api/comments/${commentId}/replies`,
+        {
+          headers: { Authorization: `Bearer ${userToken}` },
+        }
+      );
+
+      const replies = response.data.data.comments || [];
+
+      const processedReplies = replies.map((reply) => ({
+        ...reply,
+        // Create initials for the reply user
+        user: reply.user
+          ? {
+              ...reply.user,
+              initials: reply.user.name
+                ? reply.user.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                : "UU",
+            }
+          : { name: "Unknown User", initials: "UU" },
+        // Ensure replyTo has complete user data including initials
+        replyTo: reply.reply_to_id
+          ? replies.find((r) => r.id === reply.reply_to_id)?.user
+            ? {
+                id: replies.find((r) => r.id === reply.reply_to_id).user.id,
+                name:
+                  replies.find((r) => r.id === reply.reply_to_id).user.name ||
+                  "Unknown User",
+                username:
+                  replies.find((r) => r.id === reply.reply_to_id).user
+                    .username || "unknown",
+                initials: replies.find((r) => r.id === reply.reply_to_id).user
+                  .name
+                  ? replies
+                      .find((r) => r.id === reply.reply_to_id)
+                      .user.name.split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                  : "UU",
+              }
+            : null
+          : null,
+      }));
+
+      setAllReplies((prev) => ({
+        ...prev,
+        [commentId]: processedReplies,
+      }));
+    } catch (error) {
+      console.error("Failed to fetch replies:", error);
+    }
+  };
+
   const fetchAllReplies = async (commentId) => {
     try {
       setLoadingComments((prev) => ({ ...prev, [commentId]: true }));
@@ -497,11 +484,54 @@ export default function SocialNetworkFeed() {
       const userToken = localStorage.getItem("token");
       const response = await axios.get(
         `${apiUrl}/api/comments/${commentId}/replies?limit=100`,
-        { headers: { Authorization: `Bearer ${userToken}` } }
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        }
       );
 
-      const replies = Array.isArray(response.data?.data?.comments)
-        ? response.data.data.comments
+      const replies = Array.isArray(response.data?.data)
+        ? response.data.data.map((reply) => ({
+            ...reply,
+            // Create initials for the reply user
+            user: reply.user
+              ? {
+                  ...reply.user,
+                  initials: reply.user.name
+                    ? reply.user.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                    : "UU",
+                }
+              : { name: "Unknown User", initials: "UU" },
+            // Ensure replyTo has complete user data including initials
+            replyTo: reply.reply_to_id
+              ? response.data.data.find((r) => r.id === reply.reply_to_id)?.user
+                ? {
+                    id: response.data.data.find(
+                      (r) => r.id === reply.reply_to_id
+                    ).user.id,
+                    name:
+                      response.data.data.find((r) => r.id === reply.reply_to_id)
+                        .user.name || "Unknown User",
+                    username:
+                      response.data.data.find((r) => r.id === reply.reply_to_id)
+                        .user.username || "unknown",
+                    initials: response.data.data.find(
+                      (r) => r.id === reply.reply_to_id
+                    ).user.name
+                      ? response.data.data
+                          .find((r) => r.id === reply.reply_to_id)
+                          .user.name.split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                      : "UU",
+                  }
+                : null
+              : null,
+          }))
         : [];
 
       setAllReplies((prev) => ({
@@ -509,79 +539,38 @@ export default function SocialNetworkFeed() {
         [commentId]: replies,
       }));
 
-      // Update the replies count in the main comments
+      // Mark that all replies have been loaded for this comment
+      setAllRepliesLoaded((prev) => ({
+        ...prev,
+        [commentId]: true,
+      }));
+
+      // localStorage.setItem(`replies_${commentId}`, JSON.stringify(replies));
+
+      // Update comment replies count
+      // Setelah menambahkan reply baru, update replies count
       setComments((prev) => {
         const updated = { ...prev };
         if (updated[currentPostId]) {
-          updated[currentPostId] = updated[currentPostId].map((c) =>
-            c.id === commentId ? { ...c, repliesCount: replies.length } : c
-          );
+          updated[currentPostId] = updated[currentPostId].map((c) => {
+            if (c.id === commentId) {
+              return {
+                ...c,
+                repliesCount: (c.replies_count || 0) + 1,
+              };
+            }
+            return c;
+          });
         }
         return updated;
       });
     } catch (error) {
       console.error("Failed to fetch replies:", error);
-      setAllReplies((prev) => ({
-        ...prev,
-        [commentId]: [],
-      }));
+      setCommentError(
+        error.response?.data?.message || "Failed to load replies"
+      );
     } finally {
       setLoadingComments((prev) => ({ ...prev, [commentId]: false }));
-    }
-  };
-
-  const toggleReplies = async (commentId) => {
-    if (!allReplies[commentId] || allReplies[commentId].length === 0) {
-      await fetchAllReplies(commentId);
-    }
-
-    setExpandedReplies((prev) => ({
-      ...prev,
-      [commentId]: !prev[commentId],
-    }));
-  };
-
-  const handleAddComment = async () => {
-    if (!commentText.trim()) {
-      setCommentError("Comment cannot be empty");
-      return;
-    }
-
-    try {
-      const userToken = localStorage.getItem("token");
-      await axios.post(
-        `${apiUrl}/api/post-comments/${currentPostId}`,
-        { content: commentText },
-        {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      setPosts((prevPosts) =>
-        prevPosts.map((post) => {
-          if (post.id === currentPostId) {
-            return {
-              ...post,
-              comments_count: (post.comments_count || 0) + 1,
-            };
-          }
-          return post;
-        })
-      );
-
-      fetchComments(currentPostId);
-      setCommentText("");
-      setCommentError(null);
-      toast.success("Comment added successfully");
-    } catch (error) {
-      console.error("Failed to add comment:", error);
-      setCommentError(
-        error.response?.data?.message ||
-          "Failed to add comment. Please try again."
-      );
     }
   };
 
@@ -589,16 +578,22 @@ export default function SocialNetworkFeed() {
     if (!commentId || !replyText.trim()) return;
 
     try {
-      const userToken = localStorage.getItem("token");
+      const token = localStorage.getItem("token");
+
+      if (editingReplyId) {
+        await handleUpdateReply(editingReplyId);
+        return;
+      }
+
       const response = await axios.post(
         `${apiUrl}/api/comments/${commentId}/replies`,
         {
           content: replyText,
-          replyTo: replyToUser?.id,
+          replyTo: replyingTo,
         },
         {
           headers: {
-            Authorization: `Bearer ${userToken}`,
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         }
@@ -606,11 +601,16 @@ export default function SocialNetworkFeed() {
 
       const newReply = {
         ...response.data.data,
-        user: response.data.data.user || {
-          name: "Current User",
-          initials: "CU",
+        user: {
+          ...response.data.data.user,
+          initials: response.data.data.user?.name
+            ? response.data.data.user.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+            : "CU",
         },
-        replyTo: replyToUser,
+        reply_to: response.data.data.reply_to,
       };
 
       setAllReplies((prev) => ({
@@ -621,11 +621,15 @@ export default function SocialNetworkFeed() {
       setComments((prev) => {
         const updated = { ...prev };
         if (updated[currentPostId]) {
-          updated[currentPostId] = updated[currentPostId].map((c) =>
-            c.id === commentId
-              ? { ...c, repliesCount: (c.repliesCount || 0) + 1 }
-              : c
-          );
+          updated[currentPostId] = updated[currentPostId].map((c) => {
+            if (c.id === commentId) {
+              return {
+                ...c,
+                repliesCount: (c.repliesCount || 0) + 1,
+              };
+            }
+            return c;
+          });
         }
         return updated;
       });
@@ -633,10 +637,11 @@ export default function SocialNetworkFeed() {
       setReplyText("");
       setReplyingTo(null);
       setReplyToUser(null);
+      setCommentError(null);
       setExpandedReplies((prev) => ({ ...prev, [commentId]: true }));
-      toast.success("Reply added successfully");
+      showAlert("success", "Successfully added reply!");
     } catch (error) {
-      console.error("Failed to add reply:", error);
+      showAlert("error", "Failed to add reply");
       setCommentError(
         error.response?.data?.message ||
           "Failed to add reply. Please try again."
@@ -644,243 +649,160 @@ export default function SocialNetworkFeed() {
     }
   };
 
-  const handleOpenShowcase = async (commentId) => {
-    if (!commentId) return;
+  const toggleReplies = async (commentId) => {
+    setEditingReplyId(null);
+    setEditingCommentId(null);
+    setCommentText("");
+    setReplyText("");
+
+    if (!allReplies[commentId] || allReplies[commentId].length === 0) {
+      await fetchReplies(commentId);
+    }
+
+    setExpandedReplies((prev) => ({
+      ...prev,
+      [commentId]: !prev[commentId],
+    }));
+  };
+
+  const handleUpdateReply = async (replyId) => {
+    if (!replyId || !replyText.trim()) return;
 
     try {
-      const userToken = localStorage.getItem("token");
-      const response = await axios.get(
-        `${apiUrl}/api/comments/${commentId}/replies?limit=100`,
+      const token = localStorage.getItem("token");
+      await axios.put(
+        `${apiUrl}/api/comments/${replyId}`,
+        { content: replyText },
         {
           headers: {
-            Authorization: `Bearer ${userToken}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       );
 
-      setShowcaseReplies(response.data?.data || []);
-      setShowShowcase(true);
+      setAllReplies((prev) => {
+        const updatedReplies = { ...prev };
+        Object.keys(updatedReplies).forEach((commentId) => {
+          updatedReplies[commentId] = updatedReplies[commentId].map((reply) => {
+            if (reply.id === replyId) {
+              return {
+                ...reply,
+                content: replyText,
+              };
+            }
+            return reply;
+          });
+        });
+        return updatedReplies;
+      });
+
+      setEditingReplyId(null);
+      setReplyText("");
+      showAlert("success", "Reply updated successfully!");
     } catch (error) {
-      console.error("Failed to load replies:", error);
-      setCommentError("Failed to load replies. Please try again.");
+      console.error("Failed to update reply:", error);
+      showAlert("error", "Failed to update reply. Please try again.");
     }
   };
 
-  const renderShowcase = () => {
-    if (!showShowcase) return null;
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg w-full max-w-md max-h-[80vh] overflow-y-auto p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">All Replies</h3>
-            <button onClick={() => setShowShowcase(false)}>
-              <X size={20} />
-            </button>
-          </div>
-
-          {showcaseReplies.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">No replies yet.</p>
-          ) : (
-            <div className="space-y-3">
-              {showcaseReplies.map((reply) => (
-                <div key={reply.id} className="flex items-start border-b pb-3">
-                  <div className="ml-3">
-                    <p className="font-medium">
-                      {reply.user?.name || "Unknown"}
-                    </p>
-                    <p className="text-sm">{reply.content}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const renderCommentOptionsModal = () => {
-    if (!showCommentOptions || !selectedComment) return null;
-
-    const isCurrentUserComment = selectedComment?.user?.id === currentUserId;
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg w-full max-w-xs mx-4">
-          <div className="p-4">
-            <h3 className="font-medium text-lg mb-3">Comment Options</h3>
-
-            {isCurrentUserComment ? (
-              <>
-                <button
-                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
-                  onClick={() => {
-                    setEditingCommentId(selectedComment.id);
-                    setCommentText(selectedComment.content);
-                    setShowCommentOptions(false);
-                  }}
-                >
-                  <SquarePen size={16} className="mr-2" />
-                  Edit Comment
-                </button>
-                <button
-                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
-                  onClick={() => {
-                    handleDeleteComment(selectedComment.id);
-                    setShowCommentOptions(false);
-                  }}
-                >
-                  <X size={16} className="mr-2" />
-                  Delete Comment
-                </button>
-              </>
-            ) : (
-              <button
-                className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
-                onClick={() => {
-                  console.log("Report comment");
-                  setShowCommentOptions(false);
-                }}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
-                Report Comment
-              </button>
-            )}
-          </div>
-
-          <div className="border-t p-3">
-            <button
-              className="w-full py-2 text-gray-500 hover:text-gray-700"
-              onClick={() => setShowCommentOptions(false)}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const ReplyItem = ({ reply }) => {
-    return (
-      <div className="flex items-start group">
-        {reply.user?.profile_photo ? (
-          <img
-            src={getImageUrl(reply.user.profile_photo)}
-            className="rounded-full mr-2 w-6 h-6"
-            alt={reply.user?.name || "User"}
-          />
-        ) : (
-          <div className="rounded-full bg-gray-200 w-6 h-6 flex items-center justify-center text-xxs mr-2">
-            {reply.user?.initials || "UU"}
-          </div>
-        )}
-        <div className="flex-1">
-          <div className="bg-gray-100 rounded-lg p-2">
-            <div className="flex justify-between items-start">
-              <div className="flex items-center">
-                <h4 className="font-semibold text-xs">
-                  {reply.user?.name || "Unknown User"}
-                </h4>
-                {reply.parent_id && (
-                  <span className="text-gray-500 text-xxs ml-1 flex items-center">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="8"
-                      height="8"
-                      fill="currentColor"
-                      className="mr-1"
-                      viewBox="0 0 16 16"
-                    >
-                      <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z" />
-                    </svg>
-                    Replying to{" "}
-                  </span>
-                )}
-              </div>
-              <small className="text-gray-500 text-xs">
-                {formatPostTime(reply.createdAt || new Date().toISOString())}
-              </small>
-            </div>
-            <p className="text-xs mt-1">{reply.content}</p>
-          </div>
-          <div className="flex justify-between items-center mt-1">
-            {/* <button
-              className="text-blue-500 text-xxs hover:underline"
-              onClick={() => {
-                setReplyingTo(reply.parentCommentId);
-                setReplyToUser(reply.user);
-              }}
-            >
-              Reply
-            </button> */}
-            <button
-              className="opacity-0 group-hover:opacity-100 text-gray-500 text-xxs"
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedComment(reply);
-                setShowCommentOptions(true);
-              }}
-            >
-              <Ellipsis size={12} />
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const handleDeleteComment = async (commentId) => {
+  const handleDeleteReply = async (replyId) => {
     try {
-      const userToken = localStorage.getItem("token");
-      await axios.delete(`${apiUrl}/api/comments/${commentId}`, {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      let parentCommentId = null;
+      Object.keys(allReplies).forEach((commentId) => {
+        if (allReplies[commentId].some((reply) => reply.id === replyId)) {
+          parentCommentId = commentId;
+        }
+      });
+
+      if (!parentCommentId) {
+        throw new Error("Parent comment not found");
+      }
+
+      setAllReplies((prev) => ({
+        ...prev,
+        [parentCommentId]: prev[parentCommentId].filter(
+          (reply) => reply.id !== replyId
+        ),
+      }));
+
+      setComments((prev) => {
+        const updated = { ...prev };
+        if (updated[currentPostId]) {
+          updated[currentPostId] = updated[currentPostId].map((comment) => {
+            if (comment.id === parentCommentId) {
+              return {
+                ...comment,
+                repliesCount: (comment.repliesCount || 1) - 1,
+              };
+            }
+            return comment;
+          });
+        }
+        return updated;
+      });
+
+      await axios.delete(`${apiUrl}/api/comments/${replyId}`, {
         headers: {
-          Authorization: `Bearer ${userToken}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
-      setComments((prev) => {
-        const updatedComments = { ...prev };
-        if (updatedComments[currentPostId]) {
-          updatedComments[currentPostId] = updatedComments[
-            currentPostId
-          ].filter((comment) => comment.id !== commentId);
-        }
-        return updatedComments;
-      });
-
-      setPosts((prevPosts) =>
-        prevPosts.map((post) => {
-          if (post.id === currentPostId) {
-            return {
-              ...post,
-              comments_count: (post.comments_count || 1) - 1,
-            };
-          }
-          return post;
-        })
-      );
-
-      setShowCommentOptions(false);
-      setSelectedComment(null);
-      toast.success("Comment deleted successfully");
+      setShowReplyOptions(false);
+      setSelectedReply(null);
+      showAlert("success", "Reply deleted successfully!");
     } catch (error) {
-      console.error("Failed to delete comment:", error);
-      setCommentError("Failed to delete comment. Please try again.");
+      console.error("Failed to delete reply:", error);
+
+      if (selectedReply) {
+        setAllReplies((prev) => {
+          const updated = { ...prev };
+          const parentCommentId =
+            selectedReply.commentId ||
+            Object.keys(prev).find((id) =>
+              prev[id].some((r) => r.id === selectedReply.id)
+            );
+
+          if (parentCommentId) {
+            updated[parentCommentId] = [
+              ...(updated[parentCommentId] || []),
+              selectedReply,
+            ];
+          }
+          return updated;
+        });
+
+        setComments((prev) => {
+          const updated = { ...prev };
+          const parentCommentId =
+            selectedReply.commentId ||
+            Object.keys(allReplies).find((id) =>
+              allReplies[id].some((r) => r.id === selectedReply.id)
+            );
+
+          if (updated[currentPostId] && parentCommentId) {
+            updated[currentPostId] = updated[currentPostId].map((comment) => {
+              if (comment.id === parentCommentId) {
+                return {
+                  ...comment,
+                  repliesCount: (comment.repliesCount || 0) + 1,
+                };
+              }
+              return comment;
+            });
+          }
+          return updated;
+        });
+      }
+
+      showAlert(
+        "error",
+        error.response?.data?.message || "Failed to delete reply"
+      );
     }
   };
 
@@ -888,13 +810,13 @@ export default function SocialNetworkFeed() {
     if (!commentId || !commentText.trim()) return;
 
     try {
-      const userToken = localStorage.getItem("token");
+      const token = localStorage.getItem("token");
       await axios.put(
         `${apiUrl}/api/comments/${commentId}`,
         { content: commentText },
         {
           headers: {
-            Authorization: `Bearer ${userToken}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -919,239 +841,88 @@ export default function SocialNetworkFeed() {
 
       setEditingCommentId(null);
       setCommentText("");
-      toast.success("Comment updated successfully");
+      showAlert("success", "Comment updated successfully!");
     } catch (error) {
-      console.error("Failed to update comment:", error);
-      setCommentError("Failed to update comment. Please try again.");
+      console.error("Failed to update post:", error);
+      showAlert("error", "Failed to update comment. Please try again.");
     }
   };
 
-  const handleLikePost = async (postId, isCurrentlyLiked) => {
+  const handleDeleteComment = async (commentId) => {
     try {
-      const userToken = localStorage.getItem("token");
-
-      if (isCurrentlyLiked) {
-        await axios.delete(`${apiUrl}/api/post-actions/${postId}/like`, {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-          },
-        });
-      } else {
-        await axios.post(
-          `${apiUrl}/api/post-actions/${postId}/like`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${userToken}`,
-            },
-          }
-        );
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No authentication token found");
       }
 
-      setPosts((prevPosts) =>
-        prevPosts.map((post) => {
-          if (post.id === postId) {
-            return {
-              ...post,
-              likes_count: isCurrentlyLiked
-                ? post.likes_count - 1
-                : post.likes_count + 1,
-              isLiked: !isCurrentlyLiked,
-            };
-          }
-          return post;
-        })
-      );
-    } catch (error) {
-      console.error("Failed to like post:", error);
-      setError("Failed to like post. Please try again.");
-    }
-  };
-
-  const handleDeletePost = async (postId) => {
-    try {
-      const userToken = localStorage.getItem("token");
-      await axios.delete(`${apiUrl}/api/posts/${postId}`, {
-        headers: {
-          Authorization: `Bearer ${userToken}`,
-        },
-      });
-
-      setPosts(posts.filter((post) => post.id !== postId));
-      handleClosePostOptions();
-
-      if (selectedPostId === postId) {
-        setSelectedPostId(null);
-        setPostContent("");
-        setArticleImages([]);
-      }
-      toast.success("Post deleted successfully");
-    } catch (error) {
-      console.error("Failed to delete post:", error);
-      setError("Failed to delete post. Please try again.");
-    }
-  };
-
-  const handleUpdatePost = async () => {
-    if (!editingPost) return;
-
-    setIsLoading(true);
-    try {
-      const userToken = localStorage.getItem("token");
-
-      let uploadedImageUrls = [];
-      if (newImages.length > 0) {
-        const formData = new FormData();
-        newImages.forEach((file) => {
-          formData.append("images", file);
-        });
-
-        const uploadResponse = await axios.post(apiUrl + "/images", formData, {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-            "Content-Type": "multipart/form-data",
-          },
-        });
-        uploadedImageUrls = uploadResponse.data.data.filenames || [];
-      }
-
-      const updatedPost = {
-        content: postContent,
-        images: [...articleImages, ...uploadedImageUrls],
-        removedImages: removedImages,
-        visibility: postVisibility,
-      };
-
-      const response = await axios.put(
-        `${apiUrl}/api/posts/${editingPost.id}`,
-        updatedPost,
+      const response = await axios.delete(
+        `${apiUrl}/api/comments/${commentId}`,
         {
           headers: {
-            Authorization: `Bearer ${userToken}`,
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
         }
       );
 
-      setPosts((prevPosts) =>
-        prevPosts.map((post) =>
-          post.id === editingPost.id ? response.data.data : post
-        )
-      );
+      if (response.status >= 200 && response.status < 300) {
+        setComments((prev) => {
+          const updatedComments = { ...prev };
+          if (updatedComments[currentPostId]) {
+            updatedComments[currentPostId] = updatedComments[
+              currentPostId
+            ].filter((comment) => comment.id !== commentId);
+          }
+          return updatedComments;
+        });
 
-      setShowEditModal(false);
-      setEditingPost(null);
-      setNewImages([]);
-      setRemovedImages([]);
-      toast.success("Post updated successfully");
+        setPosts((prevPosts) =>
+          prevPosts.map((post) => {
+            if (post.id === currentPostId) {
+              return {
+                ...post,
+                comments_count: (post.comments_count || 1) - 1,
+              };
+            }
+            return post;
+          })
+        );
+
+        setShowCommentOptions(false);
+        setSelectedComment(null);
+        setCommentError(null);
+      }
+      showAlert("success", "Comment deleted successfully!");
     } catch (error) {
-      console.error("Failed to update post:", error);
-      setError("Failed to update post. Please try again.");
-    } finally {
-      setIsLoading(false);
+      console.error("Failed to delete comment:", error);
+
+      let errorMessage = "Failed to delete comment. Please try again.";
+      if (error.response) {
+        console.error("Error details:", error.response.data);
+        errorMessage = error.response.data.message || errorMessage;
+
+        if (error.response.status === 401) {
+          errorMessage = "You need to login again to perform this action";
+        } else if (error.response.status === 403) {
+          errorMessage = "You don't have permission to delete this comment";
+        } else if (error.response.status === 404) {
+          errorMessage = "Comment not found";
+        } else if (error.response.status === 405) {
+          errorMessage =
+            "Server doesn't allow this action. Please contact support.";
+        }
+      }
+
+      setCommentError(errorMessage);
     }
   };
 
-  const handleEditPost = (post) => {
-    setEditingPost(post);
-    setPostContent(post.content);
-    setArticleImages(post.images || []);
-    setNewImages([]);
-    setRemovedImages([]);
-    setPostVisibility(post.visibility || "public");
-    setShowEditModal(true);
+  const handleOpenCommentOptions = (comment, e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setSelectedComment(comment);
+    setShowCommentOptions(true);
   };
-
-  const renderLikeButton = (post) => (
-    <button
-      className={`px-2 md:px-3 py-1 rounded text-xs md:text-sm flex items-center ${
-        post.isLiked
-          ? "bg-blue-100 text-blue-600"
-          : "bg-sky-100 hover:bg-sky-200 text-blue-500"
-      }`}
-      onClick={() => handleLikePost(post.id, post.isLiked)}
-    >
-      <ThumbsUp size={12} className="mr-1" />
-      <span className="mr-1">Like</span> ({post.likes_count || 0})
-    </button>
-  );
-
-  const renderPostOptionsModal = () => {
-    if (!showPostOptions || !selectedPostId) return null;
-
-    const post = posts.find((p) => p.id === selectedPostId);
-    const isCurrentUserPost = post?.user?.id === currentUserId;
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg w-full max-w-xs mx-4">
-          <div className="p-4">
-            <h3 className="font-medium text-lg mb-3">Post Options</h3>
-
-            {isCurrentUserPost && (
-              <button
-                className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
-                onClick={() => handleEditPost(post)}
-              >
-                <SquarePen size={16} className="mr-2" />
-                Edit Post
-              </button>
-            )}
-
-            {isCurrentUserPost && (
-              <button
-                className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
-                onClick={() => handleDeletePost(post.id)}
-              >
-                <X size={16} className="mr-2" />
-                Delete Post
-              </button>
-            )}
-
-            <button
-              className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
-              onClick={() => console.log("Report post")}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
-              Report Post
-            </button>
-
-            {!isCurrentUserPost && (
-              <button
-                className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-blue-500"
-                onClick={() => console.log("Connect with user")}
-              >
-                <Users size={16} className="mr-2" />
-                Connect with User
-              </button>
-            )}
-          </div>
-
-          <div className="border-t p-3">
-            <button
-              className="w-full py-2 text-gray-500 hover:text-gray-700"
-              onClick={handleClosePostOptions}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const renderPhotoGrid = (images) => {
     if (images.length === 1) {
       return (
@@ -1255,6 +1026,7 @@ export default function SocialNetworkFeed() {
     try {
       const urlToCopy = `${clientUrl}/post/${sharePostId}`;
 
+      return;
       // Fallback untuk browser yang tidak support Clipboard API
       if (!navigator.clipboard) {
         const textArea = document.createElement("textarea");
@@ -1297,18 +1069,8 @@ export default function SocialNetworkFeed() {
     window.open(url, "_blank");
   };
 
-  const copyToClipboar = () => {
-    navigator.clipboard.writeText(apiUrl + "/post/" + currentPostId);
-    setShowNotification(true);
-    setTimeout(() => setShowNotification(false), 2000);
-  };
-
   const toggleMobileMenu = () => {
     setShowMobileMenu(!showMobileMenu);
-  };
-
-  const saveExpandedRepliesToLocalStorage = (replies) => {
-    localStorage.setItem("expandedReplies", JSON.stringify(replies));
   };
 
   const getImageUrl = (path) => {
@@ -1317,30 +1079,533 @@ export default function SocialNetworkFeed() {
     return `${apiUrl}/${path}`;
   };
 
-  // Fungsi untuk memuat expanded replies dari localStorage
-  const loadExpandedRepliesFromLocalStorage = () => {
-    const saved = localStorage.getItem("expandedReplies");
-    return saved ? JSON.parse(saved) : {};
+  const handleEditPost = (post) => {
+    setEditingPost(post);
+    setEditPostContent(post.content);
+    setEditArticleContent(post.content);
+    setEditPostImages(post.images || []);
+    setNewEditImages([]);
+    setRemovedImages([]);
+    setPostVisibility(post.visibility || "public");
+    setEditActiveTab("update");
+    setShowEditModal(true);
   };
 
-  // Di dalam komponen, gunakan useEffect untuk load saat mount
-  useEffect(() => {
-    const savedReplies = loadExpandedRepliesFromLocalStorage();
-    setExpandedReplies(savedReplies);
-  }, []);
+  const handleNewImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    const newImages = files.map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+    setNewEditImages((prev) => [...prev, ...newImages]);
+  };
 
-  // Update localStorage setiap kali expandedReplies berubah
-  useEffect(() => {
-    saveExpandedRepliesToLocalStorage(expandedReplies);
-  }, [expandedReplies]);
+  const handleRemoveExistingImage = (index) => {
+    const imageToRemove = editPostImages[index];
+    setRemovedImages((prev) => [...prev, imageToRemove]);
+    setEditPostImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleRemoveNewImage = (index) => {
+    URL.revokeObjectURL(newEditImages[index].preview);
+    setNewEditImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdatePost = async () => {
+    if (!editingPost) return;
+
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
+
+      // Add content based on active tab
+      formData.append(
+        "content",
+        editActiveTab === "update" ? editPostContent : editArticleContent
+      );
+      formData.append("visibility", postVisibility);
+
+      // Add new images
+      newEditImages.forEach((image) => {
+        formData.append("images", image.file);
+      });
+
+      // Add removed images IDs if needed
+      removedImages.forEach((image) => {
+        if (typeof image === "object" && image.id) {
+          formData.append("removedImages[]", image.id);
+        }
+      });
+
+      const response = await axios.put(
+        `${apiUrl}/api/posts/${editingPost.id}`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      if (response.data.success) {
+        showAlert("success", "Post updated successfully");
+        // Tutup modal edit terlebih dahulu
+        setShowEditModal(false);
+
+        // Kemudian refresh data
+        if (postId) {
+          // Jika melihat single post, reload
+          const fetchResponse = await axios.get(
+            `${apiUrl}/api/posts/${postId}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+          setPosts([fetchResponse.data.data]);
+        } else {
+          // Jika di feed, refetch posts
+          fetchPosts();
+        }
+      }
+    } catch (error) {
+      console.error("Failed to update post:", error);
+      showAlert("error", "Failed to update post");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLikePost = async (postId, isCurrentlyLiked) => {
+    try {
+      const token = localStorage.getItem("token");
+      setLikeLoading((prev) => ({ ...prev, [postId]: true }));
+
+      // Optimistic update untuk semua state yang relevan
+      setPosts((prevPosts) =>
+        prevPosts.map((post) => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              likes_count: isCurrentlyLiked
+                ? post.likes_count - 1
+                : post.likes_count + 1,
+              isLiked: !isCurrentlyLiked,
+            };
+          }
+          return post;
+        })
+      );
+
+      setUserPosts((prevPosts) =>
+        prevPosts.map((post) => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              likes_count: isCurrentlyLiked
+                ? post.likes_count - 1
+                : post.likes_count + 1,
+              isLiked: !isCurrentlyLiked,
+            };
+          }
+          return post;
+        })
+      );
+
+      // API call
+      const response = await (isCurrentlyLiked
+        ? axios.delete(`${apiUrl}/api/post-actions/${postId}/like`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+        : axios.post(
+            `${apiUrl}/api/post-actions/${postId}/like`,
+            {},
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          ));
+
+      // Update dengan data aktual dari server
+      const updatedPost = response.data.data;
+      setPosts((prevPosts) =>
+        prevPosts.map((post) => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              likes_count: updatedPost.likes_count,
+              isLiked: updatedPost.is_liked,
+            };
+          }
+          return post;
+        })
+      );
+
+      setUserPosts((prevPosts) =>
+        prevPosts.map((post) => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              likes_count: updatedPost.likes_count,
+              isLiked: updatedPost.is_liked,
+            };
+          }
+          return post;
+        })
+      );
+    } catch (error) {
+      console.error("Failed to like post:", error);
+
+      // Rollback jika error
+      setPosts((prevPosts) =>
+        prevPosts.map((post) => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              likes_count: isCurrentlyLiked
+                ? post.likes_count
+                : post.likes_count - 1,
+              isLiked: isCurrentlyLiked,
+            };
+          }
+          return post;
+        })
+      );
+
+      setUserPosts((prevPosts) =>
+        prevPosts.map((post) => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              likes_count: isCurrentlyLiked
+                ? post.likes_count
+                : post.likes_count - 1,
+              isLiked: isCurrentlyLiked,
+            };
+          }
+          return post;
+        })
+      );
+
+      showAlert("error", "Failed to update like status");
+    } finally {
+      setLikeLoading((prev) => ({ ...prev, [postId]: false }));
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!commentText.trim()) {
+      setCommentError("Komentar tidak boleh kosong");
+      return;
+    }
+
+    try {
+      const userToken = localStorage.getItem("token");
+      await axios.post(
+        `${apiUrl}/api/post-comments/${currentPostId}`,
+        { content: commentText },
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      setPosts((prevPosts) =>
+        prevPosts.map((post) => {
+          if (post.id === currentPostId) {
+            return {
+              ...post,
+              comments_count: (post.comments_count || 0) + 1, // Pastikan ada fallback
+            };
+          }
+          return post;
+        })
+      );
+
+      fetchComments(currentPostId);
+      setCommentText("");
+      setCommentError(null);
+      setAlertInfo({
+        show: true,
+        type: "success",
+        message: "Successfully added comment!",
+      });
+    } catch (error) {
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: "Failed to add comment",
+      });
+      setCommentError(
+        error.response?.data?.message ||
+          "Terjadi kesalahan saat menambahkan komentar. Silakan coba lagi."
+      );
+    }
+  };
+
+  const getInitials = (name) => {
+    if (!name || typeof name !== "string") return "UU";
+
+    const names = name.trim().split(/\s+/); // Pisahkan berdasarkan spasi
+
+    // Ambil maksimal 3 huruf pertama dari nama depan, tengah, dan belakang
+    const initials = names
+      .slice(0, 2)
+      .map((word) => word[0].toUpperCase())
+      .join("");
+
+    return initials || "UU";
+  };
+
+  const closeCommentModal = () => {
+    setShowCommentModal(false);
+    setCurrentPostId(null);
+    setCommentText("");
+    setReplyingTo(null);
+    setReplyText("");
+  };
+
+  const handleReportClick = (targetUserId, targetType, id) => {
+    if (!targetUserId) {
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: "Cannot identify the content owner",
+      });
+      return;
+    }
+
+    if (!id) {
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: "Cannot identify the content to report",
+      });
+      return;
+    }
+
+    setReportTargetUserId(targetUserId);
+    setSelectedPostId(id); // Untuk post
+    setSelectedComment(null); // Clear comment data jika melaporkan post
+
+    setShowReportModal(true);
+    setShowPostOptions(false);
+    setShowCommentOptions(false);
+  };
+
+  const ReportModal = ({
+    showReportModal,
+    setShowReportModal,
+    selectedReason,
+    setSelectedReason,
+    customReason,
+    setCustomReason,
+    handleReportComment,
+    targetUserId,
+    selectedPostId,
+    selectedComment,
+    setAlertInfo, // Add this prop
+  }) => {
+    return (
+      <div
+        className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] ${
+          showReportModal ? "block" : "hidden"
+        }`}
+      >
+        <div className="bg-white rounded-lg w-full max-w-md mx-4 p-5">
+          <h3 className="text-lg font-semibold mb-4">Report this content</h3>
+          <p className="mb-3 text-sm text-gray-600">
+            Please select a reason for reporting
+          </p>
+
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            {[
+              "Harassment",
+              "Fraud",
+              "Spam",
+              "Misinformation",
+              "Hate speech",
+              "Threats or violence",
+              "Self-harm",
+              "Graphic content",
+              "Extremist organizations",
+              "Sexual content",
+              "Fake account",
+              "Child exploitation",
+              "Illegal products",
+              "Violation",
+              "Other",
+            ].map((reason) => (
+              <button
+                key={reason}
+                className={`py-2 px-3 text-sm border rounded-full ${
+                  selectedReason === reason
+                    ? "bg-blue-100 border-blue-500 text-blue-700"
+                    : "bg-white hover:bg-gray-100"
+                }`}
+                onClick={() => setSelectedReason(reason)}
+              >
+                {reason}
+              </button>
+            ))}
+          </div>
+
+          {selectedReason === "Other" && (
+            <textarea
+              className="w-full p-2 border rounded mb-3 text-sm"
+              rows={3}
+              placeholder="Please describe the reason for your report"
+              value={customReason}
+              onChange={(e) => setCustomReason(e.target.value)}
+            />
+          )}
+
+          <div className="flex justify-end gap-2">
+            <button
+              className="text-gray-500 hover:text-gray-700"
+              onClick={() => {
+                setShowReportModal(false);
+                setSelectedReason("");
+                setCustomReason("");
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              className={`px-4 py-2 rounded text-white ${
+                selectedReason
+                  ? "bg-blue-600 hover:bg-blue-700"
+                  : "bg-gray-300 cursor-not-allowed"
+              }`}
+              disabled={!selectedReason}
+              onClick={() => {
+                const reasonText =
+                  selectedReason === "Other" ? customReason : selectedReason;
+
+                // Determine the correct content type and ID
+                const contentType = selectedComment ? "comment" : "post";
+                const contentId = selectedComment
+                  ? selectedComment.id
+                  : selectedPostId;
+
+                // Ensure all parameters are defined
+                if (targetUserId && contentId && reasonText) {
+                  handleReportComment(
+                    targetUserId,
+                    contentType,
+                    contentId,
+                    reasonText
+                  );
+                } else {
+                  console.error("Report parameters:", {
+                    targetUserId,
+                    contentType,
+                    contentId,
+                    reasonText,
+                  });
+                  setAlertInfo({
+                    show: true,
+                    type: "error",
+                    message: "Missing information needed to submit report",
+                  });
+                }
+              }}
+            >
+              Report
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const handleReportComment = async (
+    targetUserId,
+    targetType,
+    targetId,
+    reason
+  ) => {
+    // Validate all required parameters
+    if (!targetUserId || !targetType || !targetId) {
+      console.error("Missing required parameters:", {
+        targetUserId,
+        targetType,
+        targetId,
+      });
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: "Unable to report content due to missing information",
+      });
+      return;
+    }
+
+    // Prevent reporting own content
+    if (targetUserId === user.id) {
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: "You cannot report your own content",
+      });
+      return;
+    }
+
+    try {
+      console.log("Submitting report with:", {
+        targetUserId,
+        targetType,
+        targetId,
+        reason,
+        reporterId: user.id,
+      });
+
+      const userToken = localStorage.getItem("token");
+      const response = await axios.post(
+        `${apiUrl}/api/reports/${targetUserId}/${targetType}/${targetId}`,
+        { reason, reporterId: user.id },
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data.code == 201) {
+        setAlertInfo({
+          show: true,
+          type: "success",
+          message: "Report submitted successfully",
+        });
+      }
+    } catch (error) {
+      console.error("Report submission error:", error);
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: error.response?.data?.error || "Failed to submit report",
+      });
+    } finally {
+      setShowReportModal(false);
+      setSelectedReason("");
+      setCustomReason("");
+    }
+  };
 
   return (
     <Case>
-      <div className="flex flex-col md:flex-row bg-gray-50 px-4 md:px-6 lg:px-12 xl:px-32 py-4 md:py-6">
-        {renderCommentOptionsModal()}
-        {renderShowcase()}
-        {/* Mobile Menu Button */}
+      <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
+        <Alert
+          type={alertInfo.type}
+          message={alertInfo.message}
+          isVisible={alertInfo.show}
+          onClose={() => setAlertInfo((prev) => ({ ...prev, show: false }))}
+        />
+      </div>
 
+      <div className="flex flex-col md:flex-row bg-gray-50 px-4 md:px-6 lg:px-12 xl:px-32 py-4 md:py-6">
         {/* Notification Alert */}
         {showNotification && (
           <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50">
@@ -1406,30 +1671,55 @@ export default function SocialNetworkFeed() {
                 >
                   {/* Post Header */}
                   <div className="border-b pb-3 flex items-center mb-3">
-                    {post.user?.photo ? (
-                      <img
-                        src={getImageUrl(post.user.photo)}
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = "/placeholder-user.png";
-                        }}
-                        className="rounded-full mr-2 w-8 md:w-10 h-8 md:h-10"
-                        alt={post.user?.name || "User"}
-                      />
-                    ) : (
-                      <div className="rounded-full bg-gray-200 w-8 md:w-10 h-8 md:h-10 flex items-center justify-center text-xs md:text-sm mr-2">
-                        {post.user?.initial || "UU"}
-                      </div>
-                    )}
-                    <div>
-                      <h6 className="font-bold mb-0 text-sm md:text-base">
+                    <div className="rounded-full bg-gray-200 w-8 md:w-10 h-8 md:h-10 flex items-center justify-center text-xs md:text-sm mr-2">
+                      {posts[0]?.user?.photo ? (
+                  <img
+                    src={apiUrl + "/" + posts[0].user.photo}
+                    alt="Profile"
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-300">
+                    <span className="text-lg font-bold text-gray-600">
+                     {getInitials(post.user?.name)}
+                    </span>
+                  </div>
+                )}
+                      
+                    </div>
+                    <div className="ml-1 mt-2">
+                      <h6
+                        className="font-bold mb-0 text-sm cursor-pointer hover:underline"
+                        onClick={() =>
+                          fetchUserProfile(post.user.username, post.user.id)
+                        }
+                      >
                         {post.user?.name || "Unknown User"}
                       </h6>
-                      <small className="text-gray-500 text-xs">
-                        {formatPostTime(
-                          post.createdAt || new Date().toISOString()
+                      <div className="flex items-center">
+                        <small className="text-gray-500 text-xs">
+                          {formatPostTime(
+                            post.created_at || new Date().toISOString()
+                          )}
+                        </small>
+                        <span className="text-gray-400 mx-1 text-xs">•</span>
+                        {post.group && (
+                          <small className="text-gray-500 text-xs">
+                            <div className="flex items-center text-xs text-gray-500">
+                              <a
+                                href="#"
+                                className="hover:underline text-blue-500"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  navigate(`/groups/${post.group.id}`);
+                                }}
+                              >
+                                Posted in {post.group.name}
+                              </a>
+                            </div>
+                          </small>
                         )}
-                      </small>
+                      </div>
                     </div>
                     <div className="ml-auto relative group">
                       <button
@@ -1462,53 +1752,74 @@ export default function SocialNetworkFeed() {
                   {post.images && renderPhotoGrid(post.images)}
 
                   {/* Post Actions */}
-                  <div className="border-t px-4 py-2 flex justify-between">
-                    <button
-                      className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${
-                        post.isLiked
-                          ? "text-blue-600 bg-blue-50"
-                          : "text-blue-600 hover:bg-blue-100"
-                      }`}
-                      onClick={() => handleLikePost(post.id, post.isLiked)}
-                    >
-                      <ThumbsUp size={14} className="mr-2" />
-                      Like ({post.likes_count || 0})
-                    </button>
-
-                    <button className="flex items-center justify-center w-1/3 py-2 rounded-lg text-blue-600 hover:bg-blue-50">
-                      <MessageCircle size={14} className="mr-2" />
-                      Comment ({post.comments_count || 0})
-                    </button>
-
-                    <button
-                      className="flex items-center justify-center w-1/3 py-2 rounded-lg text-blue-600 hover:bg-blue-50"
-                      onClick={() => handleOpenShareModal(post.id)}
-                    >
-                      <Share size={14} className="mr-2" />
-                      Share
-                    </button>
-                  </div>
-
-                  {/* Add Comment dengan Button Kirim */}
-                  <div id="comments-section" className="flex items-start mb-6">
-                    <div className="rounded-full bg-gray-200 w-8 h-8 flex items-center justify-center text-xs mr-3">
-                      {currentUserId ? "ME" : "UU"}
+                  <div>
+                    <div className="flex items-center space-x-4 px-4 py-1 text-xs text-gray-500 justify-between">
+                      <div className="flex items-center space-x-1 pt-1">
+                        <span className="text-black flex">
+                          <ThumbsUp size={14} className="mr-1" />{" "}
+                          {post.likes_count || 0}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-1 cursor-pointer">
+                        <span
+                          className="text-black"
+                          onClick={() => openCommentModal(post.id)}
+                        >
+                          {post.comments_count || 0} Comment
+                        </span>
+                      </div>
                     </div>
-                    <div
-                      className="flex-1 flex"
-                      onClick={() => {
-                        setCurrentPostId(post.id);
-                        if (
-                          !comments[post.id] ||
-                          comments[post.id].length === 0
-                        ) {
-                          fetchComments(post.id);
-                        }
-                      }}
-                    >
+
+                    <div className="border-t border-gray-200 px-4 py-2 flex justify-between">
+                      <button
+                        className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${
+                          post.isLiked
+                            ? "text-blue-600 bg-blue-50"
+                            : "text-black hover:bg-gray-100"
+                        }`}
+                        onClick={() => handleLikePost(post.id, post.isLiked)}
+                      >
+                        <ThumbsUp size={14} className="mr-2" />
+                        Like
+                      </button>
+                      <button
+                        className="flex items-center justify-center w-1/3 py-2 rounded-lg text-black hover:bg-gray-100"
+                        onClick={() => openCommentModal(post.id)}
+                      >
+                        <MessageCircle size={14} className="mr-2" />
+                        Comment
+                      </button>
+
+                      <button
+                        className="flex items-center justify-center w-1/3 py-2 rounded-lg text-black hover:bg-gray-100"
+                        onClick={() => handleOpenShareModal(post.id)}
+                      >
+                        <Share2 size={14} className="mr-2" />
+                        Share
+                      </button>
+                    </div>
+                  </div>
+                  {/* Comment Form */}
+                  <div className="border-t px-4 py-3">
+                    <div className="flex items-center mb-2">
+                      <div className="rounded-full bg-gray-200 w-8 md:w-10 h-8 md:h-10 flex items-center justify-center text-xs md:text-sm mr-2">
+                      {posts[0]?.user?.photo ? (
+                  <img
+                    src={apiUrl + "/" + posts[0].user.photo}
+                    alt="Profile"
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-300">
+                    <span className="text-lg font-bold text-gray-600">
+                     {getInitials(post.user?.name)}
+                    </span>
+                  </div>
+                )}
+                      </div>
                       <input
                         type="text"
-                        className="flex-1 border rounded-l-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
                         placeholder="Write a comment..."
                         value={commentText}
                         onChange={(e) => setCommentText(e.target.value)}
@@ -1517,191 +1828,496 @@ export default function SocialNetworkFeed() {
                         }
                       />
                       <button
-                        className="bg-blue-500 text-white px-4 py-2 rounded-r-lg text-sm"
                         onClick={handleAddComment}
+                        disabled={!commentText.trim()}
+                        className="bg-blue-500 text-white px-3 py-2 rounded-r-lg hover:bg-blue-600 disabled:bg-blue-300 transition-colors duration-200"
                       >
-                        Kirim
+                        Post
                       </button>
                     </div>
+                    {commentError && (
+                      <span className="text-red-500 text-xs">
+                        {commentError}
+                      </span>
+                    )}
                   </div>
-                  {commentError && (
-                    <p className="text-red-500 text-xs mt-1 mb-4">
-                      {commentError}
-                    </p>
-                  )}
 
-                  {/* Comments List - Selalu Tampil */}
-                  <div className="mt-4 border-t pt-4">
-                    {loadingComments[post.id] ? (
-                      <div className="flex justify-center py-4">
-                        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
-                      </div>
-                    ) : !comments[post.id] || comments[post.id].length === 0 ? (
-                      <p className="text-gray-500 text-center py-4">
-                        No comments yet. Be the first to comment!
-                      </p>
-                    ) : (
+                  {/* Comments Section */}
+                  {comments[currentPostId]?.length > 0 && (
+                    <div className="border-t border-gray-200 px-4 py-4 bg-gray-50 rounded-b-lg">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-4">
+                        Comments ({comments[currentPostId]?.length || 0})
+                      </h4>
                       <div className="space-y-4">
-                        {comments[post.id].map((comment) => (
-                          <div key={comment.id} className="flex items-start">
-                            {comment.user?.photo ? (
-                              <img
-                                src={comment.user.photo}
-                                className="rounded-full mr-3 w-8 h-8"
-                                alt={comment.user?.name || "User"}
-                              />
-                            ) : (
-                              <div className="rounded-full bg-gray-200 w-8 h-8 flex items-center justify-center text-xs mr-3">
-                                {comment.user?.initials || "UU"}
+                        {comments[currentPostId].map((comment) => (
+                          <div key={comment.id} className="group">
+                            <div className="flex items-start gap-3">
+                              {/* Comment Avatar */}
+                              <div className="flex-shrink-0">
+                                {comment.user?.profile_photo ? (
+                                  <Link
+                                    to={`/user-profile/${comment.user.username}`}
+                                  >
+                                    <img
+                                      className="rounded-full w-9 h-9 object-cover border-2 border-white hover:border-blue-200 transition-colors"
+                                      src={
+                                        comment.user.profile_photo.startsWith(
+                                          "http"
+                                        )
+                                          ? comment.user.profile_photo
+                                          : `${apiUrl}/${comment.user.profile_photo}`
+                                      }
+                                      alt="Profile"
+                                      onError={(e) => {
+                                        e.target.onerror = null;
+                                        e.target.src = "";
+                                        e.target.parentElement.classList.add(
+                                          "bg-gray-200"
+                                        );
+                                      }}
+                                    />
+                                  </Link>
+                                ) : (
+                                  <div className="w-9 h-9 flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100 rounded-full text-xs font-medium text-gray-700">
+                                    {getInitials(comment.user?.name)}
+                                  </div>
+                                )}
                               </div>
-                            )}
-                            <div className="flex-1">
-                              <div className="bg-gray-100 rounded-lg p-3">
-                                <div className="flex justify-between items-start">
-                                  <h4 className="font-semibold text-sm">
-                                    {comment.user?.name || "Unknown User"}
-                                  </h4>
-                                  <span className="text-gray-500 text-xs">
-                                    {formatPostTime(comment.createdAt)}
-                                  </span>
+
+                              {/* Comment Content */}
+                              <div className="flex-1 min-w-0">
+                                <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
+                                  <div className="flex justify-between items-start">
+                                    <div>
+                                      <Link
+                                        to={`/user-profile/${comment.user.username}`}
+                                        className="font-semibold text-sm text-gray-800 hover:text-blue-600 hover:underline"
+                                      >
+                                        {comment.user?.name || "Unknown User"}
+                                      </Link>
+                                      <span className="text-xs text-gray-500 ml-2">
+                                        {formatPostTime(comment.created_at)}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      {comment.user?.id === currentUserId && (
+                                        <button
+                                          className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedComment(comment);
+                                            setShowCommentOptions(true);
+                                          }}
+                                        >
+                                          <MoreHorizontal size={16} />
+                                        </button>
+                                      )}
+
+                                      {comment.user?.id !== currentUserId && (
+                                        <button
+                                          className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-gray-100"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (comment.user?.id) {
+                                              handleReportClick(
+                                                comment.user.id,
+                                                "comment",
+                                                comment.id
+                                              );
+                                            }
+                                          }}
+                                        >
+                                          <TriangleAlert size={16} />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Comment Text */}
+                                  {editingCommentId === comment.id ? (
+                                    <div className="mt-2 flex gap-2">
+                                      <input
+                                        type="text"
+                                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-transparent"
+                                        value={commentText}
+                                        onChange={(e) =>
+                                          setCommentText(e.target.value)
+                                        }
+                                        autoFocus
+                                      />
+                                      <button
+                                        className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-sm transition-colors"
+                                        onClick={() =>
+                                          handleUpdateComment(comment.id)
+                                        }
+                                      >
+                                        Update
+                                      </button>
+                                      <button
+                                        className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-lg text-sm transition-colors"
+                                        onClick={() =>
+                                          setEditingCommentId(null)
+                                        }
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <p className="text-sm text-gray-700 mt-2 leading-relaxed">
+                                      {comment.content}
+                                    </p>
+                                  )}
+
+                                  {/* Comment Actions */}
+                                  <div className="flex justify-between items-center mt-3">
+                                    <div className="flex gap-4">
+                                      <button
+                                        onClick={() => {
+                                          setReplyingTo(comment.id);
+                                          setReplyToUser(comment.user);
+                                        }}
+                                        className="text-xs text-blue-500 hover:text-blue-700 flex items-center"
+                                      >
+                                        <svg
+                                          xmlns="http://www.w3.org/2000/svg"
+                                          className="h-4 w-4 mr-1"
+                                          fill="none"
+                                          viewBox="0 0 24 24"
+                                          stroke="currentColor"
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                                          />
+                                        </svg>
+                                        Reply
+                                      </button>
+                                      {(comment.repliesCount > 0 ||
+                                        allReplies[comment.id]?.length > 0) && (
+                                        <button
+                                          onClick={() =>
+                                            toggleReplies(comment.id)
+                                          }
+                                          className="text-xs text-gray-500 hover:text-gray-700 flex items-center"
+                                        >
+                                          <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            className="h-4 w-4 mr-1"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                          >
+                                            <path
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                              strokeWidth={2}
+                                              d="M19 9l-7 7-7-7"
+                                            />
+                                          </svg>
+                                          {expandedReplies[comment.id]
+                                            ? "Hide replies"
+                                            : `Show replies (${comment.repliesCount})`}
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
 
-                                {editingCommentId === comment.id ? (
-                                  <div className="mt-2 flex">
+                                {/* Reply Input */}
+                                {replyingTo === comment.id && (
+                                  <div className="mt-3 flex gap-2">
                                     <input
                                       type="text"
-                                      className="flex-1 border rounded-l-lg px-3 py-2 text-sm"
-                                      value={commentText}
-                                      onChange={(e) =>
-                                        setCommentText(e.target.value)
-                                      }
-                                    />
-                                    <button
-                                      className="bg-blue-500 text-white px-3 py-2 rounded-r-lg text-sm"
-                                      onClick={() =>
-                                        handleUpdateComment(comment.id)
-                                      }
-                                    >
-                                      Update
-                                    </button>
-                                    <button
-                                      className="bg-gray-500 text-white px-3 py-2 rounded-r-lg text-sm ml-1"
-                                      onClick={() => {
-                                        setEditingCommentId(null);
-                                        setCommentText("");
-                                      }}
-                                    >
-                                      Cancel
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <p className="text-sm mt-1">
-                                    {comment.content}
-                                  </p>
-                                )}
-                              </div>
-
-                              {/* Comment Actions */}
-                              <div className="flex items-center mt-2 space-x-4">
-                                <button
-                                  className="text-blue-500 text-xs hover:underline"
-                                  onClick={() => {
-                                    setReplyingTo(comment.id);
-                                    setReplyToUser(comment.user);
-                                  }}
-                                >
-                                  Reply
-                                </button>
-
-                                <button
-                                  className="text-gray-500 text-xs hover:underline"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedComment(comment);
-                                    setShowCommentOptions(true);
-                                  }}
-                                >
-                                  <Ellipsis size={14} />
-                                </button>
-
-                                {(comment.repliesCount > 0 ||
-                                  allReplies[comment.id]?.length > 0) && (
-                                  <button
-                                    className="text-gray-500 text-xs hover:underline"
-                                    onClick={() => toggleReplies(comment.id)}
-                                  >
-                                    {expandedReplies[comment.id]
-                                      ? "Hide replies"
-                                      : `View replies (${
-                                          comment.repliesCount ||
-                                          allReplies[comment.id]?.length ||
-                                          0
-                                        })`}
-                                  </button>
-                                )}
-                              </div>
-
-                              {/* Reply Form */}
-                              {replyingTo === comment.id && (
-                                <div className="mt-3 flex items-start">
-                                  <div className="rounded-full bg-gray-200 w-6 h-6 flex items-center justify-center text-xxs mr-2">
-                                    {currentUserId ? "ME" : "UU"}
-                                  </div>
-                                  <div className="flex-1 flex">
-                                    <input
-                                      type="text"
-                                      className="flex-1 border rounded-l-lg px-3 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      className="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-transparent"
                                       placeholder={`Reply to ${
-                                        comment.user?.name || "user"
+                                        replyToUser?.name || "user"
                                       }...`}
                                       value={replyText}
                                       onChange={(e) =>
                                         setReplyText(e.target.value)
                                       }
+                                      onKeyPress={(e) =>
+                                        e.key === "Enter" &&
+                                        handleReply(
+                                          comment.id,
+                                          replyToUser || comment.user
+                                        )
+                                      }
+                                      autoFocus
                                     />
                                     <button
-                                      className="bg-blue-500 text-white px-3 py-1 rounded-r-lg text-xs"
+                                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm transition-colors"
                                       onClick={() =>
-                                        handleReply(comment.id, replyToUser)
+                                        handleReply(
+                                          comment.id,
+                                          replyToUser || comment.user
+                                        )
                                       }
                                     >
                                       Post
                                     </button>
                                   </div>
-                                </div>
-                              )}
+                                )}
 
-                              {/* Replies Section */}
-                              {expandedReplies[comment.id] && (
-                                <div className="mt-3 ml-6 pl-4 border-l-2 border-gray-200 space-y-3">
-                                  {(Array.isArray(allReplies[comment.id])
-                                    ? allReplies[comment.id]
-                                    : comment.replies || []
-                                  ).map((reply) => (
-                                    <ReplyItem key={reply.id} reply={reply} />
-                                  ))}
+                                {/* Replies Section */}
+                                {expandedReplies[comment.id] && (
+                                  <div className="mt-3 ml-3 pl-5 border-l-2 border-gray-100 space-y-3">
+                                    {loadingComments[comment.id] ? (
+                                      <div className="flex justify-center py-2">
+                                        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500"></div>
+                                      </div>
+                                    ) : (
+                                      (allReplies[comment.id] || []).map(
+                                        (reply) => (
+                                          <div key={reply.id} className="group">
+                                            <div className="flex gap-3">
+                                              {/* Reply Avatar */}
+                                              <div className="flex-shrink-0">
+                                                {reply.user?.profile_photo ? (
+                                                  <Link
+                                                    to={`/user-profile/${reply.user.username}`}
+                                                  >
+                                                    <img
+                                                      className="rounded-full w-8 h-8 object-cover border-2 border-white hover:border-blue-200 transition-colors"
+                                                      src={
+                                                        reply.user.profile_photo.startsWith(
+                                                          "http"
+                                                        )
+                                                          ? reply.user
+                                                              .profile_photo
+                                                          : `${apiUrl}/${reply.user.profile_photo}`
+                                                      }
+                                                      alt="Profile"
+                                                      onError={(e) => {
+                                                        e.target.onerror = null;
+                                                        e.target.src = "";
+                                                        e.target.parentElement.classList.add(
+                                                          "bg-gray-200"
+                                                        );
+                                                      }}
+                                                    />
+                                                  </Link>
+                                                ) : (
+                                                  <div className="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 rounded-full text-xs font-medium text-gray-600">
+                                                    {getInitials(
+                                                      reply.user?.name
+                                                    )}
+                                                  </div>
+                                                )}
+                                              </div>
 
-                                  {comment.repliesCount >
-                                    (allReplies[comment.id]?.length ||
-                                      comment.replies?.length ||
-                                      0) && (
-                                    <button
-                                      className="text-blue-500 text-xs"
-                                      onClick={() =>
-                                        fetchAllReplies(comment.id)
-                                      }
-                                    >
-                                      Load more replies...
-                                    </button>
-                                  )}
-                                </div>
-                              )}
+                                              {/* Reply Content */}
+                                              <div className="flex-1 min-w-0">
+                                                <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                                                  {/* Reply User Info */}
+                                                  <div className="flex items-center justify-between">
+                                                    <div className="flex items-center">
+                                                      <Link
+                                                        to={`/user-profile/${reply.user.username}`}
+                                                        className="text-xs font-semibold text-gray-800 hover:text-blue-600 hover:underline"
+                                                      >
+                                                        {reply.user?.name ||
+                                                          "Unknown User"}
+                                                      </Link>
+                                                      {reply.reply_to &&
+                                                        reply.parent_id !==
+                                                          reply.reply_to
+                                                            .reply_to_id && (
+                                                          <span className="text-xs text-gray-500 ml-1 flex items-center">
+                                                            <svg
+                                                              xmlns="http://www.w3.org/2000/svg"
+                                                              width="10"
+                                                              height="10"
+                                                              fill="currentColor"
+                                                              className="mr-1"
+                                                              viewBox="0 0 16 16"
+                                                            >
+                                                              <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z" />
+                                                            </svg>
+                                                            <Link
+                                                              to={`/user-profile/${reply.reply_to.username}`}
+                                                              className="text-blue-500 hover:underline"
+                                                            >
+                                                              {
+                                                                reply.reply_to
+                                                                  .name
+                                                              }
+                                                            </Link>
+                                                          </span>
+                                                        )}
+                                                      <span className="text-xs text-gray-500 ml-2">
+                                                        {formatPostTime(
+                                                          reply.created_at
+                                                        )}
+                                                      </span>
+                                                    </div>
+
+                                                    {/* Reply Actions */}
+                                                    <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                      {reply.user?.id ===
+                                                        currentUserId && (
+                                                        <button
+                                                          className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setSelectedReply(
+                                                              reply
+                                                            );
+                                                            setShowReplyOptions(
+                                                              true
+                                                            );
+                                                          }}
+                                                        >
+                                                          <MoreHorizontal
+                                                            size={14}
+                                                          />
+                                                        </button>
+                                                      )}
+
+                                                      {reply.user?.id !==
+                                                        currentUserId && (
+                                                        <button
+                                                          className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-gray-100"
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (
+                                                              reply.user?.id
+                                                            ) {
+                                                              handleReportClick(
+                                                                reply.user.id,
+                                                                "comment",
+                                                                reply.id
+                                                              );
+                                                            }
+                                                          }}
+                                                        >
+                                                          <TriangleAlert
+                                                            size={14}
+                                                          />
+                                                        </button>
+                                                      )}
+                                                    </div>
+                                                  </div>
+
+                                                  {/* Reply Text */}
+                                                  {editingReplyId ===
+                                                  reply.id ? (
+                                                    <div className="mt-2 flex gap-2">
+                                                      <input
+                                                        type="text"
+                                                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-transparent"
+                                                        value={replyText}
+                                                        onChange={(e) =>
+                                                          setReplyText(
+                                                            e.target.value
+                                                          )
+                                                        }
+                                                        autoFocus
+                                                      />
+                                                      <button
+                                                        className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-xs transition-colors"
+                                                        onClick={() =>
+                                                          handleUpdateReply(
+                                                            reply.id
+                                                          )
+                                                        }
+                                                      >
+                                                        Update
+                                                      </button>
+                                                      <button
+                                                        className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-lg text-xs transition-colors"
+                                                        onClick={() => {
+                                                          setEditingReplyId(
+                                                            null
+                                                          );
+                                                          setReplyText("");
+                                                        }}
+                                                      >
+                                                        Cancel
+                                                      </button>
+                                                    </div>
+                                                  ) : (
+                                                    <p className="text-xs text-gray-700 mt-1 leading-relaxed">
+                                                      {reply.content}
+                                                    </p>
+                                                  )}
+
+                                                  {/* Reply Actions */}
+                                                  <div className="flex items-center mt-2">
+                                                    <button
+                                                      className="text-xs text-blue-500 hover:text-blue-700 flex items-center"
+                                                      onClick={() => {
+                                                        setReplyingTo(reply.id);
+                                                        setReplyToUser(
+                                                          reply.user
+                                                        );
+                                                      }}
+                                                    >
+                                                      <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        className="h-3 w-3 mr-1"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        stroke="currentColor"
+                                                      >
+                                                        <path
+                                                          strokeLinecap="round"
+                                                          strokeLinejoin="round"
+                                                          strokeWidth={2}
+                                                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                                                        />
+                                                      </svg>
+                                                      Reply
+                                                    </button>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
+
+                                            {/* Nested Reply Input */}
+                                            {replyingTo === reply.id && (
+                                              <div className="mt-3 ml-11 flex gap-2">
+                                                <input
+                                                  type="text"
+                                                  className="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-transparent"
+                                                  placeholder={`Reply to ${
+                                                    replyToUser?.name ||
+                                                    reply.user.name
+                                                  }...`}
+                                                  value={replyText}
+                                                  onChange={(e) =>
+                                                    setReplyText(e.target.value)
+                                                  }
+                                                  autoFocus
+                                                />
+                                                <button
+                                                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm transition-colors"
+                                                  onClick={() =>
+                                                    handleReply(
+                                                      reply.id,
+                                                      replyToUser || reply.user
+                                                    )
+                                                  }
+                                                >
+                                                  Post
+                                                </button>
+                                              </div>
+                                            )}
+                                          </div>
+                                        )
+                                      )
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
                         ))}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               ))
             )}
@@ -1791,42 +2407,204 @@ export default function SocialNetworkFeed() {
               <div className="p-4">
                 <h3 className="font-medium text-lg mb-3">Post Options</h3>
 
-                {/* Report Option */}
+                {/* Cek apakah post ini milik user yang sedang login */}
+                {posts.find((p) => p.id === selectedPostId)?.user?.id ===
+                currentUserId ? (
+                  <>
+                    {/* Options for user's own post */}
+                    <button
+                      className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
+                      onClick={() => {
+                        handleEditPost(
+                          posts.find((p) => p.id === selectedPostId)
+                        );
+                        handleClosePostOptions();
+                      }}
+                    >
+                      <SquarePen size={16} className="mr-2" />
+                      Edit Post
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    {/* Options for other user's post */}
+                    <button
+                      className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
+                      onClick={() => {
+                        // setShowReportModal(true);
+                        showAlert("info", "Report feature coming soon");
+                        handleClosePostOptions();
+                      }}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 mr-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                        />
+                      </svg>
+                      Report Post
+                    </button>
+                    {!connections.some(
+                      (conn) =>
+                        conn.id ===
+                        posts.find((p) => p.id === selectedPostId)?.user?.id
+                    ) && (
+                      <button
+                        className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-blue-500"
+                        onClick={() => {
+                          handleConnectWithUser(
+                            posts.find((p) => p.id === selectedPostId)?.user?.id
+                          );
+                          handleClosePostOptions();
+                        }}
+                      >
+                        <Users size={16} className="mr-2" />
+                        Connect with User
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+              <div className="border-t p-3">
                 <button
-                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
-                  onClick={() => handlePostAction("report")}
+                  className="w-full py-2 text-gray-500 hover:text-gray-700"
+                  onClick={handleClosePostOptions}
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 mr-2"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                    />
-                  </svg>
-                  Report Post
+                  Close
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
 
-                {/* Connect Option (only show if post doesn't belong to current user) */}
-                <button
-                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-blue-500"
-                  onClick={() => handlePostAction("connect")}
-                >
-                  <Users size={16} className="mr-2" />
-                  Connect with User
-                </button>
+        {showCommentOptions && selectedComment && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg w-full max-w-xs mx-4">
+              <div className="p-4">
+                <h3 className="font-medium text-lg mb-3">Comment Options</h3>
+
+                {/* Check if the comment belongs to the current user */}
+                {selectedComment.user?.id === currentUserId ? (
+                  <>
+                    <button
+                      className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
+                      onClick={() => {
+                        setEditingCommentId(selectedComment.id);
+                        setCommentText(selectedComment.content);
+                        setShowCommentOptions(false);
+                      }}
+                    >
+                      <SquarePen size={16} className="mr-2" />
+                      Edit Comment
+                    </button>
+                    <button
+                      className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
+                      onClick={() => handleDeleteComment(selectedComment.id)}
+                    >
+                      <X size={16} className="mr-2" />
+                      Delete Comment
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
+                    onClick={() => {
+                      if (selectedComment.user?.id) {
+                        handleReportClick(
+                          selectedComment.user.id,
+                          "comment",
+                          selectedComment.id
+                        );
+                      }
+                      setShowCommentOptions(false);
+                    }}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4 mr-2"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                      />
+                    </svg>
+                    Report Comment
+                  </button>
+                )}
               </div>
 
               <div className="border-t p-3">
                 <button
                   className="w-full py-2 text-gray-500 hover:text-gray-700"
-                  onClick={handleClosePostOptions}
+                  onClick={() => setShowCommentOptions(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showReplyOptions && selectedReply && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg w-full max-w-xs mx-4">
+              <div className="p-4">
+                <h3 className="font-medium text-lg mb-3">Reply Options</h3>
+
+                {selectedReply.user?.id === user.id ? (
+                  <>
+                    <button
+                      className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
+                      onClick={() => {
+                        setEditingReplyId(selectedReply.id);
+                        setReplyText(selectedReply.content);
+                        setShowReplyOptions(false);
+                      }}
+                    >
+                      <SquarePen size={16} className="mr-2" />
+                      Edit Reply
+                    </button>
+                    <button
+                      className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
+                      onClick={() => handleDeleteReply(selectedReply.id)}
+                    >
+                      <X size={16} className="mr-2" />
+                      Delete Reply
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
+                    onClick={() => {
+                      if (selectedReply.user?.id) {
+                        // Handle report reply
+                      }
+                      setShowReplyOptions(false);
+                    }}
+                  >
+                    <TriangleAlert size={16} className="mr-2" />
+                    Report Reply
+                  </button>
+                )}
+              </div>
+
+              <div className="border-t p-3">
+                <button
+                  className="w-full py-2 text-gray-500 hover:text-gray-700"
+                  onClick={() => setShowReplyOptions(false)}
                 >
                   Cancel
                 </button>
@@ -2221,6 +2999,246 @@ export default function SocialNetworkFeed() {
               </div>
             </div>
           </div>
+        )}
+        {showEditModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg w-full max-w-2xl p-6">
+              <h3 className="text-lg font-medium mb-4">Edit Post</h3>
+
+              {/* Tabs for edit modal */}
+              <div className="flex border-b pb-2 space-x-1 mb-4">
+                <button
+                  className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${
+                    editActiveTab === "update"
+                      ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                      : "text-gray-500 hover:text-blue-500"
+                  }`}
+                  onClick={() => setEditActiveTab("update")}
+                >
+                  <SquarePen size={16} className="mr-2" />
+                  Simple Text
+                </button>
+                <button
+                  className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${
+                    editActiveTab === "article"
+                      ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                      : "text-gray-500 hover:text-blue-500"
+                  }`}
+                  onClick={() => setEditActiveTab("article")}
+                >
+                  <NotebookPen size={16} className="mr-2" />
+                  Rich Text Editor
+                </button>
+              </div>
+
+              {/* Editor content based on active tab */}
+              {editActiveTab === "update" ? (
+                <textarea
+                  className="w-full border rounded-lg p-2 mb-4"
+                  rows="4"
+                  value={editPostContent.replace(/<[^>]+>/g, "")}
+                  onChange={(e) => setEditPostContent(e.target.value)}
+                />
+              ) : (
+                <div className="border rounded-md overflow-hidden text-black ck-editor-mode mb-4">
+                  <CKEditor
+                    editor={ClassicEditor}
+                    data={editArticleContent}
+                    onChange={(e, editor) =>
+                      setEditArticleContent(editor.getData())
+                    }
+                    config={{
+                      toolbar: [
+                        "heading",
+                        "|",
+                        "bold",
+                        "italic",
+                        "link",
+                        "bulletedList",
+                        "numberedList",
+                        "|",
+                        "undo",
+                        "redo",
+                      ],
+                      heading: {
+                        options: [
+                          {
+                            model: "paragraph",
+                            title: "Paragraph",
+                            class: "ck-heading_paragraph",
+                          },
+                          {
+                            model: "heading1",
+                            view: "h1",
+                            title: "Heading 1",
+                            class: "ck-heading_heading1",
+                          },
+                          {
+                            model: "heading2",
+                            view: "h2",
+                            title: "Heading 2",
+                            class: "ck-heading_heading2",
+                          },
+                          {
+                            model: "heading3",
+                            view: "h3",
+                            title: "Heading 3",
+                            class: "ck-heading_heading3",
+                          },
+                        ],
+                      },
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Existing Images */}
+              {editPostImages.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium mb-2">Current Images</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    {editPostImages.map((img, index) => (
+                      <div key={`existing-${index}`} className="relative">
+                        <img
+                          src={
+                            typeof img === "string"
+                              ? img.startsWith("http")
+                                ? img
+                                : `${apiUrl}/${img}`
+                              : img.preview
+                          }
+                          className="w-full h-24 object-cover rounded-md border"
+                          alt={`Current image ${index + 1}`}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "";
+                          }}
+                        />
+                        <button
+                          className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1"
+                          onClick={() => handleRemoveExistingImage(index)}
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* New Images */}
+              {newEditImages.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium mb-2">New Images</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    {newEditImages.map((img, index) => (
+                      <div key={`new-${index}`} className="relative">
+                        <img
+                          src={img.preview}
+                          className="w-full h-24 object-cover rounded-md border"
+                          alt={`New image ${index + 1}`}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "";
+                          }}
+                        />
+                        <button
+                          className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1"
+                          onClick={() => handleRemoveNewImage(index)}
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Add Images Button */}
+              <div className="mb-4">
+                <input
+                  type="file"
+                  id="edit-post-images"
+                  className="hidden"
+                  onChange={handleNewImageUpload}
+                  multiple
+                  accept="image/*"
+                />
+                <label
+                  htmlFor="edit-post-images"
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
+                >
+                  <ImageIcon size={14} className="mr-2" />
+                  Add Images
+                </label>
+              </div>
+
+              {/* Visibility Options */}
+              <div className="mb-4">
+                <h4 className="text-sm font-medium mb-2">Visibility</h4>
+                <div className="flex space-x-2">
+                  {[
+                    ["public", <Globe size={14} />, "Public"],
+                    ["private", <LockKeyhole size={14} />, "Private"],
+                    ["connections", <Users size={14} />, "Connections"],
+                  ].map(([type, icon, label]) => (
+                    <button
+                      key={type}
+                      onClick={() => setPostVisibility(type)}
+                      className={`flex items-center px-3 py-2 rounded-md text-sm ${
+                        postVisibility === type
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-gray-100 text-gray-700"
+                      }`}
+                    >
+                      {icon}
+                      <span className="ml-2">{label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <button
+                  className="px-4 py-2 bg-gray-300 rounded-lg"
+                  onClick={() => setShowEditModal(false)}
+                  disabled={isLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg flex items-center"
+                  onClick={handleUpdatePost}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Changes"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showReportModal && (
+          <ReportModal
+            showReportModal={showReportModal}
+            setShowReportModal={setShowReportModal}
+            selectedReason={selectedReason}
+            setSelectedReason={setSelectedReason}
+            customReason={customReason}
+            setCustomReason={setCustomReason}
+            handleReportComment={handleReportComment}
+            targetUserId={reportTargetUserId}
+            selectedPostId={selectedPostId}
+            selectedComment={selectedComment}
+            setAlertInfo={setAlertInfo} // Pass this prop
+          />
         )}
       </div>
     </Case>

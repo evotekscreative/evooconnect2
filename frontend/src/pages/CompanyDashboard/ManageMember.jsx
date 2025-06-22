@@ -4,6 +4,7 @@ import Sidebar from "../../components/CompanyDashboard/Sidebar/sidebar";
 import { toast } from 'react-toastify';
 import { useRef } from "react";
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import Case from "../../components/Case";
 
 const ManageMember = ({ currentUserRole }) => {
   const { company_id } = useParams();
@@ -28,6 +29,8 @@ const ManageMember = ({ currentUserRole }) => {
   const [pendingRejectReason, setPendingRejectReason] = useState('');
   const [pendingRejectingId, setPendingRejectingId] = useState(null);
   const [roleFilter, setRoleFilter] = useState('all');
+  const [showRemoveModal, setShowRemoveModal] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState(null);
 
   const fetchCompanies = async () => {
     try {
@@ -208,6 +211,7 @@ const ManageMember = ({ currentUserRole }) => {
 
       if (response.ok) {
         toast.success('Request approved');
+        setShowPendingModal(false); // Tutup modal setelah approve
         fetchPendingRequests();
         fetchMyJoinRequests();
         fetchMembers();
@@ -240,6 +244,7 @@ const ManageMember = ({ currentUserRole }) => {
         toast.success('Request rejected');
         setPendingRejectingId(null);
         setPendingRejectReason('');
+        setShowPendingModal(false); // Tutup modal setelah reject
         fetchPendingRequests();
         fetchMyJoinRequests();
       } else {
@@ -251,13 +256,18 @@ const ManageMember = ({ currentUserRole }) => {
     }
   };
 
-  const handleRemoveMember = async (memberId) => {
-    if (!window.confirm('Are you sure you want to remove this member?')) return;
+  const handleRemoveMember = (memberId) => {
+    const member = members.find(m => m.id === memberId);
+    setMemberToRemove(member);
+    setShowRemoveModal(true);
+  };
 
+  const confirmRemoveMember = async () => {
+    if (!memberToRemove) return;
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        `${import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:3000'}/api/member-companies/${memberId}`,
+        `${import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:3000'}/api/member-companies/${memberToRemove.id}`,
         {
           method: 'DELETE',
           headers: {
@@ -277,6 +287,8 @@ const ManageMember = ({ currentUserRole }) => {
       console.error('Error removing member:', error);
       toast.error('Failed to remove member');
     }
+    setShowRemoveModal(false);
+    setMemberToRemove(null);
   };
 
   const handleUpdateRole = async () => {
@@ -410,6 +422,7 @@ const ManageMember = ({ currentUserRole }) => {
               <option value="all">All Roles</option>
               <option value="super_admin">Super Admin</option>
               <option value="admin">Admin</option>
+              <option value="hrd">HRD</option>
               <option value="member">Member</option>
             </select>
           </div>
@@ -456,6 +469,7 @@ const ManageMember = ({ currentUserRole }) => {
                         <span className={`text-xs px-2 py-1 rounded 
               ${member.role === 'admin' ? 'bg-blue-200 text-blue-700' : ''}
               ${member.role === 'super_admin' ? 'bg-purple-200 text-purple-700' : ''}
+              ${member.role === 'hrd' ? 'bg-yellow-200 text-yellow-700' : ''}
               ${member.role === 'member' ? 'bg-gray-200 text-gray-700' : ''}
             `}>
                           {member.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
@@ -487,7 +501,7 @@ const ManageMember = ({ currentUserRole }) => {
                               }}
                               className={`text-sm ${member.role === 'admin' ? 'bg-gray-500 hover:bg-gray-600' : 'bg-blue-500 hover:bg-blue-600'} text-white px-3 py-1 rounded flex items-center`}
                             >
-                              {member.role === 'admin' ? 'Make Member' : 'Make Admin'}
+                              {member.role === 'admin' ? 'Change Role' : 'Change Role'}
                             </button>
                           </div>
                         )}
@@ -642,6 +656,7 @@ const ManageMember = ({ currentUserRole }) => {
                 className="w-full p-2 border border-gray-300 rounded"
               >
                 <option value="admin">Admin</option>
+                <option value="hrd">HRD</option>
                 <option value="member">Member</option>
               </select>
             </div>
@@ -706,6 +721,48 @@ const ManageMember = ({ currentUserRole }) => {
                 className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
               >
                 Send Join Request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Remove Member */}
+      {showRemoveModal && memberToRemove && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-xl font-bold">Remove Member</h3>
+              <button
+                onClick={() => {
+                  setShowRemoveModal(false);
+                  setMemberToRemove(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="mb-4">
+              <p>
+                Are you sure you want to remove <span className="font-semibold">{memberToRemove.user?.name}</span> from this company?
+              </p>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowRemoveModal(false);
+                  setMemberToRemove(null);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmRemoveMember}
+                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+              >
+                Remove
               </button>
             </div>
           </div>

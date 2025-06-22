@@ -23,4 +23,5 @@ type ConnectionRepository interface {
 	UpdateRequest(ctx context.Context, tx *sql.Tx, request domain.ConnectionRequest) domain.ConnectionRequest
 	FindRequest(ctx context.Context, tx *sql.Tx, senderId, receiverId uuid.UUID) (domain.ConnectionRequest, error)
 	Disconnect(ctx context.Context, tx *sql.Tx, userId1, userId2 uuid.UUID) error
+	CountPendingConnectionRequests(ctx context.Context, tx *sql.Tx, receiverId uuid.UUID) (int, error)
 }
