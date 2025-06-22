@@ -95,7 +95,7 @@ func (service *JobVacancyServiceImpl) Create(ctx context.Context, request web.Cr
 		Benefits:            request.Benefits,
 		WorkType:            domain.WorkType(request.WorkType),
 		ApplicationDeadline: applicationDeadline,
-		Status:              domain.JobVacancyStatusDraft,
+		Status:              domain.JobVacancyStatusActive,
 		TypeApply:           domain.JobApplyType(request.TypeApply),
 		ExternalLink:        request.ExternalLink,
 	}
