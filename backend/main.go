@@ -406,7 +406,7 @@ func main() {
 		Handler: handler,
 	}
 
-	fmt.Println("\nServer starting on ", address)
+	fmt.Println("\nServer starting on", "http://"+address)
 	err := server.ListenAndServe()
 	helper.PanicIfError(err)
 }
