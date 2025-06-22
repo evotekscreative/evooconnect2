@@ -177,7 +177,8 @@ CLIENT_URL="http://localhost:3000"
 
 ### Frontend (.env)
 ```
-VITE_API_URL=http://localhost:8080/api
+VITE_APP_BACKEND_URL=http://your-backend-url:8080
+VITE_APP_CLIENT_URL=http://your-frontend-url:5173
 ```
 
 ## Project Structure
