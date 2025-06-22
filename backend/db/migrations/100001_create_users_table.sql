@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS users (
     reset_token VARCHAR(255) NULL,
     reset_expires TIMESTAMP NULL,
     created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL
+    updated_at TIMESTAMP NOT NULL 
 );
 -- +goose StatementEnd
 
