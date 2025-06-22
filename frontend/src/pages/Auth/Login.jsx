@@ -68,12 +68,9 @@ function Login() {
       // Log the credential for debugging
       console.log("Google credential:", credentialResponse.credential);
 
-      const response = await axios.post(
-        apiUrl + "ogle",
-        {
-          token: credentialResponse.credential,
-        }
-      );
+      const response = await axios.post(apiUrl + "/api/auth/google", {
+        token: credentialResponse.credential,
+      });
 
       // Check that the token is a valid JWT format with console.log
       console.log("Backend response:", response.data);
