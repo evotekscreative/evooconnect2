@@ -1,17 +1,24 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 const CompanySidebar = () => {
   // Nilai dummy
   const myCompaniesCount = 0;
   const pendingSubmissionsCount = 0;
   const pendingEditsCount = 0;
+  const navigate = useNavigate();
 
   return (
     <div className="bg-white rounded-xl shadow p-5 w-64 sticky top-20">
       <h3 className="font-semibold mb-4 border-b pb-3 text-base sm:text-lg">
         Company Management
       </h3>
+      <button
+        className="w-full mb-4 py-2 px-4 bg-primary text-white rounded hover:bg-primary-dark transition font-semibold text-sm sm:text-base"
+        onClick={() => navigate("/create-company")}
+      >
+        Create Company
+      </button>
       <ul className="text-sm sm:text-base text-gray-800 space-y-2">
         <li className="border-b pb-3">
           <NavLink

@@ -249,7 +249,7 @@ export default function CompanyHeader({ company, currentUser }) {
       <FollowersModal
         isOpen={showFollowersModal}
         onClose={() => setShowFollowersModal(false)}
-        followers={followers}
+        companyId={company.id}
         companyName={company.name}
       />
 
@@ -328,7 +328,14 @@ export default function CompanyHeader({ company, currentUser }) {
                 >
                   {isSubmitting ? 'Processing...' : 'Pending Approval'}
                 </button>
-              ) : joinStatus === 'joined' ? null : (
+              ) : joinStatus === 'joined' ? (
+                <button
+                  disabled
+                  className="px-4 py-2 rounded bg-green-500 text-white cursor-default"
+                >
+                  Joined
+                </button>
+              ) : (
                 <button
                   onClick={handleJoinRequest}
                   disabled={isSubmitting}

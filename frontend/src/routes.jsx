@@ -9,7 +9,6 @@ import TermsCondition from "./pages/TermsCondition.jsx";
 import Jobs from "./pages/Jobs/jobs.jsx";
 import JobProfile from "./pages/company-profile/JobProfile.jsx";
 import Faq from "./pages/Faq/faq.jsx";
-import CompanyProfile from "./pages/company-profile/CompanyProfile.jsx";
 import Groups from "./pages/Groups.jsx";
 import CreateBlog from "./pages/Blog/CreateBlog.jsx";
 import BlogDetail from "./pages/Blog/BlogDetail.jsx";
@@ -48,7 +47,7 @@ import CreateCompanyStatus from "./pages/CreateCompanyStatus.jsx";
 import CompanyDetail from "./pages/CompanyCard/CompanyDetail.jsx";
 import MyCompanies from "./pages/CompanyCard/MyCompanies.jsx";
 import CompanyPending from "./pages/CompanyCard/CompanyPending.jsx";
-import CompanyEdit from "./pages/CompanyCard/CompanyEdit.jsx"
+import CompanyEdit from "./pages/CompanyCard/CompanyEdit.jsx";
 import CompanyEditRequest from "./pages/Admin/Admin1/ListEditRequest.jsx";
 
 import CompanyDashboard from "./pages/CompanyDashboard/CompanyDashboard.jsx";
@@ -270,7 +269,6 @@ const router = createBrowserRouter([
         <UserPostPage />
       </ProtectedRoute>
     ),
-
   },
   {
     path: "/post-page/:username",
@@ -372,8 +370,7 @@ const router = createBrowserRouter([
       {
         path: "create-company",
         element: <CreateCompany />,
-      }
-
+      },
     ],
   },
 
@@ -384,10 +381,11 @@ const router = createBrowserRouter([
 
   {
     path: "company-detail/:company_id",
-    element:
+    element: (
       <ProtectedRoute>
         <CompanyDetail />,
       </ProtectedRoute>
+    ),
   },
   {
     path: "/company-management",
@@ -407,7 +405,7 @@ const router = createBrowserRouter([
       {
         path: "company-edit-request",
         element: <CompanyEditRequest />,
-      }
+      },
     ],
   },
   {
@@ -437,10 +435,10 @@ const router = createBrowserRouter([
 
       {
         path: "company-dashboard/manage-member/:company_id",
-        element: <ManageMember />
-      }
-    ]
-  }
+        element: <ManageMember />,
+      },
+    ],
+  },
 ]);
 
 export default router;
