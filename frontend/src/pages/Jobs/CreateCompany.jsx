@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Case from "../../components/Case.jsx";
 import CompanyForm from "../../components/CreateCompany/CompanyForm.jsx";
 import CompanyPreview from "../../components/CreateCompany/CompanyPreview.jsx";
-import { toast } from "react-toastify";
+import Alert from "../../components/Auth/alert";
 
 export default function CreateCompany() {
   const navigate = useNavigate();
@@ -25,8 +25,36 @@ export default function CreateCompany() {
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
   const [readyToRenderForm, setReadyToRenderForm] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  
+  // Alert state
+  const [alert, setAlert] = useState({
+    show: false,
+    type: "success",
+    message: "",
+  });
 
   const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
+  const showAlert = (type, message, duration = 5000) => {
+    setAlert({
+      show: true,
+      type,
+      message,
+    });
+
+    // Clear previous timeout if any
+    if (window.alertTimeout) clearTimeout(window.alertTimeout);
+
+    // Auto-hide after duration (default 5 seconds)
+    window.alertTimeout = setTimeout(() => {
+      hideAlert();
+    }, duration);
+  };
+
+  const hideAlert = () => {
+    setAlert(prev => ({ ...prev, show: false }));
+    if (window.alertTimeout) clearTimeout(window.alertTimeout);
+  };
 
   // Fetch submission status
   useEffect(() => {
@@ -34,7 +62,7 @@ export default function CreateCompany() {
       const adminToken = localStorage.getItem("adminToken");
 
       if (!adminToken) {
-        toast.error("Admin token not found.");
+        showAlert("error", "Admin token not found.");
         setIsLoadingStatus(false);
         return;
       }
@@ -62,7 +90,7 @@ export default function CreateCompany() {
         setSubmissionStatus(null); // No submission found
       } catch (error) {
         console.error("Status fetch error:", error);
-        toast.error("Failed to fetch submission status");
+        showAlert("error", "Failed to fetch submission status");
       } finally {
         setIsLoadingStatus(false);
       }
@@ -75,8 +103,8 @@ export default function CreateCompany() {
   useEffect(() => {
     if (isSuccess) {
       const timer = setTimeout(() => {
-        navigate('/company-management/company-pending'); 
-      }, 3000); // 3 seconds delay before redirect
+        navigate('/company-management/company-pending');
+      }, 3000);
       return () => clearTimeout(timer);
     }
   }, [isSuccess, navigate]);
@@ -86,11 +114,11 @@ export default function CreateCompany() {
     if (submissionStatus === "approved" || submissionStatus === "rejected") {
       const timer = setTimeout(() => {
         setReadyToRenderForm(true);
-        setSubmissionStatus(null); // reset to allow fresh form submission
+        setSubmissionStatus(null);
       }, 3000);
       return () => clearTimeout(timer);
     } else if (submissionStatus === null) {
-      setReadyToRenderForm(true); // No submission, form is ready
+      setReadyToRenderForm(true);
     }
   }, [submissionStatus]);
 
@@ -129,13 +157,13 @@ export default function CreateCompany() {
     e.preventDefault();
 
     if (!form.verified) {
-      toast.error("You must verify that you are authorized.");
+      showAlert("error", "You must verify that you are authorized.");
       return;
     }
 
     const token = localStorage.getItem("token");
     if (!token) {
-      toast.error("Token not found.");
+      showAlert("error", "Token not found.");
       return;
     }
 
@@ -164,16 +192,28 @@ export default function CreateCompany() {
 
       const data = await response.json();
       if (!response.ok) {
+        if (data?.data === "You already have a pending company submission") {
+          setSubmissionStatus("pending");
+          setReadyToRenderForm(false);
+          showAlert("error", "You already have a pending company submission.");
+          return;
+        }
         throw new Error(data.message || `Error: ${response.status}`);
       }
 
-      toast.success("Company submitted successfully!");
+      showAlert("success", "Company submitted successfully!");
       setIsSuccess(true);
       setSubmissionStatus("pending");
       setReadyToRenderForm(false);
     } catch (error) {
+      if (error?.message === "You already have a pending company submission") {
+        setSubmissionStatus("pending");
+        setReadyToRenderForm(false);
+        showAlert("error", "You already have a pending company submission.");
+        return;
+      }
       console.error("Submission error:", error);
-      toast.error(error.message || "Failed to submit company");
+      showAlert("error", error.message || "Failed to submit company");
     } finally {
       setIsSubmitting(false);
     }
@@ -205,26 +245,19 @@ export default function CreateCompany() {
     );
   }
 
-  // Show pending status
-  if (submissionStatus === "pending") {
-    return (
-      <Case>
-        <div className="flex flex-col items-center justify-center h-[75vh] px-4 text-center space-y-6">
-          <h2 className="text-2xl font-bold text-gray-800">Company Submission Is Still Under Review</h2>
-          <p className="text-gray-600 max-w-xl text-base leading-relaxed">
-            Your company submission is currently being reviewed by our team. Please wait until it's either approved or rejected before creating a new submission.
-          </p>
-          <div className="bg-yellow-100 text-yellow-800 border border-yellow-300 rounded-md px-5 py-3 shadow-md text-sm">
-            <strong>Status:</strong> Pending
-          </div>
-        </div>
-      </Case>
-    );
-  }
-
   // Render form
   return (
     <Case>
+      {/* Floating Alert */}
+      <div className="fixed top-4 right-4 z-50">
+        <Alert
+          type={alert.type}
+          message={alert.message}
+          onClose={hideAlert}
+          isVisible={alert.show}
+        />
+      </div>
+      
       <form onSubmit={handleSubmit} className="bg-gray-100 p-6 rounded-lg shadow-inner">
         <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-8">
           <CompanyForm
