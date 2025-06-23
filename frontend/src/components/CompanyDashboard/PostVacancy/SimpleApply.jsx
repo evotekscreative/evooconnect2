@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ExternalLink, X } from "lucide-react";
+import axios from "axios";
 
 const formatCurrency = (value, currency) => {
   if (value === '' || isNaN(value)) return '';
@@ -24,6 +25,8 @@ const formatCurrency = (value, currency) => {
 
 const SimpleApply = ({ showModal, setShowModal, onSubmit }) => {
   const [applyMethod, setApplyMethod] = useState("simple"); // 'simple' or 'external'
+  const [companies, setCompanies] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -38,8 +41,44 @@ const SimpleApply = ({ showModal, setShowModal, onSubmit }) => {
     benefits: "",
     workType: "",
     applicationDeadline: "",
-    externalLink: ""
+    externalLink: "",
+    companyId: "",
   });
+
+  // Fetch user's companies when modal opens
+  useEffect(() => {
+    if (showModal) {
+      fetchUserCompanies();
+    }
+  }, [showModal]);
+
+  const fetchUserCompanies = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+      const response = await axios.get(`${apiUrl}/api/my-companies`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data?.data) {
+        setCompanies(Array.isArray(response.data.data) ? response.data.data : []);
+        
+        // If there's a company ID in localStorage, use it as default
+        const savedCompanyId = localStorage.getItem("companyId");
+        if (savedCompanyId && response.data.data.some(company => company.id === savedCompanyId)) {
+          setFormData(prev => ({ ...prev, companyId: savedCompanyId }));
+        } else if (response.data.data.length > 0) {
+          // Otherwise use the first company
+          setFormData(prev => ({ ...prev, companyId: response.data.data[0].id }));
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch companies:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -47,6 +86,11 @@ const SimpleApply = ({ showModal, setShowModal, onSubmit }) => {
       ...prev,
       [name]: value
     }));
+    
+    // If company selection changes, save to localStorage
+    if (name === "companyId") {
+      localStorage.setItem("companyId", value);
+    }
   };
 
   const handleSalaryChange = (e, fieldName) => {
@@ -68,14 +112,68 @@ const SimpleApply = ({ showModal, setShowModal, onSubmit }) => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const submissionData = {
-      ...formData,
-      applyMethod
-    };
-    onSubmit(submissionData);
-    setShowModal(false);
+    
+    // Check if company is selected
+    if (!formData.companyId) {
+      alert("Please select a company first");
+      return;
+    }
+    
+    const userToken = localStorage.getItem("token");
+    
+    // Get API URL from environment variables
+    const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+    
+    try {
+      // Format skills as array if provided as string
+      const skillsArray = formData.skills ? formData.skills.split(',').map(skill => skill.trim()) : [];
+      
+      // Prepare request payload
+      const jobData = {
+        title: formData.title,
+        description: formData.description,
+        requirements: formData.requirements,
+        location: formData.location,
+        job_type: formData.jobType,
+        experience_level: formData.experienceLevel,
+        min_salary: formData.minSalary === '' ? null : Number(formData.minSalary),
+        max_salary: formData.maxSalary === '' ? null : Number(formData.maxSalary),
+        currency: formData.currency,
+        skills: skillsArray,
+        benefits: formData.benefits,
+        work_type: formData.workType,
+        application_deadline: formData.applicationDeadline ? new Date(formData.applicationDeadline).toISOString() : null,
+        type_apply: applyMethod === 'external' ? 'external_link' : 'simple_apply',
+        external_link: applyMethod === 'external' ? formData.externalLink : null,
+        status: 'active' // Default status for new job postings
+      };
+
+       setShowModal(false);
+
+      // Make API request
+      const response = await axios.post(
+        `${apiUrl}/api/companies/${formData.companyId}/jobs`,
+        jobData,
+        {
+          headers: { 
+            'Authorization': `Bearer ${userToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      // Check if request was successful
+      if (response.status === 201) {
+        // Call the onSubmit callback with the response data
+        onSubmit(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error posting job vacancy:", error);
+      // Handle error (could add error state and display to user)
+      alert("Failed to post job vacancy. Please try again.");
+    }
   };
 
   if (!showModal) return null;
@@ -94,6 +192,9 @@ const SimpleApply = ({ showModal, setShowModal, onSubmit }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6">
+          {/* Company Selection */}
+        
+
           {/* Application Method Toggle */}
           <div className="mb-6 bg-gray-50 p-4 rounded-lg">
             <div className="flex items-center justify-between">
@@ -135,13 +236,28 @@ const SimpleApply = ({ showModal, setShowModal, onSubmit }) => {
               </div>
             )}
           </div>
+           <div className="hidden">
+  <select
+    name="companyId"
+    value={formData.companyId}
+    onChange={handleInputChange}
+    required
+  >
+    <option value="">Select a company</option>
+    {companies.map(company => (
+      <option key={company.id} value={company.id}>
+        {company.name}
+      </option>
+    ))}
+  </select>
+</div>
 
           {/* Job Details */}
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Title*
+                  Job Title*
                 </label>
                 <input
                   type="text"

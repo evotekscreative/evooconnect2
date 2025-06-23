@@ -420,7 +420,7 @@ const router = createBrowserRouter([
         element: <ManagePost />,
       },
       {
-        path: "manage-vacancy",
+        path: ":company_id/manage-vacancy",
         element: <ManageVacancy />,
       },
       {
@@ -428,7 +428,7 @@ const router = createBrowserRouter([
         element: <CompanySetting />,
       },
       {
-        path: "list-applicants",
+        path: "list-applicants/:job_id",
         element: <ListApplicants />,
       },
     ],

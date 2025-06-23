@@ -179,27 +179,28 @@ export default function Sidebar() {
                                 </Link>
                             </li>
 
-                            <li className="items-center">
-                                <Link
-                                    className={
-                                        "text-xs uppercase py-3 font-bold block " +
-                                        (window.location.href.indexOf("/company-dashboard/manage-vacancy") !== -1
-                                            ? "text-sky-500 hover:text-sky-600"
-                                            : "text-gray-700 hover:text-gray-500")
-                                    }
-                                    to="/company-dashboard/manage-vacancy"
-                                >
-                                    <i
-                                        className={
-                                            "fas fa-table mr-2 text-sm " +
-                                            (window.location.href.indexOf("/company-dashboard/manage-vacancy") !== -1
-                                                ? "opacity-75"
-                                                : "text-gray-300")
-                                        }
-                                    ></i>{" "}
-                                    Manage Vacancy
-                                </Link>
-                            </li>
+                           <li className="items-center">
+    <Link
+        className={
+            "text-xs uppercase py-3 font-bold block " +
+            (window.location.href.indexOf("/company-dashboard/manage-vacancy") !== -1
+                ? "text-sky-500 hover:text-sky-600"
+                : "text-gray-700 hover:text-gray-500")
+        }
+        to={`/company-dashboard/${selectedCompany ? selectedCompany.id : ""}/manage-vacancy`}
+    >
+        <i
+            className={
+                "fas fa-table mr-2 text-sm " +
+                (window.location.href.indexOf("/company-dashboard/manage-vacancy") !== -1
+                    ? "opacity-75"
+                    : "text-gray-300")
+            }
+        ></i>{" "}
+        Manage Vacancy
+    </Link>
+</li>
+
 
                             <li className="items-center">
                                 <Link

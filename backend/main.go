@@ -96,6 +96,9 @@ func main() {
 	// Job-related repositories
 	jobVacancyRepository := repository.NewJobVacancyRepository()
 	jobApplicationRepository := repository.NewJobApplicationRepository()
+	userCvStorageRepository := repository.NewUserCvStorageRepository()
+
+	savedJobRepository := repository.NewSavedJobRepository()
 
 	// ===== Services =====
 	// Notification service (moved up because it's used by many other services)
@@ -304,16 +307,26 @@ func main() {
 		jobVacancyRepository,
 		companyRepository,
 		userRepository,
+		savedJobRepository,
+		jobApplicationRepository,
+		db,
+		validate,
+	)
+	jobApplicationService := service.NewJobApplicationService(
+		jobApplicationRepository,
+		userCvStorageRepository,
+		jobVacancyRepository,
+		userRepository,
+		memberCompanyRepository,
 		db,
 		validate,
 	)
 
-	jobApplicationService := service.NewJobApplicationService(
-		jobApplicationRepository,
+	userCvStorageService := service.NewUserCvStorageService(userCvStorageRepository, userRepository, db, validate)
+
+	savedJobService := service.NewSavedJobService(
+		savedJobRepository,
 		jobVacancyRepository,
-		companyRepository,
-		memberCompanyRepository,
-		userRepository,
 		db,
 		validate,
 	)
@@ -384,6 +397,10 @@ func main() {
 
 	jobVacancyController := controller.NewJobVacancyController(jobVacancyService)
 	jobApplicationController := controller.NewJobApplicationController(jobApplicationService)
+	userCvStorageController := controller.NewUserCvStorageController(userCvStorageService)
+
+	// Add to the controllers section:
+	savedJobController := controller.NewSavedJobController(savedJobService)
 
 	// ===== Router and Middleware =====
 	// Initialize router with all controllers and JWT secret
@@ -417,6 +434,8 @@ func main() {
 		companyFollowerController,
 		jobVacancyController,
 		jobApplicationController,
+		userCvStorageController,
+		savedJobController,
 	)
 
 	// Seed admin data
@@ -435,7 +454,7 @@ func main() {
 		Handler: handler,
 	}
 
-	fmt.Println("\nServer starting on ", address)
+	fmt.Println("\nServer starting on", "http://"+address)
 	err := server.ListenAndServe()
 	helper.PanicIfError(err)
 }

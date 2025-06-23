@@ -19,32 +19,45 @@ func NewJobApplicationRepository() JobApplicationRepository {
 }
 
 func (repository *JobApplicationRepositoryImpl) Create(ctx context.Context, tx *sql.Tx, jobApplication domain.JobApplication) domain.JobApplication {
+	fmt.Printf("DEBUG: JobApplicationRepository.Create called\n")
+	fmt.Printf("DEBUG: Creating job application in repository\n")
+
 	SQL := `INSERT INTO job_applications (id, job_vacancy_id, applicant_id, cv_file_path, contact_info, 
             motivation_letter, cover_letter, expected_salary, available_start_date, status, 
             submitted_at, created_at, updated_at) 
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`
 
+	fmt.Printf("DEBUG: About to execute INSERT query\n")
 	_, err := tx.ExecContext(ctx, SQL,
 		jobApplication.Id, jobApplication.JobVacancyId, jobApplication.ApplicantId,
 		jobApplication.CvFilePath, jobApplication.ContactInfo, jobApplication.MotivationLetter,
 		jobApplication.CoverLetter, jobApplication.ExpectedSalary, jobApplication.AvailableStartDate,
 		jobApplication.Status, jobApplication.SubmittedAt, jobApplication.CreatedAt, jobApplication.UpdatedAt)
+
+	if err != nil {
+		fmt.Printf("DEBUG: Error in JobApplicationRepository.Create: %v\n", err)
+	} else {
+		fmt.Printf("DEBUG: JobApplicationRepository.Create completed successfully\n")
+	}
+
 	helper.PanicIfError(err)
 
 	return jobApplication
 }
 
 func (repository *JobApplicationRepositoryImpl) Update(ctx context.Context, tx *sql.Tx, jobApplication domain.JobApplication) domain.JobApplication {
-	SQL := `UPDATE job_applications SET contact_info = $2, motivation_letter = $3, cover_letter = $4,
-            expected_salary = $5, available_start_date = $6, status = $7, rejection_reason = $8,
-            notes = $9, reviewed_by = $10, reviewed_at = $11, interview_scheduled_at = $12, updated_at = $13
+	SQL := `UPDATE job_applications SET cv_file_path = $2, contact_info = $3, motivation_letter = $4, 
+            cover_letter = $5, expected_salary = $6, available_start_date = $7, status = $8, 
+            rejection_reason = $9, notes = $10, reviewed_by = $11, reviewed_at = $12, 
+            interview_scheduled_at = $13, updated_at = $14
             WHERE id = $1`
 
 	_, err := tx.ExecContext(ctx, SQL,
-		jobApplication.Id, jobApplication.ContactInfo, jobApplication.MotivationLetter,
-		jobApplication.CoverLetter, jobApplication.ExpectedSalary, jobApplication.AvailableStartDate,
-		jobApplication.Status, jobApplication.RejectionReason, jobApplication.Notes,
-		jobApplication.ReviewedBy, jobApplication.ReviewedAt, jobApplication.InterviewScheduledAt, time.Now())
+		jobApplication.Id, jobApplication.CvFilePath, jobApplication.ContactInfo,
+		jobApplication.MotivationLetter, jobApplication.CoverLetter, jobApplication.ExpectedSalary,
+		jobApplication.AvailableStartDate, jobApplication.Status, jobApplication.RejectionReason,
+		jobApplication.Notes, jobApplication.ReviewedBy, jobApplication.ReviewedAt,
+		jobApplication.InterviewScheduledAt, time.Now())
 	helper.PanicIfError(err)
 
 	return jobApplication
@@ -52,24 +65,25 @@ func (repository *JobApplicationRepositoryImpl) Update(ctx context.Context, tx *
 
 func (repository *JobApplicationRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx, jobApplicationId uuid.UUID) error {
 	SQL := `DELETE FROM job_applications WHERE id = $1`
+
 	_, err := tx.ExecContext(ctx, SQL, jobApplicationId)
 	return err
 }
 
 func (repository *JobApplicationRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, jobApplicationId uuid.UUID) (domain.JobApplication, error) {
 	SQL := `SELECT ja.id, ja.job_vacancy_id, ja.applicant_id, ja.cv_file_path, ja.contact_info,
-			ja.motivation_letter, ja.cover_letter, ja.expected_salary, ja.available_start_date,
-			ja.status, ja.rejection_reason, ja.notes, ja.reviewed_by, ja.reviewed_at,
-			ja.interview_scheduled_at, ja.submitted_at, ja.created_at, ja.updated_at,
-			jv.title as job_title, jv.company_id, c.name as company_name, c.logo as company_logo,
-			a.name as applicant_name, a.username as applicant_username, a.photo as applicant_photo,
-			r.name as reviewer_name, r.username as reviewer_username
-			FROM job_applications ja
-			LEFT JOIN job_vacancies jv ON ja.job_vacancy_id = jv.id
-			LEFT JOIN companies c ON jv.company_id = c.id
-			LEFT JOIN users a ON ja.applicant_id = a.id
-			LEFT JOIN users r ON ja.reviewed_by = r.id
-			WHERE ja.id = $1`
+            ja.motivation_letter, ja.cover_letter, ja.expected_salary, ja.available_start_date,
+            ja.status, ja.rejection_reason, ja.notes, ja.reviewed_by, ja.reviewed_at,
+            ja.interview_scheduled_at, ja.submitted_at, ja.created_at, ja.updated_at,
+            jv.title as job_title, jv.company_id, c.name as company_name, c.logo as company_logo,
+            a.name as applicant_name, a.username as applicant_username, a.photo as applicant_photo, a.email as applicant_email,
+            r.name as reviewer_name, r.username as reviewer_username
+            FROM job_applications ja
+            LEFT JOIN job_vacancies jv ON ja.job_vacancy_id = jv.id
+            LEFT JOIN companies c ON jv.company_id = c.id
+            LEFT JOIN users a ON ja.applicant_id = a.id
+            LEFT JOIN users r ON ja.reviewed_by = r.id
+            WHERE ja.id = $1`
 
 	var jobApplication domain.JobApplication
 	var jobVacancy domain.JobVacancy
@@ -77,16 +91,19 @@ func (repository *JobApplicationRepositoryImpl) FindById(ctx context.Context, tx
 	var applicant domain.User
 	var reviewer domain.User
 	var companyLogo, applicantPhoto, reviewerName, reviewerUsername, rejectionReason, notes sql.NullString
+	var motivationLetter, coverLetter sql.NullString
+	var expectedSalary sql.NullFloat64
+	var availableStartDate sql.NullTime
 
 	err := tx.QueryRowContext(ctx, SQL, jobApplicationId).Scan(
 		&jobApplication.Id, &jobApplication.JobVacancyId, &jobApplication.ApplicantId,
-		&jobApplication.CvFilePath, &jobApplication.ContactInfo, &jobApplication.MotivationLetter,
-		&jobApplication.CoverLetter, &jobApplication.ExpectedSalary, &jobApplication.AvailableStartDate,
+		&jobApplication.CvFilePath, &jobApplication.ContactInfo, &motivationLetter,
+		&coverLetter, &expectedSalary, &availableStartDate,
 		&jobApplication.Status, &rejectionReason, &notes,
 		&jobApplication.ReviewedBy, &jobApplication.ReviewedAt, &jobApplication.InterviewScheduledAt,
 		&jobApplication.SubmittedAt, &jobApplication.CreatedAt, &jobApplication.UpdatedAt,
 		&jobVacancy.Title, &jobVacancy.CompanyId, &company.Name, &companyLogo,
-		&applicant.Name, &applicant.Username, &applicantPhoto,
+		&applicant.Name, &applicant.Username, &applicantPhoto, &applicant.Email,
 		&reviewerName, &reviewerUsername)
 
 	if err != nil {
@@ -94,11 +111,23 @@ func (repository *JobApplicationRepositoryImpl) FindById(ctx context.Context, tx
 	}
 
 	// Handle nullable fields
+	if motivationLetter.Valid {
+		jobApplication.MotivationLetter = &motivationLetter.String
+	}
+	if coverLetter.Valid {
+		jobApplication.CoverLetter = &coverLetter.String
+	}
+	if expectedSalary.Valid {
+		jobApplication.ExpectedSalary = &expectedSalary.Float64
+	}
+	if availableStartDate.Valid {
+		jobApplication.AvailableStartDate = &availableStartDate.Time
+	}
 	if rejectionReason.Valid {
-		jobApplication.RejectionReason = rejectionReason.String
+		jobApplication.RejectionReason = &rejectionReason.String
 	}
 	if notes.Valid {
-		jobApplication.Notes = notes.String
+		jobApplication.Notes = &notes.String
 	}
 
 	// Set relations
@@ -157,8 +186,9 @@ func (repository *JobApplicationRepositoryImpl) FindByJobVacancyId(ctx context.C
                 WHERE ja.job_vacancy_id = $1`
 
 	dataArgs := []interface{}{jobVacancyId}
+
 	if status != "" {
-		dataSQL += ` AND ja.status = $2`
+		dataSQL += ` AND ja.status = $` + fmt.Sprintf("%d", len(dataArgs)+1)
 		dataArgs = append(dataArgs, status)
 	}
 
@@ -177,16 +207,40 @@ func (repository *JobApplicationRepositoryImpl) FindByJobVacancyId(ctx context.C
 		var app domain.JobApplication
 		var applicant domain.User
 		var applicantPhoto sql.NullString
+		var motivationLetter, coverLetter sql.NullString
+		var expectedSalary sql.NullFloat64
+		var availableStartDate sql.NullTime
+		var rejectionReason, notes sql.NullString
 
 		err := rows.Scan(
 			&app.Id, &app.JobVacancyId, &app.ApplicantId, &app.CvFilePath, &app.ContactInfo,
-			&app.MotivationLetter, &app.CoverLetter, &app.ExpectedSalary, &app.AvailableStartDate,
-			&app.Status, &app.RejectionReason, &app.Notes, &app.ReviewedBy, &app.ReviewedAt,
+			&motivationLetter, &coverLetter, &expectedSalary, &availableStartDate,
+			&app.Status, &rejectionReason, &notes, &app.ReviewedBy, &app.ReviewedAt,
 			&app.InterviewScheduledAt, &app.SubmittedAt, &app.CreatedAt, &app.UpdatedAt,
 			&applicant.Name, &applicant.Username, &applicantPhoto, &applicant.Email)
 
 		if err != nil {
 			return nil, 0, err
+		}
+
+		// Handle nullable fields
+		if motivationLetter.Valid {
+			app.MotivationLetter = &motivationLetter.String
+		}
+		if coverLetter.Valid {
+			app.CoverLetter = &coverLetter.String
+		}
+		if expectedSalary.Valid {
+			app.ExpectedSalary = &expectedSalary.Float64
+		}
+		if availableStartDate.Valid {
+			app.AvailableStartDate = &availableStartDate.Time
+		}
+		if rejectionReason.Valid {
+			app.RejectionReason = &rejectionReason.String
+		}
+		if notes.Valid {
+			app.Notes = &notes.String
 		}
 
 		// Set applicant relation
@@ -220,19 +274,19 @@ func (repository *JobApplicationRepositoryImpl) FindByApplicantId(ctx context.Co
 
 	// Data query with job vacancy and company info
 	dataSQL := `SELECT ja.id, ja.job_vacancy_id, ja.applicant_id, ja.cv_file_path, ja.contact_info,
-				ja.motivation_letter, ja.cover_letter, ja.expected_salary, ja.available_start_date,
-				ja.status, ja.rejection_reason, ja.notes, ja.reviewed_by, ja.reviewed_at,
-				ja.interview_scheduled_at, ja.submitted_at, ja.created_at, ja.updated_at,
-				jv.title, jv.job_type, jv.location, jv.remote_work_allowed,
-				c.name, c.logo
-				FROM job_applications ja
-				LEFT JOIN job_vacancies jv ON ja.job_vacancy_id = jv.id
-				LEFT JOIN companies c ON jv.company_id = c.id
-				WHERE ja.applicant_id = $1`
+                ja.motivation_letter, ja.cover_letter, ja.expected_salary, ja.available_start_date,
+                ja.status, ja.rejection_reason, ja.notes, ja.reviewed_by, ja.reviewed_at,
+                ja.interview_scheduled_at, ja.submitted_at, ja.created_at, ja.updated_at,
+                jv.title as job_title, jv.job_type, jv.location, c.id as company_id, c.name as company_name, c.logo as company_logo
+                FROM job_applications ja
+                LEFT JOIN job_vacancies jv ON ja.job_vacancy_id = jv.id
+                LEFT JOIN companies c ON jv.company_id = c.id
+                WHERE ja.applicant_id = $1`
 
 	dataArgs := []interface{}{applicantId}
+
 	if status != "" {
-		dataSQL += ` AND ja.status = $2`
+		dataSQL += ` AND ja.status = $` + fmt.Sprintf("%d", len(dataArgs)+1)
 		dataArgs = append(dataArgs, status)
 	}
 
@@ -252,22 +306,44 @@ func (repository *JobApplicationRepositoryImpl) FindByApplicantId(ctx context.Co
 		var jobVacancy domain.JobVacancy
 		var company domain.Company
 		var companyLogo sql.NullString
+		var motivationLetter, coverLetter sql.NullString
+		var expectedSalary sql.NullFloat64
+		var availableStartDate sql.NullTime
+		var rejectionReason, notes sql.NullString
 
 		err := rows.Scan(
 			&app.Id, &app.JobVacancyId, &app.ApplicantId, &app.CvFilePath, &app.ContactInfo,
-			&app.MotivationLetter, &app.CoverLetter, &app.ExpectedSalary, &app.AvailableStartDate,
-			&app.Status, &app.RejectionReason, &app.Notes, &app.ReviewedBy, &app.ReviewedAt,
+			&motivationLetter, &coverLetter, &expectedSalary, &availableStartDate,
+			&app.Status, &rejectionReason, &notes, &app.ReviewedBy, &app.ReviewedAt,
 			&app.InterviewScheduledAt, &app.SubmittedAt, &app.CreatedAt, &app.UpdatedAt,
-			&jobVacancy.Title, &jobVacancy.JobType, &jobVacancy.Location, &jobVacancy.WorkType,
-			&company.Name, &companyLogo)
+			&jobVacancy.Title, &jobVacancy.JobType, &jobVacancy.Location, &company.Id, &company.Name, &companyLogo)
 
 		if err != nil {
 			return nil, 0, err
 		}
 
+		// Handle nullable fields
+		if motivationLetter.Valid {
+			app.MotivationLetter = &motivationLetter.String
+		}
+		if coverLetter.Valid {
+			app.CoverLetter = &coverLetter.String
+		}
+		if expectedSalary.Valid {
+			app.ExpectedSalary = &expectedSalary.Float64
+		}
+		if availableStartDate.Valid {
+			app.AvailableStartDate = &availableStartDate.Time
+		}
+		if rejectionReason.Valid {
+			app.RejectionReason = &rejectionReason.String
+		}
+		if notes.Valid {
+			app.Notes = &notes.String
+		}
+
 		// Set relations
 		jobVacancy.Id = app.JobVacancyId
-		company.Id = jobVacancy.CompanyId
 		if companyLogo.Valid {
 			company.Logo = companyLogo.String
 		}
@@ -303,15 +379,17 @@ func (repository *JobApplicationRepositoryImpl) FindByCompanyId(ctx context.Cont
                 ja.motivation_letter, ja.cover_letter, ja.expected_salary, ja.available_start_date,
                 ja.status, ja.rejection_reason, ja.notes, ja.reviewed_by, ja.reviewed_at,
                 ja.interview_scheduled_at, ja.submitted_at, ja.created_at, ja.updated_at,
-                jv.title, a.name, a.username, a.photo, a.email
+                jv.title as job_title, a.name as applicant_name, a.username as applicant_username, 
+                a.photo as applicant_photo, a.email as applicant_email
                 FROM job_applications ja
                 JOIN job_vacancies jv ON ja.job_vacancy_id = jv.id
                 LEFT JOIN users a ON ja.applicant_id = a.id
                 WHERE jv.company_id = $1`
 
 	dataArgs := []interface{}{companyId}
+
 	if status != "" {
-		dataSQL += ` AND ja.status = $2`
+		dataSQL += ` AND ja.status = $` + fmt.Sprintf("%d", len(dataArgs)+1)
 		dataArgs = append(dataArgs, status)
 	}
 
@@ -331,16 +409,40 @@ func (repository *JobApplicationRepositoryImpl) FindByCompanyId(ctx context.Cont
 		var jobVacancy domain.JobVacancy
 		var applicant domain.User
 		var applicantPhoto sql.NullString
+		var motivationLetter, coverLetter sql.NullString
+		var expectedSalary sql.NullFloat64
+		var availableStartDate sql.NullTime
+		var rejectionReason, notes sql.NullString
 
 		err := rows.Scan(
 			&app.Id, &app.JobVacancyId, &app.ApplicantId, &app.CvFilePath, &app.ContactInfo,
-			&app.MotivationLetter, &app.CoverLetter, &app.ExpectedSalary, &app.AvailableStartDate,
-			&app.Status, &app.RejectionReason, &app.Notes, &app.ReviewedBy, &app.ReviewedAt,
+			&motivationLetter, &coverLetter, &expectedSalary, &availableStartDate,
+			&app.Status, &rejectionReason, &notes, &app.ReviewedBy, &app.ReviewedAt,
 			&app.InterviewScheduledAt, &app.SubmittedAt, &app.CreatedAt, &app.UpdatedAt,
 			&jobVacancy.Title, &applicant.Name, &applicant.Username, &applicantPhoto, &applicant.Email)
 
 		if err != nil {
 			return nil, 0, err
+		}
+
+		// Handle nullable fields
+		if motivationLetter.Valid {
+			app.MotivationLetter = &motivationLetter.String
+		}
+		if coverLetter.Valid {
+			app.CoverLetter = &coverLetter.String
+		}
+		if expectedSalary.Valid {
+			app.ExpectedSalary = &expectedSalary.Float64
+		}
+		if availableStartDate.Valid {
+			app.AvailableStartDate = &availableStartDate.Time
+		}
+		if rejectionReason.Valid {
+			app.RejectionReason = &rejectionReason.String
+		}
+		if notes.Valid {
+			app.Notes = &notes.String
 		}
 
 		// Set relations
@@ -407,10 +509,10 @@ func (repository *JobApplicationRepositoryImpl) FindWithFilters(ctx context.Cont
 	}
 
 	// Count query
-	countSQL := fmt.Sprintf(`SELECT COUNT(*) FROM job_applications ja 
-                           LEFT JOIN job_vacancies jv ON ja.job_vacancy_id = jv.id 
-                           LEFT JOIN users a ON ja.applicant_id = a.id 
-                           %s`, whereClause)
+	countSQL := fmt.Sprintf(`SELECT COUNT(*) FROM job_applications ja
+                            LEFT JOIN job_vacancies jv ON ja.job_vacancy_id = jv.id
+                            LEFT JOIN users a ON ja.applicant_id = a.id
+                            %s`, whereClause)
 
 	var total int
 	err := tx.QueryRowContext(ctx, countSQL, args...).Scan(&total)
@@ -420,18 +522,18 @@ func (repository *JobApplicationRepositoryImpl) FindWithFilters(ctx context.Cont
 
 	// Data query
 	dataSQL := fmt.Sprintf(`SELECT ja.id, ja.job_vacancy_id, ja.applicant_id, ja.cv_file_path, ja.contact_info,
-                           ja.motivation_letter, ja.cover_letter, ja.expected_salary, ja.available_start_date,
-                           ja.status, ja.rejection_reason, ja.notes, ja.reviewed_by, ja.reviewed_at,
-                           ja.interview_scheduled_at, ja.submitted_at, ja.created_at, ja.updated_at,
-                           jv.title, jv.job_type, jv.location, c.name, c.logo,
-                           a.name, a.username, a.photo, a.email
-                           FROM job_applications ja
-                           LEFT JOIN job_vacancies jv ON ja.job_vacancy_id = jv.id
-                           LEFT JOIN companies c ON jv.company_id = c.id
-                           LEFT JOIN users a ON ja.applicant_id = a.id
-                           %s
-                           ORDER BY ja.submitted_at DESC
-                           LIMIT $%d OFFSET $%d`, whereClause, argCount+1, argCount+2)
+                            ja.motivation_letter, ja.cover_letter, ja.expected_salary, ja.available_start_date,
+                            ja.status, ja.rejection_reason, ja.notes, ja.reviewed_by, ja.reviewed_at,
+                            ja.interview_scheduled_at, ja.submitted_at, ja.created_at, ja.updated_at,
+                            jv.title, jv.job_type, jv.location, c.name as company_name, c.logo as company_logo,
+                            a.name as applicant_name, a.username as applicant_username, a.photo as applicant_photo, a.email as applicant_email
+                            FROM job_applications ja
+                            LEFT JOIN job_vacancies jv ON ja.job_vacancy_id = jv.id
+                            LEFT JOIN companies c ON jv.company_id = c.id
+                            LEFT JOIN users a ON ja.applicant_id = a.id
+                            %s
+                            ORDER BY ja.submitted_at DESC
+                            LIMIT $%d OFFSET $%d`, whereClause, argCount+1, argCount+2)
 
 	args = append(args, limit, offset)
 
@@ -448,17 +550,41 @@ func (repository *JobApplicationRepositoryImpl) FindWithFilters(ctx context.Cont
 		var company domain.Company
 		var applicant domain.User
 		var companyLogo, applicantPhoto sql.NullString
+		var motivationLetter, coverLetter sql.NullString
+		var expectedSalary sql.NullFloat64
+		var availableStartDate sql.NullTime
+		var rejectionReason, notes sql.NullString
 
 		err := rows.Scan(
 			&app.Id, &app.JobVacancyId, &app.ApplicantId, &app.CvFilePath, &app.ContactInfo,
-			&app.MotivationLetter, &app.CoverLetter, &app.ExpectedSalary, &app.AvailableStartDate,
-			&app.Status, &app.RejectionReason, &app.Notes, &app.ReviewedBy, &app.ReviewedAt,
+			&motivationLetter, &coverLetter, &expectedSalary, &availableStartDate,
+			&app.Status, &rejectionReason, &notes, &app.ReviewedBy, &app.ReviewedAt,
 			&app.InterviewScheduledAt, &app.SubmittedAt, &app.CreatedAt, &app.UpdatedAt,
 			&jobVacancy.Title, &jobVacancy.JobType, &jobVacancy.Location, &company.Name, &companyLogo,
 			&applicant.Name, &applicant.Username, &applicantPhoto, &applicant.Email)
 
 		if err != nil {
 			return nil, 0, err
+		}
+
+		// Handle nullable fields
+		if motivationLetter.Valid {
+			app.MotivationLetter = &motivationLetter.String
+		}
+		if coverLetter.Valid {
+			app.CoverLetter = &coverLetter.String
+		}
+		if expectedSalary.Valid {
+			app.ExpectedSalary = &expectedSalary.Float64
+		}
+		if availableStartDate.Valid {
+			app.AvailableStartDate = &availableStartDate.Time
+		}
+		if rejectionReason.Valid {
+			app.RejectionReason = &rejectionReason.String
+		}
+		if notes.Valid {
+			app.Notes = &notes.String
 		}
 
 		// Set relations
@@ -534,16 +660,13 @@ func (repository *JobApplicationRepositoryImpl) GetStats(ctx context.Context, tx
 	var args []interface{}
 
 	if companyId != nil {
-		SQL = `SELECT ja.status, COUNT(*) as count
-               FROM job_applications ja
-               JOIN job_vacancies jv ON ja.job_vacancy_id = jv.id
-               WHERE jv.company_id = $1
-               GROUP BY ja.status`
+		SQL = `SELECT status, COUNT(*) as count FROM job_applications ja 
+               JOIN job_vacancies jv ON ja.job_vacancy_id = jv.id 
+               WHERE jv.company_id = $1 
+               GROUP BY status`
 		args = []interface{}{*companyId}
 	} else {
-		SQL = `SELECT status, COUNT(*) as count
-               FROM job_applications
-               GROUP BY status`
+		SQL = `SELECT status, COUNT(*) as count FROM job_applications GROUP BY status`
 	}
 
 	rows, err := tx.QueryContext(ctx, SQL, args...)
@@ -553,6 +676,8 @@ func (repository *JobApplicationRepositoryImpl) GetStats(ctx context.Context, tx
 	defer rows.Close()
 
 	stats := make(map[string]int)
+	total := 0
+
 	for rows.Next() {
 		var status string
 		var count int
@@ -561,7 +686,9 @@ func (repository *JobApplicationRepositoryImpl) GetStats(ctx context.Context, tx
 			return nil, err
 		}
 		stats[status] = count
+		total += count
 	}
 
+	stats["total"] = total
 	return stats, nil
 }

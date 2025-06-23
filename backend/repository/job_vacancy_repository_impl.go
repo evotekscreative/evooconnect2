@@ -151,13 +151,14 @@ func (repository *JobVacancyRepositoryImpl) Delete(ctx context.Context, tx *sql.
 func (repository *JobVacancyRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, jobVacancyId uuid.UUID) (domain.JobVacancy, error) {
 	query := `
         SELECT 
-            jv.id, jv.company_id, jv.creator_id, jv.title, jv.job_description, 
-            jv.requirements, jv.location, jv.job_type, jv.experience_level, 
-            jv.salary_min, jv.salary_max, jv.currency, jv.skills_required, jv.benefits, 
-            jv.work_type, jv.application_deadline, jv.status, jv.type_apply, 
-            jv.external_link, jv.created_at, jv.updated_at,
-            c.id, c.name, c.logo, c.industry, 
-            u.id, u.name, u.email, u.username, u.photo
+            jv.id, jv.company_id, jv.creator_id, jv.title, jv.description, jv.requirements, 
+            jv.location, jv.job_type, jv.experience_level, jv.min_salary, jv.max_salary, 
+            jv.currency, jv.skills, jv.benefits, jv.work_type, jv.application_deadline, 
+            jv.status, jv.type_apply, jv.external_link, jv.created_at, jv.updated_at,
+            c.id as company_id, c.name as company_name, c.logo as company_logo, 
+            c.industry as company_industry,
+            u.id as creator_id, u.name as creator_name, u.email as creator_email, 
+            u.photo as creator_photo, u.username as creator_username
         FROM job_vacancies jv
         LEFT JOIN companies c ON jv.company_id = c.id
         LEFT JOIN users u ON jv.creator_id = u.id
@@ -166,6 +167,11 @@ func (repository *JobVacancyRepositoryImpl) FindById(ctx context.Context, tx *sq
 	var jobVacancy domain.JobVacancy
 	var company domain.Company
 	var creator domain.User
+	var companyLogo, creatorPhoto sql.NullString
+	var creatorId sql.NullString
+	var minSalary, maxSalary sql.NullFloat64
+	var applicationDeadline sql.NullTime
+	var externalLink sql.NullString
 
 	err := tx.QueryRowContext(ctx, query, jobVacancyId).Scan(
 		&jobVacancy.Id,
@@ -177,36 +183,67 @@ func (repository *JobVacancyRepositoryImpl) FindById(ctx context.Context, tx *sq
 		&jobVacancy.Location,
 		&jobVacancy.JobType,
 		&jobVacancy.ExperienceLevel,
-		&jobVacancy.MinSalary,
-		&jobVacancy.MaxSalary,
+		&minSalary,
+		&maxSalary,
 		&jobVacancy.Currency,
 		&jobVacancy.Skills,
 		&jobVacancy.Benefits,
 		&jobVacancy.WorkType,
-		&jobVacancy.ApplicationDeadline,
+		&applicationDeadline,
 		&jobVacancy.Status,
 		&jobVacancy.TypeApply,
-		&jobVacancy.ExternalLink,
+		&externalLink,
 		&jobVacancy.CreatedAt,
 		&jobVacancy.UpdatedAt,
 		&company.Id,
 		&company.Name,
-		&company.Logo,
+		&companyLogo,
 		&company.Industry,
-		&creator.Id,
+		&creatorId,
 		&creator.Name,
 		&creator.Email,
+		&creatorPhoto,
 		&creator.Username,
-		&creator.Photo,
 	)
 
 	if err != nil {
-		return jobVacancy, fmt.Errorf("job vacancy not found: %w", err)
+		if err == sql.ErrNoRows {
+			return jobVacancy, fmt.Errorf("job vacancy not found")
+		}
+		return jobVacancy, err
+	}
+
+	// Set company fields with NULL handling
+	if companyLogo.Valid {
+		company.Logo = companyLogo.String
+	}
+
+	// Set creator fields with NULL handling
+	if creatorId.Valid {
+		creatorUUID, _ := uuid.Parse(creatorId.String)
+		creator.Id = creatorUUID
+		if creatorPhoto.Valid {
+			creator.Photo = creatorPhoto.String
+		}
+	}
+
+	// Handle nullable fields
+	if minSalary.Valid {
+		jobVacancy.MinSalary = &minSalary.Float64
+	}
+	if maxSalary.Valid {
+		jobVacancy.MaxSalary = &maxSalary.Float64
+	}
+	if applicationDeadline.Valid {
+		jobVacancy.ApplicationDeadline = &applicationDeadline.Time
+	}
+	if externalLink.Valid {
+		jobVacancy.ExternalLink = &externalLink.String
 	}
 
 	// Set relations
 	jobVacancy.Company = &company
-	if jobVacancy.CreatorId != nil {
+	if creatorId.Valid {
 		jobVacancy.Creator = &creator
 	}
 
@@ -215,20 +252,18 @@ func (repository *JobVacancyRepositoryImpl) FindById(ctx context.Context, tx *sq
 
 func (repository *JobVacancyRepositoryImpl) FindByCompanyId(ctx context.Context, tx *sql.Tx, companyId uuid.UUID, limit, offset int) []domain.JobVacancy {
 	query := `
-        SELECT 
-            jv.id, jv.company_id, jv.creator_id, jv.title, jv.job_description, 
-            jv.requirements, jv.location, jv.job_type, jv.experience_level, 
-            jv.salary_min, jv.salary_max, jv.currency, jv.skills_required, jv.benefits, 
-            jv.work_type, jv.application_deadline, jv.status, jv.type_apply, 
-            jv.external_link, jv.created_at, jv.updated_at,
-            c.id, c.name, c.logo, c.industry,  
-            u.id, u.name, u.email, u.username, u.photo
-        FROM job_vacancies jv
-        LEFT JOIN companies c ON jv.company_id = c.id
-        LEFT JOIN users u ON jv.creator_id = u.id
-        WHERE jv.company_id = $1
-        ORDER BY jv.created_at DESC
-        LIMIT $2 OFFSET $3`
+		SELECT 
+			jv.id, jv.company_id, jv.creator_id, jv.title, jv.description, 
+			jv.requirements, jv.location, jv.job_type, jv.experience_level, 
+			jv.min_salary, jv.max_salary, jv.currency, jv.skills, jv.benefits, 
+			jv.work_type, jv.application_deadline, jv.status, jv.type_apply, 
+			jv.external_link, jv.created_at, jv.updated_at,
+			c.id, c.name, c.logo, c.industry
+		FROM job_vacancies jv
+		LEFT JOIN companies c ON jv.company_id = c.id
+		WHERE jv.company_id = $1 
+		ORDER BY jv.created_at DESC 
+		LIMIT $2 OFFSET $3`
 
 	rows, err := tx.QueryContext(ctx, query, companyId, limit, offset)
 	helper.PanicIfError(err)
@@ -238,48 +273,68 @@ func (repository *JobVacancyRepositoryImpl) FindByCompanyId(ctx context.Context,
 	for rows.Next() {
 		var jobVacancy domain.JobVacancy
 		var company domain.Company
-		var creator domain.User
+		var minSalary, maxSalary sql.NullFloat64
+		var applicationDeadline sql.NullTime
+		var externalLink sql.NullString
+		var creatorId sql.NullString
+		var companyLogo, companyIndustry sql.NullString
 
 		err := rows.Scan(
 			&jobVacancy.Id,
 			&jobVacancy.CompanyId,
-			&jobVacancy.CreatorId,
+			&creatorId,
 			&jobVacancy.Title,
 			&jobVacancy.Description,
 			&jobVacancy.Requirements,
 			&jobVacancy.Location,
 			&jobVacancy.JobType,
 			&jobVacancy.ExperienceLevel,
-			&jobVacancy.MinSalary,
-			&jobVacancy.MaxSalary,
+			&minSalary,
+			&maxSalary,
 			&jobVacancy.Currency,
 			&jobVacancy.Skills,
 			&jobVacancy.Benefits,
 			&jobVacancy.WorkType,
-			&jobVacancy.ApplicationDeadline,
+			&applicationDeadline,
 			&jobVacancy.Status,
 			&jobVacancy.TypeApply,
-			&jobVacancy.ExternalLink,
+			&externalLink,
 			&jobVacancy.CreatedAt,
 			&jobVacancy.UpdatedAt,
 			&company.Id,
 			&company.Name,
-			&company.Logo,
-			&company.Industry,
-			&creator.Id,
-			&creator.Name,
-			&creator.Email,
-			&creator.Username,
-			&creator.Photo,
+			&companyLogo,
+			&companyIndustry,
 		)
 		helper.PanicIfError(err)
 
-		// Set relations
-		jobVacancy.Company = &company
-		if jobVacancy.CreatorId != nil {
-			jobVacancy.Creator = &creator
+		// Handle nullable fields
+		if creatorId.Valid {
+			creatorUUID, _ := uuid.Parse(creatorId.String)
+			jobVacancy.CreatorId = &creatorUUID
+		}
+		if minSalary.Valid {
+			jobVacancy.MinSalary = &minSalary.Float64
+		}
+		if maxSalary.Valid {
+			jobVacancy.MaxSalary = &maxSalary.Float64
+		}
+		if applicationDeadline.Valid {
+			jobVacancy.ApplicationDeadline = &applicationDeadline.Time
+		}
+		if externalLink.Valid {
+			jobVacancy.ExternalLink = &externalLink.String
 		}
 
+		// Handle nullable company fields
+		if companyLogo.Valid {
+			company.Logo = companyLogo.String
+		}
+		if companyIndustry.Valid {
+			company.Industry = companyIndustry.String
+		}
+
+		jobVacancy.Company = &company
 		jobVacancies = append(jobVacancies, jobVacancy)
 	}
 
@@ -289,9 +344,9 @@ func (repository *JobVacancyRepositoryImpl) FindByCompanyId(ctx context.Context,
 func (repository *JobVacancyRepositoryImpl) FindByCreatorId(ctx context.Context, tx *sql.Tx, creatorId uuid.UUID, limit, offset int) []domain.JobVacancy {
 	query := `
         SELECT 
-            jv.id, jv.company_id, jv.creator_id, jv.title, jv.job_description, 
+            jv.id, jv.company_id, jv.creator_id, jv.title, jv.description, 
             jv.requirements, jv.location, jv.job_type, jv.experience_level, 
-            jv.salary_min, jv.salary_max, jv.currency, jv.skills_required, jv.benefits, 
+            jv.min_salary, jv.max_salary, jv.currency, jv.skills, jv.benefits, 
             jv.work_type, jv.application_deadline, jv.status, jv.type_apply, 
             jv.external_link, jv.created_at, jv.updated_at,
             c.id, c.name, c.logo, c.industry
@@ -309,58 +364,58 @@ func (repository *JobVacancyRepositoryImpl) FindByCreatorId(ctx context.Context,
 	for rows.Next() {
 		var jobVacancy domain.JobVacancy
 		var company domain.Company
+		var companyLogo, companyIndustry sql.NullString
 
 		err := rows.Scan(
-			&jobVacancy.Id,
-			&jobVacancy.CompanyId,
-			&jobVacancy.CreatorId,
-			&jobVacancy.Title,
-			&jobVacancy.Description,
-			&jobVacancy.Requirements,
-			&jobVacancy.Location,
-			&jobVacancy.JobType,
-			&jobVacancy.ExperienceLevel,
-			&jobVacancy.MinSalary,
-			&jobVacancy.MaxSalary,
-			&jobVacancy.Currency,
-			&jobVacancy.Skills,
-			&jobVacancy.Benefits,
-			&jobVacancy.WorkType,
-			&jobVacancy.ApplicationDeadline,
-			&jobVacancy.Status,
-			&jobVacancy.TypeApply,
-			&jobVacancy.ExternalLink,
-			&jobVacancy.CreatedAt,
-			&jobVacancy.UpdatedAt,
-			&company.Id,
-			&company.Name,
-			&company.Logo,
-			&company.Industry,
+			&jobVacancy.Id, &jobVacancy.CompanyId, &jobVacancy.CreatorId,
+			&jobVacancy.Title, &jobVacancy.Description, &jobVacancy.Requirements,
+			&jobVacancy.Location, &jobVacancy.JobType, &jobVacancy.ExperienceLevel,
+			&jobVacancy.MinSalary, &jobVacancy.MaxSalary, &jobVacancy.Currency,
+			&jobVacancy.Skills, &jobVacancy.Benefits, &jobVacancy.WorkType,
+			&jobVacancy.ApplicationDeadline, &jobVacancy.Status, &jobVacancy.TypeApply,
+			&jobVacancy.ExternalLink, &jobVacancy.CreatedAt, &jobVacancy.UpdatedAt,
+			&company.Id, &company.Name, &companyLogo, &companyIndustry,
 		)
 		helper.PanicIfError(err)
 
-		// Set relations
-		jobVacancy.Company = &company
+		// Handle nullable company fields
+		if companyLogo.Valid {
+			company.Logo = companyLogo.String
+		}
+		if companyIndustry.Valid {
+			company.Industry = companyIndustry.String
+		}
 
+		jobVacancy.Company = &company
 		jobVacancies = append(jobVacancies, jobVacancy)
 	}
 
 	return jobVacancies
 }
 
+func (repository *JobVacancyRepositoryImpl) CountByCreatorId(ctx context.Context, tx *sql.Tx, creatorId uuid.UUID) int {
+	query := `SELECT COUNT(*) FROM job_vacancies WHERE creator_id = $1`
+
+	var count int
+	err := tx.QueryRowContext(ctx, query, creatorId).Scan(&count)
+	helper.PanicIfError(err)
+
+	return count
+}
+
 func (repository *JobVacancyRepositoryImpl) FindAll(ctx context.Context, tx *sql.Tx, limit, offset int) []domain.JobVacancy {
 	query := `
-        SELECT 
-            jv.id, jv.company_id, jv.creator_id, jv.title, jv.job_description, 
-            jv.requirements, jv.location, jv.job_type, jv.experience_level, 
-            jv.salary_min, jv.salary_max, jv.currency, jv.skills_required, jv.benefits, 
-            jv.work_type, jv.application_deadline, jv.status, jv.type_apply, 
-            jv.external_link, jv.created_at, jv.updated_at,
-            c.id, c.name, c.logo, c.industry
-        FROM job_vacancies jv
-        LEFT JOIN companies c ON jv.company_id = c.id
-        ORDER BY jv.created_at DESC
-        LIMIT $1 OFFSET $2`
+		SELECT 
+			jv.id, jv.company_id, jv.creator_id, jv.title, jv.description, 
+			jv.requirements, jv.location, jv.job_type, jv.experience_level, 
+			jv.min_salary, jv.max_salary, jv.currency, jv.skills, jv.benefits, 
+			jv.work_type, jv.application_deadline, jv.status, jv.type_apply, 
+			jv.external_link, jv.created_at, jv.updated_at,
+			c.id, c.name, c.logo, c.industry
+		FROM job_vacancies jv
+		LEFT JOIN companies c ON jv.company_id = c.id
+		ORDER BY jv.created_at DESC 
+		LIMIT $1 OFFSET $2`
 
 	rows, err := tx.QueryContext(ctx, query, limit, offset)
 	helper.PanicIfError(err)
@@ -370,39 +425,68 @@ func (repository *JobVacancyRepositoryImpl) FindAll(ctx context.Context, tx *sql
 	for rows.Next() {
 		var jobVacancy domain.JobVacancy
 		var company domain.Company
+		var minSalary, maxSalary sql.NullFloat64
+		var applicationDeadline sql.NullTime
+		var externalLink sql.NullString
+		var creatorId sql.NullString
+		var companyLogo, companyIndustry sql.NullString
 
 		err := rows.Scan(
 			&jobVacancy.Id,
 			&jobVacancy.CompanyId,
-			&jobVacancy.CreatorId,
+			&creatorId,
 			&jobVacancy.Title,
 			&jobVacancy.Description,
 			&jobVacancy.Requirements,
 			&jobVacancy.Location,
 			&jobVacancy.JobType,
 			&jobVacancy.ExperienceLevel,
-			&jobVacancy.MinSalary,
-			&jobVacancy.MaxSalary,
+			&minSalary,
+			&maxSalary,
 			&jobVacancy.Currency,
 			&jobVacancy.Skills,
 			&jobVacancy.Benefits,
 			&jobVacancy.WorkType,
-			&jobVacancy.ApplicationDeadline,
+			&applicationDeadline,
 			&jobVacancy.Status,
 			&jobVacancy.TypeApply,
-			&jobVacancy.ExternalLink,
+			&externalLink,
 			&jobVacancy.CreatedAt,
 			&jobVacancy.UpdatedAt,
 			&company.Id,
 			&company.Name,
-			&company.Logo,
-			&company.Industry,
+			&companyLogo,
+			&companyIndustry,
 		)
 		helper.PanicIfError(err)
 
-		// Set relations
-		jobVacancy.Company = &company
+		// Handle nullable fields
+		if creatorId.Valid {
+			creatorUUID, _ := uuid.Parse(creatorId.String)
+			jobVacancy.CreatorId = &creatorUUID
+		}
+		if minSalary.Valid {
+			jobVacancy.MinSalary = &minSalary.Float64
+		}
+		if maxSalary.Valid {
+			jobVacancy.MaxSalary = &maxSalary.Float64
+		}
+		if applicationDeadline.Valid {
+			jobVacancy.ApplicationDeadline = &applicationDeadline.Time
+		}
+		if externalLink.Valid {
+			jobVacancy.ExternalLink = &externalLink.String
+		}
 
+		// Handle nullable company fields
+		if companyLogo.Valid {
+			company.Logo = companyLogo.String
+		}
+		if companyIndustry.Valid {
+			company.Industry = companyIndustry.String
+		}
+
+		jobVacancy.Company = &company
 		jobVacancies = append(jobVacancies, jobVacancy)
 	}
 
@@ -411,19 +495,19 @@ func (repository *JobVacancyRepositoryImpl) FindAll(ctx context.Context, tx *sql
 
 func (repository *JobVacancyRepositoryImpl) FindActiveJobs(ctx context.Context, tx *sql.Tx, limit, offset int) []domain.JobVacancy {
 	query := `
-        SELECT 
-            jv.id, jv.company_id, jv.creator_id, jv.title, jv.job_description, 
-            jv.requirements, jv.location, jv.job_type, jv.experience_level, 
-            jv.salary_min, jv.salary_max, jv.currency, jv.skills_required, jv.benefits, 
-            jv.work_type, jv.application_deadline, jv.status, jv.type_apply, 
-            jv.external_link, jv.created_at, jv.updated_at,
-            c.id, c.name, c.logo, c.industry
-        FROM job_vacancies jv
-        LEFT JOIN companies c ON jv.company_id = c.id
-        WHERE jv.status = 'active' 
-        AND (jv.application_deadline IS NULL OR jv.application_deadline > NOW())
-        ORDER BY jv.created_at DESC
-        LIMIT $1 OFFSET $2`
+		SELECT 
+			jv.id, jv.company_id, jv.creator_id, jv.title, jv.description, 
+			jv.requirements, jv.location, jv.job_type, jv.experience_level, 
+			jv.min_salary, jv.max_salary, jv.currency, jv.skills, jv.benefits, 
+			jv.work_type, jv.application_deadline, jv.status, jv.type_apply, 
+			jv.external_link, jv.created_at, jv.updated_at,
+			c.id, c.name, c.logo, c.industry
+		FROM job_vacancies jv
+		LEFT JOIN companies c ON jv.company_id = c.id
+		WHERE jv.status = 'active' 
+		AND (jv.application_deadline IS NULL OR jv.application_deadline > NOW())
+		ORDER BY jv.created_at DESC 
+		LIMIT $1 OFFSET $2`
 
 	rows, err := tx.QueryContext(ctx, query, limit, offset)
 	helper.PanicIfError(err)
@@ -433,39 +517,68 @@ func (repository *JobVacancyRepositoryImpl) FindActiveJobs(ctx context.Context, 
 	for rows.Next() {
 		var jobVacancy domain.JobVacancy
 		var company domain.Company
+		var minSalary, maxSalary sql.NullFloat64
+		var applicationDeadline sql.NullTime
+		var externalLink sql.NullString
+		var creatorId sql.NullString
+		var companyLogo, companyIndustry sql.NullString
 
 		err := rows.Scan(
 			&jobVacancy.Id,
 			&jobVacancy.CompanyId,
-			&jobVacancy.CreatorId,
+			&creatorId,
 			&jobVacancy.Title,
 			&jobVacancy.Description,
 			&jobVacancy.Requirements,
 			&jobVacancy.Location,
 			&jobVacancy.JobType,
 			&jobVacancy.ExperienceLevel,
-			&jobVacancy.MinSalary,
-			&jobVacancy.MaxSalary,
+			&minSalary,
+			&maxSalary,
 			&jobVacancy.Currency,
 			&jobVacancy.Skills,
 			&jobVacancy.Benefits,
 			&jobVacancy.WorkType,
-			&jobVacancy.ApplicationDeadline,
+			&applicationDeadline,
 			&jobVacancy.Status,
 			&jobVacancy.TypeApply,
-			&jobVacancy.ExternalLink,
+			&externalLink,
 			&jobVacancy.CreatedAt,
 			&jobVacancy.UpdatedAt,
 			&company.Id,
 			&company.Name,
-			&company.Logo,
-			&company.Industry,
+			&companyLogo,
+			&companyIndustry,
 		)
 		helper.PanicIfError(err)
 
-		// Set relations
-		jobVacancy.Company = &company
+		// Handle nullable fields
+		if creatorId.Valid {
+			creatorUUID, _ := uuid.Parse(creatorId.String)
+			jobVacancy.CreatorId = &creatorUUID
+		}
+		if minSalary.Valid {
+			jobVacancy.MinSalary = &minSalary.Float64
+		}
+		if maxSalary.Valid {
+			jobVacancy.MaxSalary = &maxSalary.Float64
+		}
+		if applicationDeadline.Valid {
+			jobVacancy.ApplicationDeadline = &applicationDeadline.Time
+		}
+		if externalLink.Valid {
+			jobVacancy.ExternalLink = &externalLink.String
+		}
 
+		// Handle nullable company fields
+		if companyLogo.Valid {
+			company.Logo = companyLogo.String
+		}
+		if companyIndustry.Valid {
+			company.Industry = companyIndustry.String
+		}
+
+		jobVacancy.Company = &company
 		jobVacancies = append(jobVacancies, jobVacancy)
 	}
 
@@ -473,11 +586,11 @@ func (repository *JobVacancyRepositoryImpl) FindActiveJobs(ctx context.Context, 
 }
 
 func (repository *JobVacancyRepositoryImpl) SearchJobs(ctx context.Context, tx *sql.Tx, filters map[string]interface{}, limit, offset int) []domain.JobVacancy {
-	query := `
+	baseQuery := `
         SELECT 
-            jv.id, jv.company_id, jv.creator_id, jv.title, jv.job_description, 
+            jv.id, jv.company_id, jv.creator_id, jv.title, jv.description, 
             jv.requirements, jv.location, jv.job_type, jv.experience_level, 
-            jv.salary_min, jv.salary_max, jv.currency, jv.skills_required, jv.benefits, 
+            jv.min_salary, jv.max_salary, jv.currency, jv.skills, jv.benefits, 
             jv.work_type, jv.application_deadline, jv.status, jv.type_apply, 
             jv.external_link, jv.created_at, jv.updated_at,
             c.id, c.name, c.logo, c.industry
@@ -485,69 +598,114 @@ func (repository *JobVacancyRepositoryImpl) SearchJobs(ctx context.Context, tx *
         LEFT JOIN companies c ON jv.company_id = c.id
         WHERE jv.status = 'active'`
 
-	args := []interface{}{}
+	var conditions []string
+	var args []interface{}
 	argIndex := 1
 
 	// Add search filters
-	if query_text, ok := filters["query"]; ok && query_text != "" {
-		query += fmt.Sprintf(" AND (jv.title ILIKE $%d OR jv.job_description ILIKE $%d)", argIndex, argIndex+1)
-		searchTerm := fmt.Sprintf("%%%s%%", query_text)
-		args = append(args, searchTerm, searchTerm)
-		argIndex += 2
-	}
-
-	if location, ok := filters["location"]; ok && location != "" {
-		query += fmt.Sprintf(" AND jv.location ILIKE $%d", argIndex)
-		args = append(args, fmt.Sprintf("%%%s%%", location))
+	if query, exists := filters["query"]; exists && query != "" {
+		conditions = append(conditions, fmt.Sprintf("(jv.title ILIKE $%d OR jv.description ILIKE $%d)", argIndex, argIndex))
+		args = append(args, "%"+query.(string)+"%")
 		argIndex++
 	}
 
-	if jobTypes, ok := filters["job_type"]; ok {
-		if jobTypeSlice, ok := jobTypes.([]string); ok && len(jobTypeSlice) > 0 {
-			placeholders := make([]string, len(jobTypeSlice))
-			for i, jobType := range jobTypeSlice {
+	if location, exists := filters["location"]; exists && location != "" {
+		if locations, ok := location.([]string); ok && len(locations) > 0 {
+			placeholders := make([]string, len(locations))
+			for i, loc := range locations {
 				placeholders[i] = fmt.Sprintf("$%d", argIndex)
-				args = append(args, jobType)
+				args = append(args, "%"+loc+"%")
 				argIndex++
 			}
-			query += fmt.Sprintf(" AND jv.job_type IN (%s)", strings.Join(placeholders, ","))
+			conditions = append(conditions, fmt.Sprintf("(%s)", strings.Join(func() []string {
+				var locConditions []string
+				for _, placeholder := range placeholders {
+					locConditions = append(locConditions, fmt.Sprintf("jv.location ILIKE %s", placeholder))
+				}
+				return locConditions
+			}(), " OR ")))
+		} else if loc, ok := location.(string); ok && loc != "" {
+			conditions = append(conditions, fmt.Sprintf("jv.location ILIKE $%d", argIndex))
+			args = append(args, "%"+loc+"%")
+			argIndex++
 		}
 	}
 
-	if workTypes, ok := filters["work_type"]; ok {
-		if workTypeSlice, ok := workTypes.([]string); ok && len(workTypeSlice) > 0 {
-			placeholders := make([]string, len(workTypeSlice))
-			for i, workType := range workTypeSlice {
+	if jobTypes, exists := filters["job_type"]; exists {
+		if types, ok := jobTypes.([]string); ok && len(types) > 0 {
+			placeholders := make([]string, len(types))
+			for i, jt := range types {
 				placeholders[i] = fmt.Sprintf("$%d", argIndex)
-				args = append(args, workType)
+				args = append(args, jt)
 				argIndex++
 			}
-			query += fmt.Sprintf(" AND jv.work_type IN (%s)", strings.Join(placeholders, ","))
+			conditions = append(conditions, fmt.Sprintf("jv.job_type IN (%s)", strings.Join(placeholders, ",")))
 		}
 	}
 
-	if minSalary, ok := filters["min_salary"]; ok && minSalary != nil {
-		query += fmt.Sprintf(" AND jv.salary_min >= $%d", argIndex)
+	if experienceLevels, exists := filters["experience_level"]; exists {
+		if levels, ok := experienceLevels.([]string); ok && len(levels) > 0 {
+			placeholders := make([]string, len(levels))
+			for i, el := range levels {
+				placeholders[i] = fmt.Sprintf("$%d", argIndex)
+				args = append(args, el)
+				argIndex++
+			}
+			conditions = append(conditions, fmt.Sprintf("jv.experience_level IN (%s)", strings.Join(placeholders, ",")))
+		}
+	}
+
+	if workTypes, exists := filters["work_type"]; exists {
+		if types, ok := workTypes.([]string); ok && len(types) > 0 {
+			placeholders := make([]string, len(types))
+			for i, wt := range types {
+				placeholders[i] = fmt.Sprintf("$%d", argIndex)
+				args = append(args, wt)
+				argIndex++
+			}
+			conditions = append(conditions, fmt.Sprintf("jv.work_type IN (%s)", strings.Join(placeholders, ",")))
+		}
+	}
+
+	if minSalary, exists := filters["min_salary"]; exists && minSalary != nil {
+		conditions = append(conditions, fmt.Sprintf("(jv.min_salary IS NULL OR jv.min_salary >= $%d)", argIndex))
 		args = append(args, minSalary)
 		argIndex++
 	}
 
-	if maxSalary, ok := filters["max_salary"]; ok && maxSalary != nil {
-		query += fmt.Sprintf(" AND jv.salary_max <= $%d", argIndex)
+	if maxSalary, exists := filters["max_salary"]; exists && maxSalary != nil {
+		conditions = append(conditions, fmt.Sprintf("(jv.max_salary IS NULL OR jv.max_salary <= $%d)", argIndex))
 		args = append(args, maxSalary)
 		argIndex++
 	}
 
-	if companyId, ok := filters["company_id"]; ok && companyId != "" {
-		query += fmt.Sprintf(" AND jv.company_id = $%d", argIndex)
+	if skills, exists := filters["skills"]; exists {
+		if skillList, ok := skills.([]string); ok && len(skillList) > 0 {
+			var skillConditions []string
+			for _, skill := range skillList {
+				skillConditions = append(skillConditions, fmt.Sprintf("jv.skills::text ILIKE $%d", argIndex))
+				args = append(args, "%\""+skill+"\"%")
+				argIndex++
+			}
+			conditions = append(conditions, fmt.Sprintf("(%s)", strings.Join(skillConditions, " OR ")))
+		}
+	}
+
+	if companyId, exists := filters["company_id"]; exists && companyId != "" {
+		conditions = append(conditions, fmt.Sprintf("jv.company_id = $%d", argIndex))
 		args = append(args, companyId)
 		argIndex++
 	}
 
-	query += fmt.Sprintf(" ORDER BY jv.created_at DESC LIMIT $%d OFFSET $%d", argIndex, argIndex+1)
+	// Build final query
+	if len(conditions) > 0 {
+		baseQuery += " AND " + strings.Join(conditions, " AND ")
+	}
+
+	baseQuery += fmt.Sprintf(" ORDER BY jv.created_at DESC LIMIT $%d OFFSET $%d", argIndex, argIndex+1)
 	args = append(args, limit, offset)
 
-	rows, err := tx.QueryContext(ctx, query, args...)
+	rows, err := tx.QueryContext(ctx, baseQuery, args...)
 	helper.PanicIfError(err)
 	defer rows.Close()
 
@@ -555,39 +713,29 @@ func (repository *JobVacancyRepositoryImpl) SearchJobs(ctx context.Context, tx *
 	for rows.Next() {
 		var jobVacancy domain.JobVacancy
 		var company domain.Company
+		var companyLogo, companyIndustry sql.NullString
 
 		err := rows.Scan(
-			&jobVacancy.Id,
-			&jobVacancy.CompanyId,
-			&jobVacancy.CreatorId,
-			&jobVacancy.Title,
-			&jobVacancy.Description,
-			&jobVacancy.Requirements,
-			&jobVacancy.Location,
-			&jobVacancy.JobType,
-			&jobVacancy.ExperienceLevel,
-			&jobVacancy.MinSalary,
-			&jobVacancy.MaxSalary,
-			&jobVacancy.Currency,
-			&jobVacancy.Skills,
-			&jobVacancy.Benefits,
-			&jobVacancy.WorkType,
-			&jobVacancy.ApplicationDeadline,
-			&jobVacancy.Status,
-			&jobVacancy.TypeApply,
-			&jobVacancy.ExternalLink,
-			&jobVacancy.CreatedAt,
-			&jobVacancy.UpdatedAt,
-			&company.Id,
-			&company.Name,
-			&company.Logo,
-			&company.Industry,
+			&jobVacancy.Id, &jobVacancy.CompanyId, &jobVacancy.CreatorId,
+			&jobVacancy.Title, &jobVacancy.Description, &jobVacancy.Requirements,
+			&jobVacancy.Location, &jobVacancy.JobType, &jobVacancy.ExperienceLevel,
+			&jobVacancy.MinSalary, &jobVacancy.MaxSalary, &jobVacancy.Currency,
+			&jobVacancy.Skills, &jobVacancy.Benefits, &jobVacancy.WorkType,
+			&jobVacancy.ApplicationDeadline, &jobVacancy.Status, &jobVacancy.TypeApply,
+			&jobVacancy.ExternalLink, &jobVacancy.CreatedAt, &jobVacancy.UpdatedAt,
+			&company.Id, &company.Name, &companyLogo, &companyIndustry,
 		)
 		helper.PanicIfError(err)
 
-		// Set relations
-		jobVacancy.Company = &company
+		// Handle nullable company fields
+		if companyLogo.Valid {
+			company.Logo = companyLogo.String
+		}
+		if companyIndustry.Valid {
+			company.Industry = companyIndustry.String
+		}
 
+		jobVacancy.Company = &company
 		jobVacancies = append(jobVacancies, jobVacancy)
 	}
 
@@ -599,16 +747,6 @@ func (repository *JobVacancyRepositoryImpl) CountByCompanyId(ctx context.Context
 
 	var count int
 	err := tx.QueryRowContext(ctx, query, companyId).Scan(&count)
-	helper.PanicIfError(err)
-
-	return count
-}
-
-func (repository *JobVacancyRepositoryImpl) CountByCreatorId(ctx context.Context, tx *sql.Tx, creatorId uuid.UUID) int {
-	query := `SELECT COUNT(*) FROM job_vacancies WHERE creator_id = $1`
-
-	var count int
-	err := tx.QueryRowContext(ctx, query, creatorId).Scan(&count)
 	helper.PanicIfError(err)
 
 	return count
@@ -635,69 +773,117 @@ func (repository *JobVacancyRepositoryImpl) CountActiveJobs(ctx context.Context,
 }
 
 func (repository *JobVacancyRepositoryImpl) CountSearchResults(ctx context.Context, tx *sql.Tx, filters map[string]interface{}) int {
-	query := `SELECT COUNT(*) FROM job_vacancies jv WHERE jv.status = 'active'`
+	baseQuery := `
+        SELECT COUNT(*)
+        FROM job_vacancies jv
+        WHERE jv.status = 'active'`
 
-	args := []interface{}{}
+	var conditions []string
+	var args []interface{}
 	argIndex := 1
 
 	// Add the same filters as in SearchJobs
-	if query_text, ok := filters["query"]; ok && query_text != "" {
-		query += fmt.Sprintf(" AND (jv.title ILIKE $%d OR jv.job_description ILIKE $%d)", argIndex, argIndex+1)
-		searchTerm := fmt.Sprintf("%%%s%%", query_text)
-		args = append(args, searchTerm, searchTerm)
-		argIndex += 2
-	}
-
-	if location, ok := filters["location"]; ok && location != "" {
-		query += fmt.Sprintf(" AND jv.location ILIKE $%d", argIndex)
-		args = append(args, fmt.Sprintf("%%%s%%", location))
+	if query, exists := filters["query"]; exists && query != "" {
+		conditions = append(conditions, fmt.Sprintf("(jv.title ILIKE $%d OR jv.description ILIKE $%d)", argIndex, argIndex))
+		args = append(args, "%"+query.(string)+"%")
 		argIndex++
 	}
 
-	if jobTypes, ok := filters["job_type"]; ok {
-		if jobTypeSlice, ok := jobTypes.([]string); ok && len(jobTypeSlice) > 0 {
-			placeholders := make([]string, len(jobTypeSlice))
-			for i, jobType := range jobTypeSlice {
+	if location, exists := filters["location"]; exists && location != "" {
+		if locations, ok := location.([]string); ok && len(locations) > 0 {
+			placeholders := make([]string, len(locations))
+			for i, loc := range locations {
 				placeholders[i] = fmt.Sprintf("$%d", argIndex)
-				args = append(args, jobType)
+				args = append(args, "%"+loc+"%")
 				argIndex++
 			}
-			query += fmt.Sprintf(" AND jv.job_type IN (%s)", strings.Join(placeholders, ","))
+			conditions = append(conditions, fmt.Sprintf("(%s)", strings.Join(func() []string {
+				var locConditions []string
+				for _, placeholder := range placeholders {
+					locConditions = append(locConditions, fmt.Sprintf("jv.location ILIKE %s", placeholder))
+				}
+				return locConditions
+			}(), " OR ")))
+		} else if loc, ok := location.(string); ok && loc != "" {
+			conditions = append(conditions, fmt.Sprintf("jv.location ILIKE $%d", argIndex))
+			args = append(args, "%"+loc+"%")
+			argIndex++
 		}
 	}
 
-	if workTypes, ok := filters["work_type"]; ok {
-		if workTypeSlice, ok := workTypes.([]string); ok && len(workTypeSlice) > 0 {
-			placeholders := make([]string, len(workTypeSlice))
-			for i, workType := range workTypeSlice {
+	if jobTypes, exists := filters["job_type"]; exists {
+		if types, ok := jobTypes.([]string); ok && len(types) > 0 {
+			placeholders := make([]string, len(types))
+			for i, jt := range types {
 				placeholders[i] = fmt.Sprintf("$%d", argIndex)
-				args = append(args, workType)
+				args = append(args, jt)
 				argIndex++
 			}
-			query += fmt.Sprintf(" AND jv.work_type IN (%s)", strings.Join(placeholders, ","))
+			conditions = append(conditions, fmt.Sprintf("jv.job_type IN (%s)", strings.Join(placeholders, ",")))
 		}
 	}
 
-	if minSalary, ok := filters["min_salary"]; ok && minSalary != nil {
-		query += fmt.Sprintf(" AND jv.salary_min >= $%d", argIndex)
+	if experienceLevels, exists := filters["experience_level"]; exists {
+		if levels, ok := experienceLevels.([]string); ok && len(levels) > 0 {
+			placeholders := make([]string, len(levels))
+			for i, el := range levels {
+				placeholders[i] = fmt.Sprintf("$%d", argIndex)
+				args = append(args, el)
+				argIndex++
+			}
+			conditions = append(conditions, fmt.Sprintf("jv.experience_level IN (%s)", strings.Join(placeholders, ",")))
+		}
+	}
+
+	if workTypes, exists := filters["work_type"]; exists {
+		if types, ok := workTypes.([]string); ok && len(types) > 0 {
+			placeholders := make([]string, len(types))
+			for i, wt := range types {
+				placeholders[i] = fmt.Sprintf("$%d", argIndex)
+				args = append(args, wt)
+				argIndex++
+			}
+			conditions = append(conditions, fmt.Sprintf("jv.work_type IN (%s)", strings.Join(placeholders, ",")))
+		}
+	}
+
+	if minSalary, exists := filters["min_salary"]; exists && minSalary != nil {
+		conditions = append(conditions, fmt.Sprintf("(jv.min_salary IS NULL OR jv.min_salary >= $%d)", argIndex))
 		args = append(args, minSalary)
 		argIndex++
 	}
 
-	if maxSalary, ok := filters["max_salary"]; ok && maxSalary != nil {
-		query += fmt.Sprintf(" AND jv.salary_max <= $%d", argIndex)
+	if maxSalary, exists := filters["max_salary"]; exists && maxSalary != nil {
+		conditions = append(conditions, fmt.Sprintf("(jv.max_salary IS NULL OR jv.max_salary <= $%d)", argIndex))
 		args = append(args, maxSalary)
 		argIndex++
 	}
 
-	if companyId, ok := filters["company_id"]; ok && companyId != "" {
-		query += fmt.Sprintf(" AND jv.company_id = $%d", argIndex)
+	if skills, exists := filters["skills"]; exists {
+		if skillList, ok := skills.([]string); ok && len(skillList) > 0 {
+			var skillConditions []string
+			for _, skill := range skillList {
+				skillConditions = append(skillConditions, fmt.Sprintf("jv.skills::text ILIKE $%d", argIndex))
+				args = append(args, "%\""+skill+"\"%")
+				argIndex++
+			}
+			conditions = append(conditions, fmt.Sprintf("(%s)", strings.Join(skillConditions, " OR ")))
+		}
+	}
+
+	if companyId, exists := filters["company_id"]; exists && companyId != "" {
+		conditions = append(conditions, fmt.Sprintf("jv.company_id = $%d", argIndex))
 		args = append(args, companyId)
 		argIndex++
 	}
 
+	// Build final query
+	if len(conditions) > 0 {
+		baseQuery += " AND " + strings.Join(conditions, " AND ")
+	}
+
 	var count int
-	err := tx.QueryRowContext(ctx, query, args...).Scan(&count)
+	err := tx.QueryRowContext(ctx, baseQuery, args...).Scan(&count)
 	helper.PanicIfError(err)
 
 	return count
@@ -721,4 +907,66 @@ func (repository *JobVacancyRepositoryImpl) UpdateStatus(ctx context.Context, tx
 	}
 
 	return nil
+}
+
+func (repository *JobVacancyRepositoryImpl) FindByCompanyIdWithStatus(ctx context.Context, tx *sql.Tx, companyId uuid.UUID, status domain.JobVacancyStatus, limit, offset int) []domain.JobVacancy {
+	query := `
+        SELECT 
+            jv.id, jv.company_id, jv.creator_id, jv.title, jv.description, 
+            jv.requirements, jv.location, jv.job_type, jv.experience_level, 
+            jv.min_salary, jv.max_salary, jv.currency, jv.skills, jv.benefits, 
+            jv.work_type, jv.application_deadline, jv.status, jv.type_apply, 
+            jv.external_link, jv.created_at, jv.updated_at,
+            c.id, c.name, c.logo, c.industry
+        FROM job_vacancies jv
+        LEFT JOIN companies c ON jv.company_id = c.id
+        WHERE jv.company_id = $1 AND jv.status = $2
+        ORDER BY jv.created_at DESC
+        LIMIT $3 OFFSET $4`
+
+	rows, err := tx.QueryContext(ctx, query, companyId, status, limit, offset)
+	helper.PanicIfError(err)
+	defer rows.Close()
+
+	var jobVacancies []domain.JobVacancy
+	for rows.Next() {
+		var jobVacancy domain.JobVacancy
+		var company domain.Company
+		var companyLogo, companyIndustry sql.NullString
+
+		err := rows.Scan(
+			&jobVacancy.Id, &jobVacancy.CompanyId, &jobVacancy.CreatorId,
+			&jobVacancy.Title, &jobVacancy.Description, &jobVacancy.Requirements,
+			&jobVacancy.Location, &jobVacancy.JobType, &jobVacancy.ExperienceLevel,
+			&jobVacancy.MinSalary, &jobVacancy.MaxSalary, &jobVacancy.Currency,
+			&jobVacancy.Skills, &jobVacancy.Benefits, &jobVacancy.WorkType,
+			&jobVacancy.ApplicationDeadline, &jobVacancy.Status, &jobVacancy.TypeApply,
+			&jobVacancy.ExternalLink, &jobVacancy.CreatedAt, &jobVacancy.UpdatedAt,
+			&company.Id, &company.Name, &companyLogo, &companyIndustry,
+		)
+		helper.PanicIfError(err)
+
+		// Handle nullable company fields
+		if companyLogo.Valid {
+			company.Logo = companyLogo.String
+		}
+		if companyIndustry.Valid {
+			company.Industry = companyIndustry.String
+		}
+
+		jobVacancy.Company = &company
+		jobVacancies = append(jobVacancies, jobVacancy)
+	}
+
+	return jobVacancies
+}
+
+func (repository *JobVacancyRepositoryImpl) CountByCompanyIdWithStatus(ctx context.Context, tx *sql.Tx, companyId uuid.UUID, status domain.JobVacancyStatus) int {
+	query := `SELECT COUNT(*) FROM job_vacancies WHERE company_id = $1 AND status = $2`
+
+	var count int
+	err := tx.QueryRowContext(ctx, query, companyId, status).Scan(&count)
+	helper.PanicIfError(err)
+
+	return count
 }
