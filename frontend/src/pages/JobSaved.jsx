@@ -4,25 +4,59 @@ import { useNavigate } from 'react-router-dom';
 import Case from '../components/Case';
 import { Link } from 'react-router-dom';
 
+const BASE_URL = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
 const JobDashboard = () => {
-  const [activeTab, setActiveTab] = useState('Saved');
+  const [activeTab, setActiveTab] = useState('In Progress');
   const [savedJobs, setSavedJobs] = useState([]);
   const [appliedJobs, setAppliedJobs] = useState([]);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Load saved and applied jobs from localStorage when component mounts
-    const saved = localStorage.getItem('savedJobs');
-    const applied = localStorage.getItem('appliedJobs');
-
-    if (saved) {
-      setSavedJobs(JSON.parse(saved));
-    }
-
-    if (applied) {
-      setAppliedJobs(JSON.parse(applied));
-    }
+    fetchMyApplications();
+    fetchSavedJobs();
   }, []);
+
+  const fetchMyApplications = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${BASE_URL}/api/my-applications?status=submitted&limit=10&offset=0`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.code === 200) {
+        setAppliedJobs(data.data.applications || []);
+      }
+    } catch (error) {
+      console.error('Error fetching applications:', error);
+    }
+    setLoading(false);
+  };
+
+  const fetchSavedJobs = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/saved-jobs?page=1&pageSize=10`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.code === 200) {
+        setSavedJobs(data.data.jobs || []);
+      }
+    } catch (error) {
+      console.error('Error fetching saved jobs:', error);
+    }
+  };
 
   const handleRemoveJob = (jobId) => {
     const updatedSavedJobs = savedJobs.filter(job => job.id !== jobId);
@@ -95,11 +129,7 @@ const JobDashboard = () => {
                     {appliedJobs.length}
                   </span>
                 )}
-                {tab.name === 'Applied' && appliedJobs.length > 0 && (
-                  <span className="bg-blue-100 text-blue-600 text-xs font-medium px-2 py-0.5 rounded-full">
-                    {appliedJobs.length}
-                  </span>
-                )}
+
               </button>
             ))}
           </div>
@@ -107,31 +137,32 @@ const JobDashboard = () => {
           {/* Saved Jobs List */}
           {activeTab === 'Saved' && savedJobs.length > 0 ? (
             <div className="space-y-4">
-              {savedJobs.map((job) => (
-                <div key={job.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+              {savedJobs.map((savedJob) => (
+                <div key={savedJob.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="font-semibold text-lg hover:text-blue-600 cursor-pointer" onClick={() => navigate(`/jobs/${job.id}`)}>
-                        {job.title}
+                      <h3 className="font-semibold text-lg hover:text-blue-600 cursor-pointer" onClick={() => navigate(`/jobs/${savedJob.job_vacancy.id}`)}>
+                        {savedJob.job_vacancy.title}
                       </h3>
-                      <p className="text-blue-600 text-sm">{job.company}</p>
+                      <p className="text-blue-600 text-sm">
+                        {savedJob.job_vacancy.company.name}
+                      </p>
                       <div className="flex items-center text-gray-500 text-xs mt-2 space-x-4">
                         <span className="flex items-center">
                           <MapPin size={14} className="mr-1" />
-                          {job.location}
+                          {savedJob.job_vacancy.location}
                         </span>
                         <span className="flex items-center">
                           <DollarSign size={14} className="mr-1" />
-                          {job.salary}
+                          {savedJob.job_vacancy.currency} {savedJob.job_vacancy.min_salary?.toLocaleString()} - {savedJob.job_vacancy.max_salary?.toLocaleString()}
                         </span>
-                        <span className="flex items-center">
-                          <Calendar size={14} className="mr-1" />
-                          Posted {job.postedDate}
+                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          {savedJob.job_vacancy.job_type}
                         </span>
                       </div>
                     </div>
                     <button
-                      onClick={() => handleRemoveJob(job.id)}
+                      onClick={() => handleRemoveJob(savedJob.id)}
                       className="text-gray-400 hover:text-red-500 p-1"
                       title="Remove job"
                     >
@@ -140,7 +171,7 @@ const JobDashboard = () => {
                   </div>
                   <div className="mt-4 flex justify-between items-center">
                     <span className="text-xs text-gray-500">
-                      Saved on {new Date().toLocaleDateString()}
+                      Saved on {new Date(savedJob.created_at).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
@@ -164,28 +195,29 @@ const JobDashboard = () => {
                 Browse Jobs
               </button>
             </div>
-          ) : activeTab === 'In Progress' && appliedJobs.length > 0 ? (
+          ) : activeTab === 'In Progress' && !loading && appliedJobs.length > 0 ? (
             <div className="space-y-4">
-              {appliedJobs.map((job) => (
-                <div key={job.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+              {appliedJobs.map((application) => (
+                <div key={application.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="font-semibold text-lg hover:text-blue-600 cursor-pointer" onClick={() => navigate(`/jobs/${job.id}`)}>
-                        {job.title}
+                      <h3 className="font-semibold text-lg hover:text-blue-600 cursor-pointer" onClick={() => navigate(`/jobs/${application.job_vacancy.id}`)}>
+                        {application.job_vacancy.title}
                       </h3>
-                      <p className="text-blue-600 text-sm">{job.company}</p>
+                      <p className="text-blue-600 text-sm">
+                        {application.job_vacancy.company.name}
+                      </p>
                       <div className="flex items-center text-gray-500 text-xs mt-2 space-x-4">
                         <span className="flex items-center">
                           <MapPin size={14} className="mr-1" />
-                          {job.location}
+                          {application.job_vacancy.location}
                         </span>
                         <span className="flex items-center">
                           <DollarSign size={14} className="mr-1" />
-                          {job.salary}
+                          {application.expected_salary?.toLocaleString()}
                         </span>
-                        <span className="flex items-center">
-                          <Calendar size={14} className="mr-1" />
-                          Posted {job.postedDate}
+                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          {application.job_vacancy.job_type}
                         </span>
                       </div>
                     </div>
@@ -197,51 +229,16 @@ const JobDashboard = () => {
                   </div>
                   <div className="mt-4 flex justify-between items-center">
                     <span className="text-xs text-gray-500">
-                      Apply on {new Date().toLocaleDateString()}
+                      Applied on {new Date(application.submitted_at).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
               ))}
             </div>
-          ) : activeTab === 'Applied' && appliedJobs.length > 0 ? (
-            <div className="space-y-4">
-              {appliedJobs.map((job) => (
-                <div key={job.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-semibold text-lg hover:text-blue-600 cursor-pointer" onClick={() => navigate(`/jobs/${job.id}`)}>
-                        {job.title}
-                      </h3>
-                      <p className="text-blue-600 text-sm">{job.company}</p>
-                      <div className="flex items-center text-gray-500 text-xs mt-2 space-x-4">
-                        <span className="flex items-center">
-                          <MapPin size={14} className="mr-1" />
-                          {job.location}
-                        </span>
-                        <span className="flex items-center">
-                          <DollarSign size={14} className="mr-1" />
-                          {job.salary}
-                        </span>
-                        <span className="flex items-center">
-                          <Calendar size={14} className="mr-1" />
-                          Posted {job.postedDate}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full flex items-center gap-1">
-                        <CheckCircle size={14} className="text-green-600" />
-                        Applied
-                      </span>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex justify-between items-center">
-                    <span className="text-xs text-gray-500">
-                      Applied on {new Date().toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-              ))}
+
+          ) : activeTab === 'In Progress' && loading ? (
+            <div className="flex justify-center items-center mt-16">
+              <div className="text-gray-500">Loading applications...</div>
             </div>
           ) : activeTab === 'Applied' ? (
             <div className="flex flex-col items-center text-center mt-16 max-w-md mx-auto">
