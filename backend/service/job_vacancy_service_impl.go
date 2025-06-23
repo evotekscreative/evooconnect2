@@ -579,6 +579,7 @@ func (service *JobVacancyServiceImpl) toJobVacancyResponse(ctx context.Context, 
 		response.Company = &web.CompanyBasicResponse{
 			Id:   jobVacancy.Company.Id.String(),
 			Name: jobVacancy.Company.Name,
+			Logo: &jobVacancy.Company.Logo,
 		}
 	}
 
