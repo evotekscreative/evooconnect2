@@ -10431,37 +10431,6 @@
               ]
             },
             {
-              "name": "Update Post Status",
-              "request": {
-                "method": "PATCH",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{token}}",
-                    "type": "text"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"status\": \"published\"\n}"
-                },
-                "url": "{{base_url}}/api/company-posts/{{company_post_id}}/status",
-                "description": "Update only the status of a company post. Only the creator or super_admin can update status. Status change to 'published' triggers notifications to company members."
-              },
-              "response": [
-                {
-                  "name": "Success Response",
-                  "status": "OK",
-                  "code": 200,
-                  "body": "{\n    \"code\": 200,\n    \"status\": \"OK\",\n    \"data\": {\n        \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n        \"status\": \"published\",\n        \"updated_at\": \"2023-12-01T16:20:00Z\"\n    }\n}"
-                }
-              ]
-            },
-            {
               "name": "Get Posts by Creator",
               "request": {
                 "method": "GET",
