@@ -376,11 +376,13 @@ const ManageMember = ({ currentUserRole }) => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
+
       <div className="w-64 flex-shrink-0">
         <Sidebar />
       </div>
 
       <div className="flex-1 p-6">
+        <Case/>
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold flex items-center gap-2">
