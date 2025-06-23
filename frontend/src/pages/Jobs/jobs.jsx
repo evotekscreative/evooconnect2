@@ -22,6 +22,7 @@ export default function Jobs() {
     const [activeFilter, setActiveFilter] = useState("All");
     const [companies, setCompanies] = useState([]);
     const [loadingCompanies, setLoadingCompanies] = useState(true);
+    const [showAllCompanies, setShowAllCompanies] = useState(false);
 
     const [jobForm, setJobForm] = useState({
         jobTitle: "",
@@ -315,11 +316,27 @@ export default function Jobs() {
                                 ) : !companies.length ? (
                                     <div>No companies found.</div>
                                 ) : (
-                                    companies
-                                        .filter(company => !company.is_member_of_company)
-                                        .map(company => (
+                                    <>
+                                        {(showAllCompanies ? companies : companies.slice(0, 3)).map((company) => (
                                             <CompanyCard key={company.id} company={company} />
-                                        ))
+                                        ))}
+                                        {companies.length > 3 && !showAllCompanies && (
+                                            <button
+                                                className="mt-2 px-4 py-2 bg-[#0A66C2] text-white rounded hover:bg-blue-700 w-full"
+                                                onClick={() => setShowAllCompanies(true)}
+                                            >
+                                                View All
+                                            </button>
+                                        )}
+                                        {showAllCompanies && (
+                                            <button
+                                                className="mt-2 px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 w-full"
+                                                onClick={() => setShowAllCompanies(false)}
+                                            >
+                                                Close
+                                            </button>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         )}
