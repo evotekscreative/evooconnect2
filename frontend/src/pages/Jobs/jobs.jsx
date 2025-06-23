@@ -13,7 +13,7 @@ import RightSidebar from "../../components/Jobs/RightSidebar.jsx";
 import PostJobModal from "../../components/Jobs/PostJobModal.jsx";
 import CreateCompanyModal from "../../components/Jobs/CreateCompanyModal.jsx";
 
-const BASE_URL = "http://localhost:3000";
+const BASE_URL = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
 export default function Jobs() {
     const [showPostAJobModal, setShowPostAJobModal] = useState(false);
@@ -23,6 +23,14 @@ export default function Jobs() {
     const [companies, setCompanies] = useState([]);
     const [loadingCompanies, setLoadingCompanies] = useState(true);
     const [showAllCompanies, setShowAllCompanies] = useState(false);
+    const [jobs, setJobs] = useState([]);
+    const [loadingJobs, setLoadingJobs] = useState(true);
+    const [jobsPagination, setJobsPagination] = useState({
+        page: 1,
+        limit: 10,
+        totalCount: 0,
+        totalPages: 0
+    });
 
     const [jobForm, setJobForm] = useState({
         jobTitle: "",
@@ -55,45 +63,6 @@ export default function Jobs() {
         rating: 4.5
     });
 
-    const [jobs, setJobs] = useState([
-        {
-            id: 1,
-            title: "Software Engineer",
-            company: "React Company",
-            location: "Remote",
-            employmentType: "Full-time",
-            description: "We are looking for a Software Engineer to join our team.",
-            rating: 4.5,
-            postedDate: "2023-09-30",
-            seniorityLevel: "Director",
-            Industry: "Information Technology",
-            type: "Full-time",
-            jobFunction: "Engineering",
-            salary: "$60,000 - $80,000",
-            companyDescription: "Angular Company is a leading tech company specializing in web development.",
-            companySize: "100-500 employees",
-            companyLogo: "https://cdn-icons-png.flaticon.com/512/174/174857.png",
-        },
-        {
-            id: 2,
-            title: "Software Engineer",
-            company: "React Company",
-            location: "Remote",
-            employmentType: "Full-time",
-            description: "We are looking for a Software Engineer to join our team.",
-            rating: 4.5,
-            postedDate: "2023-09-30",
-            seniorityLevel: "Director",
-            Industry: "Information Technology",
-            type: "Full-time",
-            jobFunction: "Engineering",
-            salary: "$60,000 - $80,000",
-            companyLogo: "https://cdn-icons-png.flaticon.com/512/174/174857.png",
-            companyDescription: "Angular Company is a leading tech company specializing in web development.",
-            companySize: "100-500 employees",
-        }
-    ]);
-
     useEffect(() => {
         async function fetchCompanies() {
             setLoadingCompanies(true);
@@ -114,8 +83,38 @@ export default function Jobs() {
             }
             setLoadingCompanies(false);
         }
+
+        async function fetchJobs() {
+            setLoadingJobs(true);
+            try {
+                const res = await fetch(
+                    `${BASE_URL}/api/jobs/active?page=${jobsPagination.page}&limit=${jobsPagination.limit}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${localStorage.getItem("token")}`,
+                            "Content-Type": "application/json"
+                        }
+                    }
+                );
+                const data = await res.json();
+                if (data.code === 200) {
+                    setJobs(data.data.jobs || []);
+                    setJobsPagination(prev => ({
+                        ...prev,
+                        totalCount: data.data.total_count,
+                        totalPages: data.data.total_pages,
+                        page: data.data.page
+                    }));
+                }
+            } catch (err) {
+                setJobs([]);
+            }
+            setLoadingJobs(false);
+        }
+
         fetchCompanies();
-    }, []);
+        fetchJobs();
+    }, [jobsPagination.page, jobsPagination.limit]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -305,9 +304,15 @@ export default function Jobs() {
 
                         {activeTab === "job" ? (
                             <div className="mt-6 space-y-4">
-                                {jobs.map((job) => (
-                                    <JobCard key={job.id} job={job} />
-                                ))}
+                                {loadingJobs ? (
+                                    <div>Loading jobs...</div>
+                                ) : !jobs.length ? (
+                                    <div>No jobs found.</div>
+                                ) : (
+                                    jobs.map((job) => (
+                                        <JobCard key={job.id} job={job} />
+                                    ))
+                                )}
                             </div>
                         ) : (
                             <div className="mt-6 space-y-4">

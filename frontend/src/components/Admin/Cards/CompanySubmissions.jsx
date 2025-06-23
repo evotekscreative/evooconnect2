@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { User, RefreshCw, Search, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
-import axios from 'axios';
 
 const CompanySubmissions = ({ color = "light" }) => {
   const [submissions, setSubmissions] = useState([]);
@@ -114,33 +113,45 @@ const CompanySubmissions = ({ color = "light" }) => {
         ...(status === 'rejected' && reason && { rejection_reason: reason })
       };
 
+      // Tambahkan log payload
       console.log("Review payload:", payload);
 
-      const response = await axios.put(
-        `${apiUrl}/api/admin/company-submissions/review/${submissionId}`,
-        payload,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', `${apiUrl}/api/admin/company-submissions/review/${submissionId}`);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+          console.log("Status:", xhr.status);
+          console.log("Response:", xhr.responseText);
+
+          if (xhr.status >= 200 && xhr.status < 300) {
+            fetchSubmissions().then(() => {
+              toast.success(`Submission ${status} successfully`);
+              setRejectionModalOpen(false);
+              setRejectionReason('');
+              setCurrentSubmissionId(null);
+              setIsReviewing(false);
+            });
+          } else {
+            // Log error detail
+            console.error("Error response:", xhr.responseText);
+            let errorMessage = `Failed to ${status} submission`;
+            try {
+              const errorData = JSON.parse(xhr.responseText);
+              errorMessage = errorData?.data || errorMessage;
+            } catch (e) { }
+            toast.error(errorMessage);
+            setIsReviewing(false);
           }
         }
-      );
+      };
 
-      console.log("Response:", response.data);
-      toast.success(`Submission ${status} successfully`);
-      await fetchSubmissions();
-      setRejectionModalOpen(false);
-      setRejectionReason('');
-      setCurrentSubmissionId(null);
+      xhr.send(JSON.stringify(payload));
     } catch (error) {
-      console.error("Error response:", error.response);
-      let errorMessage = `Failed to ${status} submission`;
-      if (error.response?.data?.data) {
-        errorMessage = error.response.data.data;
-      }
+      let errorMessage = "Failed to review company submission";
       toast.error(errorMessage);
-    } finally {
       setIsReviewing(false);
     }
   };
