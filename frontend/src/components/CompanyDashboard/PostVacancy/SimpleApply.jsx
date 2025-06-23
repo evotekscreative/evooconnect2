@@ -42,7 +42,7 @@ const SimpleApply = ({ showModal, setShowModal, onSubmit }) => {
     workType: "",
     applicationDeadline: "",
     externalLink: "",
-    companyId: ""
+    companyId: "",
   });
 
   // Fetch user's companies when modal opens
@@ -150,6 +150,8 @@ const SimpleApply = ({ showModal, setShowModal, onSubmit }) => {
         status: 'active' // Default status for new job postings
       };
 
+       setShowModal(false);
+
       // Make API request
       const response = await axios.post(
         `${apiUrl}/api/companies/${formData.companyId}/jobs`,
@@ -166,7 +168,6 @@ const SimpleApply = ({ showModal, setShowModal, onSubmit }) => {
       if (response.status === 201) {
         // Call the onSubmit callback with the response data
         onSubmit(response.data.data);
-        setShowModal(false);
       }
     } catch (error) {
       console.error("Error posting job vacancy:", error);
@@ -235,30 +236,21 @@ const SimpleApply = ({ showModal, setShowModal, onSubmit }) => {
               </div>
             )}
           </div>
-           <div className="mb-6">
-            <label className="block text-gray-700 text-sm font-bold mb-2">
-              Select Company*
-            </label>
-            <select
-              name="companyId"
-              value={formData.companyId}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            >
-              <option value="">Select a company</option>
-              {companies.map(company => (
-                <option key={company.id} value={company.id}>
-                  {company.name}
-                </option>
-              ))}
-            </select>
-            {companies.length === 0 && !loading && (
-              <p className="text-sm text-red-500 mt-1">
-                No companies found. Please create a company first.
-              </p>
-            )}
-          </div>  
+           <div className="hidden">
+  <select
+    name="companyId"
+    value={formData.companyId}
+    onChange={handleInputChange}
+    required
+  >
+    <option value="">Select a company</option>
+    {companies.map(company => (
+      <option key={company.id} value={company.id}>
+        {company.name}
+      </option>
+    ))}
+  </select>
+</div>
 
           {/* Job Details */}
           <div className="space-y-4">

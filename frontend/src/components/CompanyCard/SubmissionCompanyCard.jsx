@@ -14,6 +14,8 @@ const statusLabel = {
 };
 
 export default function SubmissionCompanyCard({ company, showStatus = false }) {
+              const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedSubmission, setSelectedSubmission] = useState(null);
 
@@ -52,7 +54,7 @@ export default function SubmissionCompanyCard({ company, showStatus = false }) {
                 </div>
                 <div className="flex flex-col items-center py-6 px-4">
                     <img
-                        src={company.logo ? 'http://localhost:3000/' + company.logo : "/default-company-logo.png"}
+                        src={company.logo ? apiUrl + '/' + company.logo : "/default-company-logo.png"}
                         alt="Company logo"
                         className="w-20 h-20 rounded-full object-cover mb-4 border"
                     />
@@ -89,7 +91,7 @@ export default function SubmissionCompanyCard({ company, showStatus = false }) {
                             <div className="flex-1 flex flex-col items-center">
                                 <div className="w-28 h-28 bg-gray-200 rounded-full mb-4 flex items-center justify-center overflow-hidden">
                                     {selectedSubmission.logo ? (
-                                        <img src={selectedSubmission.logo.startsWith('http') ? selectedSubmission.logo : 'http://localhost:3000/' + selectedSubmission.logo} alt="Company Logo" className="object-contain h-full" />
+                                        <img src={selectedSubmission.logo.startsWith('http') ? selectedSubmission.logo : apiUrl + '/' + selectedSubmission.logo} alt="Company Logo" className="object-contain h-full" />
                                     ) : (
                                         <span className="text-gray-400">Company Logo</span>
                                     )}

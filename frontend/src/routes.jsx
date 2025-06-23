@@ -429,7 +429,7 @@ const router = createBrowserRouter([
         element: <CompanySetting />,
       },
       {
-        path: "list-applicants",
+        path: "list-applicants/:job_id",
         element: <ListApplicants />,
       },
 
