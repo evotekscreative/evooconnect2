@@ -39,7 +39,43 @@ const JobApplicationModal = ({ onClose, jobVacancyId, onApplied, setHasApplied }
                 linkedin: user.socials?.linkedin || "",
             }));
         }
+        fetchUserCV();
     }, []);
+
+    const fetchUserCV = async () => {
+        const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+        const token = localStorage.getItem("token");
+        
+        try {
+            const response = await fetch(`${apiUrl}/api/user/cv`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.code === 200 && data.data) {
+                // Create a mock file object from existing CV data
+                const existingCV = {
+                    name: data.data.original_filename,
+                    size: data.data.file_size,
+                    lastModified: new Date(data.data.uploaded_at).getTime(),
+                    path: data.data.cv_file_path,
+                    isExisting: true
+                };
+                
+                setUserData(prev => ({
+                    ...prev,
+                    resume: existingCV,
+                    existing_cv_path: data.data.cv_file_path
+                }));
+            }
+        } catch (error) {
+            console.error('Error fetching user CV:', error);
+        }
+    };
 
     const handleNext = () => {
         setIsSubmitting(true);
@@ -56,7 +92,11 @@ const JobApplicationModal = ({ onClose, jobVacancyId, onApplied, setHasApplied }
     };
 
     const handleResumeChange = (file) => {
-        setUserData(prev => ({ ...prev, resume: file }));
+        setUserData(prev => ({ 
+            ...prev, 
+            resume: file,
+            existing_cv_path: file && !file.isExisting ? undefined : prev.existing_cv_path
+        }));
     };
 
     const handleQuestionChange = (name, value) => {
@@ -78,7 +118,13 @@ const JobApplicationModal = ({ onClose, jobVacancyId, onApplied, setHasApplied }
         formData.append("available_start_date", userData.availableStartDate);
 
         if (userData.resume) {
-            formData.append("cv_file", userData.resume);
+            if (userData.resume.isExisting) {
+                // Use existing CV
+                formData.append("existing_cv_path", userData.resume.path);
+            } else {
+                // New CV upload - existing_cv_path will be removed automatically
+                formData.append("cv_file", userData.resume);
+            }
         }
 
         try {

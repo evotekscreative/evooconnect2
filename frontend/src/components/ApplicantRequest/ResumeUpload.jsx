@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ArrowDownToLine, X, FileText, Loader2 } from 'lucide-react';
+import { ChevronLeft, ArrowDownToLine, X, FileText, Loader2, Download, Upload } from 'lucide-react';
 import ConfirmationDialog from '../../components/ApplicantRequest/ConfirmationDialog.jsx';
 
 const ResumeUpload = ({ userData, onBack, onNext, onResumeChange, isSubmitting, onClose }) => {
@@ -83,15 +83,41 @@ const ResumeUpload = ({ userData, onBack, onNext, onResumeChange, isSubmitting, 
                                                 <FileText className="w-5 h-5 text-blue-600" />
                                             </div>
                                             <div>
-                                                <p className="text-sm font-medium text-gray-800">{userData.resume.name}</p>
+                                                <p className="text-sm font-medium text-gray-800">{userData.resume.name || userData.resume.path?.split('/').pop()}</p>
                                                 <div className="flex gap-2 text-xs text-gray-500 mt-1">
-                                                    <span>{formatFileSize(userData.resume.size)}</span>
+                                                    <span>{userData.resume.size ? formatFileSize(userData.resume.size) : 'Unknown size'}</span>
                                                     <span>•</span>
-                                                    <span>Last used on {formatDate(userData.resume.lastModified)}</span>
+                                                    <span>Uploaded at {userData.resume.lastModified ? formatDate(userData.resume.lastModified) : 'Unknown date'}</span>
                                                 </div>
                                                 <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-md">
-                                                    {userData.resume.name.split('.').pop().toUpperCase()}
+                                                    {(userData.resume.name || userData.resume.path)?.split('.').pop()?.toUpperCase() || 'FILE'}
                                                 </span>
+                                                <div className="flex gap-2 mt-2">
+                                                    {userData.resume.path && (
+                                                        <a
+                                                            href={`${import.meta.env.VITE_APP_BACKEND_URL}/${userData.resume.path}`}
+                                                            download
+                                                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 border border-blue-600 rounded hover:bg-blue-50 transition-colors"
+                                                        >
+                                                            <Download className="w-3 h-3 mr-1" />
+                                                            Download
+                                                        </a>
+                                                    )}
+                                                    <label
+                                                        htmlFor="resume-update"
+                                                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 border border-green-600 rounded hover:bg-green-50 cursor-pointer transition-colors"
+                                                    >
+                                                        <Upload className="w-3 h-3 mr-1" />
+                                                        Update
+                                                    </label>
+                                                    <input
+                                                        type="file"
+                                                        accept=".doc,.docx,.pdf"
+                                                        onChange={handleFileChange}
+                                                        className="hidden"
+                                                        id="resume-update"
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                         <button
