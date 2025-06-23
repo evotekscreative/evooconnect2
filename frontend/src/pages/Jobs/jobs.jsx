@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "../../components/Navbar";
 import job1 from '../../assets/img/job1.png';
 import { Card, CardContent } from "../../components/Card";
@@ -13,11 +13,15 @@ import RightSidebar from "../../components/Jobs/RightSidebar.jsx";
 import PostJobModal from "../../components/Jobs/PostJobModal.jsx";
 import CreateCompanyModal from "../../components/Jobs/CreateCompanyModal.jsx";
 
+const BASE_URL = "http://localhost:3000";
+
 export default function Jobs() {
     const [showPostAJobModal, setShowPostAJobModal] = useState(false);
     const [showCreateCompanyModal, setShowCreateCompanyModal] = useState(false);
     const [activeTab, setActiveTab] = useState("job");
     const [activeFilter, setActiveFilter] = useState("All");
+    const [companies, setCompanies] = useState([]);
+    const [loadingCompanies, setLoadingCompanies] = useState(true);
 
     const [jobForm, setJobForm] = useState({
         jobTitle: "",
@@ -64,7 +68,7 @@ export default function Jobs() {
             Industry: "Information Technology",
             type: "Full-time",
             jobFunction: "Engineering",
-            salary: "$60,000 - $80,000", 
+            salary: "$60,000 - $80,000",
             companyDescription: "Angular Company is a leading tech company specializing in web development.",
             companySize: "100-500 employees",
             companyLogo: "https://cdn-icons-png.flaticon.com/512/174/174857.png",
@@ -89,30 +93,28 @@ export default function Jobs() {
         }
     ]);
 
-    const [companies, setCompanies] = useState([
-        {
-            id: 1,
-            name: "EvoConnect",
-            description: "A leading tech company specializing in innovative solutions",
-            industry: "Information Technology",
-            location: "Yogyakarta, Indonesia",
-            employees: "100-500",
-            logo: "https://cdn-icons-png.flaticon.com/512/174/174857.png",
-            rating: 4.5,
-            jobs: 15
-        },
-        {
-            id: 2,
-            name: "Tech Innovators",
-            description: "Pioneering the future of technology",
-            industry: "Software Development",
-            location: "Jakarta, Indonesia",
-            employees: "50-200",
-            logo: "https://cdn-icons-png.flaticon.com/512/174/174857.png",
-            rating: 4.2,
-            jobs: 8
+    useEffect(() => {
+        async function fetchCompanies() {
+            setLoadingCompanies(true);
+            try {
+                const res = await fetch(
+                    `${BASE_URL}/api/companies?limit=10&offset=0&search=&industry=&size=&type=&location=&is_verified=`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${localStorage.getItem("token")}`,
+                            "Content-Type": "application/json"
+                        }
+                    }
+                );
+                const data = await res.json();
+                setCompanies(data?.data?.companies || []);
+            } catch (err) {
+                setCompanies([]);
+            }
+            setLoadingCompanies(false);
         }
-    ]);
+        fetchCompanies();
+    }, []);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -204,24 +206,6 @@ export default function Jobs() {
 
     const handleCompanySubmit = (e) => {
         e.preventDefault();
-
-        const newCompany = {
-            id: companies.length + 1,
-            name: companyForm.name,
-            description: companyForm.description,
-            industry: companyForm.industry,
-            location: companyForm.location,
-            employees: companyForm.employees,
-            logo: companyForm.logoPreview || "https://cdn-icons-png.flaticon.com/512/174/174857.png",
-            rating: parseFloat(companyForm.rating),
-            jobs: 0,
-            website: companyForm.website,
-            companyType: companyForm.companyType,
-            foundedYear: companyForm.foundedYear,
-            specialties: companyForm.specialties
-        };
-
-        setCompanies(prev => [newCompany, ...prev]);
 
         setCompanyForm({
             name: "",
@@ -326,9 +310,17 @@ export default function Jobs() {
                             </div>
                         ) : (
                             <div className="mt-6 space-y-4">
-                                {companies.map((company) => (
-                                    <CompanyCard key={company.id} company={company} />
-                                ))}
+                                {loadingCompanies ? (
+                                    <div>Loading companies...</div>
+                                ) : !companies.length ? (
+                                    <div>No companies found.</div>
+                                ) : (
+                                    companies
+                                        .filter(company => !company.is_member_of_company)
+                                        .map(company => (
+                                            <CompanyCard key={company.id} company={company} />
+                                        ))
+                                )}
                             </div>
                         )}
                     </div>
@@ -337,7 +329,7 @@ export default function Jobs() {
                 <RightSidebar activeTab={activeTab} />
             </div>
 
-            <PostJobModal 
+            <PostJobModal
                 showModal={showPostAJobModal}
                 setShowModal={setShowPostAJobModal}
                 jobForm={jobForm}
@@ -346,7 +338,7 @@ export default function Jobs() {
                 handleJobSubmit={handleJobSubmit}
             />
 
-            <CreateCompanyModal 
+            <CreateCompanyModal
                 showModal={showCreateCompanyModal}
                 setShowModal={setShowCreateCompanyModal}
                 companyForm={companyForm}

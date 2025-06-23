@@ -409,7 +409,6 @@ const router = createBrowserRouter([
     ],
   },
   {
-    // path: "/company-dashboard/:companyId",
     path: "/company-dashboard",
     children: [
       {
@@ -432,12 +431,11 @@ const router = createBrowserRouter([
         path: "list-applicants",
         element: <ListApplicants />,
       },
-
-      {
-        path: "company-dashboard/manage-member/:company_id",
-        element: <ManageMember />,
-      },
     ],
+  },
+  {
+    path: "/company-dashboard/manage-member/:company_id",
+    element: <ManageMember />,
   },
 ]);
 

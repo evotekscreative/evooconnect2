@@ -203,12 +203,12 @@ export default function Sidebar() {
 
                             <li className="items-center">
                                 <Link
-                                    className={`text-xs uppercase py-3 font-bold block ${window.location.pathname.includes("/manage-member") ? "text-sky-500 hover:text-sky-600" : "text-gray-700 hover:text-gray-500"
+                                    className={`text-xs uppercase py-3 font-bold block ${window.location.pathname.includes("/company-dashboard/manage-member") ? "text-sky-500 hover:text-sky-600" : "text-gray-700 hover:text-gray-500"
                                         }`}
                                     to={`/company-dashboard/manage-member/${selectedCompany ? selectedCompany.id : ""}`}
                                 >
                                     {/* Pastikan link ini membawa companyId yang dipilih */}
-                                    <i className={`fas fa-table mr-2 text-sm ${window.location.pathname.includes("/manage-member") ? "opacity-75" : "text-gray-300"
+                                    <i className={`fas fa-table mr-2 text-sm ${window.location.pathname.includes("/company-dashboard/manage-member") ? "opacity-75" : "text-gray-300"
                                         }`}></i>{" "}
                                     Manage Member
                                 </Link>
