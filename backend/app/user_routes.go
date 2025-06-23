@@ -254,7 +254,6 @@ func setupUserRoutes(
 	router.GET("/api/company-posts/:postId", userAuth(companyPostController.FindById))
 	router.PUT("/api/company-posts/:postId", userAuth(companyPostController.Update))
 	router.DELETE("/api/company-posts/:postId", userAuth(companyPostController.Delete))
-	router.PATCH("/api/company-posts/:postId/status", userAuth(companyPostController.UpdateStatus))
 	router.GET("/api/users/:userId/company-posts", userAuth(companyPostController.FindByCreatorId))
 
 	// Company post actions

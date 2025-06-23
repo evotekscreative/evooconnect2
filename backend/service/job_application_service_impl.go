@@ -6,6 +6,7 @@ import (
 	"evoconnect/backend/exception"
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/domain"
+	"evoconnect/backend/model/entity"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
 	"fmt"
@@ -344,7 +345,7 @@ func (service *JobApplicationServiceImpl) ReviewApplication(ctx context.Context,
 		panic(exception.NewNotFoundError("Reviewer not found"))
 	}
 
-	if reviewer.Role != "hr" && reviewer.Role != "company_admin" {
+	if reviewer.Role != entity.RoleHRD && reviewer.Role != entity.RoleSuperAdmin {
 		panic(exception.NewForbiddenError("Only HR or company admin can review applications"))
 	}
 
