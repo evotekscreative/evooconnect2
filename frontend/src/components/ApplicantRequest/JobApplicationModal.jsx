@@ -45,7 +45,7 @@ const JobApplicationModal = ({ onClose, jobVacancyId, onApplied, setHasApplied }
     const fetchUserCV = async () => {
         const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
         const token = localStorage.getItem("token");
-        
+
         try {
             const response = await fetch(`${apiUrl}/api/user/cv`, {
                 headers: {
@@ -53,11 +53,10 @@ const JobApplicationModal = ({ onClose, jobVacancyId, onApplied, setHasApplied }
                     'Content-Type': 'application/json'
                 }
             });
-            
+
             const data = await response.json();
-            
+
             if (data.code === 200 && data.data) {
-                // Create a mock file object from existing CV data
                 const existingCV = {
                     name: data.data.original_filename,
                     size: data.data.file_size,
@@ -65,7 +64,7 @@ const JobApplicationModal = ({ onClose, jobVacancyId, onApplied, setHasApplied }
                     path: data.data.cv_file_path,
                     isExisting: true
                 };
-                
+
                 setUserData(prev => ({
                     ...prev,
                     resume: existingCV,
@@ -119,10 +118,8 @@ const JobApplicationModal = ({ onClose, jobVacancyId, onApplied, setHasApplied }
 
         if (userData.resume) {
             if (userData.resume.isExisting) {
-                // Use existing CV
                 formData.append("existing_cv_path", userData.resume.path);
             } else {
-                // New CV upload - existing_cv_path will be removed automatically
                 formData.append("cv_file", userData.resume);
             }
         }
@@ -161,13 +158,14 @@ const JobApplicationModal = ({ onClose, jobVacancyId, onApplied, setHasApplied }
             }
         }
     };  
+
     const handleRequestClose = () => {
         setShowConfirmDialog(true);
     };
 
     const handleDiscard = () => {
         setShowConfirmDialog(false);
-        onClose(); // Ini akan menutup semua modal dan kembali ke job profile
+        onClose();
     };
 
     const renderStep = () => {
@@ -205,7 +203,6 @@ const JobApplicationModal = ({ onClose, jobVacancyId, onApplied, setHasApplied }
             <div className="bg-white rounded-lg max-w-md w-full mx-auto shadow-xl overflow-y-auto max-h-[90vh]">
                 {renderStep()}
             </div>
-
             {showConfirmDialog && (
                 <ConfirmationDialog
                     onConfirm={() => setShowConfirmDialog(false)}

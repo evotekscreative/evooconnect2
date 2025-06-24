@@ -416,7 +416,7 @@ const router = createBrowserRouter([
         element: <CompanyDashboard />,
       },
       {
-        path: "manage-post",
+        path: ":company_id/manage-post",
         element: <ManagePost />,
       },
       {
@@ -424,7 +424,7 @@ const router = createBrowserRouter([
         element: <ManageVacancy />,
       },
       {
-        path: "company-setting",
+        path: ":company_id/company-setting",
         element: <CompanySetting />,
       },
       {
@@ -434,7 +434,7 @@ const router = createBrowserRouter([
     ],
   },
   {
-    path: "/company-dashboard/manage-member/:company_id",
+    path: "/company-dashboard/:company_id/manage-member/",
     element: <ManageMember />,
   },
 ]);

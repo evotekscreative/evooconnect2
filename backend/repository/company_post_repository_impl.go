@@ -103,7 +103,7 @@ func (repository *companyPostRepositoryImpl) Delete(ctx context.Context, tx *sql
 
 func (repository *companyPostRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, postId uuid.UUID) (domain.CompanyPost, error) {
 	query := `
-        SELECT cp.id, cp.company_id, cp.creator_id,  cp.content, cp.images, cp.visibility, cp.is_announcement, cp.created_at, cp.updated_at,
+        SELECT cp.id, cp.company_id, cp.creator_id, cp.title, cp.content, cp.images, cp.status, cp.visibility, cp.is_announcement, cp.created_at, cp.updated_at, cp.taken_down_at,
                c.id, c.name, COALESCE(c.logo, '') as logo, c.industry, c.is_verified,
                u.id, u.name, u.username, COALESCE(u.photo, '') as photo
         FROM company_posts cp
@@ -116,9 +116,10 @@ func (repository *companyPostRepositoryImpl) FindById(ctx context.Context, tx *s
 	var company domain.Company
 	var user domain.User
 	var images pq.StringArray
+	var takenDownAt sql.NullTime
 
 	err := tx.QueryRowContext(ctx, query, postId).Scan(
-		&post.Id, &post.CompanyId, &post.CreatorId, &post.Content, &images, &post.Visibility, &post.IsAnnouncement, &post.CreatedAt, &post.UpdatedAt,
+		&post.Id, &post.CompanyId, &post.CreatorId, &post.Title, &post.Content, &images, &post.Status, &post.Visibility, &post.IsAnnouncement, &post.CreatedAt, &post.UpdatedAt, &takenDownAt,
 		&company.Id, &company.Name, &company.Logo, &company.Industry, &company.IsVerified,
 		&user.Id, &user.Name, &user.Username, &user.Photo,
 	)
@@ -134,18 +135,23 @@ func (repository *companyPostRepositoryImpl) FindById(ctx context.Context, tx *s
 	post.Company = &company
 	post.Creator = &user
 
+	// Set taken_down_at jika tidak null
+	if takenDownAt.Valid {
+		post.TakenDownAt = &takenDownAt.Time
+	}
+
 	return post, nil
 }
 
 func (repository *companyPostRepositoryImpl) FindByCompanyId(ctx context.Context, tx *sql.Tx, companyId uuid.UUID, limit, offset int) ([]domain.CompanyPost, int, error) {
 	query := `
-        SELECT cp.id, cp.company_id, cp.creator_id, cp.content, cp.images, cp.visibility, cp.is_announcement, cp.created_at, cp.updated_at,
+        SELECT cp.id, cp.company_id, cp.creator_id, cp.title, cp.content, cp.images, cp.status, cp.visibility, cp.is_announcement, cp.created_at, cp.updated_at, cp.taken_down_at,
                c.id, c.name, COALESCE(c.logo, '') as logo, c.industry, c.is_verified,
                u.id, u.name, u.username, COALESCE(u.photo, '') as photo
         FROM company_posts cp
         LEFT JOIN companies c ON cp.company_id = c.id
         LEFT JOIN users u ON cp.creator_id = u.id
-        WHERE cp.company_id = $1 
+        WHERE cp.company_id = $1 AND cp.status = 'published' AND cp.taken_down_at IS NULL
         ORDER BY cp.is_announcement DESC, cp.created_at DESC
         LIMIT $2 OFFSET $3
     `
@@ -163,9 +169,10 @@ func (repository *companyPostRepositoryImpl) FindByCompanyId(ctx context.Context
 		var company domain.Company
 		var user domain.User
 		var images pq.StringArray
+		var takenDownAt sql.NullTime
 
 		err := rows.Scan(
-			&post.Id, &post.CompanyId, &post.CreatorId, &post.Content, &images, &post.Visibility, &post.IsAnnouncement, &post.CreatedAt, &post.UpdatedAt,
+			&post.Id, &post.CompanyId, &post.CreatorId, &post.Title, &post.Content, &images, &post.Status, &post.Visibility, &post.IsAnnouncement, &post.CreatedAt, &post.UpdatedAt, &takenDownAt,
 			&company.Id, &company.Name, &company.Logo, &company.Industry, &company.IsVerified,
 			&user.Id, &user.Name, &user.Username, &user.Photo,
 		)
@@ -177,11 +184,17 @@ func (repository *companyPostRepositoryImpl) FindByCompanyId(ctx context.Context
 		post.Images = []string(images)
 		post.Company = &company
 		post.Creator = &user
+
+		// Set taken_down_at jika tidak null
+		if takenDownAt.Valid {
+			post.TakenDownAt = &takenDownAt.Time
+		}
+
 		posts = append(posts, post)
 	}
 
 	// Get total count
-	countQuery := `SELECT COUNT(*) FROM company_posts WHERE company_id = $1`
+	countQuery := `SELECT COUNT(*) FROM company_posts WHERE company_id = $1 AND status = 'published' AND taken_down_at IS NULL`
 	var total int
 	err = tx.QueryRowContext(ctx, countQuery, companyId).Scan(&total)
 	if err != nil {
@@ -193,13 +206,13 @@ func (repository *companyPostRepositoryImpl) FindByCompanyId(ctx context.Context
 
 func (repository *companyPostRepositoryImpl) FindByCreatorId(ctx context.Context, tx *sql.Tx, creatorId uuid.UUID, limit, offset int) ([]domain.CompanyPost, int, error) {
 	query := `
-        SELECT cp.id, cp.company_id, cp.creator_id, cp.content, cp.images, cp.visibility, cp.is_announcement, cp.created_at, cp.updated_at,
+        SELECT cp.id, cp.company_id, cp.creator_id, cp.title, cp.content, cp.images, cp.status, cp.visibility, cp.is_announcement, cp.created_at, cp.updated_at, cp.taken_down_at,
                c.id, c.name, COALESCE(c.logo, '') as logo, c.industry, c.is_verified,
                u.id, u.name, u.username, COALESCE(u.photo, '') as photo
         FROM company_posts cp
         LEFT JOIN companies c ON cp.company_id = c.id
         LEFT JOIN users u ON cp.creator_id = u.id
-        WHERE cp.creator_id = $1
+        WHERE cp.creator_id = $1 AND (cp.taken_down_at IS NULL OR cp.creator_id = $1)
         ORDER BY cp.created_at DESC
         LIMIT $2 OFFSET $3
     `

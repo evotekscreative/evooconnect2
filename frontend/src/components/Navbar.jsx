@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import Logo from "../assets/img/logo1.png";
 import { Menu, X } from "lucide-react";
 import MobileMenu from "./Navbar/MobileMenu";
@@ -10,7 +10,7 @@ import NotificationDropdown from "./Navbar/NotificationDropdown";
 import UserDropdown from "./Navbar/UserDropdown";
 import Other from "./Navbar/Other";
 
-const Navbar = () => {
+const Navbar = ({ className }) => {
   const apiUrl =
     import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -19,6 +19,7 @@ const Navbar = () => {
   const [isMsgOpen, setIsMsgOpen] = useState(false);
   const [isBellOpen, setIsBellOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState({
     name: "",
     photo: null,
@@ -124,8 +125,8 @@ const Navbar = () => {
 
   return (
     <nav
-      className={`flex items-center justify-between px-4 sm:px-8 md:px-16 py-[13px] bg-sky-500 text-white shadow-sm font-sans sticky top-0 z-50 transition-all duration-300 ${isScrolled ? "shadow-lg" : ""
-        }`}
+      className={`flex items-center justify-between px-4 sm:px-8 md:px-16 py-[13px] bg-primary text-white shadow-sm font-sans sticky top-0 z-50 transition-all duration-300 ${isScrolled ? "shadow-lg" : ""
+        } ${className}`}
     >
       {/* Left: Logo + Hamburger Menu (mobile) */}
       <div className="flex items-center gap-3">
@@ -140,11 +141,11 @@ const Navbar = () => {
           )}
         </button>
 
+        {!location.pathname.startsWith("/company-dashboard") &&
         <Link to="/">
           <img src={Logo} alt="Logo" className="h-8" />
-        </Link>
-
-        <SearchBar />
+        </Link>}
+        {!location.pathname.startsWith("/company-dashboard") && <SearchBar />}
       </div>
 
       <div className="flex items-center gap-4">

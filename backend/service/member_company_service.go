@@ -9,7 +9,7 @@ import (
 	"evoconnect/backend/repository"
 	"fmt"
 	"time"
-
+	"evoconnect/backend/model/domain"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
@@ -36,6 +36,7 @@ type memberCompanyServiceImpl struct {
 	MemberCompanyRepository repository.MemberCompanyRepository
 	UserRepository          repository.UserRepository
 	CompanyRepository       repository.CompanyRepository
+	NotificationService     NotificationService
 	DB                      *sql.DB
 	Validate                *validator.Validate
 }
@@ -44,6 +45,7 @@ func NewMemberCompanyService(
 	memberCompanyRepository repository.MemberCompanyRepository,
 	userRepository repository.UserRepository,
 	companyRepository repository.CompanyRepository,
+	notificationService NotificationService,
 	db *sql.DB,
 	validate *validator.Validate,
 ) MemberCompanyService {
@@ -51,6 +53,7 @@ func NewMemberCompanyService(
 		MemberCompanyRepository: memberCompanyRepository,
 		UserRepository:          userRepository,
 		CompanyRepository:       companyRepository,
+		NotificationService:     notificationService,
 		DB:                      db,
 		Validate:                validate,
 	}
@@ -155,35 +158,67 @@ func (service *memberCompanyServiceImpl) CreateSuperAdminMember(ctx context.Cont
 }
 
 func (service *memberCompanyServiceImpl) UpdateMemberRole(ctx context.Context, memberCompanyID uuid.UUID, request entity.UpdateMemberCompanyRoleRequest) (entity.MemberCompanyResponse, error) {
-	err := service.Validate.Struct(request)
-	if err != nil {
-		return entity.MemberCompanyResponse{}, helper.ValidationError(err)
-	}
+    err := service.Validate.Struct(request)
+    if err != nil {
+        return entity.MemberCompanyResponse{}, helper.ValidationError(err)
+    }
 
-	tx, err := service.DB.BeginTx(ctx, nil)
-	if err != nil {
-		return entity.MemberCompanyResponse{}, fmt.Errorf("failed to start transaction: %w", err)
-	}
-	defer tx.Rollback()
+    tx, err := service.DB.BeginTx(ctx, nil)
+    if err != nil {
+        return entity.MemberCompanyResponse{}, fmt.Errorf("failed to start transaction: %w", err)
+    }
+    defer tx.Rollback()
 
-	memberCompany, err := service.MemberCompanyRepository.FindByID(ctx, tx, memberCompanyID)
-	if err != nil {
-		return entity.MemberCompanyResponse{}, fmt.Errorf("member company not found")
-	}
+    memberCompany, err := service.MemberCompanyRepository.FindByID(ctx, tx, memberCompanyID)
+    if err != nil {
+        return entity.MemberCompanyResponse{}, fmt.Errorf("member company not found")
+    }
 
-	memberCompany.Role = request.Role
+    // Store the old role for notification
+    oldRole := memberCompany.Role
+    
+    // Update the role
+    memberCompany.Role = request.Role
 
-	updatedMember, err := service.MemberCompanyRepository.Update(ctx, tx, memberCompany)
-	if err != nil {
-		return entity.MemberCompanyResponse{}, fmt.Errorf("failed to update member role: %w", err)
-	}
+    updatedMember, err := service.MemberCompanyRepository.Update(ctx, tx, memberCompany)
+    if err != nil {
+        return entity.MemberCompanyResponse{}, fmt.Errorf("failed to update member role: %w", err)
+    }
 
-	err = tx.Commit()
-	if err != nil {
-		return entity.MemberCompanyResponse{}, fmt.Errorf("failed to commit transaction: %w", err)
-	}
+    // Get company details for notification
+    company, err := service.CompanyRepository.FindById(ctx, tx, memberCompany.CompanyID)
+    if err != nil {
+        return entity.MemberCompanyResponse{}, fmt.Errorf("company not found")
+    }
 
-	return service.toMemberCompanyResponse(updatedMember), nil
+    err = tx.Commit()
+    if err != nil {
+        return entity.MemberCompanyResponse{}, fmt.Errorf("failed to commit transaction: %w", err)
+    }
+
+    // Send notification to the user about role change
+    go func() {
+        notificationCtx := context.Background()
+        referenceId := memberCompany.ID
+        
+        title := "Role Updated"
+        message := fmt.Sprintf("Your role in %s has been changed from %s to %s", 
+            company.Name, oldRole, memberCompany.Role)
+        
+        service.NotificationService.Create(
+            notificationCtx,
+            memberCompany.UserID,
+            string(domain.NotificationCategoryCompany),
+            "company_role_change",
+            title,
+            message,
+            &referenceId,
+            stringPtr("company_role_change"),
+            nil,
+        )
+    }()
+
+    return service.toMemberCompanyResponse(updatedMember), nil
 }
 
 func (service *memberCompanyServiceImpl) UpdateMemberStatus(ctx context.Context, memberCompanyID uuid.UUID, request entity.UpdateMemberCompanyStatusRequest) (entity.MemberCompanyResponse, error) {

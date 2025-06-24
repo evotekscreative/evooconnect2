@@ -27,6 +27,7 @@ type CompanyManagementServiceImpl struct {
 	UserRepository               repository.UserRepository
 	AdminRepository              repository.AdminRepository
 	NotificationService          NotificationService
+	ReportRepository             repository.ReportRepository // Optional, can be nil if not used
 	DB                           *sql.DB
 	Validate                     *validator.Validate
 }
@@ -41,6 +42,7 @@ func NewCompanyManagementService(
 	userRepository repository.UserRepository,
 	adminRepository repository.AdminRepository,
 	notificationService NotificationService,
+	reportRepo repository.ReportRepository,
 	db *sql.DB,
 	validate *validator.Validate,
 ) CompanyManagementService {
@@ -53,6 +55,7 @@ func NewCompanyManagementService(
 		UserRepository:               userRepository,
 		AdminRepository:              adminRepository,
 		NotificationService:          notificationService,
+		ReportRepository:             reportRepo, // Optional, can be nil if not used
 		DB:                           db,
 		Validate:                     validate,
 	}
@@ -291,6 +294,11 @@ func (service *CompanyManagementServiceImpl) GetCompanyDetail(ctx context.Contex
 		panic(exception.NewNotFoundError("Company not found"))
 	}
 
+	// Jika perusahaan sudah di-takedown dan user bukan pemiliknya, kembalikan error not found
+	if company.TakenDownAt != nil && !company.IsVerified && company.OwnerId != userId {
+		panic(exception.NewNotFoundError("Company not found"))
+	}
+
 	// Get owner information
 	owner, err := service.UserRepository.FindById(ctx, tx, company.OwnerId)
 	if err != nil {
@@ -326,6 +334,12 @@ func (service *CompanyManagementServiceImpl) GetCompanyDetail(ctx context.Contex
 		}
 	}
 
+	// Check if user has reported this company
+	isReported := false
+	if service.ReportRepository != nil {
+		isReported, _ = service.ReportRepository.HasReported(ctx, userId.String(), "company", companyId.String())
+	}
+
 	// Build response
 	response := web.CompanyDetailResponse{
 		Id:          company.Id.String(),
@@ -340,6 +354,7 @@ func (service *CompanyManagementServiceImpl) GetCompanyDetail(ctx context.Contex
 		IsVerified:  company.IsVerified,
 		CreatedAt:   company.CreatedAt,
 		UpdatedAt:   company.UpdatedAt,
+		TakenDownAt: company.TakenDownAt,
 
 		// Follow information
 		IsFollowing:    isFollowing,
@@ -353,6 +368,9 @@ func (service *CompanyManagementServiceImpl) GetCompanyDetail(ctx context.Contex
 		// Edit information
 		HasPendingEdit: hasPendingEdit,
 		PendingEditId:  pendingEditId,
+		
+		// Report information
+		IsReported:    isReported,
 	}
 
 	// Set owner info if available

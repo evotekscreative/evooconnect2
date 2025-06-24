@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Mail, Phone, MapPin, HelpCircle, X } from 'lucide-react';
 import ConfirmationDialog from '../../components/ApplicantRequest/ConfirmationDialog.jsx';
