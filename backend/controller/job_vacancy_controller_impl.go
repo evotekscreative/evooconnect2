@@ -113,11 +113,9 @@ func (controller *JobVacancyControllerImpl) Delete(writer http.ResponseWriter, r
 }
 
 func (controller *JobVacancyControllerImpl) FindById(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	// Get job vacancy ID from path
+	// Get job vacancy ID from URL params
 	jobVacancyId, err := uuid.Parse(params.ByName("jobVacancyId"))
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid job vacancy ID"))
-	}
+	helper.PanicIfError(err)
 
 	// Get user ID from context (optional for public endpoints)
 	var userId *uuid.UUID
@@ -127,7 +125,24 @@ func (controller *JobVacancyControllerImpl) FindById(writer http.ResponseWriter,
 
 	// Find job vacancy
 	jobVacancyResponse := controller.JobVacancyService.FindById(request.Context(), jobVacancyId, userId)
+	if jobVacancyResponse.TakenDownAt != nil {
+		// Periksa apakah user adalah creator
+		isCreator := false
+		if jobVacancyResponse.CreatorId != nil && *jobVacancyResponse.CreatorId == userId.String() {
+			isCreator = true
+		}
 
+		// Jika bukan creator, kembalikan not found
+		if !isCreator {
+			webResponse := web.WebResponse{
+				Code:   404,
+				Status: "NOT_FOUND",
+				Data:   "Job vacancy not found",
+			}
+			helper.WriteToResponseBody(writer, webResponse)
+			return
+		}
+	}
 	webResponse := web.WebResponse{
 		Code:   200,
 		Status: "OK",

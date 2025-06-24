@@ -566,6 +566,7 @@ func (service *JobVacancyServiceImpl) toJobVacancyResponse(ctx context.Context, 
 		IsSaved:             false,
 		CreatedAt:           jobVacancy.CreatedAt,
 		UpdatedAt:           jobVacancy.UpdatedAt,
+		TakenDownAt:         jobVacancy.TakenDownAt,
 	}
 
 	// Set creator ID if exists
@@ -643,3 +644,4 @@ func toJobVacancyPublicResponse(jobVacancy domain.JobVacancy) web.JobVacancyPubl
 		Company:             companyInfo,
 	}
 }
+

@@ -55,6 +55,7 @@ type CompanyPublicResponse struct {
 	IsVerified  bool      `json:"is_verified"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
+	TakenDownAt *time.Time `json:"taken_down_at,omitempty"` // For soft delete
 
 	// Owner information
 	Owner *UserBasicInfo `json:"owner,omitempty"`
@@ -75,6 +76,7 @@ type CompanyPublicResponse struct {
 	IsPublic bool `json:"is_public,omitempty"` // Indicates if the company is publicly listed
 	// Additional info for company detail view
 	HasJobVacancies bool `json:"has_job_vacancies,omitempty"` // Indicates if the company has job vacancies
+	IsReported       bool `json:"is_reported,omitempty"`
 }
 
 // Add new response for company details with follow info
@@ -91,6 +93,7 @@ type CompanyDetailResponse struct {
 	IsVerified  bool      `json:"is_verified"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
+	TakenDownAt *time.Time `json:"taken_down_at,omitempty"`
 
 	// Owner information
 	Owner *UserBasicInfo `json:"owner,omitempty"`
@@ -107,6 +110,7 @@ type CompanyDetailResponse struct {
 	// Edit information
 	HasPendingEdit bool   `json:"has_pending_edit"`
 	PendingEditId  string `json:"pending_edit_id,omitempty"`
+	IsReported       bool   `json:"is_reported,omitempty"`
 }
 
 // Add to existing responses

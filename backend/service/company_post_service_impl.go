@@ -223,15 +223,19 @@ func (service *CompanyPostServiceImpl) FindById(ctx context.Context, postId uuid
 
 	post, err := service.CompanyPostRepository.FindById(ctx, tx, postId)
 	if err != nil {
-		panic(exception.NewNotFoundError("company post not found"))
+		panic(exception.NewNotFoundError("Company post not found"))
 	}
 
-	// Check visibility permissions
-	if post.Visibility == "members_only" {
-		// Check if user is member of the company
-		_, err := service.MemberCompanyRepository.FindByUserAndCompany(ctx, tx, userId, post.CompanyId)
-		if err != nil {
-			panic(exception.NewForbiddenError("you don't have permission to view this post"))
+	// Jika postingan sudah di-takedown, periksa apakah user adalah pemilik atau admin perusahaan
+	if post.Status == "taken_down" && post.TakenDownAt != nil {
+		// Jika user bukan pemilik postingan
+		if post.CreatorId != userId {
+			// Periksa apakah user adalah admin perusahaan
+			memberInfo, err := service.MemberCompanyRepository.FindByUserAndCompany(ctx, tx, userId, post.CompanyId)
+			if err != nil || (memberInfo.Role != "owner" && memberInfo.Role != "admin" && memberInfo.Role != "super_admin") {
+				// Jika bukan admin atau pemilik, kembalikan not found
+				panic(exception.NewNotFoundError("Company post not found"))
+			}
 		}
 	}
 
@@ -534,6 +538,7 @@ func (service *CompanyPostServiceImpl) toCompanyPostResponse(post domain.Company
 		IsAnnouncement: post.IsAnnouncement,
 		CreatedAt:      post.CreatedAt,
 		UpdatedAt:      post.UpdatedAt,
+		TakenDownAt:    post.TakenDownAt, // Tambahkan field ini
 		LikesCount:     likesCount,
 		CommentsCount:  commentsCount,
 		IsLiked:        isLiked,
@@ -569,6 +574,7 @@ func (service *CompanyPostServiceImpl) toCompanyPostResponse(post domain.Company
 
 	return response
 }
+
 
 func (service *CompanyPostServiceImpl) sendLikeNotification(ctx context.Context, post domain.CompanyPost, likerUserId uuid.UUID) {
 	if service.NotificationService == nil {
