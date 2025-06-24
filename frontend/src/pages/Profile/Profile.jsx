@@ -734,7 +734,7 @@ export default function ProfilePage() {
   return (
     <ProfileLayout>
       <Case />
-      <div className="w-full px-4 py-6 mx-auto sm:px-6">
+      <div className="w-full px-4 py-6 mx-auto sm:px-6 pb-10">
         <div className="flex flex-col justify-center max-w-6xl gap-6 mx-auto md:flex-row">
           <ProfileAlert alert={alert} onClose={hideAlert} />
           {/* Sidebar */}

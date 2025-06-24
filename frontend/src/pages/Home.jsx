@@ -3,11 +3,11 @@ import axios from "axios";
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
-import relativeTime from 'dayjs/plugin/relativeTime'; // Tambahkan import ini
+import relativeTime from 'dayjs/plugin/relativeTime';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
-dayjs.extend(relativeTime); // Tambahkan baris ini
+dayjs.extend(relativeTime);
 
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 import { Tooltip as ChartTooltip } from "chart.js";
@@ -17,50 +17,32 @@ import { CKEditor } from "@ckeditor/ckeditor5-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Alert from "../components/Auth/alert";
 import { Line } from "react-chartjs-2";
-import "../assets/css/style.css"; 
+import "../assets/css/style.css";
 import {
   SquarePen,
   NotebookPen,
   ThumbsUp,
   MessageCircle,
-  Share,
+  Share2,
   Globe,
-  CircleHelp,
-  X,
-  MapPin,
   LockKeyhole,
   Users,
-  Copy,
-  Instagram,
-  Twitter,
   Image as ImageIcon,
-  Menu,
+  X,
   Ellipsis,
   MoreHorizontal,
-  Share2,
   RefreshCw,
   UserPlus,
   TrendingUp,
   TrendingDown,
   TriangleAlert,
+  Copy,
+  Instagram,
+  Twitter,
+  CircleHelp,
+  MapPin,
+  Check,
 } from "lucide-react";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Legend,
-} from "chart.js";
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  ChartTooltip,
-  Legend
-);
 
 export default function SocialNetworkFeed() {
   const apiUrl =
@@ -76,9 +58,10 @@ export default function SocialNetworkFeed() {
   const [editActiveTab, setEditActiveTab] = useState("update");
   const [editPostContent, setEditPostContent] = useState("");
   const [editArticleContent, setEditArticleContent] = useState("");
-  const [newPostImages, setNewPostImages] = useState([]); // Untuk create post
-  const [editPostImages, setEditPostImages] = useState([]); // Untuk gambar yang sudah ada di edit post
+  const [newPostImages, setNewPostImages] = useState([]);
+  const [editPostImages, setEditPostImages] = useState([]);
   const [newEditImages, setNewEditImages] = useState([]);
+  const [removedImages, setRemovedImages] = useState([]);
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [currentPostId, setCurrentPostId] = useState(null);
   const [commentText, setCommentText] = useState("");
@@ -88,72 +71,67 @@ export default function SocialNetworkFeed() {
   const [expandedReplies, setExpandedReplies] = useState({});
   const [replyText, setReplyText] = useState("");
   const [replyingTo, setReplyingTo] = useState(null);
+  const [replyToUser, setReplyToUser] = useState(null);
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editingReplyId, setEditingReplyId] = useState(null);
   const [showNotification, setShowNotification] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [postVisibility, setPostVisibility] = useState("public");
-  const [showPremiumModal, setShowPremiumModal] = useState(false);
-  const [sharePostId, setSharePostId] = useState(null);
-  const [replyToUser, setReplyToUser] = useState(null);
+  const [showPostOptions, setShowPostOptions] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingPost, setEditingPost] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [posts, setPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [error, setError] = useState(null);
-  const fileInputRef = useRef(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [showPostOptions, setShowPostOptions] = useState(false);
-  const [showReportModal, setShowReportModal] = useState(false);
-  const [selectedReason, setSelectedReason] = useState("");
-  const [customReason, setCustomReason] = useState("");
-  const [selectedPostId, setSelectedPostId] = useState(null);
-  const [currentUserId, setCurrentUserId] = useState(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingPost, setEditingPost] = useState(null);
-  const [newImages, setNewImages] = useState([]);
-  const [removedImages, setRemovedImages] = useState([]);
-  const [selectedComment, setSelectedComment] = useState(null);
-  const [showCommentOptions, setShowCommentOptions] = useState(false);
-  const [editingCommentId, setEditingCommentId] = useState(null);
-  const [allRepliesLoaded, setAllRepliesLoaded] = useState({});
-  const [showcaseReplies, setShowcaseReplies] = useState([]);
-  const [selectedReply, setSelectedReply] = useState(null);
-  const [showReplyOptions, setShowReplyOptions] = useState(false);
-  const [editingReplyId, setEditingReplyId] = useState(null);
-  const [showShowcase, setShowShowcase] = useState(false);
-  const navigate = useNavigate();
-  const [profileImage, setProfileImage] = useState(null);
-  const [suggestedConnections, setSuggestedConnections] = useState([]);
-  const [loadingSuggested, setLoadingSuggested] = useState(false);
-  const [reportTargetUserId, setReportTargetUserId] = useState(null);
-  const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const observerRef = useRef(null);
-  const loadingRef = useRef(null);
+  const [page, setPage] = useState(0);
   const [user, setUser] = useState({
     name: "",
+    photo: null,
     username: "",
     initials: "UU",
-    photo: null,
-  }); // Tambahkan nilai default
-  const [allReplies, setAllReplies] = useState({});
-  const [alertInfo, setAlertInfo] = useState({
-    show: false,
-    type: "",
-    message: "",
   });
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [connections, setConnections] = useState([]);
   const [profileViews, setProfileViews] = useState({
     thisWeek: 0,
     lastWeek: 0,
     percentageChange: 0,
     dailyViews: [],
   });
-  const [connections, setConnections] = useState([]);
+  const [suggestedConnections, setSuggestedConnections] = useState([]);
+  const [loadingSuggested, setLoadingSuggested] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [showMobileInfo, setShowMobileInfo] = useState(null);
+  const [postVisibility, setPostVisibility] = useState("public");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [sharePostId, setSharePostId] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const [alertInfo, setAlertInfo] = useState({
+    show: false,
+    type: "",
+    message: "",
+  });
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [selectedReason, setSelectedReason] = useState("");
+  const [customReason, setCustomReason] = useState("");
   const [reportTarget, setReportTarget] = useState({
-  userId: null,
-  targetType: null,
-  targetId: null
-});
+    userId: null,
+    targetType: null,
+    targetId: null,
+  });
+  const [showCommentOptions, setShowCommentOptions] = useState(false);
+  const [selectedComment, setSelectedComment] = useState(null);
+  const [showReplyOptions, setShowReplyOptions] = useState(false);
+  const [selectedReply, setSelectedReply] = useState(null);
+  const [allReplies, setAllReplies] = useState({});
+  const [showShowcase, setShowShowcase] = useState(false);
+  const [showcaseReplies, setShowcaseReplies] = useState([]);
+  const fileInputRef = useRef(null);
+  const observerRef = useRef(null);
+  const loadingRef = useRef(null);
 
   const fetchSuggestedConnections = async () => {
     try {
@@ -178,9 +156,9 @@ export default function SocialNetworkFeed() {
           username: person.username || "unknown",
           initials: person.name
             ? person.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
+              .split(" ")
+              .map((n) => n[0])
+              .join("")
             : "UU",
           photo: person.photo || null,
           headline: person.headline || "No headline specified",
@@ -195,64 +173,64 @@ export default function SocialNetworkFeed() {
     }
   };
 
-const fetchProfileViews = async () => {
-  try {
-    const userToken = localStorage.getItem("token");
+  const fetchProfileViews = async () => {
+    try {
+      const userToken = localStorage.getItem("token");
 
-    const [thisWeekResponse, lastWeekResponse] = await Promise.all([
-      axios.get(apiUrl + "/api/user/profile/views/this-week", {
-        headers: { Authorization: `Bearer ${userToken}` },
-      }),
-      axios.get(apiUrl + "/api/user/profile/views/last-week", {
-        headers: { Authorization: `Bearer ${userToken}` },
-      }),
-    ]);
+      const [thisWeekResponse, lastWeekResponse] = await Promise.all([
+        axios.get(apiUrl + "/api/user/profile/views/this-week", {
+          headers: { Authorization: `Bearer ${userToken}` },
+        }),
+        axios.get(apiUrl + "/api/user/profile/views/last-week", {
+          headers: { Authorization: `Bearer ${userToken}` },
+        }),
+      ]);
 
-    const thisWeekData = thisWeekResponse.data.data || {};
-    const lastWeekData = lastWeekResponse.data.data || {};
+      const thisWeekData = thisWeekResponse.data.data || {};
+      const lastWeekData = lastWeekResponse.data.data || {};
 
-    const newThisWeek = thisWeekData.count || 0;
-    const newLastWeek = lastWeekData.count || 0;
+      const newThisWeek = thisWeekData.count || 0;
+      const newLastWeek = lastWeekData.count || 0;
 
-    // Jika data sama dengan sebelumnya, langsung return
-    if (profileViews.thisWeek === newThisWeek && profileViews.lastWeek === newLastWeek) {
-      return;
+      // Jika data sama dengan sebelumnya, langsung return
+      if (profileViews.thisWeek === newThisWeek && profileViews.lastWeek === newLastWeek) {
+        return;
+      }
+
+      // Hitung perubahan persentase
+      let percentageChange = 0;
+      if (newLastWeek > 0) {
+        percentageChange = ((newThisWeek - newLastWeek) / newLastWeek) * 100;
+      } else if (newThisWeek > 0) {
+        percentageChange = 100;
+      }
+
+      // Siapkan data chart hanya jika diperlukan
+      const days = [];
+      const dailyCounts = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = dayjs().subtract(i, "day").format("YYYY-MM-DD");
+        days.push(date);
+        const dailyViews = thisWeekData.viewers?.filter(
+          (viewer) => dayjs(viewer.viewed_at).format("YYYY-MM-DD") === date
+        ) || [];
+        dailyCounts.push(dailyViews.length);
+      }
+
+      setProfileViews({
+        thisWeek: newThisWeek,
+        lastWeek: newLastWeek,
+        percentageChange: Math.round(percentageChange),
+        dailyViews: thisWeekData.viewers || [],
+        chartData: {
+          labels: days.map((date) => dayjs(date).format("ddd")),
+          data: dailyCounts,
+        },
+      });
+    } catch (error) {
+      console.error("Failed to fetch profile views:", error);
     }
-
-    // Hitung perubahan persentase
-    let percentageChange = 0;
-    if (newLastWeek > 0) {
-      percentageChange = ((newThisWeek - newLastWeek) / newLastWeek) * 100;
-    } else if (newThisWeek > 0) {
-      percentageChange = 100;
-    }
-
-    // Siapkan data chart hanya jika diperlukan
-    const days = [];
-    const dailyCounts = [];
-    for (let i = 6; i >= 0; i--) {
-      const date = dayjs().subtract(i, "day").format("YYYY-MM-DD");
-      days.push(date);
-      const dailyViews = thisWeekData.viewers?.filter(
-        (viewer) => dayjs(viewer.viewed_at).format("YYYY-MM-DD") === date
-      ) || [];
-      dailyCounts.push(dailyViews.length);
-    }
-
-    setProfileViews({
-      thisWeek: newThisWeek,
-      lastWeek: newLastWeek,
-      percentageChange: Math.round(percentageChange),
-      dailyViews: thisWeekData.viewers || [],
-      chartData: {
-        labels: days.map((date) => dayjs(date).format("ddd")),
-        data: dailyCounts,
-      },
-    });
-  } catch (error) {
-    console.error("Failed to fetch profile views:", error);
-  }
-};
+  };
 
   const fetchConnections = async () => {
     try {
@@ -271,9 +249,9 @@ const fetchProfileViews = async () => {
         username: connection.user.username || "unknown",
         initials: connection.user.name
           ? connection.user.name
-              .split(" ")
-              .map((n) => n[0])
-              .join("")
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
           : "UU",
         photo: connection.user.photo || null,
         status: connection.status,
@@ -353,24 +331,24 @@ const fetchProfileViews = async () => {
   };
   const { labels, data } = getLast7DaysData();
 
-const chartData = useMemo(() => {
-  const defaultLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const defaultData = [0, 0, 0, 0, 0, 0, 0];
-  
-  return {
-    labels: profileViews.chartData?.labels || defaultLabels,
-    datasets: [
-      {
-        label: "Profile Views",
-        data: profileViews.chartData?.data || defaultData,
-        fill: false,
-        borderColor: "#06b6d4",
-        backgroundColor: "#06b6d4",
-        tension: 0.4,
-      },
-    ],
-  };
-}, [profileViews.chartData?.labels, profileViews.chartData?.data]); // Lebih spesifik dengan dependency
+  const chartData = useMemo(() => {
+    const defaultLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const defaultData = [0, 0, 0, 0, 0, 0, 0];
+
+    return {
+      labels: profileViews.chartData?.labels || defaultLabels,
+      datasets: [
+        {
+          label: "Profile Views",
+          data: profileViews.chartData?.data || defaultData,
+          fill: false,
+          borderColor: "#06b6d4",
+          backgroundColor: "#06b6d4",
+          tension: 0.4,
+        },
+      ],
+    };
+  }, [profileViews.chartData?.labels, profileViews.chartData?.data]);
 
   const chartOptions = {
     responsive: true,
@@ -390,7 +368,6 @@ const chartData = useMemo(() => {
       y: {
         beginAtZero: true,
         ticks: {
-          precision: 0,
         },
       },
     },
@@ -490,9 +467,9 @@ const chartData = useMemo(() => {
             response.data.data?.user?.username || tempConnection.username,
           initials: response.data.data?.user?.name
             ? response.data.data.user.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
+              .split(" ")
+              .map((n) => n[0])
+              .join("")
             : tempConnection.initials,
           photo: response.data.data?.user?.photo || tempConnection.photo,
           status: response.data.data?.status || "connected",
@@ -560,24 +537,24 @@ const chartData = useMemo(() => {
         if (response.data?.data) {
           // Transformasi data setelah fetch
           const formattedPosts = response.data.data.map((post) => ({
-  id: post.id,
-  content: post.content,
-  images: post.images?.map((img) => 
-    img.startsWith("http") ? img : `${apiUrl}/${img}`
-  ) || [],
-  user: post.user || {
-    id: post.user_id,
-    name: "Unknown User",
-    initials: "UU",
-    username: "unknown",
-  },
-  group: post.group || null,
-  likes_count: post.likes_count || 0,
-  comments_count: post.comments_count || 0,
-  created_at: post.created_at, // Jangan beri fallback
-  visibility: post.visibility || "public",
-  isLiked: post.is_liked || false,
-}));
+            id: post.id,
+            content: post.content,
+            images: post.images?.map((img) =>
+              img.startsWith("http") ? img : `${apiUrl}/${img}`
+            ) || [],
+            user: post.user || {
+              id: post.user_id,
+              name: "Unknown User",
+              initials: "UU",
+              username: "unknown",
+            },
+            group: post.group || null,
+            likes_count: post.likes_count || 0,
+            comments_count: post.comments_count || 0,
+            created_at: post.created_at, // Jangan beri fallback
+            visibility: post.visibility || "public",
+            isLiked: post.is_liked || false,
+          }));
 
           // Update state posts
           if (append) {
@@ -586,7 +563,7 @@ const chartData = useMemo(() => {
             setPosts(formattedPosts);
           }
 
-         if (formattedPosts.length < limit) {
+          if (formattedPosts.length < limit) {
             setHasMore(false); // Tidak ada lagi postingan untuk dimuat
           }
           else {
@@ -693,30 +670,30 @@ const chartData = useMemo(() => {
     }
   };
 
- const formatPostTime = (dateString) => {
-  if (!dateString) return "";
+  const formatPostTime = (dateString) => {
+    if (!dateString) return "";
 
-  try {
-    const utcDate = dayjs.utc(dateString);
+    try {
+      const utcDate = dayjs.utc(dateString);
 
-    if (!utcDate.isValid()) {
-      console.warn("Invalid date:", dateString);
+      if (!utcDate.isValid()) {
+        console.warn("Invalid date:", dateString);
+        return "";
+      }
+
+      const now = dayjs.utc();
+      const diffInHours = now.diff(utcDate, 'hour');
+
+      if (diffInHours < 24) {
+        return utcDate.format('h:mm A'); // hasil: 2:49 AM // Format 24 jam, misal: 02:49
+      } else {
+        return utcDate.format('MMM D [at] HH:mm'); // Misal: Jun 5 at 02:49
+      }
+    } catch (error) {
+      console.error("Time formatting error:", error);
       return "";
     }
-
-    const now = dayjs.utc();
-    const diffInHours = now.diff(utcDate, 'hour');
-
-    if (diffInHours < 24) {
-     return utcDate.format('h:mm A'); // hasil: 2:49 AM // Format 24 jam, misal: 02:49
-    } else {
-      return utcDate.format('MMM D [at] HH:mm'); // Misal: Jun 5 at 02:49
-    }
-  } catch (error) {
-    console.error("Time formatting error:", error);
-    return "";
-  }
-};
+  };
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
@@ -734,91 +711,91 @@ const chartData = useMemo(() => {
   };
 
   const handlePostSubmit = async () => {
-  if (selectedPostId) {
-    await handleUpdatePost();
-    return;
-  }
-
-  setIsLoading(true);
-  setError(null);
-
-  try {
-    const content = activeTab === "update" ? postContent : articleContent;
-    const userToken = localStorage.getItem("token");
-
-    const formData = new FormData();
-    formData.append("content", content);
-    formData.append("visibility", postVisibility);
-
-    // Tambahkan semua gambar ke FormData
-    newPostImages.forEach((img) => {
-      if (img.file) {
-        formData.append("images", img.file);
-      }
-    });
-
-    const response = await axios.post(apiUrl + "/api/posts", formData, {
-      headers: {
-        Authorization: `Bearer ${userToken}`,
-        "Content-Type": "multipart/form-data",
-      },
-    });
-
-    if (!response.data || !response.data.data) {
-      throw new Error("Invalid response from server");
+    if (selectedPostId) {
+      await handleUpdatePost();
+      return;
     }
 
-    // Pastikan response.data.data.images adalah array URL gambar
-    const images = response.data.data.images || [];
-    
-    // Gunakan waktu saat ini untuk memastikan waktu postingan langsung muncul
-    const currentTime = new Date().toISOString();
+    setIsLoading(true);
+    setError(null);
 
-    const newPost = {
-      id: response.data.data.id,
-      content: response.data.data.content || content,
-      images: images.map((img) => {
-        // Pastikan URL gambar lengkap jika backend hanya mengembalikan nama file
-        return img.startsWith("http") ? img : `${apiUrl}/${img}`;
-      }),
-      visibility: response.data.data.visibility || postVisibility,
-      likes_count: response.data.data.likes_count || 0,
-      comments_count: response.data.data.comments_count || 0,
-      created_at: response.data.data.created_at || currentTime, // Gunakan created_at bukan createdAt
-      user: response.data.data.user || {
-        id: currentUserId,
-        name: user.name || "Current User",
-        photo: user.photo || "",
-        initials: user.initials || "CU",
-        username: user.username || "user",
-      },
-    };
+    try {
+      const content = activeTab === "update" ? postContent : articleContent;
+      const userToken = localStorage.getItem("token");
 
-    setPosts((prevPosts) => [newPost, ...prevPosts]);
-    setPostContent("");
-    setArticleContent("");
-    setNewPostImages([]); // Reset gambar setelah posting
+      const formData = new FormData();
+      formData.append("content", content);
+      formData.append("visibility", postVisibility);
 
-    setAlertInfo({
-      show: true,
-      type: "success",
-      message: "Successfully created post!",
-    });
-  } catch (error) {
-    setAlertInfo({
-      show: true,
-      type: "error",
-      message: "Field is required",
-    });
-    setError(
-      error.response?.data?.message ||
+      // Tambahkan semua gambar ke FormData
+      newPostImages.forEach((img) => {
+        if (img.file) {
+          formData.append("images", img.file);
+        }
+      });
+
+      const response = await axios.post(apiUrl + "/api/posts", formData, {
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (!response.data || !response.data.data) {
+        throw new Error("Invalid response from server");
+      }
+
+      // Pastikan response.data.data.images adalah array URL gambar
+      const images = response.data.data.images || [];
+
+      // Gunakan waktu saat ini untuk memastikan waktu postingan langsung muncul
+      const currentTime = new Date().toISOString();
+
+      const newPost = {
+        id: response.data.data.id,
+        content: response.data.data.content || content,
+        images: images.map((img) => {
+          // Pastikan URL gambar lengkap jika backend hanya mengembalikan nama file
+          return img.startsWith("http") ? img : `${apiUrl}/${img}`;
+        }),
+        visibility: response.data.data.visibility || postVisibility,
+        likes_count: response.data.data.likes_count || 0,
+        comments_count: response.data.data.comments_count || 0,
+        created_at: response.data.data.created_at || currentTime, // Gunakan created_at bukan createdAt
+        user: response.data.data.user || {
+          id: currentUserId,
+          name: user.name || "Current User",
+          photo: user.photo || "",
+          initials: user.initials || "CU",
+          username: user.username || "user",
+        },
+      };
+
+      setPosts((prevPosts) => [newPost, ...prevPosts]);
+      setPostContent("");
+      setArticleContent("");
+      setNewPostImages([]); // Reset gambar setelah posting
+
+      setAlertInfo({
+        show: true,
+        type: "success",
+        message: "Successfully created post!",
+      });
+    } catch (error) {
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: "Field is required",
+      });
+      setError(
+        error.response?.data?.message ||
         error.message ||
         "Failed to create post. Please try again."
-    );
-  } finally {
-    setIsLoading(false);
-  }
-};
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
 
   const closeCommentModal = () => {
@@ -858,8 +835,8 @@ const chartData = useMemo(() => {
           const replies = cachedReplies
             ? JSON.parse(cachedReplies)
             : Array.isArray(comment.replies)
-            ? comment.replies
-            : [];
+              ? comment.replies
+              : [];
 
           return {
             id: comment.id || Math.random().toString(36).substr(2, 9),
@@ -894,7 +871,7 @@ const chartData = useMemo(() => {
     }
   };
 
- const fetchReplies = async (commentId) => {
+  const fetchReplies = async (commentId) => {
     try {
       const userToken = localStorage.getItem("token");
       const response = await axios.get(
@@ -911,35 +888,35 @@ const chartData = useMemo(() => {
         // Create initials for the reply user
         user: reply.user
           ? {
-              ...reply.user,
-              initials: reply.user.name
-                ? reply.user.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                : "UU",
-            }
+            ...reply.user,
+            initials: reply.user.name
+              ? reply.user.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+              : "UU",
+          }
           : { name: "Unknown User", initials: "UU" },
         // Ensure replyTo has complete user data including initials
         replyTo: reply.reply_to_id
           ? replies.find((r) => r.id === reply.reply_to_id)?.user
             ? {
-                id: replies.find((r) => r.id === reply.reply_to_id).user.id,
-                name:
-                  replies.find((r) => r.id === reply.reply_to_id).user.name ||
-                  "Unknown User",
-                username:
-                  replies.find((r) => r.id === reply.reply_to_id).user
-                    .username || "unknown",
-                initials: replies.find((r) => r.id === reply.reply_to_id).user
-                  .name
-                  ? replies
-                      .find((r) => r.id === reply.reply_to_id)
-                      .user.name.split(" ")
-                      .map((n) => n[0])
-                      .join("")
-                  : "UU",
-              }
+              id: replies.find((r) => r.id === reply.reply_to_id).user.id,
+              name:
+                replies.find((r) => r.id === reply.reply_to_id).user.name ||
+                "Unknown User",
+              username:
+                replies.find((r) => r.id === reply.reply_to_id).user
+                  .username || "unknown",
+              initials: replies.find((r) => r.id === reply.reply_to_id).user
+                .name
+                ? replies
+                  .find((r) => r.id === reply.reply_to_id)
+                  .user.name.split(" ")
+                  .map((n) => n[0])
+                  .join("")
+                : "UU",
+            }
             : null
           : null,
       }));
@@ -969,45 +946,45 @@ const chartData = useMemo(() => {
 
       const replies = Array.isArray(response.data?.data)
         ? response.data.data.map((reply) => ({
-            ...reply,
-            // Create initials for the reply user
-            user: reply.user
+          ...reply,
+          // Create initials for the reply user
+          user: reply.user
+            ? {
+              ...reply.user,
+              initials: reply.user.name
+                ? reply.user.name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")
+                : "UU",
+            }
+            : { name: "Unknown User", initials: "UU" },
+          // Ensure replyTo has complete user data including initials
+          replyTo: reply.reply_to_id
+            ? response.data.data.find((r) => r.id === reply.reply_to_id)?.user
               ? {
-                  ...reply.user,
-                  initials: reply.user.name
-                    ? reply.user.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")
-                    : "UU",
-                }
-              : { name: "Unknown User", initials: "UU" },
-            // Ensure replyTo has complete user data including initials
-            replyTo: reply.reply_to_id
-              ? response.data.data.find((r) => r.id === reply.reply_to_id)?.user
-                ? {
-                    id: response.data.data.find(
-                      (r) => r.id === reply.reply_to_id
-                    ).user.id,
-                    name:
-                      response.data.data.find((r) => r.id === reply.reply_to_id)
-                        .user.name || "Unknown User",
-                    username:
-                      response.data.data.find((r) => r.id === reply.reply_to_id)
-                        .user.username || "unknown",
-                    initials: response.data.data.find(
-                      (r) => r.id === reply.reply_to_id
-                    ).user.name
-                      ? response.data.data
-                          .find((r) => r.id === reply.reply_to_id)
-                          .user.name.split(" ")
-                          .map((n) => n[0])
-                          .join("")
-                      : "UU",
-                  }
-                : null
-              : null,
-          }))
+                id: response.data.data.find(
+                  (r) => r.id === reply.reply_to_id
+                ).user.id,
+                name:
+                  response.data.data.find((r) => r.id === reply.reply_to_id)
+                    .user.name || "Unknown User",
+                username:
+                  response.data.data.find((r) => r.id === reply.reply_to_id)
+                    .user.username || "unknown",
+                initials: response.data.data.find(
+                  (r) => r.id === reply.reply_to_id
+                ).user.name
+                  ? response.data.data
+                    .find((r) => r.id === reply.reply_to_id)
+                    .user.name.split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                  : "UU",
+              }
+              : null
+            : null,
+        }))
         : [];
 
       setAllReplies((prev) => ({
@@ -1077,7 +1054,7 @@ const chartData = useMemo(() => {
 
   const handleAddComment = async () => {
     if (!commentText.trim()) {
-      setCommentError("Komentar tidak boleh kosong");
+      setCommentError("Comment cannot be empty");
       return;
     }
 
@@ -1122,12 +1099,12 @@ const chartData = useMemo(() => {
       });
       setCommentError(
         error.response?.data?.message ||
-          "Terjadi kesalahan saat menambahkan komentar. Silakan coba lagi."
+        "An error occurred while adding the comment. Please try again."
       );
     }
   };
 
-const handleReply = async (commentId, replyToUser = null) => {
+  const handleReply = async (commentId, replyToUser = null) => {
     if (!commentId || !replyText.trim()) return;
 
     try {
@@ -1142,7 +1119,7 @@ const handleReply = async (commentId, replyToUser = null) => {
         `${apiUrl}/api/comments/${commentId}/replies`,
         {
           content: replyText,
-          replyTo: replyingTo, // This should be the comment ID you're replying to
+          replyTo: replyingTo, 
         },
         {
           headers: {
@@ -1158,18 +1135,18 @@ const handleReply = async (commentId, replyToUser = null) => {
           ...response.data.data.user,
           initials: response.data.data.user?.name
             ? response.data.data.user.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
+              .split(" ")
+              .map((n) => n[0])
+              .join("")
             : "CU",
         },
         replyTo: replyToUser
           ? {
-              id: replyToUser.id,
-              name: replyToUser.name,
-              username: replyToUser.username,
-              initials: getInitials(replyToUser.name),
-            }
+            id: replyToUser.id,
+            name: replyToUser.name,
+            username: replyToUser.username,
+            initials: getInitials(replyToUser.name),
+          }
           : null,
       };
 
@@ -1205,7 +1182,7 @@ const handleReply = async (commentId, replyToUser = null) => {
       addAlert("error", "Failed to add reply");
       setCommentError(
         error.response?.data?.message ||
-          "Failed to add reply. Please try again."
+        "Failed to add reply. Please try again."
       );
     }
   };
@@ -1363,12 +1340,12 @@ const handleReply = async (commentId, replyToUser = null) => {
         prevPosts.map((post) =>
           post.id === editingPost.id
             ? {
-                ...response.data.data,
-                // Pastikan URL gambar lengkap
-                images: (response.data.data.images || []).map((img) =>
-                  img.startsWith("http") ? img : `${apiUrl}/${img}`
-                ),
-              }
+              ...response.data.data,
+              // Pastikan URL gambar lengkap
+              images: (response.data.data.images || []).map((img) =>
+                img.startsWith("http") ? img : `${apiUrl}/${img}`
+              ),
+            }
             : post
         )
       );
@@ -1475,27 +1452,27 @@ const handleReply = async (commentId, replyToUser = null) => {
               </>
             ) : (
               <>
-              
-<button
-  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
-  onClick={() => {
-    const post = posts.find((p) => p.id === selectedPostId);
-    if (post && post.user && post.id) {
-      handleReportClick(post.user.id, "post", post.id);
-    } else {
-      console.error("Invalid post data for report:", post);
-      setAlertInfo({
-        show: true,
-        type: "error",
-        message: "Cannot report this post. Missing required information.",
-      });
-    }
-    handleClosePostOptions();
-  }}
->
-  <TriangleAlert size={16} className="mr-2" />
-  Report Post
-</button>
+
+                <button
+                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
+                  onClick={() => {
+                    const post = posts.find((p) => p.id === selectedPostId);
+                    if (post && post.user && post.id) {
+                      handleReportClick(post.user.id, "post", post.id);
+                    } else {
+                      console.error("Invalid post data for report:", post);
+                      setAlertInfo({
+                        show: true,
+                        type: "error",
+                        message: "Cannot report this post. Missing required information.",
+                      });
+                    }
+                    handleClosePostOptions();
+                  }}
+                >
+                  <TriangleAlert size={16} className="mr-2" />
+                  Report Post
+                </button>
 
                 {!isConnected && (
                   <button
@@ -1773,14 +1750,14 @@ const handleReply = async (commentId, replyToUser = null) => {
   };
 
   // Fix for handleReportClick to properly set target IDs
-const handleReportClick = (userId, targetType, targetId) => {
-  setReportTarget({
-    userId,
-    targetType,
-    targetId
-  });
-  setShowReportModal(true);
-};
+  const handleReportClick = (userId, targetType, targetId) => {
+    setReportTarget({
+      userId,
+      targetType,
+      targetId
+    });
+    setShowReportModal(true);
+  };
 
 
   const renderCommentOptionsModal = () => {
@@ -2094,156 +2071,153 @@ const handleReportClick = (userId, targetType, targetId) => {
       });
     }
   };
-const ReportModal = ({
-  showReportModal,
-  setShowReportModal,
-  selectedReason,
-  setSelectedReason,
-  customReason,
-  setCustomReason,
-  setAlertInfo,
-  reportTarget // Tambahkan prop reportTarget
-}) => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const ReportModal = ({
+    showReportModal,
+    setShowReportModal,
+    selectedReason,
+    setSelectedReason,
+    customReason,
+    setCustomReason,
+    setAlertInfo,
+    reportTarget // Tambahkan prop reportTarget
+  }) => {
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmitReport = async () => {
-    if (!selectedReason) {
-      setAlertInfo({
-        show: true,
-        type: "error",
-        message: "Please select a reason for reporting"
-      });
-      return;
-    }
-
-    const reasonText = selectedReason === "Other" ? customReason : selectedReason;
-    
-    try {
-      setIsSubmitting(true);
-      const userToken = localStorage.getItem("token");
-      
-      const response = await axios.post(
-        `${apiUrl}/api/reports/${reportTarget.userId}/${reportTarget.targetType}/${reportTarget.targetId}`,
-        { reason: reasonText },
-        {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-            "Content-Type": "application/json"
-          }
-        }
-      );
-
-      if (response.data?.code === 201) {
+    const handleSubmitReport = async () => {
+      if (!selectedReason) {
         setAlertInfo({
           show: true,
-          type: "success",
-          message: "Report submitted successfully!"
+          type: "error",
+          message: "Please select a reason for reporting"
         });
-        setShowReportModal(false);
-        setSelectedReason("");
-        setCustomReason("");
-      } else {
-        throw new Error("Failed to submit report");
+        return;
       }
-    } catch (error) {
-      console.error("Failed to submit report:", error);
-      setAlertInfo({
-        show: true,
-        type: "error",
-        message: error.response?.data?.message || "Failed to submit report"
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
-  return (
-    <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] ${
-      showReportModal ? "block" : "hidden"
-    }`}>
-      <div className="bg-white rounded-lg w-full max-w-md mx-4 p-5">
-        <h3 className="text-lg font-semibold mb-4">Report this content</h3>
-        <p className="mb-3 text-sm text-gray-600">
-          Please select a reason for reporting
-        </p>
+      const reasonText = selectedReason === "Other" ? customReason : selectedReason;
 
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          {[
-            "Harassment",
-            "Fraud",
-            "Spam",
-            "Misinformation",
-            "Hate speech",
-            "Threats or violence",
-            "Self-harm",
-            "Graphic content",
-            "Extremist organizations",
-            "Sexual content",
-            "Fake account",
-            "Child exploitation",
-            "Illegal products",
-            "Violation",
-            "Other",
-          ].map((reason) => (
-            <button
-              key={reason}
-              className={`py-2 px-3 text-sm border rounded-full ${
-                selectedReason === reason
+      try {
+        setIsSubmitting(true);
+        const userToken = localStorage.getItem("token");
+
+        const response = await axios.post(
+          `${apiUrl}/api/reports/${reportTarget.userId}/${reportTarget.targetType}/${reportTarget.targetId}`,
+          { reason: reasonText },
+          {
+            headers: {
+              Authorization: `Bearer ${userToken}`,
+              "Content-Type": "application/json"
+            }
+          }
+        );
+
+        if (response.data?.code === 201) {
+          setAlertInfo({
+            show: true,
+            type: "success",
+            message: "Report submitted successfully!"
+          });
+          setShowReportModal(false);
+          setSelectedReason("");
+          setCustomReason("");
+        } else {
+          throw new Error("Failed to submit report");
+        }
+      } catch (error) {
+        console.error("Failed to submit report:", error);
+        setAlertInfo({
+          show: true,
+          type: "error",
+          message: error.response?.data?.message || "Failed to submit report"
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
+    return (
+      <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] ${showReportModal ? "block" : "hidden"
+        }`}>
+        <div className="bg-white rounded-lg w-full max-w-md mx-4 p-5">
+          <h3 className="text-lg font-semibold mb-4">Report this content</h3>
+          <p className="mb-3 text-sm text-gray-600">
+            Please select a reason for reporting
+          </p>
+
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            {[
+              "Harassment",
+              "Fraud",
+              "Spam",
+              "Misinformation",
+              "Hate speech",
+              "Threats or violence",
+              "Self-harm",
+              "Graphic content",
+              "Extremist organizations",
+              "Sexual content",
+              "Fake account",
+              "Child exploitation",
+              "Illegal products",
+              "Violation",
+              "Other",
+            ].map((reason) => (
+              <button
+                key={reason}
+                className={`py-2 px-3 text-sm border rounded-full ${selectedReason === reason
                   ? "bg-blue-100 border-blue-500 text-blue-700"
                   : "bg-white hover:bg-gray-100"
-              }`}
-              onClick={() => setSelectedReason(reason)}
+                  }`}
+                onClick={() => setSelectedReason(reason)}
+              >
+                {reason}
+              </button>
+            ))}
+          </div>
+
+          {selectedReason === "Other" && (
+            <textarea
+              className="w-full p-2 border rounded mb-3 text-sm"
+              rows={3}
+              placeholder="Please describe the reason for your report"
+              value={customReason}
+              onChange={(e) => setCustomReason(e.target.value)}
+            />
+          )}
+
+          <div className="flex justify-end gap-2">
+            <button
+              className="text-gray-500 hover:text-gray-700"
+              onClick={() => {
+                setShowReportModal(false);
+                setSelectedReason("");
+                setCustomReason("");
+              }}
+              disabled={isSubmitting}
             >
-              {reason}
+              Cancel
             </button>
-          ))}
-        </div>
-
-        {selectedReason === "Other" && (
-          <textarea
-            className="w-full p-2 border rounded mb-3 text-sm"
-            rows={3}
-            placeholder="Please describe the reason for your report"
-            value={customReason}
-            onChange={(e) => setCustomReason(e.target.value)}
-          />
-        )}
-
-        <div className="flex justify-end gap-2">
-          <button
-            className="text-gray-500 hover:text-gray-700"
-            onClick={() => {
-              setShowReportModal(false);
-              setSelectedReason("");
-              setCustomReason("");
-            }}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </button>
-          <button
-            className={`px-4 py-2 rounded text-white ${
-              selectedReason
+            <button
+              className={`px-4 py-2 rounded text-white ${selectedReason
                 ? "bg-blue-600 hover:bg-blue-700"
                 : "bg-gray-300 cursor-not-allowed"
-            }`}
-            disabled={!selectedReason || isSubmitting}
-            onClick={handleSubmitReport}
-          >
-            {isSubmitting ? (
-              <div className="flex items-center justify-center">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                Submitting...
-              </div>
-            ) : (
-              "Report"
-            )}
-          </button>
+                }`}
+              disabled={!selectedReason || isSubmitting}
+              onClick={handleSubmitReport}
+            >
+              {isSubmitting ? (
+                <div className="flex items-center justify-center">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Submitting...
+                </div>
+              ) : (
+                "Report"
+              )}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
   const handleDeleteComment = async (commentId) => {
     try {
@@ -2329,6 +2303,8 @@ const ReportModal = ({
 
   const handleUpdateComment = async (commentId) => {
     if (!commentId || !commentText.trim()) return;
+
+
 
     try {
       const userToken = localStorage.getItem("token");
@@ -2420,16 +2396,16 @@ const ReportModal = ({
       <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg w-full max-w-md max-h-[80vh] overflow-y-auto p-4">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Semua Reply</h3>
+            <h3 className="text-lg font-semibold">All Replies</h3>
             <button onClick={() => setShowShowcase(false)}>
               <X size={20} />
             </button>
           </div>
 
           {repliesToRender.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">Tidak ada reply.</p>
+            <p className="text-gray-500 text-center py-4">No Replies</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3 mb-6 text-left">
               {repliesToRender.map((reply) => (
                 <div key={reply.id} className="flex items-start border-b pb-3">
                   <div className="ml-3">
@@ -2445,50 +2421,6 @@ const ReportModal = ({
         </div>
       </div>
     );
-  };
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const userToken = localStorage.getItem("token");
-        const response = await axios.get(apiUrl + "/api/user/profile", {
-          headers: { Authorization: `Bearer ${userToken}` },
-        });
-
-        const userData = response.data.data;
-        setUser({
-          name: userData.name,
-          username: userData.username,
-          initials: userData.name
-            .split(" ")
-            .map((n) => n[0])
-            .join(""),
-          photo: userData.photo,
-        });
-        setProfileImage(userData.photo);
-      } catch (error) {
-        console.error("Failed to fetch user data:", error);
-      }
-    };
-
-    fetchUserData();
-  }, []);
-
-  const fetchUserProfile = (username, userId) => {
-    try {
-      if (userId === currentUserId) {
-        navigate("/profile");
-      } else if (username) {
-        navigate(`/user-profile/${username}`);
-      }
-    } catch (error) {
-      console.error("Failed to navigate to user profile:", error);
-      setAlertInfo({
-        show: true,
-        type: "error",
-        message: "Failed to navigate to user profile",
-      });
-    }
   };
 
   return (
@@ -2586,11 +2518,10 @@ const ReportModal = ({
             </div>
             <div className="text-center">
               <div
-                className={`text-xl font-semibold flex items-center justify-center ${
-                  profileViews.percentageChange >= 0
-                    ? "text-green-500"
-                    : "text-red-500"
-                }`}
+                className={`text-xl font-semibold flex items-center justify-center ${profileViews.percentageChange >= 0
+                  ? "text-green-500"
+                  : "text-red-500"
+                  }`}
               >
                 {profileViews.percentageChange >= 0 ? (
                   <TrendingUp size={16} className="mr-1" />
@@ -2604,17 +2535,39 @@ const ReportModal = ({
             </div>
           </div>
 
-          <div className="h-32 md:h-40 mt-2">
-            <Line data={chartData} options={chartOptions} />
+          <div className="h-32 md:h-40 w-full mt-2 relative">
+            <Line
+              data={chartData}
+              options={{
+                ...chartOptions,
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  ...chartOptions.scales,
+                  y: {
+                    min: 0,
+                    max: 100,
+                    ticks: {
+                      stepSize: 10,
+                      callback: function (value) {
+                        return value;
+                      },
+                    },
+                    grid: {
+                      color: "#e5e7eb",
+                    },
+                  },
+                },
+              }}
+            />
           </div>
         </div>
       </div>
 
       {/* Main Content - Feed */}
       <div
-        className={`w-full ${
-          showMobileMenu ? "hidden" : "block"
-        } md:block md:w-full lg:w-1/2 px-0 md:px-1`}
+        className={`w-full ${showMobileMenu ? "hidden" : "block"
+          } md:block md:w-full lg:w-1/2 px-0 md:px-1`}
       >
         <div
           id="post-form"
@@ -2623,11 +2576,10 @@ const ReportModal = ({
           {/* Tabs */}
           <div className="flex border-b pb-2 space-x-1">
             <button
-              className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${
-                activeTab === "update"
-                  ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
-                  : "text-gray-500 hover:text-blue-500"
-              }`}
+              className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${activeTab === "update"
+                ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                : "text-gray-500 hover:text-blue-500"
+                }`}
               onClick={() => setActiveTab("update")}
             >
               <SquarePen size={16} className="mr-2" />
@@ -2635,11 +2587,10 @@ const ReportModal = ({
               <span className="sm:hidden">Update</span>
             </button>
             <button
-              className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${
-                activeTab === "article"
-                  ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
-                  : "text-gray-500 hover:text-blue-500"
-              }`}
+              className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${activeTab === "article"
+                ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                : "text-gray-500 hover:text-blue-500"
+                }`}
               onClick={() => setActiveTab("article")}
             >
               <NotebookPen size={16} className="mr-2" />
@@ -2671,7 +2622,7 @@ const ReportModal = ({
                     />
                   ) : (
                     <div className="w-full h-full rounded-full flex items-center justify-center bg-gray-300">
-                      <span className="font-bold text-gray-600">
+                      <span className="text-sm font-bold text-gray-600">
                         {getInitials(user.name)}
                       </span>
                     </div>
@@ -2700,11 +2651,10 @@ const ReportModal = ({
                     >
                       <span
                         onClick={() => handleVisibilityChange(type)}
-                        className={`p-1 rounded-full cursor-pointer transition ${
-                          postVisibility === type
-                            ? "bg-blue-600"
-                            : "bg-gray-400"
-                        } text-white`}
+                        className={`p-1 rounded-full cursor-pointer transition ${postVisibility === type
+                          ? "bg-blue-600"
+                          : "bg-gray-400"
+                          } text-white`}
                       >
                         {icon}
                       </span>
@@ -2718,11 +2668,10 @@ const ReportModal = ({
                 </div>
 
                 <Button
-                  className={`px-4 py-2 text-sm transition-colors duration-300 ease-in-out ${
-                    isLoading
-                      ? "bg-gray-400 text-white cursor-not-allowed"
-                      : "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700"
-                  }`}
+                  className={`px-4 py-2 text-sm transition-colors duration-300 ease-in-out ${isLoading
+                    ? "bg-gray-400 text-white cursor-not-allowed"
+                    : "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700"
+                    }`}
                   onClick={handlePostSubmit}
                   disabled={isLoading}
                 >
@@ -2823,6 +2772,7 @@ const ReportModal = ({
               {/* Visibility & Submit */}
               <div className="flex justify-between items-center pt-2">
                 <div className="flex space-x-2">
+                  {/* Add Images */}
                   <button
                     onClick={() => fileInputRef.current.click()}
                     className="flex items-center text-blue-600 text-sm hover:underline"
@@ -2830,28 +2780,63 @@ const ReportModal = ({
                     <ImageIcon size={16} className="mr-2" />
                     Add images
                   </button>
+
+                  {/* Visibility Buttons */}
                   {[
-                    ["public", <Globe size={14} />],
-                    ["private", <LockKeyhole size={14} />],
-                    ["connections", <Users size={14} />],
-                  ].map(([type, icon]) => (
-                    <Tooltip
-                      title={type.charAt(0).toUpperCase() + type.slice(1)}
-                      key={type}
-                    >
-                      <span
-                        onClick={() => handleVisibilityChange(type)}
-                        className={`p-1 rounded-full cursor-pointer transition ${
-                          postVisibility === type
-                            ? "bg-blue-600"
-                            : "bg-gray-400"
-                        } text-white`}
-                      >
-                        {icon}
+                    {
+                      type: "public",
+                      icon: <Globe size={14} />,
+                      label: "Public: Anyone can see this post",
+                    },
+                    {
+                      type: "private",
+                      icon: <LockKeyhole size={14} />,
+                      label: "Private: Only you can see this post",
+                    },
+                    {
+                      type: "connections",
+                      icon: <Users size={14} />,
+                      label: "Connections: Only your connections can see this post",
+                    },
+                  ].map(({ type, icon, label }) => (
+                    <div key={type} className="relative">
+                      {/* Desktop */}
+                      <span className="hidden lg:inline">
+                        <Tooltip title={label}>
+                          <span
+                            onClick={() => handleVisibilityChange(type)}
+                            className={`p-1 rounded-full cursor-pointer transition ${postVisibility === type ? "bg-blue-600" : "bg-gray-400"
+                              } text-white`}
+                          >
+                            {icon}
+                          </span>
+                        </Tooltip>
                       </span>
-                    </Tooltip>
+
+                      {/* Mobile/Tablet */}
+                      <span className="inline lg:hidden">
+                        <span
+                          onClick={() => {
+                            handleVisibilityChange(type);
+                            setShowMobileInfo(type);
+                            setTimeout(() => setShowMobileInfo(null), 1500);
+                          }}
+                          className={`p-1 rounded-full transition ${postVisibility === type ? "bg-blue-600" : "bg-gray-400"
+                            } text-white`}
+                        >
+                          {icon}
+                        </span>
+                        {showMobileInfo === type && (
+                          <div className="absolute left-1/2 -translate-x-1/2 mt-2 bg-gray-800 text-white text-xs rounded px-2 py-1 z-50 whitespace-nowrap">
+                            {label}
+                          </div>
+                        )}
+                      </span>
+                    </div>
                   ))}
                 </div>
+
+                {/* Submit Button */}
                 <Button
                   className="px-4 py-2 text-sm"
                   onClick={handlePostSubmit}
@@ -2882,7 +2867,7 @@ const ReportModal = ({
         </div>
 
         {/* Posts */}
-        <div className="p-0">
+        <div className="mb-10">
           {loadingPosts && page === 0 ? (
             <div className="text-center py-4">Loading post...</div>
           ) : (
@@ -2928,11 +2913,10 @@ const ReportModal = ({
                       <div className="flex items-start">
                         {/* User photo */}
                         <div
-                          className={`${
-                            post?.group
-                              ? "relative z-10 ml-4 mt-2 transform translate-y-2"
-                              : ""
-                          }`}
+                          className={`${post?.group
+                            ? "relative z-10 ml-4 mt-2 transform translate-y-2"
+                            : ""
+                            }`}
                         >
                           {post.user?.photo ? (
                             <Link to={`/user-profile/${post.user.username}`}>
@@ -2947,9 +2931,7 @@ const ReportModal = ({
                                 onError={(e) => {
                                   e.target.onerror = null;
                                   e.target.src = "";
-                                  e.target.parentElement.classList.add(
-                                    "bg-gray-300"
-                                  );
+                                  e.target.parentElement.classList.add("bg-gray-300");
                                 }}
                               />
                             </Link>
@@ -2975,8 +2957,8 @@ const ReportModal = ({
                           </h6>
                           <div className="flex items-center">
                             <small className="text-gray-500 text-xs">
-  {formatPostTime(post.created_at)}
-</small>
+                              {formatPostTime(post.created_at)}
+                            </small>
                             <span className="text-gray-400 mx-1 text-xs">
                               •
                             </span>
@@ -3022,15 +3004,15 @@ const ReportModal = ({
                   {/* Post Content */}
                   {post.content && (
                     // Tambahkan class khusus untuk konten post
-                   <div 
-  className="ck-content ml-1 text-gray-600 break-words whitespace-pre-line" 
-  style={{ 
-    maxWidth: '100%',
-    color: '#374151',
-    padding: '0.5rem'
-  }}
-  dangerouslySetInnerHTML={{ __html: post.content }}
-/>
+                    <div
+                      className="ck-content ml-1 text-gray-600 break-words whitespace-pre-line"
+                      style={{
+                        maxWidth: '100%',
+                        color: '#374151',
+                        padding: '0.5rem'
+                      }}
+                      dangerouslySetInnerHTML={{ __html: post.content }}
+                    />
 
                   )}
 
@@ -3056,13 +3038,12 @@ const ReportModal = ({
                     </div>
 
                     {/* Post Actions */}
-                    <div className="border-t border-gray-200 px-4 py-2 flex justify-between">
+                    <div className="border-t border-gray-200 px-2 py-1 flex justify-between gap-1 text-xs sm:text-sm">
                       <button
-                        className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${
-                          post.isLiked
-                            ? "text-blue-600 bg-blue-50"
-                            : "text-black hover:bg-gray-100"
-                        }`}
+                        className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg transition ${post.isLiked
+                          ? "text-blue-600 bg-blue-50"
+                          : "text-black hover:bg-gray-100"
+                          }`}
                         onClick={() => handleLikePost(post.id, post.isLiked)}
                       >
                         <ThumbsUp size={14} className="mr-2" />
@@ -3070,7 +3051,7 @@ const ReportModal = ({
                       </button>
 
                       <button
-                        className="flex items-center justify-center w-1/3 py-2 rounded-lg text-black hover:bg-gray-100"
+                        className="flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-black hover:bg-gray-100"
                         onClick={() => openCommentModal(post.id)}
                       >
                         <MessageCircle size={14} className="mr-2" />
@@ -3078,7 +3059,7 @@ const ReportModal = ({
                       </button>
 
                       <button
-                        className="flex items-center justify-center w-1/3 py-2 rounded-lg text-black hover:bg-gray-100"
+                        className="flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-black hover:bg-gray-100"
                         onClick={() => handleOpenShareModal(post.id)}
                       >
                         <Share2 size={14} className="mr-2" />
@@ -3117,348 +3098,350 @@ const ReportModal = ({
         </div>
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium">Share this post</h3>
-              <button
-                onClick={handleCloseShareModal}
-                className="p-1 rounded-full hover:bg-gray-100"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="mb-6">
-              <p className="text-sm text-gray-500 mb-2">Copy link</p>
-              <div className="flex items-center border rounded-lg p-2">
-                <input
-                  type="text"
-                  value={`${clientUrl}/post/${sharePostId}`}
-                  readOnly
-                  className="flex-grow text-sm text-gray-700 mr-2 outline-none"
-                />
+      {
+        isModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium">Share this post</h3>
                 <button
-                  onClick={copyToClipboard}
-                  className="text-blue-500 hover:text-blue-700"
+                  onClick={handleCloseShareModal}
+                  className="p-1 rounded-full hover:bg-gray-100"
                 >
-                  <Copy size={16} />
+                  <X size={20} />
                 </button>
               </div>
-              {copied && (
-                <p className="text-xs text-green-600 mt-1">
-                  Link copied to clipboard!
-                </p>
-              )}
-            </div>
 
-            <div>
-              <p className="text-sm text-gray-500 mb-3">Share to</p>
-              <div className="flex justify-around">
-                <button
-                  onClick={shareToWhatsApp}
-                  className="flex flex-col items-center"
-                >
-                  <div className="bg-green-100 p-3 rounded-full mb-1">
-                    <MessageCircle size={24} className="text-green-600" />
-                  </div>
-                  <span className="text-xs">WhatsApp</span>
-                </button>
+              <div className="mb-6">
+                <p className="text-sm text-gray-500 mb-2">Copy link</p>
+                <div className="flex items-center border rounded-lg p-2">
+                  <input
+                    type="text"
+                    value={`${clientUrl}/post/${sharePostId}`}
+                    readOnly
+                    className="flex-grow text-sm text-gray-700 mr-2 outline-none"
+                  />
+                  <button
+                    onClick={copyToClipboard}
+                    className="text-blue-500 hover:text-blue-700"
+                  >
+                    <Copy size={16} />
+                  </button>
+                </div>
+                {copied && (
+                  <p className="text-xs text-green-600 mt-1">
+                    Link copied to clipboard!
+                  </p>
+                )}
+              </div>
 
-                <button
-                  onClick={() =>
-                    window.open("https://www.instagram.com", "_blank")
-                  }
-                  className="flex flex-col items-center"
-                >
-                  <div className="bg-pink-100 p-3 rounded-full mb-1">
-                    <Instagram size={24} className="text-pink-600" />
-                  </div>
-                  <span className="text-xs">Instagram</span>
-                </button>
+              <div>
+                <p className="text-sm text-gray-500 mb-3">Share to</p>
+                <div className="flex justify-around">
+                  <button
+                    onClick={shareToWhatsApp}
+                    className="flex flex-col items-center"
+                  >
+                    <div className="bg-green-100 p-3 rounded-full mb-1">
+                      <MessageCircle size={24} className="text-green-600" />
+                    </div>
+                    <span className="text-xs">WhatsApp</span>
+                  </button>
 
-                <button
-                  onClick={shareToTwitter}
-                  className="flex flex-col items-center"
-                >
-                  <div className="bg-blue-100 p-3 rounded-full mb-1">
-                    <Twitter size={24} className="text-blue-600" />
-                  </div>
-                  <span className="text-xs">Twitter</span>
-                </button>
+                  <button
+                    onClick={() =>
+                      window.open("https://www.instagram.com", "_blank")
+                    }
+                    className="flex flex-col items-center"
+                  >
+                    <div className="bg-pink-100 p-3 rounded-full mb-1">
+                      <Instagram size={24} className="text-pink-600" />
+                    </div>
+                    <span className="text-xs">Instagram</span>
+                  </button>
+
+                  <button
+                    onClick={shareToTwitter}
+                    className="flex flex-col items-center"
+                  >
+                    <div className="bg-blue-100 p-3 rounded-full mb-1">
+                      <Twitter size={24} className="text-blue-600" />
+                    </div>
+                    <span className="text-xs">Twitter</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Post Options Modal */}
-      {showPostOptions && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          {renderPostOptionsModal()}
-        </div>
-      )}
+      {
+        showPostOptions && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            {renderPostOptionsModal()}
+          </div>
+        )
+      }
 
-      {showEditModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-2xl p-6">
-            <h3 className="text-lg font-medium mb-4">Edit Post</h3>
+      {
+        showEditModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg w-full max-w-2xl p-6">
+              <h3 className="text-lg font-medium mb-4">Edit Post</h3>
 
-            {/* Tabs untuk modal edit */}
-            <div className="flex border-b pb-2 space-x-1 mb-4">
-              <button
-                className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${
-                  editActiveTab === "update"
+              {/* Tabs untuk modal edit */}
+              <div className="flex border-b pb-2 space-x-1 mb-4">
+                <button
+                  className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${editActiveTab === "update"
                     ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
                     : "text-gray-500 hover:text-blue-500"
-                }`}
-                onClick={() => setEditActiveTab("update")}
-              >
-                <SquarePen size={16} className="mr-2" />
-                Simple Text
-              </button>
-              <button
-                className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${
-                  editActiveTab === "article"
-                    ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
-                    : "text-gray-500 hover:text-blue-500"
-                }`}
-                onClick={() => setEditActiveTab("article")}
-              >
-                <NotebookPen size={16} className="mr-2" />
-                Rich Text Editor
-              </button>
-            </div>
-
-            {/* Konten editor berdasarkan tab aktif */}
-            {editActiveTab === "update" ? (
-              <textarea
-                className="w-full border rounded-lg p-2 mb-4"
-                rows="4"
-                value={editPostContent.replace(/<[^>]+>/g, "")}
-                onChange={(e) => setEditPostContent(e.target.value)}
-              />
-            ) : (
-              <div className="border rounded-md overflow-hidden text-black ck-editor-mode mb-4">
-                <CKEditor
-                  editor={ClassicEditor}
-                  data={editArticleContent}
-                  onChange={(e, editor) =>
-                    setEditArticleContent(editor.getData())
-                  }
-                  config={{
-                    toolbar: [
-                      "heading",
-                      "|",
-                      "bold",
-                      "italic",
-                      "link",
-                      "bulletedList",
-                      "numberedList",
-                      "|",
-                      "undo",
-                      "redo",
-                    ],
-                    heading: {
-                      options: [
-                        {
-                          model: "paragraph",
-                          title: "Paragraph",
-                          class: "ck-heading_paragraph",
-                        },
-                        {
-                          model: "heading1",
-                          view: "h1",
-                          title: "Heading 1",
-                          class: "ck-heading_heading1",
-                        },
-                        {
-                          model: "heading2",
-                          view: "h2",
-                          title: "Heading 2",
-                          class: "ck-heading_heading2",
-                        },
-                        {
-                          model: "heading3",
-                          view: "h3",
-                          title: "Heading 3",
-                          class: "ck-heading_heading3",
-                        },
-                      ],
-                    },
-                  }}
-                />
-              </div>
-            )}
-
-            {/* Existing Images */}
-            {/* Existing Images */}
-            {editPostImages.length > 0 && (
-              <div className="mb-4">
-                <h4 className="text-sm font-medium mb-2">Current Images</h4>
-                <div className="grid grid-cols-3 gap-2">
-                  {editPostImages.map((img, index) => (
-                    <div key={`existing-${index}`} className="relative">
-                      <img
-                        src={
-                          typeof img === "string"
-                            ? img.startsWith("http")
-                              ? img
-                              : `${apiUrl}/${img}`
-                            : img.preview
-                        }
-                        className="w-full h-24 object-cover rounded-md border"
-                        alt={`Current image ${index + 1}`}
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = "";
-                        }}
-                      />
-                      <button
-                        className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1"
-                        onClick={() => handleRemoveExistingImage(index)}
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* New Images */}
-            {newEditImages.length > 0 && (
-              <div className="mb-4">
-                <h4 className="text-sm font-medium mb-2">New Images</h4>
-                <div className="grid grid-cols-3 gap-2">
-                  {newEditImages.map((img, index) => (
-                    <div key={`new-${index}`} className="relative">
-                      <img
-                        src={img.preview}
-                        className="w-full h-24 object-cover rounded-md border"
-                        alt={`New image ${index + 1}`}
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = "";
-                        }}
-                      />
-                      <button
-                        className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1"
-                        onClick={() => handleRemoveNewImage(index)}
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* New Images */}
-            {newImages.length > 0 && (
-              <div className="mb-4">
-                <h4 className="text-sm font-medium mb-2">New Images</h4>
-                <div className="grid grid-cols-3 gap-2">
-                  {newImages.map((img, index) => (
-                    <div key={`new-${index}`} className="relative">
-                      <img
-                        src={URL.createObjectURL(img)}
-                        className="w-full h-24 object-cover rounded-md border"
-                        alt={`New image ${index + 1}`}
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = "";
-                        }}
-                      />
-                      <button
-                        className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1"
-                        onClick={() => handleRemoveNewImage(index)}
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Add Images Button */}
-            <div className="mb-4">
-              <input
-                type="file"
-                id="edit-post-images"
-                className="hidden"
-                onChange={handleNewImageUpload}
-                multiple
-                accept="image/*"
-              />
-              <label
-                htmlFor="edit-post-images"
-                className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
-              >
-                <ImageIcon size={14} className="mr-2" />
-                Add Images
-              </label>
-            </div>
-
-            {/* Visibility Options */}
-            <div className="mb-4">
-              <h4 className="text-sm font-medium mb-2">Visibility</h4>
-              <div className="flex space-x-2">
-                {[
-                  ["public", <Globe size={14} />, "Public"],
-                  ["private", <LockKeyhole size={14} />, "Private"],
-                  ["connections", <Users size={14} />, "Connections"],
-                ].map(([type, icon, label]) => (
-                  <button
-                    key={type}
-                    onClick={() => setPostVisibility(type)}
-                    className={`flex items-center px-3 py-2 rounded-md text-sm ${
-                      postVisibility === type
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-gray-100 text-gray-700"
                     }`}
-                  >
-                    {icon}
-                    <span className="ml-2">{label}</span>
-                  </button>
-                ))}
+                  onClick={() => setEditActiveTab("update")}
+                >
+                  <SquarePen size={16} className="mr-2" />
+                  Simple Text
+                </button>
+                <button
+                  className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${editActiveTab === "article"
+                    ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                    : "text-gray-500 hover:text-blue-500"
+                    }`}
+                  onClick={() => setEditActiveTab("article")}
+                >
+                  <NotebookPen size={16} className="mr-2" />
+                  Rich Text Editor
+                </button>
               </div>
-            </div>
 
-            <div className="flex justify-end space-x-2">
-              <button
-                className="px-4 py-2 bg-gray-300 rounded-lg"
-                onClick={() => setShowEditModal(false)}
-                disabled={isLoading}
-              >
-                Cancel
-              </button>
-              <button
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg flex items-center"
-                onClick={handleUpdatePost}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                    Saving...
-                  </>
-                ) : (
-                  "Save Changes"
-                )}
-              </button>
+              {/* Konten editor berdasarkan tab aktif */}
+              {editActiveTab === "update" ? (
+                <textarea
+                  className="w-full border rounded-lg p-2 mb-4"
+                  rows="4"
+                  value={editPostContent.replace(/<[^>]+>/g, "")}
+                  onChange={(e) => setEditPostContent(e.target.value)}
+                />
+              ) : (
+                <div className="border rounded-md overflow-hidden text-black ck-editor-mode mb-4">
+                  <CKEditor
+                    editor={ClassicEditor}
+                    data={editArticleContent}
+                    onChange={(e, editor) =>
+                      setEditArticleContent(editor.getData())
+                    }
+                    config={{
+                      toolbar: [
+                        "heading",
+                        "|",
+                        "bold",
+                        "italic",
+                        "link",
+                        "bulletedList",
+                        "numberedList",
+                        "|",
+                        "undo",
+                        "redo",
+                      ],
+                      heading: {
+                        options: [
+                          {
+                            model: "paragraph",
+                            title: "Paragraph",
+                            class: "ck-heading_paragraph",
+                          },
+                          {
+                            model: "heading1",
+                            view: "h1",
+                            title: "Heading 1",
+                            class: "ck-heading_heading1",
+                          },
+                          {
+                            model: "heading2",
+                            view: "h2",
+                            title: "Heading 2",
+                            class: "ck-heading_heading2",
+                          },
+                          {
+                            model: "heading3",
+                            view: "h3",
+                            title: "Heading 3",
+                            class: "ck-heading_heading3",
+                          },
+                        ],
+                      },
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Existing Images */}
+              {/* Existing Images */}
+              {editPostImages.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium mb-2">Current Images</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    {editPostImages.map((img, index) => (
+                      <div key={`existing-${index}`} className="relative">
+                        <img
+                          src={
+                            typeof img === "string"
+                              ? img.startsWith("http")
+                                ? img
+                                : `${apiUrl}/${img}`
+                              : img.preview
+                          }
+                          className="w-full h-24 object-cover rounded-md border"
+                          alt={`Current image ${index + 1}`}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "";
+                          }}
+                        />
+                        <button
+                          className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1"
+                          onClick={() => handleRemoveExistingImage(index)}
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* New Images */}
+              {newEditImages.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium mb-2">New Images</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    {newEditImages.map((img, index) => (
+                      <div key={`new-${index}`} className="relative">
+                        <img
+                          src={img.preview}
+                          className="w-full h-24 object-cover rounded-md border"
+                          alt={`New image ${index + 1}`}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "";
+                          }}
+                        />
+                        <button
+                          className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1"
+                          onClick={() => handleRemoveNewImage(index)}
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* New Images */}
+              {newImages.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium mb-2">New Images</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    {newImages.map((img, index) => (
+                      <div key={`new-${index}`} className="relative">
+                        <img
+                          src={URL.createObjectURL(img)}
+                          className="w-full h-24 object-cover rounded-md border"
+                          alt={`New image ${index + 1}`}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "";
+                          }}
+                        />
+                        <button
+                          className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1"
+                          onClick={() => handleRemoveNewImage(index)}
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Add Images Button */}
+              <div className="mb-4">
+                <input
+                  type="file"
+                  id="edit-post-images"
+                  className="hidden"
+                  onChange={handleNewImageUpload}
+                  multiple
+                  accept="image/*"
+                />
+                <label
+                  htmlFor="edit-post-images"
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
+                >
+                  <ImageIcon size={14} className="mr-2" />
+                  Add Images
+                </label>
+              </div>
+
+              {/* Visibility Options */}
+              <div className="mb-4">
+                <h4 className="text-sm font-medium mb-2">Visibility</h4>
+                <div className="flex space-x-2">
+                  {[
+                    ["public", <Globe size={14} />, "Public"],
+                    ["private", <LockKeyhole size={14} />, "Private"],
+                    ["connections", <Users size={14} />, "Connections"],
+                  ].map(([type, icon, label]) => (
+                    <button
+                      key={type}
+                      onClick={() => setPostVisibility(type)}
+                      className={`flex items-center px-3 py-2 rounded-md text-sm ${postVisibility === type
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-100 text-gray-700"
+                        }`}
+                    >
+                      {icon}
+                      <span className="ml-2">{label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <button
+                  className="px-4 py-2 bg-gray-300 rounded-lg"
+                  onClick={() => setShowEditModal(false)}
+                  disabled={isLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg flex items-center"
+                  onClick={handleUpdatePost}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Changes"
+                  )}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Right Sidebar */}
       <div
-        className={`${
-          showMobileMenu ? "block" : "hidden"
-        } md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pl-2 lg:pr-4`}
+        className={`${showMobileMenu ? "block" : "hidden"
+          } md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pl-2 lg:pr-4`}
       >
         {/* People You Might Know */}
         <div className="bg-white rounded-xl shadow-sm border p-4 mb-6 transition-all duration-300">
@@ -3762,443 +3745,501 @@ const ReportModal = ({
       </div>
 
       {/* Image Modal */}
-      {showImageModal && selectedPost && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-          <div className="relative max-w-4xl w-full mx-4">
-            <button
-              className="absolute top-2 md:top-4 right-2 md:right-4 text-white bg-black bg-opacity-50 rounded-full p-1 md:p-2 z-10"
-              onClick={closeImageModal}
-            >
-              <X size={20} />
-            </button>
-
-            <div className="relative">
-              <img
-                src={selectedPost.images[selectedImageIndex]}
-                className="w-full max-h-[80vh] object-contain"
-                alt={`Post ${selectedImageIndex + 1}`}
-              />
-
-              {selectedPost.images.length > 1 && (
-                <>
-                  <button
-                    className="absolute left-2 md:left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white rounded-full p-1 md:p-2"
-                    onClick={() => navigateImage("prev")}
-                  >
-                    <svg
-                      className="w-4 md:w-6 h-4 md:h-6"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M15 19l-7-7 7-7"
-                      ></path>
-                    </svg>
-                  </button>
-
-                  <button
-                    className="absolute right-2 md:right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white rounded-full p-1 md:p-2"
-                    onClick={() => navigateImage("next")}
-                  >
-                    <svg
-                      className="w-4 md:w-6 h-4 md:h-6"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M9 5l7 7-7 7"
-                      ></path>
-                    </svg>
-                  </button>
-                </>
-              )}
-            </div>
-
-            <div className="absolute bottom-2 md:bottom-4 left-0 right-0 flex justify-center">
-              <div className="flex space-x-1 md:space-x-2">
-                {selectedPost.images.map((_, index) => (
-                  <button
-                    key={index}
-                    className={`w-2 h-2 md:w-3 md:h-3 rounded-full ${
-                      selectedImageIndex === index ? "bg-white" : "bg-gray-500"
-                    }`}
-                    onClick={() => setSelectedImageIndex(index)}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showReportModal && (
-  <ReportModal
-    showReportModal={showReportModal}
-    setShowReportModal={setShowReportModal}
-    selectedReason={selectedReason}
-    setSelectedReason={setSelectedReason}
-    customReason={customReason}
-    setCustomReason={setCustomReason}
-    setAlertInfo={setAlertInfo}
-    reportTarget={reportTarget} // Tambahkan reportTarget
-  />
-)}
-
-      {/* Comment Modal */}
-      {showCommentModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
-          {renderShowcase()}
-
-          {/* Main Comment Modal */}
-          <div
-            className="bg-white rounded-lg w-full max-w-md mx-4 max-h-[90vh] flex flex-col shadow-xl"
-            style={{ zIndex: showReportModal ? 40 : 50 }}
-          >
-            {/* Modal Header */}
-            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-800">Comments</h3>
+      {
+        showImageModal && selectedPost && (
+          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+            <div className="relative max-w-4xl w-full mx-4">
               <button
-                onClick={closeCommentModal}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="absolute top-2 md:top-4 right-2 md:right-4 text-white bg-black bg-opacity-50 rounded-full p-1 md:p-2 z-10"
+                onClick={closeImageModal}
               >
                 <X size={20} />
               </button>
+
+              <div className="relative">
+                <img
+                  src={selectedPost.images[selectedImageIndex]}
+                  className="w-full max-h-[80vh] object-contain"
+                  alt={`Post ${selectedImageIndex + 1}`}
+                />
+
+                {selectedPost.images.length > 1 && (
+                  <>
+                    <button
+                      className="absolute left-2 md:left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white rounded-full p-1 md:p-2"
+                      onClick={() => navigateImage("prev")}
+                    >
+                      <svg
+                        className="w-4 md:w-6 h-4 md:h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 19l-7-7 7-7"
+                        ></path>
+                      </svg>
+                    </button>
+
+                    <button
+                      className="absolute right-2 md:right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white rounded-full p-1 md:p-2"
+                      onClick={() => navigateImage("next")}
+                    >
+                      <svg
+                        className="w-4 md:w-6 h-4 md:h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        ></path>
+                      </svg>
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <div className="absolute bottom-2 md:bottom-4 left-0 right-0 flex justify-center">
+                <div className="flex space-x-1 md:space-x-2">
+                  {selectedPost.images.map((_, index) => (
+                    <button
+                      key={index}
+                      className={`w-2 h-2 md:w-3 md:h-3 rounded-full ${selectedImageIndex === index ? "bg-white" : "bg-gray-500"
+                        }`}
+                      onClick={() => setSelectedImageIndex(index)}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
+          </div>
+        )
+      }
 
-            {/* Comments Content */}
-            <div className="p-4 overflow-y-auto flex-1 space-y-4">
-              {loadingComments[currentPostId] ? (
-                <div className="flex justify-center items-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-                </div>
-              ) : !Array.isArray(comments[currentPostId]) ||
-                comments[currentPostId].length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">No comments yet.</p>
-                  <p className="text-gray-400 text-sm mt-1">
-                    Be the first to comment!
-                  </p>
-                </div>
-              ) : (
-                Array.isArray(comments[currentPostId]) &&
-                comments[currentPostId].filter(Boolean).map((comment) => {
-                  if (!comment) return null;
+      {
+        showReportModal && (
+          <ReportModal
+            showReportModal={showReportModal}
+            setShowReportModal={setShowReportModal}
+            selectedReason={selectedReason}
+            setSelectedReason={setSelectedReason}
+            customReason={customReason}
+            setCustomReason={setCustomReason}
+            setAlertInfo={setAlertInfo}
+            reportTarget={reportTarget} // Tambahkan reportTarget
+          />
+        )
+      }
 
-                  const commentUser = comment.user || {
-                    name: "Unknown User",
-                    initials: "UU",
-                    username: "unknown",
-                    profile_photo: null,
-                  };
+      {/* Comment Modal */}
+      {
+        showCommentModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
+            {renderShowcase()}
 
-                  return (
-                    <div key={comment.id} className="group">
-                      {/* Comment Container */}
-                      <div className="flex gap-3">
-                        {/* User Avatar */}
-                        <div className="flex-shrink-0">
-                          {commentUser.profile_photo ? (
-                            <Link to={`/user-profile/${commentUser.username}`}>
-                              <img
-                                className="rounded-full w-10 h-10 object-cover border-2 border-white hover:border-blue-200 transition-colors"
-                                src={
-                                  commentUser.profile_photo.startsWith("http")
-                                    ? commentUser.profile_photo
-                                    : `${apiUrl}/${commentUser.profile_photo}`
-                                }
-                                alt="Profile"
-                                onError={(e) => {
-                                  e.target.onerror = null;
-                                  e.target.src = "";
-                                  e.target.parentElement.classList.add(
-                                    "bg-gray-300"
-                                  );
-                                }}
-                              />
-                            </Link>
-                          ) : (
-                            <div className="w-10 h-10 flex items-center justify-center bg-gray-200 rounded-full border-2 border-white">
-                              <span className="text-sm font-medium text-gray-600">
-                                {getInitials(commentUser.name)}
-                              </span>
-                            </div>
-                          )}
-                        </div>
+            {/* Main Comment Modal */}
+            <div
+              className="bg-white rounded-lg w-full max-w-md mx-4 max-h-[90vh] flex flex-col shadow-xl"
+              style={{ zIndex: showReportModal ? 40 : 50 }}
+            >
+              {/* Modal Header */}
+              <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-gray-800">Comments</h3>
+                <button
+                  onClick={closeCommentModal}
+                  className="text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
 
-                        {/* Comment Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="bg-gray-50 rounded-lg p-3">
-                            {/* User Info */}
-                            <div className="flex items-center justify-between">
-                              <Link
-                                to={`/user-profile/${commentUser.username}`}
-                                className="text-sm font-semibold text-gray-800 hover:text-blue-600 hover:underline"
-                              >
-                                {commentUser.name}
+              {/* Comments Content */}
+              <div className="p-4 overflow-y-auto flex-1 space-y-4">
+                {loadingComments[currentPostId] ? (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                  </div>
+                ) : !Array.isArray(comments[currentPostId]) ||
+                  comments[currentPostId].length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">No comments yet.</p>
+                    <p className="text-gray-400 text-sm mt-1">
+                      Be the first to comment!
+                    </p>
+                  </div>
+                ) : (
+                  Array.isArray(comments[currentPostId]) &&
+                  comments[currentPostId].filter(Boolean).map((comment) => {
+                    if (!comment) return null;
+
+                    const commentUser = comment.user || {
+                      name: "Unknown User",
+                      initials: "UU",
+                      username: "unknown",
+                      profile_photo: null,
+                    };
+
+                    return (
+                      <div key={comment.id} className="group">
+                        {/* Comment Container */}
+                        <div className="flex gap-3">
+                          {/* User Avatar */}
+                          <div className="flex-shrink-0">
+                            {commentUser.profile_photo ? (
+                              <Link to={`/user-profile/${commentUser.username}`}>
+                                <img
+                                  className="rounded-full w-10 h-10 object-cover border-2 border-white hover:border-blue-200 transition-colors"
+                                  src={
+                                    commentUser.profile_photo.startsWith("http")
+                                      ? commentUser.profile_photo
+                                      : `${apiUrl}/${commentUser.profile_photo}`
+                                  }
+                                  alt="Profile"
+                                  onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = "";
+                                    e.target.parentElement.classList.add("bg-gray-300");
+                                  }}
+                                />
                               </Link>
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center border-2 border-white">
+                                <span className="text-xs font-medium text-gray-600">
+                                  {getInitials(commentUser.name)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
 
-                              {/* Comment Actions */}
-                              <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                {comment.user?.id === currentUserId && (
+                          {/* Comment Content */}
+                          <div className="flex-1 min-w-0">
+                            <div className="bg-gray-50 rounded-lg p-3">
+                              {/* User Info */}
+                              <div className="flex items-center justify-between">
+                                <Link
+                                  to={`/user-profile/${commentUser.username}`}
+                                  className="text-sm font-semibold text-gray-800 hover:text-blue-600 hover:underline"
+                                >
+                                  {commentUser.name}
+                                </Link>
+
+                                {/* Comment Actions */}
+                                <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  {comment.user?.id === currentUserId && (
+                                    <button
+                                      className="text-gray-500 hover:text-gray-700"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedComment(comment);
+                                        setShowCommentOptions(true);
+                                      }}
+                                    >
+                                      <MoreHorizontal size={16} />
+                                    </button>
+                                  )}
+
+                                  {comment.user?.id !== currentUserId && (
+                                    <button
+                                      className="text-gray-500 hover:text-red-500"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (comment.user?.id) {
+                                          handleReportClick(
+                                            comment.user.id,
+                                            "comment",
+                                            comment.id
+                                          );
+                                        }
+                                      }}
+                                    >
+                                      <TriangleAlert size={16} />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Comment Text */}
+                              {editingCommentId === comment.id ? (
+                                <div className="mt-2 flex gap-2">
+                                  <input
+                                    type="text"
+                                    className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                    value={commentText}
+                                    onChange={(e) =>
+                                      setCommentText(e.target.value)
+                                    }
+                                    autoFocus
+                                  />
                                   <button
-                                    className="text-gray-500 hover:text-gray-700"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedComment(comment);
-                                      setShowCommentOptions(true);
+                                    className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-colors"
+                                    onClick={() =>
+                                      handleUpdateComment(comment.id)
+                                    }
+                                  >
+                                    Update
+                                  </button>
+                                  <button
+                                    className="bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm hover:bg-gray-300 transition-colors"
+                                    onClick={() => {
+                                      setEditingCommentId(null);
+                                      setCommentText("");
                                     }}
                                   >
-                                    <MoreHorizontal size={16} />
+                                    Cancel
                                   </button>
-                                )}
+                                </div>
+                              ) : (
+                                <p className="text-sm text-gray-700 mt-1">
+                                  {comment.content}
+                                </p>
+                              )}
+                            </div>
 
-                                {comment.user?.id !== currentUserId && (
-                                  <button
-                                    className="text-gray-500 hover:text-red-500"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (comment.user?.id) {
-                                        handleReportClick(
-                                          comment.user.id,
-                                          "comment",
-                                          comment.id
-                                        );
-                                      }
-                                    }}
-                                  >
-                                    <TriangleAlert size={16} />
-                                  </button>
-                                )}
+                            {/* Comment Meta */}
+                            <div className="flex items-center justify-between mt-2 px-1">
+                              <span className="text-xs text-gray-500">
+                                {formatPostTime(comment.created_at)}
+                              </span>
+
+                              <div className="flex items-center space-x-4">
+                                <button
+                                  className="text-xs text-blue-500 hover:text-blue-700 font-medium"
+                                  onClick={() => {
+                                    setReplyingTo(comment.id);
+                                    setReplyToUser(comment.user);
+                                  }}
+                                >
+                                  Reply
+                                </button>
+
+                                {(comment.repliesCount > 0 ||
+                                  allReplies[comment.id]?.length > 0) && (
+                                    <button
+                                      className="text-xs text-gray-500 hover:text-blue-500"
+                                      onClick={() => toggleReplies(comment.id)}
+                                    >
+                                      {expandedReplies[comment.id]
+                                        ? "Hide replies"
+                                        : `Show replies (${comment.repliesCount})`}
+                                    </button>
+                                  )}
                               </div>
                             </div>
 
-                            {/* Comment Text */}
-                            {editingCommentId === comment.id ? (
-                              <div className="mt-2 flex gap-2">
+                            {/* Reply Input */}
+                            {replyingTo === comment.id && (
+                              <div className="mt-3 flex gap-2">
                                 <input
                                   type="text"
                                   className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                  value={commentText}
-                                  onChange={(e) =>
-                                    setCommentText(e.target.value)
-                                  }
+                                  placeholder={`Reply to ${replyToUser?.name || comment.user.name
+                                    }...`}
+                                  value={replyText}
+                                  onChange={(e) => setReplyText(e.target.value)}
                                   autoFocus
                                 />
                                 <button
                                   className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-colors"
                                   onClick={() =>
-                                    handleUpdateComment(comment.id)
+                                    handleReply(
+                                      comment.id,
+                                      replyToUser || comment.user
+                                    )
                                   }
                                 >
-                                  Update
-                                </button>
-                                <button
-                                  className="bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm hover:bg-gray-300 transition-colors"
-                                  onClick={() => {
-                                    setEditingCommentId(null);
-                                    setCommentText("");
-                                  }}
-                                >
-                                  Cancel
+                                  Post
                                 </button>
                               </div>
-                            ) : (
-                              <p className="text-sm text-gray-700 mt-1">
-                                {comment.content}
-                              </p>
                             )}
-                          </div>
 
-                          {/* Comment Meta */}
-                          <div className="flex items-center justify-between mt-2 px-1">
-                            <span className="text-xs text-gray-500">
-                              {formatPostTime(comment.created_at)}
-                            </span>
+                            {/* Replies Section */}
+                            {expandedReplies[comment.id] && (
+                              <div className="mt-3 ml-4 pl-4 border-l-2 border-gray-200 space-y-3">
+                                {loadingComments[comment.id] ? (
+                                  <div className="flex justify-center py-2">
+                                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500"></div>
+                                  </div>
+                                ) : (
+                                  (allReplies[comment.id] || []).map((reply) => (
+                                    <div key={reply.id} className="group">
+                                      <div className="flex gap-2">
+                                        {/* Reply User Avatar */}
+                                        <div className="flex-shrink-0">
+                                          {reply.user?.profile_photo ? (
+                                            <Link
+                                              to={`/user-profile/${reply.user.username}`}
+                                            >
+                                              <img
+                                                className="rounded-full w-8 h-8 object-cover border-2 border-white hover:border-blue-200 transition-colors"
+                                                src={
+                                                  reply.user.profile_photo.startsWith(
+                                                    "http"
+                                                  )
+                                                    ? reply.user.profile_photo
+                                                    : `${apiUrl}/${reply.user.profile_photo}`
+                                                }
+                                                alt="Profile"
+                                                onError={(e) => {
+                                                  e.target.onerror = null;
+                                                  e.target.src = "";
+                                                  e.target.parentElement.classList.add(
+                                                    "bg-gray-300"
+                                                  );
+                                                }}
+                                              />
+                                            </Link>
+                                          ) : (
+                                            <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center border-2 border-white">
+                                              <span className="text-xs font-medium text-gray-600">
+                                                {getInitials(reply.user?.name)}
+                                              </span>
+                                            </div>
+                                          )}
+                                        </div>
 
-                            <div className="flex items-center space-x-4">
-                              <button
-                                className="text-xs text-blue-500 hover:text-blue-700 font-medium"
-                                onClick={() => {
-                                  setReplyingTo(comment.id);
-                                  setReplyToUser(comment.user);
-                                }}
-                              >
-                                Reply
-                              </button>
-
-                              {(comment.repliesCount > 0 ||
-                                allReplies[comment.id]?.length > 0) && (
-                                <button
-                                  className="text-xs text-gray-500 hover:text-blue-500"
-                                  onClick={() => toggleReplies(comment.id)}
-                                >
-                                  {expandedReplies[comment.id]
-                                    ? "Hide replies"
-                                    : `Show replies (${comment.repliesCount})`}
-                                </button>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Reply Input */}
-                          {replyingTo === comment.id && (
-                            <div className="mt-3 flex gap-2">
-                              <input
-                                type="text"
-                                className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                placeholder={`Reply to ${
-                                  replyToUser?.name || comment.user.name
-                                }...`}
-                                value={replyText}
-                                onChange={(e) => setReplyText(e.target.value)}
-                                autoFocus
-                              />
-                              <button
-                                className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-colors"
-                                onClick={() =>
-                                  handleReply(
-                                    comment.id,
-                                    replyToUser || comment.user
-                                  )
-                                }
-                              >
-                                Post
-                              </button>
-                            </div>
-                          )}
-
-                          {/* Replies Section */}
-                          {expandedReplies[comment.id] && (
-                            <div className="mt-3 ml-4 pl-4 border-l-2 border-gray-200 space-y-3">
-                              {loadingComments[comment.id] ? (
-                                <div className="flex justify-center py-2">
-                                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500"></div>
-                                </div>
-                              ) : (
-                                (allReplies[comment.id] || []).map((reply) => (
-                                  <div key={reply.id} className="group">
-                                    <div className="flex gap-2">
-                                      {/* Reply User Avatar */}
-                                      <div className="flex-shrink-0">
-                                        {reply.user?.profile_photo ? (
-                                          <Link
-                                            to={`/user-profile/${reply.user.username}`}
-                                          >
-                                            <img
-                                              className="rounded-full w-8 h-8 object-cover border-2 border-white hover:border-blue-200 transition-colors"
-                                              src={
-                                                reply.user.profile_photo.startsWith(
-                                                  "http"
-                                                )
-                                                  ? reply.user.profile_photo
-                                                  : `${apiUrl}/${reply.user.profile_photo}`
-                                              }
-                                              alt="Profile"
-                                              onError={(e) => {
-                                                e.target.onerror = null;
-                                                e.target.src = "";
-                                                e.target.parentElement.classList.add(
-                                                  "bg-gray-300"
-                                                );
-                                              }}
-                                            />
-                                          </Link>
-                                        ) : (
-                                          <div className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-full border-2 border-white">
-                                            <span className="text-xs font-medium text-gray-600">
-                                              {getInitials(reply.user?.name)}
-                                            </span>
-                                          </div>
-                                        )}
-                                      </div>
-
-                                      {/* Reply Content */}
-                                      <div className="flex-1 min-w-0">
-                                        <div className="bg-gray-50 rounded-lg p-2">
-                                          {/* Reply User Info */}
-                                          <div className="flex items-center justify-between">
-                                            <div className="flex items-center">
-                                              <Link
-                                                to={`/user-profile/${reply.user.username}`}
-                                                className="text-xs font-semibold text-gray-800 hover:text-blue-600 hover:underline"
-                                              >
-                                                {reply.user?.name ||
-                                                  "Unknown User"}
-                                              </Link>
-                                              {reply.reply_to &&
-                                                reply.parent_id !==
+                                        {/* Reply Content */}
+                                        <div className="flex-1 min-w-0">
+                                          <div className="bg-gray-50 rounded-lg p-2">
+                                            {/* Reply User Info */}
+                                            <div className="flex items-center justify-between">
+                                              <div className="flex items-center">
+                                                <Link
+                                                  to={`/user-profile/${reply.user.username}`}
+                                                  className="text-xs font-semibold text-gray-800 hover:text-blue-600 hover:underline"
+                                                >
+                                                  {reply.user?.name ||
+                                                    "Unknown User"}
+                                                </Link>
+                                                {reply.reply_to &&
+                                                  reply.parent_id !==
                                                   reply.reply_to
                                                     .reply_to_id && (
-                                                  <span className="text-xs text-gray-500 ml-1 flex items-center">
-                                                    <svg
-                                                      xmlns="http://www.w3.org/2000/svg"
-                                                      width="10"
-                                                      height="10"
-                                                      fill="currentColor"
-                                                      className="mr-1"
-                                                      viewBox="0 0 16 16"
-                                                    >
-                                                      <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z" />
-                                                    </svg>
-                                                    <Link
-                                                      to={`/user-profile/${reply.reply_to.username}`}
-                                                      className="text-blue-500 hover:underline"
-                                                    >
-                                                      {reply.reply_to.name}
-                                                    </Link>
-                                                  </span>
+                                                    <span className="text-xs text-gray-500 ml-1 flex items-center">
+                                                      <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        width="10"
+                                                        height="10"
+                                                        fill="currentColor"
+                                                        className="mr-1"
+                                                        viewBox="0 0 16 16"
+                                                      >
+                                                        <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z" />
+                                                      </svg>
+                                                      <Link
+                                                        to={`/user-profile/${reply.reply_to.username}`}
+                                                        className="text-blue-500 hover:underline"
+                                                      >
+                                                        {reply.reply_to.name}
+                                                      </Link>
+                                                    </span>
+                                                  )}
+                                              </div>
+
+                                              {/* Reply Actions */}
+                                              <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                {reply.user?.id === user.id && (
+                                                  <button
+                                                    className="text-gray-500 hover:text-gray-700"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      setSelectedReply(reply);
+                                                      setShowReplyOptions(true);
+                                                    }}
+                                                  >
+                                                    <MoreHorizontal size={14} />
+                                                  </button>
                                                 )}
+
+                                                {reply.user?.id !== user.id && (
+                                                  <button
+                                                    className="text-gray-500 hover:text-red-500"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      if (reply.user?.id) {
+                                                        handleReportClick(
+                                                          reply.user.id,
+                                                          "comment",
+                                                          reply.id
+                                                        );
+                                                      }
+                                                    }}
+                                                  >
+                                                    <TriangleAlert size={14} />
+                                                  </button>
+                                                )}
+                                              </div>
                                             </div>
 
-                                            {/* Reply Actions */}
-                                            <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                              {reply.user?.id === user.id && (
+                                            {/* Reply Text */}
+                                            {editingReplyId === reply.id ? (
+                                              <div className="mt-1 flex gap-2">
+                                                <input
+                                                  type="text"
+                                                  className="flex-1 border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                  value={replyText}
+                                                  onChange={(e) =>
+                                                    setReplyText(e.target.value)
+                                                  }
+                                                  autoFocus
+                                                />
                                                 <button
-                                                  className="text-gray-500 hover:text-gray-700"
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setSelectedReply(reply);
-                                                    setShowReplyOptions(true);
+                                                  className="bg-blue-500 text-white px-2 py-1 rounded-lg text-xs hover:bg-blue-600 transition-colors"
+                                                  onClick={() =>
+                                                    handleUpdateReply(reply.id)
+                                                  }
+                                                >
+                                                  Update
+                                                </button>
+                                                <button
+                                                  className="bg-gray-200 text-gray-700 px-2 py-1 rounded-lg text-xs hover:bg-gray-300 transition-colors"
+                                                  onClick={() => {
+                                                    setEditingReplyId(null);
+                                                    setReplyText("");
                                                   }}
                                                 >
-                                                  <MoreHorizontal size={14} />
+                                                  Cancel
                                                 </button>
-                                              )}
-
-                                              {reply.user?.id !== user.id && (
-                                                <button
-                                                  className="text-gray-500 hover:text-red-500"
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    if (reply.user?.id) {
-                                                      handleReportClick(
-                                                        reply.user.id,
-                                                        "comment",
-                                                        reply.id
-                                                      );
-                                                    }
-                                                  }}
-                                                >
-                                                  <TriangleAlert size={14} />
-                                                </button>
-                                              )}
-                                            </div>
+                                              </div>
+                                            ) : (
+                                              <p className="text-xs text-gray-700 mt-1">
+                                                {reply.content}
+                                              </p>
+                                            )}
                                           </div>
 
-                                          {/* Reply Text */}
-                                          {editingReplyId === reply.id ? (
-                                            <div className="mt-1 flex gap-2">
+                                          {/* Reply Meta */}
+                                          <div className="flex items-center justify-between mt-1 px-1">
+                                            <span className="text-xs text-gray-500">
+                                              {formatPostTime(reply.created_at)}
+                                            </span>
+
+                                            <div className="flex items-center space-x-3">
+                                              <button
+                                                className="text-xs text-blue-500 hover:text-blue-700"
+                                                onClick={() => {
+                                                  setReplyingTo(reply.id);
+                                                  setReplyToUser(reply.user);
+                                                }}
+                                              >
+                                                Reply
+                                              </button>
+                                            </div>
+                                          </div>
+                                          {replyingTo === reply.id && (
+                                            <div className="mt-3 flex gap-2">
                                               <input
                                                 type="text"
-                                                className="flex-1 border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                placeholder={`Reply to ${replyToUser?.name ||
+                                                  reply.user.name
+                                                  }...`}
                                                 value={replyText}
                                                 onChange={(e) =>
                                                   setReplyText(e.target.value)
@@ -4206,148 +4247,91 @@ const ReportModal = ({
                                                 autoFocus
                                               />
                                               <button
-                                                className="bg-blue-500 text-white px-2 py-1 rounded-lg text-xs hover:bg-blue-600 transition-colors"
+                                                className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-colors"
                                                 onClick={() =>
-                                                  handleUpdateReply(reply.id)
+                                                  handleReply(
+                                                    reply.id,
+                                                    replyToUser || reply.user
+                                                  )
                                                 }
                                               >
-                                                Update
-                                              </button>
-                                              <button
-                                                className="bg-gray-200 text-gray-700 px-2 py-1 rounded-lg text-xs hover:bg-gray-300 transition-colors"
-                                                onClick={() => {
-                                                  setEditingReplyId(null);
-                                                  setReplyText("");
-                                                }}
-                                              >
-                                                Cancel
+                                                Post
                                               </button>
                                             </div>
-                                          ) : (
-                                            <p className="text-xs text-gray-700 mt-1">
-                                              {reply.content}
-                                            </p>
                                           )}
                                         </div>
-
-                                        {/* Reply Meta */}
-                                        <div className="flex items-center justify-between mt-1 px-1">
-                                          <span className="text-xs text-gray-500">
-                                            {formatPostTime(reply.created_at)}
-                                          </span>
-
-                                          <div className="flex items-center space-x-3">
-                                            <button
-                                              className="text-xs text-blue-500 hover:text-blue-700"
-                                              onClick={() => {
-                                                setReplyingTo(reply.id);
-                                                setReplyToUser(reply.user);
-                                              }}
-                                            >
-                                              Reply
-                                            </button>
-                                          </div>
-                                        </div>
-                                        {replyingTo === reply.id && (
-                                          <div className="mt-3 flex gap-2">
-                                            <input
-                                              type="text"
-                                              className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                              placeholder={`Reply to ${
-                                                replyToUser?.name ||
-                                                reply.user.name
-                                              }...`}
-                                              value={replyText}
-                                              onChange={(e) =>
-                                                setReplyText(e.target.value)
-                                              }
-                                              autoFocus
-                                            />
-                                            <button
-                                              className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-colors"
-                                              onClick={() =>
-                                                handleReply(
-                                                  reply.id,
-                                                  replyToUser || reply.user
-                                                )
-                                              }
-                                            >
-                                              Post
-                                            </button>
-                                          </div>
-                                        )}
                                       </div>
                                     </div>
-                                  </div>
-                                ))
-                              )}
-                            </div>
-                          )}
+                                  ))
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
+                    );
+                  })
+                )}
+              </div>
 
-            {/* Comment Options Modal */}
-            {renderReplyOptionsModal()}
-            {renderCommentOptionsModal()}
+              {/* Comment Options Modal */}
+              {renderReplyOptionsModal()}
+              {renderCommentOptionsModal()}
 
-            {/* Add Comment Section */}
-            <div className="p-4 border-t border-gray-200">
-              <div className="flex items-center gap-3">
-                <div className="flex-shrink-0">
-                  {user.photo ? (
-                    <img
-                      className="w-8 h-8 rounded-full object-cover"
-                      src={
-                        user.photo.startsWith("http")
-                          ? user.photo
-                          : `${apiUrl}/${user.photo}`
-                      }
-                      alt="Profile"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = "";
-                        e.target.parentElement.classList.add("bg-gray-300");
-                      }}
+              {/* Add Comment Section */}
+              <div className="p-4 border-t border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="flex-shrink-0">
+                    {user.photo ? (
+                      <img
+                        className="w-8 h-8 rounded-full object-cover"
+                        src={
+                          user.photo.startsWith("http")
+                            ? user.photo
+                            : `${apiUrl}/${user.photo}`
+                        }
+                        alt="Profile"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "";
+                          e.target.parentElement.classList.add("bg-gray-300");
+                        }}
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
+                        <span className="text-xs font-bold text-gray-600">
+                          {getInitials(user.name)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      placeholder="Write a comment..."
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      onKeyPress={(e) => e.key === "Enter" && handleAddComment()}
                     />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
-                      <span className="text-xs font-bold text-gray-600">
-                        {getInitials(user.name)}
-                      </span>
-                    </div>
-                  )}
-                </div>
+                    {commentError && (
+                      <p className="text-red-500 text-xs mt-1">{commentError}</p>
+                    )}
+                  </div>
 
-                <div className="flex-1">
-                  <input
-                    type="text"
-                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
-                    placeholder="Write a comment..."
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && handleAddComment()}
-                  />
-                  {commentError && (
-                    <p className="text-red-500 text-xs mt-1">{commentError}</p>
-                  )}
+                  <button
+                    className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors"
+                    onClick={handleAddComment}
+                  >
+                    Post
+                  </button>
                 </div>
-
-                <button
-                  className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors"
-                  onClick={handleAddComment}
-                >
-                  Post
-                </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 }

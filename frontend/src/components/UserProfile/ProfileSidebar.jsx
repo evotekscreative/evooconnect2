@@ -1,12 +1,30 @@
 import { Link } from "react-router-dom";
 import { Users, UserPlus, Check } from "lucide-react";
+import ProfileSocialMedia from "./ProfileSocialMedia";
+import { Instagram, Facebook, Twitter, Linkedin, Github } from "lucide-react";
 
 const socialPlatforms = [
-  { name: "instagram", color: "text-pink-500" },
-  { name: "facebook", color: "text-blue-500" },
-  { name: "twitter", color: "text-blue-400" },
-  { name: "linkedin", color: "text-blue-700" },
-  { name: "github", color: "text-black" },
+  {
+    name: "instagram",
+    icon: <Instagram className="w-5 h-5" />,
+    color: "text-pink-500",
+  },
+  {
+    name: "facebook",
+    icon: <Facebook className="w-5 h-5" />,
+    color: "text-blue-500",
+  },
+  {
+    name: "twitter",
+    icon: <Twitter className="w-5 h-5" />,
+    color: "text-blue-400",
+  },
+  {
+    name: "linkedin",
+    icon: <Linkedin className="w-5 h-5" />,
+    color: "text-blue-700",
+  },
+  { name: "github", icon: <Github className="w-5 h-5" />, color: "text-black" },
 ];
 
 export default function ProfileSidebar({
@@ -108,7 +126,7 @@ export default function ProfileSidebar({
             {user.skills.map((skill, index) => (
               <span
                 key={index}
-                className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm"
+                className="px-4 py-1 rounded-full border border-blue-200 text-blue-600 text-sm font-medium bg-white shadow-md"
               >
                 {skill}
               </span>
@@ -121,37 +139,10 @@ export default function ProfileSidebar({
         )}
       </div>
       {/* Social Media */}
-      <div className="p-6 bg-white rounded-lg shadow-md">
-        <h3 className="mb-2 text-lg font-semibold">Social Media</h3>
-        {Object.keys(user.socials).length > 0 ? (
-          <div className="space-y-2">
-            {Object.entries(user.socials).map(([platform, username]) => {
-              const platformInfo = socialPlatforms.find(
-                (p) => p.name === platform
-              );
-              return (
-                <div
-                  key={platform}
-                  className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-50"
-                >
-                  {platformInfo && (
-                    <div
-                      className={`p-2 rounded-full ${platformInfo.color} bg-gray-50`}
-                    >
-                      {/* You can add icon here if needed */}
-                    </div>
-                  )}
-                  <span className="text-base truncate">@{username}</span>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="text-base text-gray-500">
-            No social media added yet.
-          </p>
-        )}
-      </div>
+      
+
+            <ProfileSocialMedia socials={user.socials} socialPlatforms={socialPlatforms} />
+
     </div>
   );
 }

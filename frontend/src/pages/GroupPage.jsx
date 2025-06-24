@@ -78,8 +78,8 @@ export default function GroupPage() {
   const [memberPendingPosts, setMemberPendingPosts] = useState([]);
   const [isLoadingMemberPendingPosts, setIsLoadingMemberPendingPosts] =
     useState(false);
-     const [editingReplyId, setEditingReplyId] = useState(null);
-     const [showReplyOptions, setShowReplyOptions] = useState(false);
+  const [editingReplyId, setEditingReplyId] = useState(null);
+  const [showReplyOptions, setShowReplyOptions] = useState(false);
 
   const [user, setUser] = useState({
     name: "",
@@ -113,8 +113,8 @@ export default function GroupPage() {
   const [reportTargetUserId, setReportTargetUserId] = useState(null);
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [selectedComment, setSelectedComment] = useState(null);
-    const [joinRequests, setJoinRequests] = useState([]);
-const [isLoadingJoinRequests, setIsLoadingJoinRequests] = useState(false);
+  const [joinRequests, setJoinRequests] = useState([]);
+  const [isLoadingJoinRequests, setIsLoadingJoinRequests] = useState(false);
 
 
 
@@ -138,103 +138,103 @@ const [isLoadingJoinRequests, setIsLoadingJoinRequests] = useState(false);
   });
 
 
-// Add this function to fetch join requests
-const fetchJoinRequests = async () => {
-  if (!isCurrentUserAdmin) return;
-  
-  setIsLoadingJoinRequests(true);
-  try {
-    const token = localStorage.getItem("token");
-    const response = await axios.get(
-      `${apiUrl}/api/groups/${groupId}/join-requests`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
+  // Add this function to fetch join requests
+  const fetchJoinRequests = async () => {
+    if (!isCurrentUserAdmin) return;
+
+    setIsLoadingJoinRequests(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        `${apiUrl}/api/groups/${groupId}/join-requests`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // Format the join requests data
+      const formattedRequests = response.data.data.map((request) => ({
+        id: request.id,
+        user: request.user || {
+          id: request.user_id,
+          name: "Unknown User",
+          photo: null,
+          username: "unknown",
         },
-      }
-    );
-
-    // Format the join requests data
-    const formattedRequests = response.data.data.map((request) => ({
-      id: request.id,
-      user: request.user || {
-        id: request.user_id,
-        name: "Unknown User",
-        photo: null,
-        username: "unknown",
-      },
-      created_at: request.created_at,
-    }));
-
-    setJoinRequests(formattedRequests);
-  } catch (error) {
-    console.error("Error fetching join requests:", error);
-  } finally {
-    setIsLoadingJoinRequests(false);
-  }
-};
-
-// Add this function to handle approving join requests
-const handleApproveJoinRequest = async (requestId) => {
-  try {
-    const token = localStorage.getItem("token");
-    const response = await axios.put(
-      `${apiUrl}/api/join-requests/${requestId}/accept`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    if (response.status === 200) {
-      // Remove the approved request from the list
-      setJoinRequests(joinRequests.filter((request) => request.id !== requestId));
-      showAlert("success", "Join request approved successfully");
-      
-      // Update group members count
-      setGroup((prevGroup) => ({
-        ...prevGroup,
-        members_count: (prevGroup.members_count || 0) + 1,
+        created_at: request.created_at,
       }));
-    }
-  } catch (error) {
-    console.error("Error approving join request:", error);
-    showAlert(
-      "error",
-      error.response?.data?.message || "Failed to approve join request"
-    );
-  }
-};
 
-// Add this function to handle rejecting join requests
-const handleRejectJoinRequest = async (requestId) => {
-  try {
-    const token = localStorage.getItem("token");
-    const response = await axios.put(
-      `${apiUrl}/api/join-requests/${requestId}/reject`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      setJoinRequests(formattedRequests);
+    } catch (error) {
+      console.error("Error fetching join requests:", error);
+    } finally {
+      setIsLoadingJoinRequests(false);
+    }
+  };
+
+  // Add this function to handle approving join requests
+  const handleApproveJoinRequest = async (requestId) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.put(
+        `${apiUrl}/api/join-requests/${requestId}/accept`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        // Remove the approved request from the list
+        setJoinRequests(joinRequests.filter((request) => request.id !== requestId));
+        showAlert("success", "Join request approved successfully");
+
+        // Update group members count
+        setGroup((prevGroup) => ({
+          ...prevGroup,
+          members_count: (prevGroup.members_count || 0) + 1,
+        }));
       }
-    );
-
-    if (response.status === 200) {
-      // Remove the rejected request from the list
-      setJoinRequests(joinRequests.filter((request) => request.id !== requestId));
-      showAlert("success", "Join request rejected successfully");
+    } catch (error) {
+      console.error("Error approving join request:", error);
+      showAlert(
+        "error",
+        error.response?.data?.message || "Failed to approve join request"
+      );
     }
-  } catch (error) {
-    console.error("Error rejecting join request:", error);
-    showAlert(
-      "error",
-      error.response?.data?.message || "Failed to reject join request"
-    );
-  }
-};
+  };
+
+  // Add this function to handle rejecting join requests
+  const handleRejectJoinRequest = async (requestId) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.put(
+        `${apiUrl}/api/join-requests/${requestId}/reject`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        // Remove the rejected request from the list
+        setJoinRequests(joinRequests.filter((request) => request.id !== requestId));
+        showAlert("success", "Join request rejected successfully");
+      }
+    } catch (error) {
+      console.error("Error rejecting join request:", error);
+      showAlert(
+        "error",
+        error.response?.data?.message || "Failed to reject join request"
+      );
+    }
+  };
 
   const getInitials = (name) => {
     if (!name || typeof name !== "string") return "UU";
@@ -1282,8 +1282,8 @@ const handleRejectJoinRequest = async (requestId) => {
       <div className="border-t border-gray-200 px-4 py-2 flex justify-between">
         <button
           className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${post.isLiked
-              ? "text-blue-600 bg-blue-50"
-              : "text-black hover:bg-gray-100"
+            ? "text-blue-600 bg-blue-50"
+            : "text-black hover:bg-gray-100"
             }`}
           onClick={() => handleLikePost(post.id, post.isLiked)}
         >
@@ -1594,20 +1594,20 @@ const handleRejectJoinRequest = async (requestId) => {
     }
   };
 
-useEffect(() => {
-  if (groupId) {
-    fetchGroupData();
-    fetchGroupPosts();
-    fetchPinnedPosts();
-    if (isGroupMember) {
-      fetchMemberPendingPosts();
+  useEffect(() => {
+    if (groupId) {
+      fetchGroupData();
+      fetchGroupPosts();
+      fetchPinnedPosts();
+      if (isGroupMember) {
+        fetchMemberPendingPosts();
+      }
+      if (isCurrentUserAdmin) {
+        fetchPendingPosts();
+        fetchJoinRequests(); // Add this line
+      }
     }
-    if (isCurrentUserAdmin) {
-      fetchPendingPosts();
-      fetchJoinRequests(); // Add this line
-    }
-  }
-}, [groupId, isGroupMember, isCurrentUserAdmin]);
+  }, [groupId, isGroupMember, isCurrentUserAdmin]);
 
   useEffect(() => {
     if (groupId && !isLoading && group) {
@@ -2468,8 +2468,8 @@ useEffect(() => {
               <button
                 key={reason}
                 className={`py-2 px-3 text-sm border rounded-full ${selectedReason === reason
-                    ? "bg-blue-100 border-blue-500 text-blue-700"
-                    : "bg-white hover:bg-gray-100"
+                  ? "bg-blue-100 border-blue-500 text-blue-700"
+                  : "bg-white hover:bg-gray-100"
                   }`}
                 onClick={() => setSelectedReason(reason)}
               >
@@ -2501,8 +2501,8 @@ useEffect(() => {
             </button>
             <button
               className={`px-4 py-2 rounded text-white ${selectedReason
-                  ? "bg-blue-600 hover:bg-blue-700"
-                  : "bg-gray-300 cursor-not-allowed"
+                ? "bg-blue-600 hover:bg-blue-700"
+                : "bg-gray-300 cursor-not-allowed"
                 }`}
               disabled={!selectedReason}
               onClick={() => {
@@ -2633,7 +2633,7 @@ useEffect(() => {
 
   return (
     <Case>
-      <div className="flex flex-col md:flex-row bg-gray-50 px-4 md:px-6 lg:px-12 xl:px-32 py-2 md:py-4">
+      <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
         <div className="fixed top-5 right-5 z-50">
           {alertInfo.show && (
             <Alert
@@ -2647,346 +2647,70 @@ useEffect(() => {
         {/* Main Content Area */}
         <div className="container mx-auto px-2 sm:px-4">
           <div className="flex flex-col lg:flex-row gap-4 mt-4">
-            {/* Left Sidebar */}
-            <aside className="lg:block lg:w-1/4">
-              <div className="rounded-lg border bg-white shadow-sm">
-                <div className="p-4 text-center">
-                  <div className="profile-photo-container">
-                    {group.image ? (
+            {/* Left Sidebar - hanya desktop */}
+            <aside className="hidden lg:block lg:w-1/4">
+              {group.creator && (
+                <div className="rounded-xl border bg-white shadow mb-6">
+                  <div className="border-b p-3">
+                    <h6 className="font-medium">Admin Group</h6>
+                  </div>
+                  <div className="p-4 text-center">
+                    {group.creator.photo ? (
                       <img
-                        src={`${apiUrl}/${group.image}`}
-                        alt="avatar"
-                        className="rounded-full w-20 h-20 mx-auto object-cover"
+                        src={apiUrl + "/" + group.creator.photo}
+                        className="rounded-full w-20 h-20 mx-auto mb-2 object-cover"
+                        alt={group.creator.name}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "";
+                          e.target.parentElement.classList.add("bg-gray-200");
+                        }}
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-300">
-                        <span className="text-sm font-bold text-gray-600">
-                          {group.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
+                      <div className="rounded-full w-20 h-20 mx-auto mb-2 bg-gray-200 flex items-center justify-center">
+                        <span className="text-lg font-bold text-gray-600">
+                          {group.creator.name
+                            ? group.creator.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")
+                              .toUpperCase()
+                              .slice(0, 2)
+                            : "?"}
                         </span>
                       </div>
                     )}
-                    <h5 className="font-bold text-gray-800 mt-3">
-                      {group.name}
+                    <h5 className="font-bold text-gray-800">
+                      {group.creator.name}
                     </h5>
-                  </div>
-
-                  <div className="mt-4 p-2">
-                    <div className="flex items-center justify-between py-2">
-                      <p className="text-gray-500">Members</p>
-                      <p className="font-bold text-gray-800">
-                        {group.members_count || 0}
+                    <p className="text-gray-500 text-sm mt-1">
+                      {group.creator.headline || "No headline available"}
+                    </p>
+                    {group.creator.about && (
+                      <p className="text-gray-600 text-sm mt-2 line-clamp-3">
+                        {group.creator.about}
                       </p>
-                    </div>
-                  </div>
-
-                  {/* Tambahkan bagian Rules di sini */}
-                  {group.rule && (
-                    <div className="mt-4 p-2 border-t">
-                      <h6 className="font-semibold text-left mb-2">
-                        Group Rules
-                      </h6>
-                      <div className="text-left text-sm text-gray-600 whitespace-pre-line">
-                        {group.rule}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Join button */}
-                  {!isGroupMember && (
-                    <button
-                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full mt-3"
-                      onClick={handleJoinGroup}
-                    >
-                      Join Group
-                    </button>
-                  )}
-
-                  {isGroupMember && !isCurrentUserAdmin && (
-                    <button
-                      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded w-full mt-3"
-                      onClick={handleLeaveGroup}
-                    >
-                      Leave Group
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {isGroupMember && !isCurrentUserAdmin && (
-                <div className="rounded-lg border bg-white shadow-sm mb-4 mt-4">
-                  <div className="border-b p-3">
-                    <h6 className="font-medium">Your Pending Posts</h6>
-                  </div>
-                  <div>
-                    {isLoadingMemberPendingPosts ? (
-                      <div className="p-4 text-center">
-                        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-                      </div>
-                    ) : memberPendingPosts.length > 0 ? (
-                      memberPendingPosts.slice(0, 3).map((post) => {
-                        const isPostOpen = openPostId === post.id;
-
-                        return (
-                          <div key={post.id} className="p-3 border-b">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center">
-                                {post.user?.photo ? (
-                                  <img
-                                    className="rounded-full w-8 h-8 object-cover mr-2"
-                                    src={
-                                      post.user.photo.startsWith("http")
-                                        ? post.user.photo
-                                        : `${apiUrl}/${post.user.photo}`
-                                    }
-                                    alt={post.user.name}
-                                  />
-                                ) : (
-                                  <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center mr-2">
-                                    <span className="text-xs font-bold text-gray-600">
-                                      {post.user?.name?.charAt(0) || "U"}
-                                    </span>
-                                  </div>
-                                )}
-                                <span className="font-medium">
-                                  {post.user?.name || "Unknown User"}
-                                </span>
-                              </div>
-                              <button
-                                className="text-sm text-blue-500"
-                                onClick={() =>
-                                  setOpenPostId((prevId) =>
-                                    prevId === post.id ? null : post.id
-                                  )
-                                }
-                              >
-                                {isPostOpen ? (
-                                  <ChevronUp size={16} />
-                                ) : (
-                                  <ChevronDown size={16} />
-                                )}
-                              </button>
-                            </div>
-
-                            {isPostOpen && (
-                              <>
-                                <p className="text-sm mb-2">
-                                  {post.content}
-                                </p>
-                                {post.images && post.images.length > 0 && (
-                                  <div className="mb-2">
-                                    {renderPhotoGrid(post.images)}
-                                  </div>
-                                )}
-                                <div className="text-xs text-yellow-600">
-                                  Pending for admin approval
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="p-4 text-center text-gray-500">
-                        No posts pending approval
-                      </div>
                     )}
                   </div>
                 </div>
               )}
-
-              
-
-              {isCurrentUserAdmin && (
-                <div className="rounded-lg border bg-white shadow-sm mb-4 mt-4">
-                  <div className="border-b p-3 flex items-center justify-between">
-                    <h6 className="font-medium">Posts Pending Approval</h6>
-                    <Link
-                      to={`/groups/${groupId}/approve-posts`}
-                      className="text-blue-500 text-sm"
-                    >
-                      View All
-                    </Link>
-                  </div>
-                  <div>
-                    {isLoadingPendingPosts ? (
-                      <div className="p-4 text-center">
-                        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-                      </div>
-                    ) : pendingPosts.length > 0 ? (
-                      pendingPosts.slice(0, 3).map((post) => {
-                        const isPostOpen = openPostId === post.id;
-
-                        return (
-                          <div key={post.id} className="p-3 border-b">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center">
-                                {post.user?.photo ? (
-                                  <img
-                                    className="rounded-full w-8 h-8 object-cover mr-2"
-                                    src={
-                                      post.user.photo.startsWith("http")
-                                        ? post.user.photo
-                                        : `${apiUrl}/${post.user.photo}`
-                                    }
-                                    alt={post.user.name}
-                                  />
-                                ) : (
-                                  <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center mr-2">
-                                    <span className="text-xs font-bold text-gray-600">
-                                      {post.user?.name?.charAt(0) || "U"}
-                                    </span>
-                                  </div>
-                                )}
-                                <span className="font-medium">
-                                  {post.user?.name || "Unknown User"}
-                                </span>
-                              </div>
-                              <button
-                                className="text-sm text-blue-500"
-                                onClick={() =>
-                                  setOpenPostId((prevId) =>
-                                    prevId === post.id ? null : post.id
-                                  )
-                                }
-                              >
-                                {isPostOpen ? (
-                                  <ChevronUp size={16} />
-                                ) : (
-                                  <ChevronDown size={16} />
-                                )}
-                              </button>
-                            </div>
-
-                            {isPostOpen && (
-                              <>
-                                <p className="text-sm mb-2">{post.content}</p>
-                                {post.images && post.images.length > 0 && (
-                                  <div className="mb-2">
-                                    {renderPhotoGrid(post.images)}
-                                  </div>
-                                )}
-                                <div className="flex justify-start gap-2">
-                                  <button
-                                    onClick={() => handleApprovePost(post.id)}
-                                    className="text-xs bg-gradient-to-r from-blue-500 to-cyan-400 text-white px-3 py-2 rounded"
-                                  >
-                                    Approve
-                                  </button>
-                                  <button
-                                    onClick={() => handleRejectPost(post.id)}
-                                    className="text-xs bg-gradient-to-r from-red-500 to-red-400 hover:from-red-600 hover:to-red-500 text-white px-3 py-1 rounded"
-                                  >
-                                    Reject
-                                  </button>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="p-4 text-center text-gray-500">
-                        No posts pending approval
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {isCurrentUserAdmin && (
-  <div className="rounded-lg border bg-white shadow-sm mb-4 mt-4">
-    <div className="border-b p-3 flex items-center justify-between">
-      <h6 className="font-medium">Join Requests</h6>
-      {joinRequests.length > 3 && (
-        <Link
-          to={`/groups/${groupId}/join-requests`}
-          className="text-blue-500 text-sm"
-        >
-          View All
-        </Link>
-      )}
-    </div>
-    <div>
-      {isLoadingJoinRequests ? (
-        <div className="p-4 text-center">
-          <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-        </div>
-      ) : joinRequests.length > 0 ? (
-        joinRequests.slice(0, 3).map((request) => (
-          <div key={request.id} className="p-3 border-b">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center">
-                {request.user?.photo ? (
-                  <img
-                    className="rounded-full w-8 h-8 object-cover mr-2"
-                    src={
-                      request.user.photo.startsWith("http")
-                        ? request.user.photo
-                        : `${apiUrl}/${request.user.photo}`
-                    }
-                    alt={request.user.name}
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center mr-2">
-                    <span className="text-xs font-bold text-gray-600">
-                      {request.user?.name?.charAt(0) || "U"}
-                    </span>
-                  </div>
-                )}
-                <div>
-                  <span className="font-medium block">
-                    {request.user?.name || "Unknown User"}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {formatPostTime(request.created_at)}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-start gap-2 mt-2">
-              <button
-                onClick={() => handleApproveJoinRequest(request.id)}
-                className="text-xs bg-gradient-to-r from-blue-500 to-cyan-400 text-white px-3 py-2 rounded"
-              >
-                Approve
-              </button>
-              <button
-                onClick={() => handleRejectJoinRequest(request.id)}
-                className="text-xs bg-gradient-to-r from-red-500 to-red-400 hover:from-red-600 hover:to-red-500 text-white px-3 py-1 rounded"
-              >
-                Reject
-              </button>
-            </div>
-          </div>
-        ))
-      ) : (
-        <div className="p-4 text-center text-gray-500">
-          No pending join requests
-        </div>
-      )}
-    </div>
-  </div>
-)}
-
             </aside>
 
             {/* Main Content */}
             <main className="w-full lg:w-2/4">
               {/* Group Info */}
-              <div className="rounded-lg border bg-white shadow-sm mb-4 relative">
-                <div className="h-14 sm:h-24 w-full bg-gray-300 relative">
+              <div className="rounded-lg border bg-white shadow-sm mb-4 relative overflow-hidden">
+                {/* Cover */}
+                <div className="h-24 sm:h-36 w-full bg-gray-300 relative">
                   <img
                     className="h-full w-full object-cover"
                     src={GroupCover}
                     alt="Cover"
                   />
-                  <div className="absolute -bottom-8 left-4">
-                    <div className="relative">
+                  {/* Group Image */}
+                  <div className="absolute -bottom-10 left-6">
                       <img
-                        className="rounded-lg object-cover w-16 h-16 border-4 border-white"
+                        className="rounded-xl object-cover w-20 h-20 border-4 border-white bg-white"
                         src={
                           group.image
                             ? `${apiUrl}/${group.image}`
@@ -2994,28 +2718,116 @@ useEffect(() => {
                         }
                         alt={group.name}
                       />
-                    </div>
                   </div>
                 </div>
-                <div className="pt-10 px-4 pb-4 justify-between flex items-start">
-                  <div className="ml-4">
-                    <h5 className="font-bold text-gray-800">{group.name}</h5>
-                    <p className="text-gray-500 text-sm">{group.description}</p>
-                    <p className="text-gray-500 text-sm">
-                      {group.members_count || 0} Members
-                    </p>
-                  </div>
-                  {isCurrentUserAdmin && (
-                    <div className="top-2 right-2">
+                {/* Group Info */}
+                <div className="pt-14 px-6 pb-6 flex flex-col items-start gap-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center w-full">
+                    <div className="flex-1">
+                      <h5 className="font-bold text-gray-800 text-lg">{group.name}</h5>
+                      <p className="text-gray-500 text-sm mt-1">{group.description}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span
+                          className="block lg:hidden text-sm text-gray-500 cursor-pointer font-medium"
+                          onClick={() => window.location.href = `/groups/${groupId}/members`}
+                        >
+                          {group.members_count || 0} Member{(group.members_count || 0) > 1 ? "s" : ""}
+                        </span>
+                        <span className="hidden lg:block text-xs text-gray-500">
+                          {group.members_count || 0} Member{(group.members_count || 0) > 1 ? "s" : ""}
+                        </span>
+                      </div>
+                    </div>
+                    {isCurrentUserAdmin && (
                       <button
-                        className="text-gray-500 hover:text-gray-700"
+                        className="ml-auto mt-2 sm:mt-0 text-gray-500 hover:text-gray-700 transition"
                         onClick={handleOpenEditModal}
+                        title="Edit Group"
                       >
                         <Pencil size={20} />
                       </button>
+                    )}
+                  </div>
+                  {/* Divider */}
+                  <div className="w-full border-t border-gray-200 my-4"></div>
+                  {/* Group Rules */}
+                  {group.rule && (
+                    <div className="w-full">
+                      <h6 className="font-semibold text-left mb-1 text-gray-700">Group Rules</h6>
+                      <div className="text-left text-sm text-gray-600 whitespace-pre-line">
+                        {group.rule}
+                      </div>
                     </div>
                   )}
+                  {/* Join/Leave Button */}
+                  <div className="w-full mt-4">
+                    {!isGroupMember && (
+                      <button
+                        className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold text-base shadow transition"
+                        onClick={handleJoinGroup}
+                      >
+                        Join Group
+                      </button>
+                    )}
+                    {isGroupMember && !isCurrentUserAdmin && (
+                      <button
+                        className="w-full bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold text-base shadow transition"
+                        onClick={handleLeaveGroup}
+                      >
+                        Leave Group
+                      </button>
+                    )}
+                  </div>
                 </div>
+              </div>
+
+              {/* Card Admin Group - tampil di bawah join group saat mobile/tablet */}
+              <div className="block lg:hidden mb-4">
+                {group.creator && (
+                  <div className="rounded-lg border bg-white shadow-sm">
+                    <div className="border-b p-3">
+                      <h6 className="font-medium">Admin Group</h6>
+                    </div>
+                    <div className="p-4 text-center">
+                      {group.creator.photo ? (
+                        <img
+                          src={apiUrl + "/" + group.creator.photo}
+                          className="rounded-full w-20 h-20 mx-auto mb-2 object-cover"
+                          alt={group.creator.name}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "";
+                            e.target.parentElement.classList.add("bg-gray-200");
+                          }}
+                        />
+                      ) : (
+                        <div className="rounded-full w-20 h-20 mx-auto mb-2 bg-gray-200 flex items-center justify-center">
+                          <span className="text-lg font-bold text-gray-600">
+                            {group.creator.name
+                              ? group.creator.name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")
+                                .toUpperCase()
+                                .slice(0, 2)
+                              : "?"}
+                          </span>
+                        </div>
+                      )}
+                      <h5 className="font-bold text-gray-800">
+                        {group.creator.name}
+                      </h5>
+                      <p className="text-gray-500 text-sm mt-1">
+                        {group.creator.headline || "No headline available"}
+                      </p>
+                      {group.creator.about && (
+                        <p className="text-gray-600 text-sm mt-2 line-clamp-3">
+                          {group.creator.about}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Create Post Box */}
@@ -3062,9 +2874,9 @@ useEffect(() => {
                         <div className="flex gap-3 w-full sm:w-auto">
                           <label
                             htmlFor="post-image"
-                            className="text-sky-500 cursor-pointer flex items-center text-sm"
+                            className="text-blue-500 cursor-pointer flex items-center text-sm"
                           >
-                            <Image size={16} className="mr-1" /> Photo
+                            <Image size={16} className="mr-1" /> Add Photo
                             <input
                               type="file"
                               id="post-image"
@@ -3078,7 +2890,7 @@ useEffect(() => {
 
                         <button
                           type="submit"
-                          className="bg-gradient-to-r from-sky-500 to-cyan-400 hover:from-sky-600 hover:to-cyan-500 text-white px-4 py-2 rounded w-full sm:w-auto"
+                          className="bg-sky-500 text-white px-4 py-2 rounded w-full sm:w-auto"
                           disabled={
                             !postContent.trim() && imageFiles.length === 0
                           }
@@ -3137,500 +2949,496 @@ useEffect(() => {
 
               {/* Comment Modal */}
               {showCommentModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
-          {renderShowcase()}
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
+                  {renderShowcase()}
 
-          {/* Main Comment Modal */}
-          <div
-            className="bg-white rounded-lg w-full max-w-md mx-4 max-h-[90vh] flex flex-col shadow-xl"
-            style={{ zIndex: showReportModal ? 40 : 50 }}
-          >
-            {/* Modal Header */}
-            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-800">Comments</h3>
-              <button
-                onClick={closeCommentModal}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
+                  {/* Main Comment Modal */}
+                  <div
+                    className="bg-white rounded-lg w-full max-w-md mx-4 max-h-[90vh] flex flex-col shadow-xl"
+                    style={{ zIndex: showReportModal ? 40 : 50 }}
+                  >
+                    {/* Modal Header */}
+                    <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+                      <h3 className="text-lg font-semibold text-gray-800">Comments</h3>
+                      <button
+                        onClick={closeCommentModal}
+                        className="text-gray-500 hover:text-gray-700 transition-colors"
+                      >
+                        <X size={20} />
+                      </button>
+                    </div>
 
-            {/* Comments Content */}
-            <div className="p-4 overflow-y-auto flex-1 space-y-4">
-              {loadingComments[currentPostId] ? (
-                <div className="flex justify-center items-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-                </div>
-              ) : !Array.isArray(comments[currentPostId]) ||
-                comments[currentPostId].length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">No comments yet.</p>
-                  <p className="text-gray-400 text-sm mt-1">
-                    Be the first to comment!
-                  </p>
-                </div>
-              ) : (
-                Array.isArray(comments[currentPostId]) &&
-                comments[currentPostId].filter(Boolean).map((comment) => {
-                  if (!comment) return null;
+                    {/* Comments Content */}
+                    <div className="p-4 overflow-y-auto flex-1 space-y-4">
+                      {loadingComments[currentPostId] ? (
+                        <div className="flex justify-center items-center py-8">
+                          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                        </div>
+                      ) : !Array.isArray(comments[currentPostId]) ||
+                        comments[currentPostId].length === 0 ? (
+                        <div className="text-center py-8">
+                          <p className="text-gray-500">No comments yet.</p>
+                          <p className="text-gray-400 text-sm mt-1">
+                            Be the first to comment!
+                          </p>
+                        </div>
+                      ) : (
+                        Array.isArray(comments[currentPostId]) &&
+                        comments[currentPostId].filter(Boolean).map((comment) => {
+                          if (!comment) return null;
 
-                  const commentUser = comment.user || {
-                    name: "Unknown User",
-                    initials: "UU",
-                    username: "unknown",
-                    profile_photo: null,
-                  };
+                          const commentUser = comment.user || {
+                            name: "Unknown User",
+                            initials: "UU",
+                            username: "unknown",
+                            profile_photo: null,
+                          };
 
-                  return (
-                    <div key={comment.id} className="group">
-                      {/* Comment Container */}
-                      <div className="flex gap-3">
-                        {/* User Avatar */}
+                          return (
+                            <div key={comment.id} className="group">
+                              {/* Comment Container */}
+                              <div className="flex gap-3">
+                                {/* User Avatar */}
+                                <div className="flex-shrink-0">
+                                  {commentUser.profile_photo ? (
+                                    <Link to={`/user-profile/${commentUser.username}`}>
+                                      <img
+                                        className="rounded-full w-10 h-10 object-cover border-2 border-white hover:border-blue-200 transition-colors"
+                                        src={
+                                          commentUser.profile_photo.startsWith("http")
+                                            ? commentUser.profile_photo
+                                            : `${apiUrl}/${commentUser.profile_photo}`
+                                        }
+                                        alt="Profile"
+                                        onError={(e) => {
+                                          e.target.onerror = null;
+                                          e.target.src = "";
+                                          e.target.parentElement.classList.add("bg-gray-300");
+                                        }}
+                                      />
+                                    </Link>
+                                  ) : (
+                                    <div className="w-10 h-10 flex items-center justify-center bg-gray-200 rounded-full border-2 border-white">
+                                      <span className="text-sm font-bold text-gray-600">
+                                        {getInitials(commentUser.name)}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Comment Content */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="bg-gray-50 rounded-lg p-3">
+                                    {/* User Info */}
+                                    <div className="flex items-center justify-between">
+                                      <Link
+                                        to={`/user-profile/${commentUser.username}`}
+                                        className="text-sm font-semibold text-gray-800 hover:text-blue-600 hover:underline"
+                                      >
+                                        {commentUser.name}
+                                      </Link>
+
+                                      {/* Comment Actions */}
+                                      <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        {comment.user?.id === currentUserId && (
+                                          <button
+                                            className="text-gray-500 hover:text-gray-700"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedComment(comment);
+                                              setShowCommentOptions(true);
+                                            }}
+                                          >
+                                            <MoreHorizontal size={16} />
+                                          </button>
+                                        )}
+
+                                        {comment.user?.id !== currentUserId && (
+                                          <button
+                                            className="text-gray-500 hover:text-red-500"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              if (comment.user?.id) {
+                                                handleReportClick(
+                                                  comment.user.id,
+                                                  "comment",
+                                                  comment.id
+                                                );
+                                              }
+                                            }}
+                                          >
+                                            <TriangleAlert size={16} />
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Comment Text */}
+                                    {editingCommentId === comment.id ? (
+                                      <div className="mt-2 flex gap-2">
+                                        <input
+                                          type="text"
+                                          className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                          value={commentText}
+                                          onChange={(e) =>
+                                            setCommentText(e.target.value)
+                                          }
+                                          autoFocus
+                                        />
+                                        <button
+                                          className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-colors"
+                                          onClick={() =>
+                                            handleUpdateComment(comment.id)
+                                          }
+                                        >
+                                          Update
+                                        </button>
+                                        <button
+                                          className="bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm hover:bg-gray-300 transition-colors"
+                                          onClick={() => {
+                                            setEditingCommentId(null);
+                                            setCommentText("");
+                                          }}
+                                        >
+                                          Cancel
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <p className="text-sm text-gray-700 mt-1">
+                                        {comment.content}
+                                      </p>
+                                    )}
+                                  </div>
+
+                                  {/* Comment Meta */}
+                                  <div className="flex items-center justify-between mt-2 px-1">
+                                    <span className="text-xs text-gray-500">
+                                      {formatPostTime(comment.created_at)}
+                                    </span>
+
+                                    <div className="flex items-center space-x-4">
+                                      <button
+                                        className="text-xs text-blue-500 hover:text-blue-700 font-medium"
+                                        onClick={() => {
+                                          setReplyingTo(comment.id);
+                                          setReplyToUser(comment.user);
+                                        }}
+                                      >
+                                        Reply
+                                      </button>
+
+                                      {(comment.repliesCount > 0 ||
+                                        allReplies[comment.id]?.length > 0) && (
+                                          <button
+                                            className="text-xs text-gray-500 hover:text-blue-500"
+                                            onClick={() => toggleReplies(comment.id)}
+                                          >
+                                            {expandedReplies[comment.id]
+                                              ? "Hide replies"
+                                              : `Show replies (${comment.repliesCount})`}
+                                          </button>
+                                        )}
+                                    </div>
+                                  </div>
+
+                                  {/* Reply Input */}
+                                  {replyingTo === comment.id && (
+                                    <div className="mt-3 flex gap-2">
+                                      <input
+                                        type="text"
+                                        className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                        placeholder={`Reply to ${replyToUser?.name || comment.user.name
+                                          }...`}
+                                        value={replyText}
+                                        onChange={(e) => setReplyText(e.target.value)}
+                                        autoFocus
+                                      />
+                                      <button
+                                        className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-colors"
+                                        onClick={() =>
+                                          handleReply(
+                                            comment.id,
+                                            replyToUser || comment.user
+                                          )
+                                        }
+                                      >
+                                        Post
+                                      </button>
+                                    </div>
+                                  )}
+
+                                  {/* Replies Section */}
+                                  {expandedReplies[comment.id] && (
+                                    <div className="mt-3 ml-4 pl-4 border-l-2 border-gray-200 space-y-3">
+                                      {loadingComments[comment.id] ? (
+                                        <div className="flex justify-center py-2">
+                                          <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500"></div>
+                                        </div>
+                                      ) : (
+                                        (allReplies[comment.id] || []).map((reply) => (
+                                          <div key={reply.id} className="group">
+                                            <div className="flex gap-2">
+                                              {/* Reply User Avatar */}
+                                              <div className="flex-shrink-0">
+                                                {reply.user?.profile_photo ? (
+                                                  <Link
+                                                    to={`/user-profile/${reply.user.username}`}
+                                                  >
+                                                    <img
+                                                      className="rounded-full w-8 h-8 object-cover border-2 border-white hover:border-blue-200 transition-colors"
+                                                      src={
+                                                        reply.user.profile_photo.startsWith(
+                                                          "http"
+                                                        )
+                                                          ? reply.user.profile_photo
+                                                          : `${apiUrl}/${reply.user.profile_photo}`
+                                                      }
+                                                      alt="Profile"
+                                                      onError={(e) => {
+                                                        e.target.onerror = null;
+                                                        e.target.src = "";
+                                                        e.target.parentElement.classList.add(
+                                                          "bg-gray-300"
+                                                        );
+                                                      }}
+                                                    />
+                                                  </Link>
+                                                ) : (
+                                                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                                                    <span className="text-xs font-medium text-gray-600">
+                                                      {getInitials(reply.user?.name)}
+                                                    </span>
+                                                  </div>
+                                                )}
+                                              </div>
+
+                                              {/* Reply Content */}
+                                              <div className="flex-1 min-w-0">
+                                                <div className="bg-gray-50 rounded-lg p-2">
+                                                  {/* Reply User Info */}
+                                                  <div className="flex items-center justify-between">
+                                                    <div className="flex items-center">
+                                                      <Link
+                                                        to={`/user-profile/${reply.user.username}`}
+                                                        className="text-xs font-semibold text-gray-800 hover:text-blue-600 hover:underline"
+                                                      >
+                                                        {reply.user?.name ||
+                                                          "Unknown User"}
+                                                      </Link>
+                                                      {reply.reply_to &&
+                                                        reply.parent_id !==
+                                                        reply.reply_to
+                                                          .reply_to_id && (
+                                                          <span className="text-xs text-gray-500 ml-1 flex items-center">
+                                                            <svg
+                                                              xmlns="http://www.w3.org/2000/svg"
+                                                              width="10"
+                                                              height="10"
+                                                              fill="currentColor"
+                                                              className="mr-1"
+                                                              viewBox="0 0 16 16"
+                                                            >
+                                                              <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z" />
+                                                            </svg>
+                                                            <Link
+                                                              to={`/user-profile/${reply.reply_to.username}`}
+                                                              className="text-blue-500 hover:underline"
+                                                            >
+                                                              {reply.reply_to.name}
+                                                            </Link>
+                                                          </span>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Reply Actions */}
+                                                    <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                      {reply.user?.id === user.id && (
+                                                        <button
+                                                          className="text-gray-500 hover:text-gray-700"
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setSelectedReply(reply);
+                                                            setShowReplyOptions(true);
+                                                          }}
+                                                        >
+                                                          <MoreHorizontal size={14} />
+                                                        </button>
+                                                      )}
+
+                                                      {reply.user?.id !== user.id && (
+                                                        <button
+                                                          className="text-gray-500 hover:text-red-500"
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (reply.user?.id) {
+                                                              handleReportClick(
+                                                                reply.user.id,
+                                                                "comment",
+                                                                reply.id
+                                                              );
+                                                            }
+                                                          }}
+                                                        >
+                                                          <TriangleAlert size={14} />
+                                                        </button>
+                                                      )}
+                                                    </div>
+                                                  </div>
+
+                                                  {/* Reply Text */}
+                                                  {editingReplyId === reply.id ? (
+                                                    <div className="mt-1 flex gap-2">
+                                                      <input
+                                                        type="text"
+                                                        className="flex-1 border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                        value={replyText}
+                                                        onChange={(e) =>
+                                                          setReplyText(e.target.value)
+                                                        }
+                                                        autoFocus
+                                                      />
+                                                      <button
+                                                        className="bg-blue-500 text-white px-2 py-1 rounded-lg text-xs hover:bg-blue-600 transition-colors"
+                                                        onClick={() =>
+                                                          handleUpdateReply(reply.id)
+                                                        }
+                                                      >
+                                                        Update
+                                                      </button>
+                                                      <button
+                                                        className="bg-gray-200 text-gray-700 px-2 py-1 rounded-lg text-xs hover:bg-gray-300 transition-colors"
+                                                        onClick={() => {
+                                                          setEditingReplyId(null);
+                                                          setReplyText("");
+                                                        }}
+                                                      >
+                                                        Cancel
+                                                      </button>
+                                                    </div>
+                                                  ) : (
+                                                    <p className="text-xs text-gray-700 mt-1">
+                                                      {reply.content}
+                                                    </p>
+                                                  )}
+                                                </div>
+
+                                                {/* Reply Meta */}
+                                                <div className="flex items-center justify-between mt-1 px-1">
+                                                  <span className="text-xs text-gray-500">
+                                                    {formatPostTime(reply.created_at)}
+                                                  </span>
+
+                                                  <div className="flex items-center space-x-3">
+                                                    <button
+                                                      className="text-xs text-blue-500 hover:text-blue-700"
+                                                      onClick={() => {
+                                                        setReplyingTo(reply.id);
+                                                        setReplyToUser(reply.user);
+                                                      }}
+                                                    >
+                                                      Reply
+                                                    </button>
+                                                  </div>
+                                                </div>
+                                                {replyingTo === reply.id && (
+                                                  <div className="mt-3 flex gap-2">
+                                                    <input
+                                                      type="text"
+                                                      className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                      placeholder={`Reply to ${replyToUser?.name ||
+                                                        reply.user.name
+                                                        }...`}
+                                                      value={replyText}
+                                                      onChange={(e) =>
+                                                        setReplyText(e.target.value)
+                                                      }
+                                                      autoFocus
+                                                    />
+                                                    <button
+                                                      className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-colors"
+                                                      onClick={() =>
+                                                        handleReply(
+                                                          reply.id,
+                                                          replyToUser || reply.user
+                                                        )
+                                                      }
+                                                    >
+                                                      Post
+                                                    </button>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ))
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {/* Comment Options Modal */}
+                    {renderReplyOptionsModal()}
+                    {renderCommentOptionsModal()}
+
+                    {/* Add Comment Section */}
+                    <div className="p-4 border-t border-gray-200">
+                      <div className="flex items-center gap-3">
                         <div className="flex-shrink-0">
-                          {commentUser.profile_photo ? (
-                            <Link to={`/user-profile/${commentUser.username}`}>
-                              <img
-                                className="rounded-full w-10 h-10 object-cover border-2 border-white hover:border-blue-200 transition-colors"
-                                src={
-                                  commentUser.profile_photo.startsWith("http")
-                                    ? commentUser.profile_photo
-                                    : `${apiUrl}/${commentUser.profile_photo}`
-                                }
-                                alt="Profile"
-                                onError={(e) => {
-                                  e.target.onerror = null;
-                                  e.target.src = "";
-                                  e.target.parentElement.classList.add(
-                                    "bg-gray-300"
-                                  );
-                                }}
-                              />
-                            </Link>
+                          {user.photo ? (
+                            <img
+                              className="w-8 h-8 rounded-full object-cover"
+                              src={
+                                user.photo.startsWith("http")
+                                  ? user.photo
+                                  : `${apiUrl}/${user.photo}`
+                              }
+                              alt="Profile"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = "";
+                                e.target.parentElement.classList.add("bg-gray-300");
+                              }}
+                            />
                           ) : (
-                            <div className="w-10 h-10 flex items-center justify-center bg-gray-200 rounded-full border-2 border-white">
-                              <span className="text-sm font-medium text-gray-600">
-                                {getInitials(commentUser.name)}
+                            <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
+                              <span className="text-xs font-bold text-gray-600">
+                                {getInitials(user.name)}
                               </span>
                             </div>
                           )}
                         </div>
 
-                        {/* Comment Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="bg-gray-50 rounded-lg p-3">
-                            {/* User Info */}
-                            <div className="flex items-center justify-between">
-                              <Link
-                                to={`/user-profile/${commentUser.username}`}
-                                className="text-sm font-semibold text-gray-800 hover:text-blue-600 hover:underline"
-                              >
-                                {commentUser.name}
-                              </Link>
-
-                              {/* Comment Actions */}
-                              <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                {comment.user?.id === currentUserId && (
-                                  <button
-                                    className="text-gray-500 hover:text-gray-700"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedComment(comment);
-                                      setShowCommentOptions(true);
-                                    }}
-                                  >
-                                    <MoreHorizontal size={16} />
-                                  </button>
-                                )}
-
-                                {comment.user?.id !== currentUserId && (
-                                  <button
-                                    className="text-gray-500 hover:text-red-500"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (comment.user?.id) {
-                                        handleReportClick(
-                                          comment.user.id,
-                                          "comment",
-                                          comment.id
-                                        );
-                                      }
-                                    }}
-                                  >
-                                    <TriangleAlert size={16} />
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Comment Text */}
-                            {editingCommentId === comment.id ? (
-                              <div className="mt-2 flex gap-2">
-                                <input
-                                  type="text"
-                                  className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                  value={commentText}
-                                  onChange={(e) =>
-                                    setCommentText(e.target.value)
-                                  }
-                                  autoFocus
-                                />
-                                <button
-                                  className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-colors"
-                                  onClick={() =>
-                                    handleUpdateComment(comment.id)
-                                  }
-                                >
-                                  Update
-                                </button>
-                                <button
-                                  className="bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm hover:bg-gray-300 transition-colors"
-                                  onClick={() => {
-                                    setEditingCommentId(null);
-                                    setCommentText("");
-                                  }}
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            ) : (
-                              <p className="text-sm text-gray-700 mt-1">
-                                {comment.content}
-                              </p>
-                            )}
-                          </div>
-
-                          {/* Comment Meta */}
-                          <div className="flex items-center justify-between mt-2 px-1">
-                            <span className="text-xs text-gray-500">
-                              {formatPostTime(comment.created_at)}
-                            </span>
-
-                            <div className="flex items-center space-x-4">
-                              <button
-                                className="text-xs text-blue-500 hover:text-blue-700 font-medium"
-                                onClick={() => {
-                                  setReplyingTo(comment.id);
-                                  setReplyToUser(comment.user);
-                                }}
-                              >
-                                Reply
-                              </button>
-
-                              {(comment.repliesCount > 0 ||
-                                allReplies[comment.id]?.length > 0) && (
-                                <button
-                                  className="text-xs text-gray-500 hover:text-blue-500"
-                                  onClick={() => toggleReplies(comment.id)}
-                                >
-                                  {expandedReplies[comment.id]
-                                    ? "Hide replies"
-                                    : `Show replies (${comment.repliesCount})`}
-                                </button>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Reply Input */}
-                          {replyingTo === comment.id && (
-                            <div className="mt-3 flex gap-2">
-                              <input
-                                type="text"
-                                className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                placeholder={`Reply to ${
-                                  replyToUser?.name || comment.user.name
-                                }...`}
-                                value={replyText}
-                                onChange={(e) => setReplyText(e.target.value)}
-                                autoFocus
-                              />
-                              <button
-                                className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-colors"
-                                onClick={() =>
-                                  handleReply(
-                                    comment.id,
-                                    replyToUser || comment.user
-                                  )
-                                }
-                              >
-                                Post
-                              </button>
-                            </div>
-                          )}
-
-                          {/* Replies Section */}
-                          {expandedReplies[comment.id] && (
-                            <div className="mt-3 ml-4 pl-4 border-l-2 border-gray-200 space-y-3">
-                              {loadingComments[comment.id] ? (
-                                <div className="flex justify-center py-2">
-                                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500"></div>
-                                </div>
-                              ) : (
-                                (allReplies[comment.id] || []).map((reply) => (
-                                  <div key={reply.id} className="group">
-                                    <div className="flex gap-2">
-                                      {/* Reply User Avatar */}
-                                      <div className="flex-shrink-0">
-                                        {reply.user?.profile_photo ? (
-                                          <Link
-                                            to={`/user-profile/${reply.user.username}`}
-                                          >
-                                            <img
-                                              className="rounded-full w-8 h-8 object-cover border-2 border-white hover:border-blue-200 transition-colors"
-                                              src={
-                                                reply.user.profile_photo.startsWith(
-                                                  "http"
-                                                )
-                                                  ? reply.user.profile_photo
-                                                  : `${apiUrl}/${reply.user.profile_photo}`
-                                              }
-                                              alt="Profile"
-                                              onError={(e) => {
-                                                e.target.onerror = null;
-                                                e.target.src = "";
-                                                e.target.parentElement.classList.add(
-                                                  "bg-gray-300"
-                                                );
-                                              }}
-                                            />
-                                          </Link>
-                                        ) : (
-                                          <div className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-full border-2 border-white">
-                                            <span className="text-xs font-medium text-gray-600">
-                                              {getInitials(reply.user?.name)}
-                                            </span>
-                                          </div>
-                                        )}
-                                      </div>
-
-                                      {/* Reply Content */}
-                                      <div className="flex-1 min-w-0">
-                                        <div className="bg-gray-50 rounded-lg p-2">
-                                          {/* Reply User Info */}
-                                          <div className="flex items-center justify-between">
-                                            <div className="flex items-center">
-                                              <Link
-                                                to={`/user-profile/${reply.user.username}`}
-                                                className="text-xs font-semibold text-gray-800 hover:text-blue-600 hover:underline"
-                                              >
-                                                {reply.user?.name ||
-                                                  "Unknown User"}
-                                              </Link>
-                                              {reply.reply_to &&
-                                                reply.parent_id !==
-                                                  reply.reply_to
-                                                    .reply_to_id && (
-                                                  <span className="text-xs text-gray-500 ml-1 flex items-center">
-                                                    <svg
-                                                      xmlns="http://www.w3.org/2000/svg"
-                                                      width="10"
-                                                      height="10"
-                                                      fill="currentColor"
-                                                      className="mr-1"
-                                                      viewBox="0 0 16 16"
-                                                    >
-                                                      <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z" />
-                                                    </svg>
-                                                    <Link
-                                                      to={`/user-profile/${reply.reply_to.username}`}
-                                                      className="text-blue-500 hover:underline"
-                                                    >
-                                                      {reply.reply_to.name}
-                                                    </Link>
-                                                  </span>
-                                                )}
-                                            </div>
-
-                                            {/* Reply Actions */}
-                                            <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                              {reply.user?.id === user.id && (
-                                                <button
-                                                  className="text-gray-500 hover:text-gray-700"
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setSelectedReply(reply);
-                                                    setShowReplyOptions(true);
-                                                  }}
-                                                >
-                                                  <MoreHorizontal size={14} />
-                                                </button>
-                                              )}
-
-                                              {reply.user?.id !== user.id && (
-                                                <button
-                                                  className="text-gray-500 hover:text-red-500"
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    if (reply.user?.id) {
-                                                      handleReportClick(
-                                                        reply.user.id,
-                                                        "comment",
-                                                        reply.id
-                                                      );
-                                                    }
-                                                  }}
-                                                >
-                                                  <TriangleAlert size={14} />
-                                                </button>
-                                              )}
-                                            </div>
-                                          </div>
-
-                                          {/* Reply Text */}
-                                          {editingReplyId === reply.id ? (
-                                            <div className="mt-1 flex gap-2">
-                                              <input
-                                                type="text"
-                                                className="flex-1 border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                                value={replyText}
-                                                onChange={(e) =>
-                                                  setReplyText(e.target.value)
-                                                }
-                                                autoFocus
-                                              />
-                                              <button
-                                                className="bg-blue-500 text-white px-2 py-1 rounded-lg text-xs hover:bg-blue-600 transition-colors"
-                                                onClick={() =>
-                                                  handleUpdateReply(reply.id)
-                                                }
-                                              >
-                                                Update
-                                              </button>
-                                              <button
-                                                className="bg-gray-200 text-gray-700 px-2 py-1 rounded-lg text-xs hover:bg-gray-300 transition-colors"
-                                                onClick={() => {
-                                                  setEditingReplyId(null);
-                                                  setReplyText("");
-                                                }}
-                                              >
-                                                Cancel
-                                              </button>
-                                            </div>
-                                          ) : (
-                                            <p className="text-xs text-gray-700 mt-1">
-                                              {reply.content}
-                                            </p>
-                                          )}
-                                        </div>
-
-                                        {/* Reply Meta */}
-                                        <div className="flex items-center justify-between mt-1 px-1">
-                                          <span className="text-xs text-gray-500">
-                                            {formatPostTime(reply.created_at)}
-                                          </span>
-
-                                          <div className="flex items-center space-x-3">
-                                            <button
-                                              className="text-xs text-blue-500 hover:text-blue-700"
-                                              onClick={() => {
-                                                setReplyingTo(reply.id);
-                                                setReplyToUser(reply.user);
-                                              }}
-                                            >
-                                              Reply
-                                            </button>
-                                          </div>
-                                        </div>
-                                        {replyingTo === reply.id && (
-                                          <div className="mt-3 flex gap-2">
-                                            <input
-                                              type="text"
-                                              className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                              placeholder={`Reply to ${
-                                                replyToUser?.name ||
-                                                reply.user.name
-                                              }...`}
-                                              value={replyText}
-                                              onChange={(e) =>
-                                                setReplyText(e.target.value)
-                                              }
-                                              autoFocus
-                                            />
-                                            <button
-                                              className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-colors"
-                                              onClick={() =>
-                                                handleReply(
-                                                  reply.id,
-                                                  replyToUser || reply.user
-                                                )
-                                              }
-                                            >
-                                              Post
-                                            </button>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))
-                              )}
-                            </div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                            placeholder="Write a comment..."
+                            value={commentText}
+                            onChange={(e) => setCommentText(e.target.value)}
+                            onKeyPress={(e) => e.key === "Enter" && handleAddComment()}
+                          />
+                          {commentError && (
+                            <p className="text-red-500 text-xs mt-1">{commentError}</p>
                           )}
                         </div>
+
+                        <button
+                          className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors"
+                          onClick={handleAddComment}
+                        >
+                          Post
+                        </button>
                       </div>
                     </div>
-                  );
-                })
+                  </div>
+                </div>
               )}
-            </div>
-
-            {/* Comment Options Modal */}
-            {renderReplyOptionsModal()}
-            {renderCommentOptionsModal()}
-
-            {/* Add Comment Section */}
-            <div className="p-4 border-t border-gray-200">
-              <div className="flex items-center gap-3">
-                <div className="flex-shrink-0">
-                  {user.photo ? (
-                    <img
-                      className="w-8 h-8 rounded-full object-cover"
-                      src={
-                        user.photo.startsWith("http")
-                          ? user.photo
-                          : `${apiUrl}/${user.photo}`
-                      }
-                      alt="Profile"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = "";
-                        e.target.parentElement.classList.add("bg-gray-300");
-                      }}
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
-                      <span className="text-xs font-bold text-gray-600">
-                        {getInitials(user.name)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex-1">
-                  <input
-                    type="text"
-                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
-                    placeholder="Write a comment..."
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && handleAddComment()}
-                  />
-                  {commentError && (
-                    <p className="text-red-500 text-xs mt-1">{commentError}</p>
-                  )}
-                </div>
-
-                <button
-                  className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors"
-                  onClick={handleAddComment}
-                >
-                  Post
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
               {/* Share Modal */}
               {showShareModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -3917,7 +3725,7 @@ useEffect(() => {
                           setShowRemoveModal(false);
                           setMemberToRemove(null);
                         }}
-                        className="text-gray-500 hover:text-gray-700"
+                        className="text-gray-400 hover:text-gray-600 transition"
                       >
                         <X size={20} />
                       </button>
@@ -3962,7 +3770,7 @@ useEffect(() => {
             </main>
 
             {/* Right Sidebar */}
-            <aside className="lg:block lg:w-1/4">
+           <aside className="hidden lg:block lg:w-1/4">
               {/* Members Box */}
               <div className="rounded-xl border bg-white shadow mb-6">
                 <div className="border-b p-4 flex items-center justify-between">
@@ -4116,45 +3924,7 @@ useEffect(() => {
                 </div>
               )}
 
-              {group.creator && (
-                <div className="rounded-lg border bg-white shadow-sm mb-4">
-                  <div className="border-b p-3">
-                    <h6 className="font-medium">Group Admin</h6>
-                  </div>
-                  <div className="p-4 text-center">
-  {group.creator.photo ? (
-    <img
-      src={apiUrl + "/" + group.creator.photo}
-      className="rounded-full w-20 h-20 mx-auto mb-2 object-cover"
-      alt={group.creator.name}
-      onError={(e) => {
-        e.target.onerror = null;
-        e.target.src = "";
-        e.target.parentElement.classList.add("bg-gray-200");
-      }}
-    />
-  ) : (
-    <div className="rounded-full w-20 h-20 mx-auto mb-2 bg-gray-200 flex items-center justify-center">
-      <span className="text-lg font-bold text-gray-600">
-        {group.creator.name ? group.creator.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "?"}
-      </span>
-    </div>
-  )}
-  <h5 className="font-bold text-gray-800">
-    {group.creator.name}
-  </h5>
-  <p className="text-gray-500 text-sm mt-1">
-    {group.creator.headline || "No headline available"}
-  </p>
-  {group.creator.about && (
-    <p className="text-gray-600 text-sm mt-2 line-clamp-3">
-      {group.creator.about}
-    </p>
-  )}
-</div>
 
-                </div>
-              )}
             </aside>
           </div>
         </div>
@@ -4238,8 +4008,8 @@ useEffect(() => {
 
       {showEditModal && (
         <div className="fixed inset-0  backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg border border-blue-200/50 shadow-2xl shadow-blue-500/10 backdrop-blur-xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center border-b border-blue-200/50 p-4 bg-gradient-to-r from-sky-500 to-cyan-400 rounded-t-2xl sticky top-0 backdrop-blur-sm">
+          <div className="bg-white rounded-xl w-full max-w-lg border shadow-xl shadow-blue-500/10 backdrop-blur-xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-blue-200/50 p-4 bg-sky-500 rounded-t-xl sticky top-0 backdrop-blur-sm">
               <h3 className="text-lg font-bold bg-white bg-clip-text text-transparent">
                 Edit Group
               </h3>
@@ -4316,7 +4086,7 @@ useEffect(() => {
                       }
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
                     <span className="ml-3 text-sm font-medium text-gray-900">
                       {editFormData.post_approval ? "Enabled" : "Disabled"}
                     </span>
@@ -4366,7 +4136,7 @@ useEffect(() => {
                     type="file"
                     accept="image/*"
                     onChange={handleEditImageChange}
-                    className="text-sm text-gray-600 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-gradient-to-r file:from-sky-500 file:to-cyan-400 file:text-white hover: file:cursor-pointer"
+                    className="text-sm text-gray-600 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-sky-500 file:text-white hover: file:cursor-pointer"
                   />
                 </div>
               </div>
@@ -4375,13 +4145,13 @@ useEffect(() => {
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg border border-gray-200 hover:bg-gray-200 transition-all duration-300 font-medium"
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg border border-gray-200 hover:bg-gray-200 transition-all duration-300"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-gradient-to-r from-sky-500 to-cyan-400 text-white rounded-lg hover:bg-gradient-to-r hover:from-sky-600 hover:to-cyan-500 font-medium "
+                  className="px-4 py-2 bg-sky-500 text-white rounded-lg font-medium "
                 >
                   Save Changes
                 </button>
@@ -4391,7 +4161,6 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Edit Post Modal */}
       {/* Edit Post Modal */}
       {showEditPostModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -4501,8 +4270,8 @@ useEffect(() => {
                 <button
                   key={reason}
                   className={`py-2 px-3 text-sm border rounded-full ${selectedReason === reason
-                      ? "bg-blue-100 border-blue-500 text-blue-700"
-                      : "bg-white hover:bg-gray-100"
+                    ? "bg-blue-100 border-blue-500 text-blue-700"
+                    : "bg-white hover:bg-gray-100"
                     }`}
                   onClick={() => setSelectedReason(reason)}
                 >
@@ -4534,33 +4303,34 @@ useEffect(() => {
               </button>
               <button
                 className={`px-4 py-2 rounded text-white ${selectedReason
-                    ? "bg-blue-600 hover:bg-blue-700"
-                    : "bg-gray-300 cursor-not-allowed"
+                  ? "bg-blue-600 hover:bg-blue-700"
+                  : "bg-gray-300 cursor-not-allowed"
                   }`}
                 disabled={!selectedReason}
                 onClick={() => {
-                  const reasonText = selectedReason === "Other" ? customReason : selectedReason;
-                  console.log("Report button clicked with params:", {
-                    reportTargetUserId,
-                    targetType: "post",
-                    selectedPostId,
-                    reasonText
-                  });
-                  handleSubmitReport(reportTargetUserId, "post", selectedPostId, reasonText);
+                  const reasonText =
+                    selectedReason === "Other" ? customReason : selectedReason;
+                  const contentType = selectedComment ? "comment" : "post";
+                  const contentId = selectedComment
+                    ? selectedComment.id
+                    : selectedPostId;
+
+                  if (reportTargetUserId && contentId && reasonText) {
+                    handleReportSubmit(
+                      reportTargetUserId,
+                      contentType,
+                      contentId,
+                      reasonText
+                    );
+                  }
                 }}
               >
                 Report
               </button>
-
             </div>
           </div>
         </div>
       )}
-
-
-
-
-
     </Case>
   );
 }

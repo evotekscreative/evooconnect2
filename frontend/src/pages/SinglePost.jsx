@@ -149,9 +149,9 @@ export default function SocialNetworkFeed() {
           username: person.username || "unknown",
           initials: person.name
             ? person.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
+              .split(" ")
+              .map((n) => n[0])
+              .join("")
             : "UU",
           photo: person.photo || null,
           headline: person.headline || "No headline specified",
@@ -435,35 +435,35 @@ export default function SocialNetworkFeed() {
         // Create initials for the reply user
         user: reply.user
           ? {
-              ...reply.user,
-              initials: reply.user.name
-                ? reply.user.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                : "UU",
-            }
+            ...reply.user,
+            initials: reply.user.name
+              ? reply.user.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+              : "UU",
+          }
           : { name: "Unknown User", initials: "UU" },
         // Ensure replyTo has complete user data including initials
         replyTo: reply.reply_to_id
           ? replies.find((r) => r.id === reply.reply_to_id)?.user
             ? {
-                id: replies.find((r) => r.id === reply.reply_to_id).user.id,
-                name:
-                  replies.find((r) => r.id === reply.reply_to_id).user.name ||
-                  "Unknown User",
-                username:
-                  replies.find((r) => r.id === reply.reply_to_id).user
-                    .username || "unknown",
-                initials: replies.find((r) => r.id === reply.reply_to_id).user
-                  .name
-                  ? replies
-                      .find((r) => r.id === reply.reply_to_id)
-                      .user.name.split(" ")
-                      .map((n) => n[0])
-                      .join("")
-                  : "UU",
-              }
+              id: replies.find((r) => r.id === reply.reply_to_id).user.id,
+              name:
+                replies.find((r) => r.id === reply.reply_to_id).user.name ||
+                "Unknown User",
+              username:
+                replies.find((r) => r.id === reply.reply_to_id).user
+                  .username || "unknown",
+              initials: replies.find((r) => r.id === reply.reply_to_id).user
+                .name
+                ? replies
+                  .find((r) => r.id === reply.reply_to_id)
+                  .user.name.split(" ")
+                  .map((n) => n[0])
+                  .join("")
+                : "UU",
+            }
             : null
           : null,
       }));
@@ -493,45 +493,45 @@ export default function SocialNetworkFeed() {
 
       const replies = Array.isArray(response.data?.data)
         ? response.data.data.map((reply) => ({
-            ...reply,
-            // Create initials for the reply user
-            user: reply.user
+          ...reply,
+          // Create initials for the reply user
+          user: reply.user
+            ? {
+              ...reply.user,
+              initials: reply.user.name
+                ? reply.user.name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")
+                : "UU",
+            }
+            : { name: "Unknown User", initials: "UU" },
+          // Ensure replyTo has complete user data including initials
+          replyTo: reply.reply_to_id
+            ? response.data.data.find((r) => r.id === reply.reply_to_id)?.user
               ? {
-                  ...reply.user,
-                  initials: reply.user.name
-                    ? reply.user.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")
-                    : "UU",
-                }
-              : { name: "Unknown User", initials: "UU" },
-            // Ensure replyTo has complete user data including initials
-            replyTo: reply.reply_to_id
-              ? response.data.data.find((r) => r.id === reply.reply_to_id)?.user
-                ? {
-                    id: response.data.data.find(
-                      (r) => r.id === reply.reply_to_id
-                    ).user.id,
-                    name:
-                      response.data.data.find((r) => r.id === reply.reply_to_id)
-                        .user.name || "Unknown User",
-                    username:
-                      response.data.data.find((r) => r.id === reply.reply_to_id)
-                        .user.username || "unknown",
-                    initials: response.data.data.find(
-                      (r) => r.id === reply.reply_to_id
-                    ).user.name
-                      ? response.data.data
-                          .find((r) => r.id === reply.reply_to_id)
-                          .user.name.split(" ")
-                          .map((n) => n[0])
-                          .join("")
-                      : "UU",
-                  }
-                : null
-              : null,
-          }))
+                id: response.data.data.find(
+                  (r) => r.id === reply.reply_to_id
+                ).user.id,
+                name:
+                  response.data.data.find((r) => r.id === reply.reply_to_id)
+                    .user.name || "Unknown User",
+                username:
+                  response.data.data.find((r) => r.id === reply.reply_to_id)
+                    .user.username || "unknown",
+                initials: response.data.data.find(
+                  (r) => r.id === reply.reply_to_id
+                ).user.name
+                  ? response.data.data
+                    .find((r) => r.id === reply.reply_to_id)
+                    .user.name.split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                  : "UU",
+              }
+              : null
+            : null,
+        }))
         : [];
 
       setAllReplies((prev) => ({
@@ -605,9 +605,9 @@ export default function SocialNetworkFeed() {
           ...response.data.data.user,
           initials: response.data.data.user?.name
             ? response.data.data.user.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
+              .split(" ")
+              .map((n) => n[0])
+              .join("")
             : "CU",
         },
         reply_to: response.data.data.reply_to,
@@ -644,7 +644,7 @@ export default function SocialNetworkFeed() {
       showAlert("error", "Failed to add reply");
       setCommentError(
         error.response?.data?.message ||
-          "Failed to add reply. Please try again."
+        "Failed to add reply. Please try again."
       );
     }
   };
@@ -1216,15 +1216,15 @@ export default function SocialNetworkFeed() {
       // API call
       const response = await (isCurrentlyLiked
         ? axios.delete(`${apiUrl}/api/post-actions/${postId}/like`, {
-            headers: { Authorization: `Bearer ${token}` },
-          })
+          headers: { Authorization: `Bearer ${token}` },
+        })
         : axios.post(
-            `${apiUrl}/api/post-actions/${postId}/like`,
-            {},
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          ));
+          `${apiUrl}/api/post-actions/${postId}/like`,
+          {},
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        ));
 
       // Update dengan data aktual dari server
       const updatedPost = response.data.data;
@@ -1340,7 +1340,7 @@ export default function SocialNetworkFeed() {
       });
       setCommentError(
         error.response?.data?.message ||
-          "Terjadi kesalahan saat menambahkan komentar. Silakan coba lagi."
+        "Terjadi kesalahan saat menambahkan komentar. Silakan coba lagi."
       );
     }
   };
@@ -1410,9 +1410,8 @@ export default function SocialNetworkFeed() {
   }) => {
     return (
       <div
-        className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] ${
-          showReportModal ? "block" : "hidden"
-        }`}
+        className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] ${showReportModal ? "block" : "hidden"
+          }`}
       >
         <div className="bg-white rounded-lg w-full max-w-md mx-4 p-5">
           <h3 className="text-lg font-semibold mb-4">Report this content</h3>
@@ -1440,11 +1439,10 @@ export default function SocialNetworkFeed() {
             ].map((reason) => (
               <button
                 key={reason}
-                className={`py-2 px-3 text-sm border rounded-full ${
-                  selectedReason === reason
-                    ? "bg-blue-100 border-blue-500 text-blue-700"
-                    : "bg-white hover:bg-gray-100"
-                }`}
+                className={`py-2 px-3 text-sm border rounded-full ${selectedReason === reason
+                  ? "bg-blue-100 border-blue-500 text-blue-700"
+                  : "bg-white hover:bg-gray-100"
+                  }`}
                 onClick={() => setSelectedReason(reason)}
               >
                 {reason}
@@ -1474,11 +1472,10 @@ export default function SocialNetworkFeed() {
               Cancel
             </button>
             <button
-              className={`px-4 py-2 rounded text-white ${
-                selectedReason
-                  ? "bg-blue-600 hover:bg-blue-700"
-                  : "bg-gray-300 cursor-not-allowed"
-              }`}
+              className={`px-4 py-2 rounded text-white ${selectedReason
+                ? "bg-blue-600 hover:bg-blue-700"
+                : "bg-gray-300 cursor-not-allowed"
+                }`}
               disabled={!selectedReason}
               onClick={() => {
                 const reasonText =
@@ -1629,9 +1626,9 @@ export default function SocialNetworkFeed() {
                     <span className="text-lg font-bold text-gray-600">
                       {posts[0]?.user?.name
                         ? posts[0].user.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
                         : "UU"}
                     </span>
                   </div>
@@ -1643,7 +1640,7 @@ export default function SocialNetworkFeed() {
               {posts[0]?.user?.name || "Unknown User"}
             </h2>
 
-            <Link to={`/profile/${posts[0]?.user?.username}`}>
+            <Link to={`/user-profile/${posts[0]?.user?.username}`}> 
               <button className="mt-3 text-blue-500 text-sm font-medium">
                 View profile
               </button>
@@ -1653,9 +1650,8 @@ export default function SocialNetworkFeed() {
 
         {/* Main Content - Feed */}
         <div
-          className={`w-full ${
-            showMobileMenu ? "hidden" : "block"
-          } md:block md:w-full lg:w-1/2 px-0 md:px-1`}
+          className={`w-full ${showMobileMenu ? "hidden" : "block"
+            } md:block md:w-full lg:w-1/2 px-0 md:px-1`}
         >
           {/* Posts */}
           <div className="p-0">
@@ -1673,19 +1669,18 @@ export default function SocialNetworkFeed() {
                   <div className="border-b pb-3 flex items-center mb-3">
                     <div className="rounded-full bg-gray-200 w-8 md:w-10 h-8 md:h-10 flex items-center justify-center text-xs md:text-sm mr-2">
                       {posts[0]?.user?.photo ? (
-                  <img
-                    src={apiUrl + "/" + posts[0].user.photo}
-                    alt="Profile"
-                    className="w-full h-full object-cover rounded-full"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-300">
-                    <span className="text-lg font-bold text-gray-600">
-                     {getInitials(post.user?.name)}
-                    </span>
-                  </div>
-                )}
-                      
+                        <img
+                          src={apiUrl + "/" + posts[0].user.photo}
+                          alt="Profile"
+                          className="w-full h-full object-cover rounded-full"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center bg-gray-300 rounded-full w-8 h-8 md:w-10 md:h-10">
+                          <span className="text-lg font-bold text-gray-600">
+                            {getInitials(post.user?.name)}
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <div className="ml-1 mt-2">
                       <h6
@@ -1772,11 +1767,10 @@ export default function SocialNetworkFeed() {
 
                     <div className="border-t border-gray-200 px-4 py-2 flex justify-between">
                       <button
-                        className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${
-                          post.isLiked
-                            ? "text-blue-600 bg-blue-50"
-                            : "text-black hover:bg-gray-100"
-                        }`}
+                        className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${post.isLiked
+                          ? "text-blue-600 bg-blue-50"
+                          : "text-black hover:bg-gray-100"
+                          }`}
                         onClick={() => handleLikePost(post.id, post.isLiked)}
                       >
                         <ThumbsUp size={14} className="mr-2" />
@@ -1800,40 +1794,41 @@ export default function SocialNetworkFeed() {
                     </div>
                   </div>
                   {/* Comment Form */}
-                  <div className="border-t px-4 py-3">
+                  <div className="border-t py-3">
                     <div className="flex items-center mb-2">
-                      <div className="rounded-full bg-gray-200 w-8 md:w-10 h-8 md:h-10 flex items-center justify-center text-xs md:text-sm mr-2">
-                      {posts[0]?.user?.photo ? (
-                  <img
-                    src={apiUrl + "/" + posts[0].user.photo}
-                    alt="Profile"
-                    className="w-full h-full object-cover rounded-full"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-300">
-                    <span className="text-lg font-bold text-gray-600">
-                     {getInitials(post.user?.name)}
-                    </span>
-                  </div>
-                )}
+                      <div className="flex-shrink-0 mr-2">
+                        {posts[0]?.user?.photo ? (
+                          <img
+                            src={apiUrl + "/" + posts[0].user.photo}
+                            alt="Profile"
+                            className="object-cover rounded-full w-8 h-8 md:w-10 md:h-10"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center bg-gray-300 rounded-full w-8 h-8 md:w-10 md:h-10">
+                            <span className="font-bold text-gray-600 text-base md:text-lg">
+                              {getInitials(post.user?.name)}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                      <input
-                        type="text"
-                        className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
-                        placeholder="Write a comment..."
-                        value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
-                        onKeyPress={(e) =>
-                          e.key === "Enter" && handleAddComment()
-                        }
-                      />
-                      <button
-                        onClick={handleAddComment}
-                        disabled={!commentText.trim()}
-                        className="bg-blue-500 text-white px-3 py-2 rounded-r-lg hover:bg-blue-600 disabled:bg-blue-300 transition-colors duration-200"
-                      >
-                        Post
-                      </button>
+                      <div className="flex-1 flex">
+                        <input
+                          type="text"
+                          className="flex-1 border border-gray-300 rounded-l-lg rounded-r-none px-3 py-2 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          placeholder="Write a comment..."
+                          value={commentText}
+                          onChange={(e) => setCommentText(e.target.value)}
+                          onKeyPress={(e) => e.key === "Enter" && handleAddComment()}
+                        />
+                        <button
+                          onClick={handleAddComment}
+                          disabled={!commentText.trim()}
+                          className="bg-blue-400 text-white px-5 py-2 md:py-2.5 rounded-r-lg rounded-l-none hover:bg-blue-500 disabled:bg-blue-300 transition-colors duration-200 text-sm md:text-base"
+                          style={{ minWidth: 70 }}
+                        >
+                          Post
+                        </button>
+                      </div>
                     </div>
                     {commentError && (
                       <span className="text-red-500 text-xs">
@@ -1996,65 +1991,54 @@ export default function SocialNetworkFeed() {
                                       </button>
                                       {(comment.repliesCount > 0 ||
                                         allReplies[comment.id]?.length > 0) && (
-                                        <button
-                                          onClick={() =>
-                                            toggleReplies(comment.id)
-                                          }
-                                          className="text-xs text-gray-500 hover:text-gray-700 flex items-center"
-                                        >
-                                          <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            className="h-4 w-4 mr-1"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
+                                          <button
+                                            onClick={() =>
+                                              toggleReplies(comment.id)
+                                            }
+                                            className="text-xs text-gray-500 hover:text-gray-700 flex items-center"
                                           >
-                                            <path
-                                              strokeLinecap="round"
-                                              strokeLinejoin="round"
-                                              strokeWidth={2}
-                                              d="M19 9l-7 7-7-7"
-                                            />
-                                          </svg>
-                                          {expandedReplies[comment.id]
-                                            ? "Hide replies"
-                                            : `Show replies (${comment.repliesCount})`}
-                                        </button>
-                                      )}
+                                            <svg
+                                              xmlns="http://www.w3.org/2000/svg"
+                                              className="h-4 w-4 mr-1"
+                                              fill="none"
+                                              viewBox="0 0 24 24"
+                                              stroke="currentColor"
+                                            >
+                                              <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M19 9l-7 7-7-7"
+                                              />
+                                            </svg>
+                                            {expandedReplies[comment.id]
+                                              ? "Hide replies"
+                                              : `Show replies (${comment.repliesCount})`}
+                                          </button>
+                                        )}
                                     </div>
                                   </div>
                                 </div>
 
                                 {/* Reply Input */}
                                 {replyingTo === comment.id && (
-                                  <div className="mt-3 flex gap-2">
+                                  <div className="mt-3 flex w-full">
                                     <input
                                       type="text"
-                                      className="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-transparent"
-                                      placeholder={`Reply to ${
-                                        replyToUser?.name || "user"
-                                      }...`}
+                                      className="flex-1 border border-gray-300 rounded-l-full px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-transparent"
+                                      placeholder={`Reply to ${replyToUser?.name || "user"}...`}
                                       value={replyText}
-                                      onChange={(e) =>
-                                        setReplyText(e.target.value)
-                                      }
+                                      onChange={(e) => setReplyText(e.target.value)}
                                       onKeyPress={(e) =>
                                         e.key === "Enter" &&
-                                        handleReply(
-                                          comment.id,
-                                          replyToUser || comment.user
-                                        )
+                                        handleReply(comment.id, replyToUser || comment.user)
                                       }
                                       autoFocus
                                     />
                                     <button
-                                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm transition-colors"
-                                      onClick={() =>
-                                        handleReply(
-                                          comment.id,
-                                          replyToUser || comment.user
-                                        )
-                                      }
+                                      className="bg-blue-400 text-white px-3 py-2 md:py-2.5 rounded-r-lg rounded-l-none hover:bg-blue-500 disabled:bg-blue-300 transition-colors duration-200 text-sm md:text-base"
+                                      style={{ minWidth: 50 }}
+                                      onClick={() => handleReply(comment.id, replyToUser || comment.user)}
                                     >
                                       Post
                                     </button>
@@ -2086,7 +2070,7 @@ export default function SocialNetworkFeed() {
                                                           "http"
                                                         )
                                                           ? reply.user
-                                                              .profile_photo
+                                                            .profile_photo
                                                           : `${apiUrl}/${reply.user.profile_photo}`
                                                       }
                                                       alt="Profile"
@@ -2123,8 +2107,8 @@ export default function SocialNetworkFeed() {
                                                       </Link>
                                                       {reply.reply_to &&
                                                         reply.parent_id !==
-                                                          reply.reply_to
-                                                            .reply_to_id && (
+                                                        reply.reply_to
+                                                          .reply_to_id && (
                                                           <span className="text-xs text-gray-500 ml-1 flex items-center">
                                                             <svg
                                                               xmlns="http://www.w3.org/2000/svg"
@@ -2158,52 +2142,52 @@ export default function SocialNetworkFeed() {
                                                     <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                       {reply.user?.id ===
                                                         currentUserId && (
-                                                        <button
-                                                          className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
-                                                          onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setSelectedReply(
-                                                              reply
-                                                            );
-                                                            setShowReplyOptions(
-                                                              true
-                                                            );
-                                                          }}
-                                                        >
-                                                          <MoreHorizontal
-                                                            size={14}
-                                                          />
-                                                        </button>
-                                                      )}
+                                                          <button
+                                                            className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              setSelectedReply(
+                                                                reply
+                                                              );
+                                                              setShowReplyOptions(
+                                                                true
+                                                              );
+                                                            }}
+                                                          >
+                                                            <MoreHorizontal
+                                                              size={14}
+                                                            />
+                                                          </button>
+                                                        )}
 
                                                       {reply.user?.id !==
                                                         currentUserId && (
-                                                        <button
-                                                          className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-gray-100"
-                                                          onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            if (
-                                                              reply.user?.id
-                                                            ) {
-                                                              handleReportClick(
-                                                                reply.user.id,
-                                                                "comment",
-                                                                reply.id
-                                                              );
-                                                            }
-                                                          }}
-                                                        >
-                                                          <TriangleAlert
-                                                            size={14}
-                                                          />
-                                                        </button>
-                                                      )}
+                                                          <button
+                                                            className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-gray-100"
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              if (
+                                                                reply.user?.id
+                                                              ) {
+                                                                handleReportClick(
+                                                                  reply.user.id,
+                                                                  "comment",
+                                                                  reply.id
+                                                                );
+                                                              }
+                                                            }}
+                                                          >
+                                                            <TriangleAlert
+                                                              size={14}
+                                                            />
+                                                          </button>
+                                                        )}
                                                     </div>
                                                   </div>
 
                                                   {/* Reply Text */}
                                                   {editingReplyId ===
-                                                  reply.id ? (
+                                                    reply.id ? (
                                                     <div className="mt-2 flex gap-2">
                                                       <input
                                                         type="text"
@@ -2282,10 +2266,9 @@ export default function SocialNetworkFeed() {
                                                 <input
                                                   type="text"
                                                   className="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-transparent"
-                                                  placeholder={`Reply to ${
-                                                    replyToUser?.name ||
+                                                  placeholder={`Reply to ${replyToUser?.name ||
                                                     reply.user.name
-                                                  }...`}
+                                                    }...`}
                                                   value={replyText}
                                                   onChange={(e) =>
                                                     setReplyText(e.target.value)
@@ -2409,7 +2392,7 @@ export default function SocialNetworkFeed() {
 
                 {/* Cek apakah post ini milik user yang sedang login */}
                 {posts.find((p) => p.id === selectedPostId)?.user?.id ===
-                currentUserId ? (
+                  currentUserId ? (
                   <>
                     {/* Options for user's own post */}
                     <button
@@ -2457,19 +2440,19 @@ export default function SocialNetworkFeed() {
                         conn.id ===
                         posts.find((p) => p.id === selectedPostId)?.user?.id
                     ) && (
-                      <button
-                        className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-blue-500"
-                        onClick={() => {
-                          handleConnectWithUser(
-                            posts.find((p) => p.id === selectedPostId)?.user?.id
-                          );
-                          handleClosePostOptions();
-                        }}
-                      >
-                        <Users size={16} className="mr-2" />
-                        Connect with User
-                      </button>
-                    )}
+                        <button
+                          className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-blue-500"
+                          onClick={() => {
+                            handleConnectWithUser(
+                              posts.find((p) => p.id === selectedPostId)?.user?.id
+                            );
+                            handleClosePostOptions();
+                          }}
+                        >
+                          <Users size={16} className="mr-2" />
+                          Connect with User
+                        </button>
+                      )}
                   </>
                 )}
               </div>
@@ -2615,9 +2598,8 @@ export default function SocialNetworkFeed() {
 
         {/* Right Sidebar */}
         <div
-          className={`${
-            showMobileMenu ? "block" : "hidden"
-          } md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pl-2 lg:pr-4`}
+          className={`${showMobileMenu ? "block" : "hidden"
+            } md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pl-2 lg:pr-4`}
         >
           {/* People You Might Know */}
           <div className="bg-white rounded-xl shadow-sm border p-4 mb-6 transition-all duration-300">
@@ -2633,9 +2615,8 @@ export default function SocialNetworkFeed() {
                 className="flex items-center gap-1 text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors duration-200 disabled:opacity-50"
               >
                 <RefreshCw
-                  className={`w-4 h-4 ${
-                    loadingSuggested ? "animate-spin" : ""
-                  }`}
+                  className={`w-4 h-4 ${loadingSuggested ? "animate-spin" : ""
+                    }`}
                 />
               </button>
             </div>
@@ -2987,11 +2968,10 @@ export default function SocialNetworkFeed() {
                   {selectedPost.images.map((_, index) => (
                     <button
                       key={index}
-                      className={`w-2 h-2 md:w-3 md:h-3 rounded-full ${
-                        selectedImageIndex === index
-                          ? "bg-white"
-                          : "bg-gray-500"
-                      }`}
+                      className={`w-2 h-2 md:w-3 md:h-3 rounded-full ${selectedImageIndex === index
+                        ? "bg-white"
+                        : "bg-gray-500"
+                        }`}
                       onClick={() => setSelectedImageIndex(index)}
                     />
                   ))}
@@ -3008,22 +2988,20 @@ export default function SocialNetworkFeed() {
               {/* Tabs for edit modal */}
               <div className="flex border-b pb-2 space-x-1 mb-4">
                 <button
-                  className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${
-                    editActiveTab === "update"
-                      ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
-                      : "text-gray-500 hover:text-blue-500"
-                  }`}
+                  className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${editActiveTab === "update"
+                    ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                    : "text-gray-500 hover:text-blue-500"
+                    }`}
                   onClick={() => setEditActiveTab("update")}
                 >
                   <SquarePen size={16} className="mr-2" />
                   Simple Text
                 </button>
                 <button
-                  className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${
-                    editActiveTab === "article"
-                      ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
-                      : "text-gray-500 hover:text-blue-500"
-                  }`}
+                  className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${editActiveTab === "article"
+                    ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                    : "text-gray-500 hover:text-blue-500"
+                    }`}
                   onClick={() => setEditActiveTab("article")}
                 >
                   <NotebookPen size={16} className="mr-2" />
@@ -3185,11 +3163,10 @@ export default function SocialNetworkFeed() {
                     <button
                       key={type}
                       onClick={() => setPostVisibility(type)}
-                      className={`flex items-center px-3 py-2 rounded-md text-sm ${
-                        postVisibility === type
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-gray-100 text-gray-700"
-                      }`}
+                      className={`flex items-center px-3 py-2 rounded-md text-sm ${postVisibility === type
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-gray-100 text-gray-700"
+                        }`}
                     >
                       {icon}
                       <span className="ml-2">{label}</span>

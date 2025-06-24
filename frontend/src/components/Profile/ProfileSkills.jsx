@@ -7,7 +7,7 @@ export default function ProfileSkills({ skills }) {
           {skills.map((skill, index) => (
             <span
               key={index}
-              className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm"
+              className="px-4 py-1 rounded-full border border-blue-200 text-blue-600 text-sm font-medium bg-white shadow-md"
             >
               {skill}
             </span>

@@ -428,7 +428,7 @@ const handleAccept = async (id, invitationId) => {
   if (loading) {
     return (
       <Case>
-        <div className="p-4 sm:p-6 bg-gray-100 min-h-screen flex items-center justify-center">
+        <div className="p-4 sm:p-6 bg-gray-50 min-h-screen flex items-center justify-center">
           <div className="text-center">Loading...</div>
         </div>
       </Case>
@@ -638,7 +638,7 @@ const handleAccept = async (id, invitationId) => {
                           </p>
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1 mt-2">
                         <button
                           onClick={() => handleAccept(invitation.id)}
                           className="flex items-center gap-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded text-sm transition disabled:opacity-50"

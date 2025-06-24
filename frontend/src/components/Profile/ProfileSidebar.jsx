@@ -12,7 +12,7 @@ export default function ProfileSidebar({
 }) {
   return (
     <div className="w-full space-y-4">
-      <div className="bg-white rounded-lg shadow-md p-6  text-center mb-4">
+      <div className="bg-white rounded-lg shadow-md p-6 text-center mb-4">
         <div className="relative flex items-center justify-center mx-auto overflow-hidden bg-gray-200 rounded-full w-28 h-28">
           {profileImage ? (
             <img

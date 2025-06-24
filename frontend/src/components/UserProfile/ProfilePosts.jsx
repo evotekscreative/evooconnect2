@@ -1,12 +1,27 @@
-import { Clock, ChevronLeft, ChevronRight, ThumbsUp, MessageCircle, Share2, Globe, Users   } from "lucide-react";
+import React, { useRef } from "react";
 import { Link } from "react-router-dom";
+import {
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+  Globe,
+  LockKeyhole,
+  Users,
+  ThumbsUp,
+  MessageCircle,
+  Share2,
+} from "lucide-react";
 
-export default function ProfilePosts({ userPosts, user, profileImage, apiUrl, username }) {
+// Komponen utama
+export default function ProfilePosts({ userPosts, apiUrl, user, profileImage, username }) {
+  const postContainerRef = useRef(null);
+
   const scrollLeft = () => {
-    document.getElementById("post-container")?.scrollBy({ left: -300, behavior: "smooth" });
+    postContainerRef.current.scrollBy({ left: -300, behavior: "smooth" });
   };
+
   const scrollRight = () => {
-    document.getElementById("post-container")?.scrollBy({ left: 300, behavior: "smooth" });
+    postContainerRef.current.scrollBy({ left: 300, behavior: "smooth" });
   };
 
   const getVisibilityIcon = (visibility) => {
@@ -23,7 +38,6 @@ export default function ProfilePosts({ userPosts, user, profileImage, apiUrl, us
     }
   };
 
-
   return (
     <div className="p-6 bg-white rounded-lg shadow-md">
       <div className="flex items-center justify-between mb-4">
@@ -31,33 +45,38 @@ export default function ProfilePosts({ userPosts, user, profileImage, apiUrl, us
           <Clock size={20} className="text-[#00AEEF]" />
           <h3 className="text-lg font-semibold">POST</h3>
         </div>
-        <div className="flex space-x-2">
-          <button
-            onClick={scrollLeft}
-            className="p-1 transition bg-gray-100 rounded-full hover:bg-gray-200"
-            aria-label="Scroll left"
-          >
-            <ChevronLeft size={20} />
-          </button>
-          <button
-            onClick={scrollRight}
-            className="p-1 transition bg-gray-100 rounded-full hover:bg-gray-200"
-            aria-label="Scroll right"
-          >
-            <ChevronRight size={20} />
-          </button>
-        </div>
+        {userPosts && userPosts.length > 2 && (
+          <div className="flex space-x-2">
+            <button
+              onClick={scrollLeft}
+              className="p-1 transition bg-gray-100 rounded-full hover:bg-gray-200"
+              aria-label="Scroll left"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <button
+              onClick={scrollRight}
+              className="p-1 transition bg-gray-100 rounded-full hover:bg-gray-200"
+              aria-label="Scroll right"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Scrollable container */}
       <div
-        id="post-container"
+        ref={postContainerRef}
         className="flex gap-4 pb-4 overflow-x-auto scrollbar-hide"
       >
         {userPosts?.length > 0 ? (
           userPosts.map((post) => (
             <div
               key={post.id}
-              className="flex-shrink-0 w-64 overflow-hidden bg-white border rounded-lg shadow-sm"
+              className="flex-shrink-0 flex flex-col h-auto bg-white border rounded-lg shadow-sm min-w-[250px] max-w-[400px]"
             >
+              {/* Post header */}
               <div className="p-4 border-b">
                 <div className="flex items-center gap-3">
                   <div className="flex-shrink-0 w-10 h-10 overflow-hidden bg-gray-200 rounded-full">
@@ -96,7 +115,9 @@ export default function ProfilePosts({ userPosts, user, profileImage, apiUrl, us
                   </div>
                 </div>
               </div>
-              <div className="p-4">
+
+              {/* Post content */}
+              <div className="p-4 flex flex-col gap-3">
                 <Link
                   to={`/post/${post.id}`}
                   className="mb-3 text-sm text-gray-700"
@@ -115,6 +136,8 @@ export default function ProfilePosts({ userPosts, user, profileImage, apiUrl, us
                     </div>
                   )}
                 </Link>
+
+                {/* Post footer */}
                 <div className="flex items-center justify-between text-xs text-gray-500">
                   <div className="flex items-center gap-1">
                     <ThumbsUp size={14} />
@@ -125,19 +148,19 @@ export default function ProfilePosts({ userPosts, user, profileImage, apiUrl, us
                     <span>{post.shares_count || 0} shares</span>
                   </div>
                 </div>
-                <Link to={`/post-page/${username}`}>
-                  <div className="flex pt-2 mt-3 border-t">
-                    <button className="flex items-center justify-center flex-1 gap-1 py-1 text-sm text-gray-600 rounded hover:bg-gray-50">
-                      <ThumbsUp size={16} /> Like
-                    </button>
-                    <button className="flex items-center justify-center flex-1 gap-1 py-1 text-sm text-gray-600 rounded hover:bg-gray-50">
-                      <MessageCircle size={16} /> Comment
-                    </button>
-                    <button className="flex items-center justify-center flex-1 gap-1 py-1 text-sm text-gray-600 rounded hover:bg-gray-50">
-                      <Share2 size={16} /> Share
-                    </button>
-                  </div>
-                </Link>
+
+                {/* Action buttons */}
+                <div className="flex pt-2 mt-3 border-t">
+                  <button className="flex items-center justify-center flex-1 gap-1 py-1 text-sm text-gray-600 rounded hover:bg-gray-50">
+                    <ThumbsUp size={16} /> Like
+                  </button>
+                  <button className="flex items-center justify-center flex-1 gap-1 py-1 text-sm text-gray-600 rounded hover:bg-gray-50">
+                    <MessageCircle size={16} /> Comment
+                  </button>
+                  <button className="flex items-center justify-center flex-1 gap-1 py-1 text-sm text-gray-600 rounded hover:bg-gray-50">
+                    <Share2 size={16} /> Share
+                  </button>
+                </div>
               </div>
             </div>
           ))
@@ -147,14 +170,24 @@ export default function ProfilePosts({ userPosts, user, profileImage, apiUrl, us
           </div>
         )}
       </div>
+
       <style>{`
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
       `}</style>
+
       <div className="flex justify-center mt-4">
-        <button className="text-[#00AEEF] text-asmibold font-semibold hover:underline">
-          <Link to={`/post-page/${username}`}> See All Post </Link>
-        </button>
+        <Link
+          to={`/user-post-page/${username}`}
+          className="text-[#00AEEF] font-semibold hover:underline"
+        >
+          See All Posts
+        </Link>
       </div>
     </div>
   );

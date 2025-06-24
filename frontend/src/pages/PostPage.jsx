@@ -1603,7 +1603,7 @@ const PostPage = () => {
             />
           ))}
         </div>
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-6">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-6 mb-10">
           {/* Left Sidebar - Narrower */}
           <div className="w-full md:w-1/4 lg:w-1/5 space-y-4">
             <div className="bg-white rounded-lg shadow-md p-4 text-center">
@@ -1679,7 +1679,7 @@ const PostPage = () => {
                   {user.skills.map((skill, index) => (
                     <span
                       key={index}
-                      className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm"
+                      className="px-4 py-1 rounded-full border border-blue-200 text-blue-600 text-sm font-medium bg-white shadow-md"
                     >
                       {skill}
                     </span>

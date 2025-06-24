@@ -64,7 +64,7 @@ export default function GroupsContent({
       setLoadingJoinRequests(true);
       const token = localStorage.getItem("token");
       if (!token) return;
-      
+
       const response = await axios.get(
         `${base_url}/api/my-join-requests`,
         {
@@ -73,21 +73,21 @@ export default function GroupsContent({
           },
         }
       );
-      
+
       if (response.data && response.data.data) {
         // Process join requests
         const requests = response.data.data.filter(req => req.status === "pending");
         setJoinRequests(requests);
-        
+
         // Create maps for pending requests
         const pendingMap = {};
         const requestIdsMap = {};
-        
+
         requests.forEach(request => {
           pendingMap[request.group_id] = true;
           requestIdsMap[request.group_id] = request.id;
         });
-        
+
         setPendingJoinRequests(pendingMap);
         setPendingRequestIds(requestIdsMap);
       }
@@ -104,12 +104,12 @@ export default function GroupsContent({
     try {
       setIsRequestingJoin(true);
       const token = localStorage.getItem("token");
-      
+
       if (!token) {
         console.error("No authentication token found");
         return;
       }
-      
+
       if (isPrivate) {
         // For private groups, send a join request
         const response = await axios.post(
@@ -122,23 +122,23 @@ export default function GroupsContent({
             },
           }
         );
-        
+
         if (response.status === 201 || response.status === 200) {
           // Update UI to show pending status for this group
           setPendingJoinRequests(prev => ({
             ...prev,
             [groupId]: true
           }));
-          
+
           // Store the request ID for potential cancellation
           setPendingRequestIds(prev => ({
             ...prev,
             [groupId]: response.data.data.id
           }));
-          
+
           // Refresh join requests
           fetchJoinRequests();
-          
+
           // Show success message
           showAlert("success", "Join request sent! Waiting for admin approval.");
         }
@@ -154,7 +154,7 @@ export default function GroupsContent({
             },
           }
         );
-        
+
         if (response.status === 200) {
           showAlert("success", "Successfully joined the group!");
         }
@@ -168,57 +168,57 @@ export default function GroupsContent({
   };
 
   // Function to handle cancelling a join request
-// Function to handle cancelling a join request
-const handleCancelRequest = async (requestId) => {
-  const reqId = requestId || selectedRequestId;
-  if (!reqId) return;
-  
-  try {
-    setIsCancelling(true);
-    const token = localStorage.getItem("token");
-    
-    const response = await axios.delete(
-      `${base_url}/api/join-requests/${reqId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    
-    if (response.status === 200) {
-      // Immediately update UI by removing the cancelled request
-      setJoinRequests(prevRequests => 
-        prevRequests.filter(request => request.id !== reqId)
+  // Function to handle cancelling a join request
+  const handleCancelRequest = async (requestId) => {
+    const reqId = requestId || selectedRequestId;
+    if (!reqId) return;
+
+    try {
+      setIsCancelling(true);
+      const token = localStorage.getItem("token");
+
+      const response = await axios.delete(
+        `${base_url}/api/join-requests/${reqId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
-      
-      // Update UI to remove pending status
-      if (selectedGroupId) {
-        setPendingJoinRequests(prev => {
-          const updated = { ...prev };
-          delete updated[selectedGroupId];
-          return updated;
-        });
-        
-        setPendingRequestIds(prev => {
-          const updated = { ...prev };
-          delete updated[selectedGroupId];
-          return updated;
-        });
+
+      if (response.status === 200) {
+        // Immediately update UI by removing the cancelled request
+        setJoinRequests(prevRequests =>
+          prevRequests.filter(request => request.id !== reqId)
+        );
+
+        // Update UI to remove pending status
+        if (selectedGroupId) {
+          setPendingJoinRequests(prev => {
+            const updated = { ...prev };
+            delete updated[selectedGroupId];
+            return updated;
+          });
+
+          setPendingRequestIds(prev => {
+            const updated = { ...prev };
+            delete updated[selectedGroupId];
+            return updated;
+          });
+        }
+
+        showAlert("success", "Join request cancelled successfully");
       }
-      
-      showAlert("success", "Join request cancelled successfully");
+    } catch (error) {
+      console.error("Error cancelling join request:", error);
+      showAlert("error", error.response?.data?.message || "Failed to cancel join request");
+    } finally {
+      setIsCancelling(false);
+      setShowCancelModal(false);
+      setSelectedRequestId(null);
+      setSelectedGroupId(null);
     }
-  } catch (error) {
-    console.error("Error cancelling join request:", error);
-    showAlert("error", error.response?.data?.message || "Failed to cancel join request");
-  } finally {
-    setIsCancelling(false);
-    setShowCancelModal(false);
-    setSelectedRequestId(null);
-    setSelectedGroupId(null);
-  }
-};
+  };
 
 
   // Open cancel confirmation modal
@@ -234,11 +234,11 @@ const handleCancelRequest = async (requestId) => {
   // Format date
   const formatDate = (dateString) => {
     if (!dateString) return "";
-    
+
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return dateString;
-      
+
       return date.toLocaleDateString("en-GB", {
         day: "numeric",
         month: "short",
@@ -266,15 +266,15 @@ const handleCancelRequest = async (requestId) => {
 
   return (
     <>
-    {alert.show && (
-  <div className="fixed top-4 right-4 z-50 w-full max-w-sm">
-    <Alert
-      type={alert.type}
-      message={alert.message}
-      onClose={() => setAlert({ ...alert, show: false })}
-    />
-  </div>
-)}
+      {alert.show && (
+        <div className="fixed top-4 right-4 z-50 w-full max-w-sm">
+          <Alert
+            type={alert.type}
+            message={alert.message}
+            onClose={() => setAlert({ ...alert, show: false })}
+          />
+        </div>
+      )}
 
       {activeTab === "myGroups" ? (
         <>
@@ -402,97 +402,94 @@ const handleCancelRequest = async (requestId) => {
                           }}
                         />
                         <div className="flex-1 min-w-0">
-  {isPrivate && !hasJoined && !hasPendingRequest ? (
-    <p title={group.name} className="font-medium capitalize truncate">{group.name}</p>
-  ) : (
-    <Link to={`/groups/${group.id}`}>
-      <p title={group.name} className="font-medium capitalize truncate">{group.name}</p>
-    </Link>
-  )}
-  <div className="flex items-center gap-2">
-    <div className="text-gray-500 text-xs sm:text-sm">
-      {group.members_count || 0} Members
-    </div>
-    <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-      isPrivate 
-        ? "bg-red-100 text-red-800" 
-        : "bg-green-100 text-green-800"
-    }`}>
-      {group.privacy_level || "public"}
-    </span>
-  </div>
-</div>
+                          {isPrivate && !hasJoined && !hasPendingRequest ? (
+                            <p title={group.name} className="font-medium capitalize truncate">{group.name}</p>
+                          ) : (
+                            <Link to={`/groups/${group.id}`}>
+                              <p title={group.name} className="font-medium capitalize truncate">{group.name}</p>
+                            </Link>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <div className="text-gray-500 text-xs sm:text-sm">
+                              {group.members_count || 0} Members
+                            </div>
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full ${isPrivate
+                                ? "bg-red-100 text-red-800"
+                                : "bg-green-100 text-green-800"
+                              }`}>
+                              {group.privacy_level || "public"}
+                            </span>
+                          </div>
+                        </div>
 
                       </div>
-                      
+
                       <div className="flex justify-between items-center mt-3">
-  {isPrivate && !hasJoined && !hasPendingRequest ? (
-    <span className="text-xs sm:text-sm text-gray-500">
-      Private Group
-    </span>
-  ) : (
-    <Link
-      to={`/groups/${group.id}`}
-      className="text-xs sm:text-sm text-blue-600 hover:underline"
-    >
-      View Group
-    </Link>
-  )}
-  
-  {hasJoined ? (
-    <button
-      onClick={() => isAdmin ? handleDeleteGroup(group.id) : handleLeaveGroup(group.id)}
-      className={`flex items-center ${
-        isAdmin
-          ? "text-red-600 hover:text-red-800"
-          : "text-gray-600 hover:text-gray-800"
-      } text-xs sm:text-sm`}
-      title={isAdmin ? "Delete Group" : "Leave Group"}
-    >
-      {isAdmin ? (
-        <>
-          <Trash2 size={14} className="mr-1" /> Delete
-        </>
-      ) : (
-        <>
-          <LogOut size={14} className="mr-1" /> Leave
-        </>
-      )}
-    </button>
-  ) : hasPendingRequest ? (
-    <button
-      onClick={() => openCancelModal(group.id)}
-      className="flex items-center justify-center bg-yellow-100 border border-yellow-200 text-gray-700 px-3 py-1 rounded-md text-xs sm:text-sm hover:bg-yellow-200"
-    >
-      <Clock size={14} className="mr-1" />
-      Pending
-    </button>
-  ) : (
-    <button
-      onClick={() => handleJoinGroup(group.id, isPrivate)}
-      className={`flex items-center justify-center px-3 py-1 rounded-md text-xs sm:text-sm ${
-        isRequestingJoin 
-          ? "bg-gray-100 border border-gray-200 text-gray-500" 
-          : isPrivate
-            ? "border border-blue-500 text-blue-500 hover:bg-blue-50"
-            : "bg-blue-500 text-white hover:bg-blue-600"
-      }`}
-      disabled={isRequestingJoin}
-    >
-      {isRequestingJoin ? (
-        <>
-          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
-          <span className="ml-1">Processing</span>
-        </>
-      ) : (
-        <>
-          <UserPlus size={14} className="mr-1" /> 
-          {isPrivate ? "Request Join" : "Join"}
-        </>
-      )}
-    </button>
-  )}
-</div>
+                        {isPrivate && !hasJoined && !hasPendingRequest ? (
+                          <span className="text-xs sm:text-sm text-gray-500">
+                            Private Group
+                          </span>
+                        ) : (
+                          <Link
+                            to={`/groups/${group.id}`}
+                            className="text-xs sm:text-sm text-blue-600 hover:underline"
+                          >
+                            View Group
+                          </Link>
+                        )}
+
+                        {hasJoined ? (
+                          <button
+                            onClick={() => isAdmin ? handleDeleteGroup(group.id) : handleLeaveGroup(group.id)}
+                            className={`flex items-center ${isAdmin
+                                ? "text-red-600 hover:text-red-800"
+                                : "text-gray-600 hover:text-gray-800"
+                              } text-xs sm:text-sm`}
+                            title={isAdmin ? "Delete Group" : "Leave Group"}
+                          >
+                            {isAdmin ? (
+                              <>
+                                <Trash2 size={14} className="mr-1" /> Delete
+                              </>
+                            ) : (
+                              <>
+                                <LogOut size={14} className="mr-1" /> Leave
+                              </>
+                            )}
+                          </button>
+                        ) : hasPendingRequest ? (
+                          <button
+                            onClick={() => openCancelModal(group.id)}
+                            className="flex items-center justify-center bg-yellow-100 border border-yellow-200 text-gray-700 px-3 py-1 rounded-md text-xs sm:text-sm hover:bg-yellow-200"
+                          >
+                            <Clock size={14} className="mr-1" />
+                            Pending
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleJoinGroup(group.id, isPrivate)}
+                            className={`flex items-center justify-center px-3 py-1 rounded-md text-xs sm:text-sm ${isRequestingJoin
+                                ? "bg-gray-100 border border-gray-200 text-gray-500"
+                                : isPrivate
+                                  ? "border border-blue-500 text-blue-500 hover:bg-blue-50"
+                                  : "bg-blue-500 text-white hover:bg-blue-600"
+                              }`}
+                            disabled={isRequestingJoin}
+                          >
+                            {isRequestingJoin ? (
+                              <>
+                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                                <span className="ml-1">Processing</span>
+                              </>
+                            ) : (
+                              <>
+                                <UserPlus size={14} className="mr-1" />
+                                {isPrivate ? "Request Join" : "Join"}
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
 
                     </div>
                   );
@@ -512,11 +509,10 @@ const handleCancelRequest = async (requestId) => {
                       fetchAllGroups(pagination.limit, Math.max(0, pagination.offset - pagination.limit))
                     }
                     disabled={pagination.offset === 0}
-                    className={`px-4 py-2 rounded-md ${
-                      pagination.offset === 0
+                    className={`px-4 py-2 rounded-md ${pagination.offset === 0
                         ? "bg-gray-200 cursor-not-allowed"
                         : "bg-blue-500 text-white hover:bg-blue-600"
-                    }`}
+                      }`}
                   >
                     Previous
                   </button>
@@ -529,11 +525,10 @@ const handleCancelRequest = async (requestId) => {
                       fetchAllGroups(pagination.limit, pagination.offset + pagination.limit)
                     }
                     disabled={pagination.offset + pagination.limit >= pagination.total}
-                    className={`px-4 py-2 rounded-md ${
-                      pagination.offset + pagination.limit >= pagination.total
+                    className={`px-4 py-2 rounded-md ${pagination.offset + pagination.limit >= pagination.total
                         ? "bg-gray-200 cursor-not-allowed"
                         : "bg-blue-500 text-white hover:bg-blue-600"
-                    }`}
+                      }`}
                   >
                     Next
                   </button>
@@ -553,66 +548,66 @@ const handleCancelRequest = async (requestId) => {
           ) : joinRequests.length > 0 ? (
             <div className="space-y-4">
               {joinRequests.map((request) => (
-                <div 
-                  key={request.id} 
+                <div
+                  key={request.id}
                   className="bg-white rounded-lg shadow p-4 border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
                 >
                   <div className="flex items-center gap-3">
-  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-    {request.group?.image ? (
-      <img
-        className="w-full h-full object-cover rounded-full"
-        src={`${base_url}/${request.group.image}`}
-        alt={request.group?.name || "Group"}
-        onError={(e) => {
-          e.target.src = "/default-group.png";
-        }}
-      />
-    ) : (
-      <span className="text-sm font-bold text-gray-600">
-        {(request.group?.name || "G").charAt(0).toUpperCase()}
-      </span>
-    )}
-  </div>
-  <div>
-    <h4 className="font-medium">{request.group?.name || "Unknown Group"}</h4>
-    <p className="text-sm text-gray-500">
-      Requested on {formatDate(request.created_at)}
-    </p>
-    <span className="inline-block mt-1 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
-      Pending Request
-    </span>
-  </div>
-</div>
-<div className="flex gap-2 w-full sm:w-auto">
-  <button
-    onClick={() => openCancelModal(request.group_id, request.id)}
-    className="flex-1 sm:flex-none px-3 py-1.5 bg-yellow-100 border border-yellow-200 text-gray-700 rounded hover:bg-yellow-200 text-sm flex items-center justify-center"
-  >
-    <Clock size={14} className="mr-1" />
-    Pending
-  </button>
-  {/* Private groups can't be viewed until joined */}
-  {request.group?.privacy_level === "private" ? (
-    <button
-      className="flex-1 sm:flex-none px-3 py-1.5 bg-gray-200 text-gray-500 rounded text-sm text-center cursor-not-allowed"
-      disabled
-    >
-      Private Group
-    </button>
-  ) : (
-    <Link
-      to={`/groups/${request.group_id}`}
-      className="flex-1 sm:flex-none px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm text-center"
-    >
-      View Group
-    </Link>
-  )}
-</div>
+                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                      {request.group?.image ? (
+                        <img
+                          className="w-full h-full object-cover rounded-full"
+                          src={`${base_url}/${request.group.image}`}
+                          alt={request.group?.name || "Group"}
+                          onError={(e) => {
+                            e.target.src = "/default-group.png";
+                          }}
+                        />
+                      ) : (
+                        <span className="text-sm font-bold text-gray-600">
+                          {(request.group?.name || "G").charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="font-medium">{request.group?.name || "Unknown Group"}</h4>
+                      <p className="text-sm text-gray-500">
+                        Requested on {formatDate(request.created_at)}
+                      </p>
+                      <span className="inline-block mt-1 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+                        Pending Request
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <button
+                      onClick={() => openCancelModal(request.group_id, request.id)}
+                      className="flex-1 sm:flex-none px-3 py-1.5 bg-yellow-100 border border-yellow-200 text-gray-700 rounded hover:bg-yellow-200 text-sm flex items-center justify-center"
+                    >
+                      <Clock size={14} className="mr-1" />
+                      Pending
+                    </button>
+                    {/* Private groups can't be viewed until joined */}
+                    {request.group?.privacy_level === "private" ? (
+                      <button
+                        className="flex-1 sm:flex-none px-3 py-1.5 bg-gray-200 text-gray-500 rounded text-sm text-center cursor-not-allowed"
+                        disabled
+                      >
+                        Private Group
+                      </button>
+                    ) : (
+                      <Link
+                        to={`/groups/${request.group_id}`}
+                        className="flex-1 sm:flex-none px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm text-center"
+                      >
+                        View Group
+                      </Link>
+                    )}
+                  </div>
 
 
-                  
-                  
+
+
                 </div>
               ))}
             </div>

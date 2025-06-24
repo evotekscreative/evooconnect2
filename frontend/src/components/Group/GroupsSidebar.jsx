@@ -9,48 +9,48 @@ export default function GroupsSidebar({
   loadingSuggestions,
   handleJoinGroup,
   base_url,
-  fetchSuggestedGroups  
+  fetchSuggestedGroups
 }) {
   return (
     <div className="space-y-4">
       {/* Group Statistics */}
-      
+
       <div className="bg-white rounded-xl shadow p-5">
-  <h3 className="font-semibold mb-4 border-b pb-3 text-base sm:text-lg">
-    Group Statistics
-  </h3>
-  <ul className="text-sm sm:text-base text-gray-800 space-y-2">
-    <li className="border-b pb-3">
-      <div className="flex justify-between items-center">
-        <span className="font-medium">Total Groups</span>
-        <span className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm">
-          {adminGroups.length + joinedGroups.length}
-        </span>
+        <h3 className="font-semibold mb-4 border-b pb-3 text-base sm:text-lg">
+          Group Statistics
+        </h3>
+        <ul className="text-sm sm:text-base text-gray-800 space-y-2">
+          <li className="border-b pb-3">
+            <div className="flex justify-between items-center">
+              <span className="font-medium">Total Groups</span>
+              <span className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm">
+                {adminGroups.length + joinedGroups.length}
+              </span>
+            </div>
+          </li>
+          <li className="border-b pb-3">
+            <div className="flex justify-between items-center">
+              <span className="font-medium">Groups Created</span>
+              <span className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm">
+                {adminGroups.length}
+              </span>
+            </div>
+          </li>
+          <li>
+            <div className="flex justify-between items-center">
+              <span className="font-medium">Groups Joined</span>
+              <span className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm">
+                {joinedGroups.length}
+              </span>
+            </div>
+          </li>
+        </ul>
       </div>
-    </li>
-    <li className="border-b pb-3">
-      <div className="flex justify-between items-center">
-        <span className="font-medium">Groups Created</span>
-        <span className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm">
-          {adminGroups.length}
-        </span>
-      </div>
-    </li>
-    <li>
-      <div className="flex justify-between items-center">
-        <span className="font-medium">Groups Joined</span>
-        <span className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm">
-          {joinedGroups.length}
-        </span>
-      </div>
-    </li>
-  </ul>
-</div>
 
 
       {/* Suggested Groups */}
       <div className="bg-white rounded-xl shadow p-4">
-       <div className="flex justify-between items-center mb-2 border-b pb-4">
+        <div className="flex justify-between items-center mb-2 border-b pb-4">
           <h3 className="font-medium">Groups You Might Like</h3>
           <button
             onClick={fetchSuggestedGroups}
@@ -81,9 +81,9 @@ export default function GroupsSidebar({
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                <Link to={`/groups/${group.id}`}>
-                  <h4 className="text-sm font-medium text-gray-900 truncate">{group.name}</h4>
-    </Link>
+                  <Link to={`/groups/${group.id}`}>
+                    <h4 className="text-sm font-medium text-gray-900 truncate">{group.name}</h4>
+                  </Link>
                   <p className="text-xs text-gray-500 truncate">{group.description}</p>
                   <p className="text-xs text-gray-500 mt-1">{group.members_count} members</p>
                   <p className="text-xs text-blue-500 mt-1">
@@ -98,6 +98,7 @@ export default function GroupsSidebar({
                     Join
                   </button>
                 )}
+                
               </div>
             ))}
           </div>

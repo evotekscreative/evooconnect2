@@ -1,19 +1,84 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import axios from "axios";
 import Case from "../../components/Case";
+import axios from "axios";
 import Alert from "../../components/Auth/alert";
 import ProfileSidebar from "../../components/UserProfile/ProfileSidebar";
 import ProfileAbout from "../../components/UserProfile/ProfileAbout";
 import ProfileExperience from "../../components/UserProfile/ProfileExperience";
 import ProfileEducation from "../../components/UserProfile/ProfileEducation";
 import ProfilePosts from "../../components/UserProfile/ProfilePosts";
+import ContactModal from "../../components/UserProfile/ContactModal";
 import ProfileContactModal from "../../components/UserProfile/ProfileContactModal";
+import ProfileSocialMedia from "@/components/Profile/ProfileSocialMedia";
+import {
+  User,
+  Calendar,
+  Briefcase,
+  Users,
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  Bookmark,
+  GraduationCap,
+  Pencil,
+  Instagram,
+  Facebook,
+  Twitter,
+  Linkedin,
+  Github,
+  ThumbsUp,
+  MessageCircle,
+  Share2,
+  Mail,
+  Phone,
+  MapPin,
+  Building,
+  Link2,
+  X,
+} from "lucide-react";
+
+const socialPlatforms = [
+  {
+    name: "instagram",
+    icon: <Instagram className="w-5 h-5" />,
+    color: "text-pink-500",
+  },
+  {
+    name: "facebook",
+    icon: <Facebook className="w-5 h-5" />,
+    color: "text-blue-500",
+  },
+  {
+    name: "twitter",
+    icon: <Twitter className="w-5 h-5" />,
+    color: "text-blue-400",
+  },
+  {
+    name: "linkedin",
+    icon: <Linkedin className="w-5 h-5" />,
+    color: "text-blue-700",
+  },
+  { name: "github", icon: <Github className="w-5 h-5" />, color: "text-black" },
+];
 
 export default function UserProfile() {
   const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
   const { username } = useParams();
-
+  const [profileImage, setProfileImage] = useState(null);
+  const [connectionsCount, setConnectionsCount] = useState(0);
+  const [isConnected, setIsConnected] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState(null);
+  const [loadingConnection, setLoadingConnection] = useState(false);
+  const [alert, setAlert] = useState({ show: false, type: "success", message: "" });
+  const [showContactModal, setShowContactModal] = useState(false);
+  // Experience, Education, Posts
+  const [experiences, setExperiences] = useState([]);
+  const [educations, setEducations] = useState([]);
+  const [userPosts, setUserPosts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
   // State
   const [user, setUser] = useState({
     id: "",
@@ -31,19 +96,6 @@ export default function UserProfile() {
     birthdate: "",
     gender: "",
   });
-  const [profileImage, setProfileImage] = useState(null);
-  const [connectionsCount, setConnectionsCount] = useState(0);
-  const [isConnected, setIsConnected] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState(null);
-  const [loadingConnection, setLoadingConnection] = useState(false);
-  const [alert, setAlert] = useState({ show: false, type: "success", message: "" });
-  const [showContactModal, setShowContactModal] = useState(false);
-
-  // Experience, Education, Posts
-  const [experiences, setExperiences] = useState([]);
-  const [educations, setEducations] = useState([]);
-  const [userPosts, setUserPosts] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   // Alert helper
   const showAlert = (type, message) => {
@@ -182,11 +234,11 @@ export default function UserProfile() {
   }
 
   return (
-    <div className="bg-[#EDF3F7] min-h-screen">
-      <Case />
-      <div className="w-full px-4 py-6 mx-auto sm:px-6">
-        <div className="flex flex-col justify-center max-w-6xl gap-6 mx-auto md:flex-row">
-          <div className="fixed top-4 right-4 z-50">
+    <div className="bg-[#EDF3F7] min-h-screen pb-10">
+    <Case />
+    <div className="w-full px-4 py-6 mx-auto sm:px-6">
+      <div className="flex flex-col justify-center max-w-6xl gap-6 mx-auto md:flex-row">
+        <div className="fixed top-4 right-4 z-50">
             <Alert
               type={alert.type}
               message={alert.message}

@@ -139,7 +139,7 @@ const Navbar = () => {
         <div className="flex items-center gap-4">
           <NavLinks />
 
-          <div className="flex items-center gap-4 sm:gap-6">
+          <div className="flex items-center gap-2 sm:gap-6">
              <Link
         to="/messages"
         className="md:hidden flex items-center justify-center"

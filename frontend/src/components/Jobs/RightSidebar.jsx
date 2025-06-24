@@ -30,7 +30,7 @@ export default function RightSidebar({ activeTab }) {
         ];
 
     return (
-        <div className="col-span-12 lg:col-span-3 space-y-6">
+        <div className="col-span-12 lg:col-span-3 space-y-6 pb-20">
             <div className="bg-white p-5 rounded-xl shadow-md">
                 <h3 className="font-semibold mb-1">Because you viewed</h3>
                 <p className="text-sm text-gray-500 mb-4">
@@ -69,7 +69,7 @@ export default function RightSidebar({ activeTab }) {
                 ))}
             </div>
 
-            <div className="bg-white p-4 rounded-xl shadow-md">
+            <div className="bg-white p-4 rounded-xl shadow-md w-full mb-6">
                 <h3 className="font-semibold mb-2">People you might know</h3>
                 <div className="flex items-center space-x-3">
                     <img src="https://via.placeholder.com/40" alt="Profile" className="rounded-full" />

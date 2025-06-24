@@ -28,7 +28,7 @@ const SearchBar = () => {
     <div className="flex-1">
       <form
         onSubmit={handleSearch}
-        className="flex items-center bg-white mr-5 rounded-full px-3 py-2 w-full transition-all duration-200 ease-in-out"
+        className="flex items-center bg-white mr-1 rounded-full px-3 py-2 w-full transition-all duration-200 ease-in-out"
       >
         <input
           type="text"

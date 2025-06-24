@@ -239,7 +239,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/post-page",
+    path: "/post-page/:username",
     element: (
       <ProtectedRoute>
         <PostPage />
@@ -247,7 +247,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/post-page/:username",
+    path: "/user-post-page/:username",
     element:(
       <ProtectedRoute>
         <UserPostPage />
