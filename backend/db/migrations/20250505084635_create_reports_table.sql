@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 CREATE TABLE reports (
     id UUID PRIMARY KEY,
-    reporter_id UUID NOT NULL REFERENCES users(i  d) ON DELETE CASCADE,
+    reporter_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     target_type TEXT NOT NULL CHECK (
         target_type IN ('user', 'post', 'comment', 'blog', 'comment_blog')
     ),

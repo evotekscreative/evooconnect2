@@ -7,6 +7,7 @@ import (
 	"evoconnect/backend/service"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
@@ -29,21 +30,21 @@ func (controller *JobVacancyControllerImpl) Create(writer http.ResponseWriter, r
 		panic(exception.NewUnauthorizedError("Invalid or missing token"))
 	}
 
+	// Set company ID from path parameter if not provided in body
+	var companyId uuid.UUID
+	if companyIdParam := params.ByName("companyId"); companyIdParam != "" {
+		companyId, err = uuid.Parse(companyIdParam)
+		if err != nil {
+			panic(exception.NewBadRequestError("Invalid company ID"))
+		}
+	}
+
 	// Parse request body
 	var createRequest web.CreateJobVacancyRequest
 	helper.ReadFromRequestBody(request, &createRequest)
 
-	// Set company ID from path parameter if not provided in body
-	if companyIdParam := params.ByName("companyId"); companyIdParam != "" {
-		companyId, err := uuid.Parse(companyIdParam)
-		if err != nil {
-			panic(exception.NewBadRequestError("Invalid company ID"))
-		}
-		createRequest.CompanyId = companyId
-	}
-
 	// Create job vacancy
-	jobVacancyResponse := controller.JobVacancyService.Create(request.Context(), createRequest, userId)
+	jobVacancyResponse := controller.JobVacancyService.Create(request.Context(), createRequest, companyId, userId)
 
 	webResponse := web.WebResponse{
 		Code:   201,
@@ -118,13 +119,85 @@ func (controller *JobVacancyControllerImpl) FindById(writer http.ResponseWriter,
 		panic(exception.NewBadRequestError("Invalid job vacancy ID"))
 	}
 
+	// Get user ID from context (optional for public endpoints)
+	var userId *uuid.UUID
+	if userIdFromToken, err := helper.GetUserIdFromToken(request); err == nil {
+		userId = &userIdFromToken
+	}
+
 	// Find job vacancy
-	jobVacancyResponse := controller.JobVacancyService.FindById(request.Context(), jobVacancyId)
+	jobVacancyResponse := controller.JobVacancyService.FindById(request.Context(), jobVacancyId, userId)
 
 	webResponse := web.WebResponse{
 		Code:   200,
 		Status: "OK",
 		Data:   jobVacancyResponse,
+	}
+
+	helper.WriteToResponseBody(writer, webResponse)
+}
+
+func (controller *JobVacancyControllerImpl) FindActiveJobs(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Get pagination parameters
+	page := parseInt(request.URL.Query().Get("page"), 1)
+	pageSize := parseInt(request.URL.Query().Get("pageSize"), 10)
+
+	// Get user ID from context (optional for public endpoints)
+	var userId *uuid.UUID
+	if userIdFromToken, err := helper.GetUserIdFromToken(request); err == nil {
+		userId = &userIdFromToken
+	}
+
+	// Find active job vacancies
+	jobVacanciesResponse := controller.JobVacancyService.FindActiveJobs(request.Context(), page, pageSize, userId)
+
+	webResponse := web.WebResponse{
+		Code:   200,
+		Status: "OK",
+		Data:   jobVacanciesResponse,
+	}
+
+	helper.WriteToResponseBody(writer, webResponse)
+}
+
+func (controller *JobVacancyControllerImpl) SearchJobs(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Get user ID from context (if available)
+	var userId *uuid.UUID
+	if userIdFromToken, err := helper.GetUserIdFromToken(request); err == nil {
+		userId = &userIdFromToken
+	}
+
+	// Parse search request from query parameters
+	searchRequest := web.JobVacancySearchRequest{
+		Search:          request.URL.Query().Get("search"),
+		Location:        request.URL.Query().Get("location"),
+		JobType:         request.URL.Query().Get("job_type"),
+		ExperienceLevel: request.URL.Query().Get("experience_level"),
+		WorkType:        request.URL.Query().Get("work_type"),
+		Page:            parseInt(request.URL.Query().Get("page"), 1),
+		PageSize:        parseInt(request.URL.Query().Get("page_size"), 10),
+	}
+
+	// Parse optional salary filters
+	if minSalaryStr := request.URL.Query().Get("min_salary"); minSalaryStr != "" {
+		searchRequest.MinSalary = parseFloatPtr(minSalaryStr)
+	}
+	if maxSalaryStr := request.URL.Query().Get("max_salary"); maxSalaryStr != "" {
+		searchRequest.MaxSalary = parseFloatPtr(maxSalaryStr)
+	}
+
+	// Parse array parameters
+	if skillsStr := request.URL.Query().Get("skills"); skillsStr != "" {
+		searchRequest.Skills = strings.Split(skillsStr, ",")
+	}
+
+	// Search job vacancies
+	jobVacanciesResponse := controller.JobVacancyService.SearchJobs(request.Context(), searchRequest, userId)
+
+	webResponse := web.WebResponse{
+		Code:   200,
+		Status: "OK",
+		Data:   jobVacanciesResponse,
 	}
 
 	helper.WriteToResponseBody(writer, webResponse)
@@ -138,54 +211,61 @@ func (controller *JobVacancyControllerImpl) FindByCompanyId(writer http.Response
 	}
 
 	// Get pagination parameters
-	page, pageSize, err := helper.GetPaginationParams(request)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid pagination parameters"))
+	page := parseInt(request.URL.Query().Get("page"), 1)
+	pageSize := parseInt(request.URL.Query().Get("pageSize"), 10)
+
+	// Get user ID from context (optional)
+	var userId *uuid.UUID
+	if userIdFromToken, err := helper.GetUserIdFromToken(request); err == nil {
+		userId = &userIdFromToken
 	}
 
-	// Convert offset to page number
-	if page == 0 {
-		page = 1
-	}
-	if pageSize == 0 {
-		pageSize = 10
-	}
+	// Get status filter from query parameter
+	status := request.URL.Query().Get("status")
 
-	// Find job vacancies by company
-	jobVacanciesResponse := controller.JobVacancyService.FindByCompanyId(request.Context(), companyId, page, pageSize)
+	if status != "" {
+		// Find job vacancies by company with status filter
+		jobVacanciesResponse := controller.JobVacancyService.FindByCompanyIdWithStatus(request.Context(), companyId, status, page, pageSize, userId)
 
-	webResponse := web.WebResponse{
-		Code:   200,
-		Status: "OK",
-		Data:   jobVacanciesResponse,
+		webResponse := web.WebResponse{
+			Code:   200,
+			Status: "OK",
+			Data:   jobVacanciesResponse,
+		}
+
+		helper.WriteToResponseBody(writer, webResponse)
+	} else {
+		// Find all job vacancies by company
+		jobVacanciesResponse := controller.JobVacancyService.FindByCompanyId(request.Context(), companyId, page, pageSize, userId)
+
+		webResponse := web.WebResponse{
+			Code:   200,
+			Status: "OK",
+			Data:   jobVacanciesResponse,
+		}
+
+		helper.WriteToResponseBody(writer, webResponse)
 	}
-
-	helper.WriteToResponseBody(writer, webResponse)
 }
 
 func (controller *JobVacancyControllerImpl) FindByCreatorId(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	// Get user ID from context
-	userId, err := helper.GetUserIdFromToken(request)
+	creatorId, err := uuid.Parse(params.ByName("creatorId"))
 	if err != nil {
-		panic(exception.NewUnauthorizedError("Invalid or missing token"))
+		panic(exception.NewBadRequestError("Invalid creator ID"))
 	}
 
 	// Get pagination parameters
-	page, pageSize, err := helper.GetPaginationParams(request)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid pagination parameters"))
-	}
+	page := parseInt(request.URL.Query().Get("page"), 1)
+	pageSize := parseInt(request.URL.Query().Get("pageSize"), 10)
 
-	// Convert offset to page number
-	if page == 0 {
-		page = 1
-	}
-	if pageSize == 0 {
-		pageSize = 10
+	// Get user ID from context (optional)
+	var userId *uuid.UUID
+	if userIdFromToken, err := helper.GetUserIdFromToken(request); err == nil {
+		userId = &userIdFromToken
 	}
 
 	// Find job vacancies by creator
-	jobVacanciesResponse := controller.JobVacancyService.FindByCreatorId(request.Context(), userId, page, pageSize)
+	jobVacanciesResponse := controller.JobVacancyService.FindByCreatorId(request.Context(), creatorId, page, pageSize, userId)
 
 	webResponse := web.WebResponse{
 		Code:   200,
@@ -198,86 +278,17 @@ func (controller *JobVacancyControllerImpl) FindByCreatorId(writer http.Response
 
 func (controller *JobVacancyControllerImpl) FindAll(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	// Get pagination parameters
-	page, pageSize, err := helper.GetPaginationParams(request)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid pagination parameters"))
-	}
+	page := parseInt(request.URL.Query().Get("page"), 1)
+	pageSize := parseInt(request.URL.Query().Get("pageSize"), 10)
 
-	// Convert offset to page number
-	if page == 0 {
-		page = 1
-	}
-	if pageSize == 0 {
-		pageSize = 10
+	// Get user ID from context (optional)
+	var userId *uuid.UUID
+	if userIdFromToken, err := helper.GetUserIdFromToken(request); err == nil {
+		userId = &userIdFromToken
 	}
 
 	// Find all job vacancies
-	jobVacanciesResponse := controller.JobVacancyService.FindAll(request.Context(), page, pageSize)
-
-	webResponse := web.WebResponse{
-		Code:   200,
-		Status: "OK",
-		Data:   jobVacanciesResponse,
-	}
-
-	helper.WriteToResponseBody(writer, webResponse)
-}
-
-func (controller *JobVacancyControllerImpl) FindActiveJobs(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	// Get pagination parameters
-	page, pageSize, err := helper.GetPaginationParams(request)
-	if err != nil {
-		panic(exception.NewBadRequestError("Invalid pagination parameters"))
-	}
-
-	// Convert offset to page number
-	if page == 0 {
-		page = 1
-	}
-	if pageSize == 0 {
-		pageSize = 10
-	}
-
-	// Find active job vacancies
-	jobVacanciesResponse := controller.JobVacancyService.FindActiveJobs(request.Context(), page, pageSize)
-
-	webResponse := web.WebResponse{
-		Code:   200,
-		Status: "OK",
-		Data:   jobVacanciesResponse,
-	}
-
-	helper.WriteToResponseBody(writer, webResponse)
-}
-
-func (controller *JobVacancyControllerImpl) SearchJobs(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	// Parse search request from query parameters
-	searchRequest := web.JobVacancySearchRequest{
-		Query:     request.URL.Query().Get("query"),
-		Location:  request.URL.Query().Get("location"),
-		MinSalary: parseFloatPtr(request.URL.Query().Get("min_salary")),
-		MaxSalary: parseFloatPtr(request.URL.Query().Get("max_salary")),
-		CompanyId: parseStringPtr(request.URL.Query().Get("company_id")),
-		Page:      parseInt(request.URL.Query().Get("page"), 1),
-		PageSize:  parseInt(request.URL.Query().Get("page_size"), 10),
-	}
-
-	// Parse array parameters
-	if jobTypes := request.URL.Query()["job_type"]; len(jobTypes) > 0 {
-		searchRequest.JobType = jobTypes
-	}
-	if experienceLevels := request.URL.Query()["experience_level"]; len(experienceLevels) > 0 {
-		searchRequest.ExperienceLevel = experienceLevels
-	}
-	if workTypes := request.URL.Query()["work_type"]; len(workTypes) > 0 {
-		searchRequest.WorkType = workTypes
-	}
-	if skills := request.URL.Query()["skills"]; len(skills) > 0 {
-		searchRequest.Skills = skills
-	}
-
-	// Search job vacancies
-	jobVacanciesResponse := controller.JobVacancyService.SearchJobs(request.Context(), searchRequest)
+	jobVacanciesResponse := controller.JobVacancyService.FindAll(request.Context(), page, pageSize, userId)
 
 	webResponse := web.WebResponse{
 		Code:   200,
@@ -323,14 +334,16 @@ func (controller *JobVacancyControllerImpl) UpdateStatus(writer http.ResponseWri
 }
 
 func (controller *JobVacancyControllerImpl) GetPublicJobDetail(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	userId, _ := helper.GetUserIdFromToken(request)
+
 	// Get job vacancy ID from path
-	jobVacancyId, err := uuid.Parse(params.ByName("jobVacancyId"))
+	jobVacancyId, err := uuid.Parse(params.ByName("vacancyId"))
 	if err != nil {
 		panic(exception.NewBadRequestError("Invalid job vacancy ID"))
 	}
 
 	// Get public job detail
-	jobVacancyResponse := controller.JobVacancyService.GetPublicJobDetail(request.Context(), jobVacancyId)
+	jobVacancyResponse := controller.JobVacancyService.GetPublicJobDetail(request.Context(), jobVacancyId, &userId)
 
 	webResponse := web.WebResponse{
 		Code:   200,

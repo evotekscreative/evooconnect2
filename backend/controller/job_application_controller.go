@@ -12,11 +12,10 @@ type JobApplicationController interface {
 	Delete(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	FindById(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	FindByJobVacancy(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
-	FindMyApplications(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+	FindByApplicant(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	FindByCompany(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	FindWithFilters(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	ReviewApplication(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
-	UploadCV(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	GetStats(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	CheckApplicationStatus(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 }
