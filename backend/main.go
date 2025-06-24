@@ -115,7 +115,7 @@ func main() {
 
 	// ===== Services =====
 	profileViewService := service.NewProfileViewService(db, profileViewRepository, userRepository, notificationService)
-	connectionService := service.NewConnectionService(connectionRepository, userRepository, notificationService, db, groupInvitationRepository , validate)
+	connectionService := service.NewConnectionService(connectionRepository, userRepository, notificationService, db, groupInvitationRepository, validate)
 	userService := service.NewUserService(userRepository, connectionRepository, profileViewService, db, validate)
 	authService := service.NewAuthService(userRepository, db, validate, jwtSecret)
 
@@ -203,7 +203,10 @@ func main() {
 		blogRepository,
 		commentBlogRepository,
 		groupRepository,
-		notificationService, // Tambahkan ini
+		companyRepository,
+		companyPostRepository,
+		jobVacancyRepository,
+		notificationService,
 		db,
 	)
 
@@ -231,6 +234,7 @@ func main() {
 		memberCompanyRepository,
 		userRepository,
 		companyRepository,
+		notificationService,
 		db,
 		validate,
 	)
@@ -267,6 +271,7 @@ func main() {
 		userRepository,
 		adminRepository,
 		notificationService,
+		reportRepository,
 		db,
 		validate,
 	)

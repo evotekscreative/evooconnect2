@@ -154,7 +154,7 @@ func (repository *JobVacancyRepositoryImpl) FindById(ctx context.Context, tx *sq
             jv.id, jv.company_id, jv.creator_id, jv.title, jv.description, jv.requirements, 
             jv.location, jv.job_type, jv.experience_level, jv.min_salary, jv.max_salary, 
             jv.currency, jv.skills, jv.benefits, jv.work_type, jv.application_deadline, 
-            jv.status, jv.type_apply, jv.external_link, jv.created_at, jv.updated_at,
+            jv.status, jv.type_apply, jv.external_link, jv.created_at, jv.updated_at, jv.taken_down_at,
             c.id as company_id, c.name as company_name, c.logo as company_logo, 
             c.industry as company_industry,
             u.id as creator_id, u.name as creator_name, u.email as creator_email, 
@@ -172,6 +172,7 @@ func (repository *JobVacancyRepositoryImpl) FindById(ctx context.Context, tx *sq
 	var minSalary, maxSalary sql.NullFloat64
 	var applicationDeadline sql.NullTime
 	var externalLink sql.NullString
+	var takenDownAt sql.NullTime
 
 	err := tx.QueryRowContext(ctx, query, jobVacancyId).Scan(
 		&jobVacancy.Id,
@@ -195,6 +196,7 @@ func (repository *JobVacancyRepositoryImpl) FindById(ctx context.Context, tx *sq
 		&externalLink,
 		&jobVacancy.CreatedAt,
 		&jobVacancy.UpdatedAt,
+		&takenDownAt,
 		&company.Id,
 		&company.Name,
 		&companyLogo,
@@ -240,6 +242,9 @@ func (repository *JobVacancyRepositoryImpl) FindById(ctx context.Context, tx *sq
 	if externalLink.Valid {
 		jobVacancy.ExternalLink = &externalLink.String
 	}
+	if takenDownAt.Valid {
+		jobVacancy.TakenDownAt = &takenDownAt.Time
+	}
 
 	// Set relations
 	jobVacancy.Company = &company
@@ -249,7 +254,6 @@ func (repository *JobVacancyRepositoryImpl) FindById(ctx context.Context, tx *sq
 
 	return jobVacancy, nil
 }
-
 func (repository *JobVacancyRepositoryImpl) FindByCompanyId(ctx context.Context, tx *sql.Tx, companyId uuid.UUID, limit, offset int) []domain.JobVacancy {
 	query := `
         SELECT 
@@ -836,23 +840,35 @@ func (repository *JobVacancyRepositoryImpl) CountSearchResults(ctx context.Conte
 }
 
 func (repository *JobVacancyRepositoryImpl) UpdateStatus(ctx context.Context, tx *sql.Tx, jobVacancyId uuid.UUID, status domain.JobVacancyStatus) error {
-	query := `UPDATE job_vacancies SET status = $1, updated_at = $2 WHERE id = $3`
+    var query string
+    var args []interface{}
+    now := time.Now()
 
-	result, err := tx.ExecContext(ctx, query, status, time.Now(), jobVacancyId)
-	if err != nil {
-		return fmt.Errorf("failed to update job vacancy status: %w", err)
-	}
+    if status == domain.JobVacancyStatusClosed {
+        // Jika status closed, atur taken_down_at ke waktu saat ini
+        query = `UPDATE job_vacancies SET status = $1, updated_at = $2, taken_down_at = $3 WHERE id = $4`
+        args = []interface{}{status, now, now, jobVacancyId}
+    } else {
+        // Untuk status lain, tidak perlu mengatur taken_down_at
+        query = `UPDATE job_vacancies SET status = $1, updated_at = $2 WHERE id = $3`
+        args = []interface{}{status, now, jobVacancyId}
+    }
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
-	}
+    result, err := tx.ExecContext(ctx, query, args...)
+    if err != nil {
+        return fmt.Errorf("failed to update job vacancy status: %w", err)
+    }
 
-	if rowsAffected == 0 {
-		return fmt.Errorf("job vacancy with id %s not found", jobVacancyId)
-	}
+    rowsAffected, err := result.RowsAffected()
+    if err != nil {
+        return fmt.Errorf("failed to get rows affected: %w", err)
+    }
 
-	return nil
+    if rowsAffected == 0 {
+        return fmt.Errorf("job vacancy with id %s not found", jobVacancyId)
+    }
+
+    return nil
 }
 
 func (repository *JobVacancyRepositoryImpl) FindByCompanyIdWithStatus(ctx context.Context, tx *sql.Tx, companyId uuid.UUID, status domain.JobVacancyStatus, limit, offset int) []domain.JobVacancy {

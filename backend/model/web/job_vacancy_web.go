@@ -69,6 +69,7 @@ type JobVacancyResponse struct {
 	HasApplied          bool       `json:"has_applied"`
 	CreatedAt           time.Time  `json:"created_at"`
 	UpdatedAt           time.Time  `json:"updated_at"`
+	TakenDownAt         *time.Time `json:"taken_down_at,omitempty"`
 
 	// Relations
 	Company *CompanyBasicResponse `json:"company,omitempty"`

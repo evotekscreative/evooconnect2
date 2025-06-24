@@ -53,6 +53,7 @@ type Company struct {
 	IsVerified  bool      `db:"is_verified"`
 	CreatedAt   time.Time `db:"created_at"`
 	UpdatedAt   time.Time `db:"updated_at"`
+	TakenDownAt *time.Time `db:"taken_down_at"`
 
 	// Relations
 	Owner *User `db:"-"`

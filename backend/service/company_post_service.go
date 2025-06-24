@@ -21,4 +21,5 @@ type CompanyPostService interface {
 	// Like functionality - following same pattern as PostService
 	LikePost(ctx context.Context, userId, postId uuid.UUID)
 	UnlikePost(ctx context.Context, userId, postId uuid.UUID)
+	
 }

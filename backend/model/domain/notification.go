@@ -15,6 +15,7 @@ const (
 	NotificationCategoryPost       NotificationCategory = "post"
 	NotificationCategoryProfile    NotificationCategory = "profile"
 	NotificationCategoryCompany    NotificationCategory = "company"
+	NotificationCategoryJob        NotificationCategory = "job"
 	NotificationCategoryEngagement NotificationCategory = "engagement"
 )
 

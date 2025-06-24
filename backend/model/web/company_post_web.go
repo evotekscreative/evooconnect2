@@ -47,6 +47,7 @@ type CompanyPostResponse struct {
 	IsAnnouncement bool                      `json:"is_announcement"`
 	CreatedAt      time.Time                 `json:"created_at"`
 	UpdatedAt      time.Time                 `json:"updated_at"`
+	TakenDownAt    *time.Time                `json:"taken_down_at,omitempty"` // Waktu ketika post diambil turun
 	Company        *CompanyBriefResponse     `json:"company,omitempty"`
 	Creator        *UserCompanyBriefResponse `json:"creator,omitempty"`
 

@@ -20,4 +20,5 @@ type JobVacancyService interface {
 	SearchJobs(ctx context.Context, request web.JobVacancySearchRequest) web.JobVacancyListResponse
 	UpdateStatus(ctx context.Context, jobVacancyId uuid.UUID, status string, userId uuid.UUID) error
 	GetPublicJobDetail(ctx context.Context, jobVacancyId uuid.UUID) web.JobVacancyPublicResponse
+	
 }

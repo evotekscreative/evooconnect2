@@ -226,6 +226,9 @@ func (service *JobVacancyServiceImpl) FindById(ctx context.Context, jobVacancyId
 		panic(exception.NewNotFoundError("Job vacancy not found"))
 	}
 
+	// Jika job vacancy sudah di-takedown, kita akan tetap mengembalikannya
+	// Pemeriksaan akses akan dilakukan di controller
+
 	return toJobVacancyResponse(jobVacancy)
 }
 
@@ -545,6 +548,7 @@ func toJobVacancyResponse(jobVacancy domain.JobVacancy) web.JobVacancyResponse {
 		ExternalLink:        jobVacancy.ExternalLink,
 		CreatedAt:           jobVacancy.CreatedAt,
 		UpdatedAt:           jobVacancy.UpdatedAt,
+		TakenDownAt:         jobVacancy.TakenDownAt,
 	}
 
 	if jobVacancy.CreatorId != nil {
@@ -603,3 +607,4 @@ func toJobVacancyPublicResponse(jobVacancy domain.JobVacancy) web.JobVacancyPubl
 		Company:             companyInfo,
 	}
 }
+
