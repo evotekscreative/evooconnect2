@@ -40,7 +40,7 @@ const Questions = ({ userData, onBack, onSubmit, onQuestionChange, onClose }) =>
 
     return (
         <div className="fixed inset-0 bg-opacity-50 flex items-start justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl mt-10 max-h-[90vh] flex flex-col animate-slide-down">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl mt-10 max-h-[90vh] flex flex-col animate-slide-down overflow-y-auto max-h-[80vh]">
                 <div className="p-6 border-b">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center">
@@ -80,7 +80,6 @@ const Questions = ({ userData, onBack, onSubmit, onQuestionChange, onClose }) =>
                                         onChange={handleInputChange}
                                         className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         rows={3}
-                                        required
                                     />
                                 </div>
 
@@ -95,7 +94,6 @@ const Questions = ({ userData, onBack, onSubmit, onQuestionChange, onClose }) =>
                                         onChange={handleInputChange}
                                         className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         rows={3}
-                                        required
                                     />
                                 </div>
 
@@ -111,7 +109,7 @@ const Questions = ({ userData, onBack, onSubmit, onQuestionChange, onClose }) =>
                                             value={formData.salary}
                                             onChange={handleInputChange}
                                             className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            required
+                                            
                                         />
                                     </div>
 
@@ -126,7 +124,7 @@ const Questions = ({ userData, onBack, onSubmit, onQuestionChange, onClose }) =>
                                             value={formData.availableStartDate}
                                             onChange={handleInputChange}
                                             className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            required
+                                            
                                         />
                                     </div>
                                 </div>

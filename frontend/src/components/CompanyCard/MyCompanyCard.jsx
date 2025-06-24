@@ -31,7 +31,7 @@ export default function MyCompanyCard({ company }) {
           onClick={handleDetailClick}
           className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-md transition duration-200"
         >
-          DETAIL
+          DASHBOARD MANAGEMENT
         </button>
       </div>
     </div>

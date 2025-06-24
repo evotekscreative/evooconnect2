@@ -60,7 +60,7 @@ const ContactInfo = ({ onNext, isSubmitting, onClose, userData, onContactChange 
 
     return (
         <div className="fixed inset-0 bg-opacity-50 flex items-start justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl mt-10 max-h-[90vh] flex flex-col animate-slide-down">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl mt-10 max-h-[90vh] flex flex-col animate-slide-down overflow-y-auto max-h-[80vh]">
                 <div className="p-6">
                     <div className="flex justify-between items-start mb-2">
                         <h1 className="text-xl font-semibold text-gray-800">Apply for {contactData.title}</h1>
@@ -128,7 +128,7 @@ const ContactInfo = ({ onNext, isSubmitting, onClose, userData, onContactChange 
                                     LinkedIn Profile*
                                 </label>
                                 <input
-                                    type="text"
+                                    type="url"
                                     className="p-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50 w-full"
                                     value={contactData.linkedin}
                                     onChange={handleLinkedinChange}

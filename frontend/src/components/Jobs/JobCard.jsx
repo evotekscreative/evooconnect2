@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-
+import {StickyNote} from "lucide-react";
 export default function JobCard({ job }) {
     const rating = job.rating || 0;
     const ratingStars = Math.max(0, Math.min(5, Math.floor(rating)));
@@ -23,7 +23,6 @@ export default function JobCard({ job }) {
                                 <path d="M12 .587l3.668 7.568L24 9.423l-6 5.85 1.416 8.241L12 18.897l-7.416 4.617L6 15.273 0 9.423l8.332-1.268z" />
                             </svg>
                         )}
-                        <span className="ml-1 text-xs text-gray-600">({rating})</span>
                     </div>
                     <p className="text-sm text-gray-500 truncate">{job.location}</p>
                 </div>
@@ -43,9 +42,17 @@ export default function JobCard({ job }) {
             </div>
 
             <div className="mt-3 text-sm text-gray-600 line-clamp-2">{job.description}</div>
-            <div className="mt-3 flex justify-between text-xs text-gray-400">
-                <span>{job.job_type || job.employmentType}</span>
-                <span>Posted {Math.floor((new Date() - new Date(job.created_at)) / (1000 * 60 * 60 * 24)) || 0} days ago</span>
+            <div className="mt-3 flex justify-between items-center text-xs">
+                <div className="flex items-center gap-2">
+                    <span className="text-gray-400">{job.job_type || job.employmentType}</span>
+                    {job.type_apply === 'simple_apply' && (
+                        <div className="flex items-center gap-1 text-gray-400 px-2 py-1 rounded-full text-xs font-medium">
+                            <StickyNote size={12} />
+                            <span>Simple Apply</span>
+                        </div>
+                    )}
+                </div>
+                <span className="text-gray-400">Posted {Math.floor((new Date() - new Date(job.created_at)) / (1000 * 60 * 60 * 24)) || 0} days ago</span>
             </div>
         </div>
     );

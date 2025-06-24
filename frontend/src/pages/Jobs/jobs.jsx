@@ -288,20 +288,6 @@ export default function Jobs() {
                             </button>
                         </div>
 
-                        <div className="mt-4 flex flex-wrap gap-2 text-sm">
-                            {"All,Engineering,Marketing,Design".split(",").map((label, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => setActiveFilter(label)}
-                                    className={`px-3 py-1 border rounded-full ${activeFilter === label
-                                        ? "bg-gray-200 text-gray-800 border-gray-400"
-                                        : "border-[#0A66C2] text-[#0A66C2] hover:bg-[#e6f0fa]"}`}
-                                >
-                                    {label}
-                                </button>
-                            ))}
-                        </div>
-
                         {activeTab === "job" ? (
                             <div className="mt-6 space-y-4">
                                 {loadingJobs ? (
