@@ -22,7 +22,7 @@ func ToCommentBlogResponse(comment domain.CommentBlog) web.CommentBlogResponse {
         repliesResponse = ToCommentBlogResponses(comment.Replies)
     }
 
-    return web.CommentBlogResponse{
+    response := web.CommentBlogResponse{
         Id:           comment.Id,
         BlogId:       comment.BlogId,
         Content:      comment.Content,
@@ -31,8 +31,21 @@ func ToCommentBlogResponse(comment domain.CommentBlog) web.CommentBlogResponse {
         ParentId:     comment.ParentId,
         User:         userResponse,
         Replies:      repliesResponse,
-        RepliesCount: len(comment.Replies), // Tambahkan ini untuk menghitung jumlah replies
+        RepliesCount: len(comment.Replies),
     }
+
+    // Tambahkan informasi ReplyTo jika ada ReplyToId
+    if comment.ReplyToId != nil && comment.ReplyTo != nil && comment.ReplyTo.User != nil {
+        response.ReplyTo = &web.ReplyToInfo{
+            Id:           *comment.ReplyToId,
+            Content:      comment.ReplyTo.Content,
+            Username:     comment.ReplyTo.User.Username,
+            Name:         comment.ReplyTo.User.Name,
+            ProfilePhoto: comment.ReplyTo.User.Photo,
+        }
+    }
+
+    return response
 }
 
 func ToCommentBlogResponses(comments []domain.CommentBlog) []web.CommentBlogResponse {

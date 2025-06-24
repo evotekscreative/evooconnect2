@@ -103,9 +103,11 @@ func (repository *NotificationRepositoryImpl) FindById(ctx context.Context, tx *
 		notification.ReferenceType = &referenceType.String
 	}
 
-	if actorId.Valid {
-		aId, _ := uuid.Parse(actorId.String)
-		notification.ActorId = &aId
+	if actorId.Valid && actorId.String != "" {
+		aId, err := uuid.Parse(actorId.String)
+		if err == nil {
+			notification.ActorId = &aId
+		}
 	}
 
 	if headline.Valid {
@@ -117,106 +119,86 @@ func (repository *NotificationRepositoryImpl) FindById(ctx context.Context, tx *
 		user.Photo = photoStr
 	}
 
-	notification.Actor = &user
+	// notification.Actor = &user
 
 	return notification, nil
 }
 
 func (repository *NotificationRepositoryImpl) FindByUserId(ctx context.Context, tx *sql.Tx, userId uuid.UUID, category string, limit, offset int) []domain.Notification {
-	var query string
-	var args []interface{}
+    var query string
+    var args []interface{}
+    
+    if category != "" {
+        query = `
+            SELECT 
+                n.id, n.user_id, n.category, n.type, n.title, n.message, n.status, 
+                n.reference_id, n.reference_type, n.actor_id, n.created_at, n.updated_at
+            FROM notifications n
+            WHERE n.user_id = $1 AND n.category = $2
+            ORDER BY n.created_at DESC
+            LIMIT $3 OFFSET $4
+        `
+        args = []interface{}{userId, category, limit, offset}
+    } else {
+        query = `
+            SELECT 
+                n.id, n.user_id, n.category, n.type, n.title, n.message, n.status, 
+                n.reference_id, n.reference_type, n.actor_id, n.created_at, n.updated_at
+            FROM notifications n
+            WHERE n.user_id = $1
+            ORDER BY n.created_at DESC
+            LIMIT $2 OFFSET $3
+        `
+        args = []interface{}{userId, limit, offset}
+    }
 
-	if category != "" {
-		query = `
-			SELECT 
-				n.id, n.user_id, n.category, n.type, n.title, n.message, n.status, n.reference_id, n.reference_type, n.actor_id, n.created_at, n.updated_at,
-				u.id, u.name, u.username, u.email, u.headline, u.photo
-			FROM notifications n
-			LEFT JOIN users u ON n.actor_id = u.id
-			WHERE n.user_id = $1 AND n.category = $2
-			ORDER BY n.created_at DESC
-			LIMIT $3 OFFSET $4
-		`
-		args = []interface{}{userId, category, limit, offset}
-	} else {
-		query = `
-			SELECT 
-				n.id, n.user_id, n.category, n.type, n.title, n.message, n.status, n.reference_id, n.reference_type, n.actor_id, n.created_at, n.updated_at,
-				u.id, u.name, u.username, u.email, u.headline, u.photo
-			FROM notifications n
-			LEFT JOIN users u ON n.actor_id = u.id
-			WHERE n.user_id = $1
-			ORDER BY n.created_at DESC
-			LIMIT $2 OFFSET $3
-		`
-		args = []interface{}{userId, limit, offset}
-	}
+    rows, err := tx.QueryContext(ctx, query, args...)
+    helper.PanicIfError(err)
+    defer rows.Close()
 
-	rows, err := tx.QueryContext(ctx, query, args...)
-	helper.PanicIfError(err)
-	defer rows.Close()
+    var notifications []domain.Notification
+    for rows.Next() {
+        var notification domain.Notification
+        var referenceId, actorId sql.NullString
+        var referenceType sql.NullString
 
-	var notifications []domain.Notification
-	for rows.Next() {
-		var notification domain.Notification
-		var user domain.User
-		var headline, photo sql.NullString
-		var referenceId, actorId sql.NullString
-		var referenceType sql.NullString
+        err := rows.Scan(
+            &notification.Id,
+            &notification.UserId,
+            &notification.Category,
+            &notification.Type,
+            &notification.Title,
+            &notification.Message,
+            &notification.Status,
+            &referenceId,
+            &referenceType,
+            &actorId,
+            &notification.CreatedAt,
+            &notification.UpdatedAt,
+        )
+        helper.PanicIfError(err)
 
-		var scanArgs []interface{}
-		scanArgs = []interface{}{
-			&notification.Id,
-			&notification.UserId,
-			&notification.Category,
-			&notification.Type,
-			&notification.Title,
-			&notification.Message,
-			&notification.Status,
-			&referenceId,
-			&referenceType,
-			&actorId,
-			&notification.CreatedAt,
-			&notification.UpdatedAt,
-			&user.Id,
-			&user.Name,
-			&user.Username,
-			&user.Email,
-			&headline,
-			&photo,
-		}
+        // Handle nullable fields
+        if referenceId.Valid {
+            refId, _ := uuid.Parse(referenceId.String)
+            notification.ReferenceId = &refId
+        }
+        
+        if referenceType.Valid {
+            notification.ReferenceType = &referenceType.String
+        }
+        
+        if actorId.Valid {
+            aId, err := uuid.Parse(actorId.String)
+            if err == nil {
+                notification.ActorId = &aId
+            }
+        }
 
-		err := rows.Scan(scanArgs...)
-		helper.PanicIfError(err)
+        notifications = append(notifications, notification)
+    }
 
-		if referenceId.Valid {
-			refId, _ := uuid.Parse(referenceId.String)
-			notification.ReferenceId = &refId
-		}
-
-		if referenceType.Valid {
-			notification.ReferenceType = &referenceType.String
-		}
-
-		if actorId.Valid {
-			aId, _ := uuid.Parse(actorId.String)
-			notification.ActorId = &aId
-		}
-
-		if headline.Valid {
-			headlineStr := headline.String
-			user.Headline = headlineStr
-		}
-		if photo.Valid {
-			photoStr := photo.String
-			user.Photo = photoStr
-		}
-
-		notification.Actor = &user
-		notifications = append(notifications, notification)
-	}
-
-	return notifications
+    return notifications
 }
 
 func (repository *NotificationRepositoryImpl) CountByUserId(ctx context.Context, tx *sql.Tx, userId uuid.UUID, category string) int {
@@ -460,7 +442,7 @@ func (repository *NotificationRepositoryImpl) FindSimilarNotification(ctx contex
 		user.Photo = photo.String
 	}
 
-	notification.Actor = &user
+	// notification.Actor = &user
 
 	return notification, nil
 }

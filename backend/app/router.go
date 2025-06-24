@@ -27,6 +27,9 @@ func NewRouter(
 	notificationController controller.NotificationController,
 	searchController controller.SearchController,
 	adminAuthController controller.AdminAuthController,
+	adminReportController controller.AdminReportController,
+	groupPinnedPostController controller.GroupPinnedPostController,
+	adminNotificationController controller.AdminNotificationController,
 	companySubmissionController controller.CompanySubmissionController,
 	companyManagementController controller.CompanyManagementController,
 	adminCompanyEditController controller.AdminCompanyEditController,
@@ -56,6 +59,7 @@ func NewRouter(
 		connectionController,
 		reportController,
 		groupController,
+			groupPinnedPostController,
 		chatController,
 		profileViewController,
 		notificationController,
@@ -79,6 +83,8 @@ func NewRouter(
 		adminAuthController,
 		companySubmissionController,
 		adminCompanyEditController,
+		adminReportController,
+		adminNotificationController,
 	)
 
 	// Static file servers
@@ -93,7 +99,7 @@ func NewRouter(
 func setupStaticRoutes(router *httprouter.Router) {
 	uploadFS := http.FileServer(http.Dir("uploads"))
 	publicFS := http.FileServer(http.Dir("public"))
-
+ 
 	// Add custom file server handler to serve static files
 	router.GET("/uploads/*filepath", func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		// Remove /uploads prefix from path

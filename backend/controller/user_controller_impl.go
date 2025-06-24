@@ -168,40 +168,43 @@ func (controller *UserControllerImpl) DeletePhotoProfile(writer http.ResponseWri
 }
 
 func (controller *UserControllerImpl) GetPeoples(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	// Get current user ID from context
-	currentUserIdStr := request.Context().Value("user_id").(string)
+    // Get current user ID from context
+    currentUserIdStr := request.Context().Value("user_id").(string)
 
-	// Parse query parameters for pagination
-	limit := 10 // default limit
-	offset := 0 // default offset
+    // Parse query parameters for pagination
+    limit := 10 // default limit
+    offset := 0 // default offset
 
-	limitParam := request.URL.Query().Get("limit")
-	offsetParam := request.URL.Query().Get("offset")
+    limitParam := request.URL.Query().Get("limit")
+    offsetParam := request.URL.Query().Get("offset")
 
-	if limitParam != "" {
-		parsedLimit, err := strconv.Atoi(limitParam)
-		if err == nil && parsedLimit > 0 {
-			limit = parsedLimit
-		}
-	}
+    if limitParam != "" {
+        parsedLimit, err := strconv.Atoi(limitParam)
+        if err == nil && parsedLimit > 0 {
+            limit = parsedLimit
+        }
+    }
 
-	if offsetParam != "" {
-		parsedOffset, err := strconv.Atoi(offsetParam)
-		if err == nil && parsedOffset >= 0 {
-			offset = parsedOffset
-		}
-	}
+    if offsetParam != "" {
+        parsedOffset, err := strconv.Atoi(offsetParam)
+        if err == nil && parsedOffset >= 0 {
+            offset = parsedOffset
+        }
+    }
 
-	// Call service to get users not connected with current user
-	peopleResponses := controller.UserService.GetPeoples(request.Context(), limit, offset, currentUserIdStr)
+    // Call service to get users not connected with current user
+    peopleResponses := controller.UserService.GetPeoples(request.Context(), limit, offset, currentUserIdStr)
 
-	// Create web response
-	webResponse := web.WebResponse{
-		Code:   200,
-		Status: "OK",
-		Data:   peopleResponses,
-	}
+    // Tambahkan log untuk debugging
+    fmt.Printf("People responses: %+v\n", peopleResponses)
 
-	// Write response
-	helper.WriteToResponseBody(writer, webResponse)
+    // Create web response
+    webResponse := web.WebResponse{
+        Code:   200,
+        Status: "OK",
+        Data:   peopleResponses,
+    }
+
+    // Write response
+    helper.WriteToResponseBody(writer, webResponse)
 }

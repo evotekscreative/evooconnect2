@@ -3,15 +3,19 @@ import { ThumbsDown, ThumbsUp, MapPin } from 'lucide-react';
 import AboutTab from '../../components/CompanyProfile/AboutTab.jsx';
 import JobsTab from '../../components/CompanyProfile/JobsTab.jsx';
 import ReviewsTab from '../../components/CompanyProfile/ReviewsTab.jsx';
+import PostTab from "../../components/CompanyProfile/PostTab.jsx";
 
 export default function CompanyMainContent({
   activeTab,
   company,
   jobs,
+  posts,
   userReviews,
   newComment,
   setNewComment,
-  handleCommentSubmit
+  handleCommentSubmit,
+  onAddPost,
+  onJobPost
 }) {
   const formatDate = (dateString) => {
     const now = new Date();
@@ -45,7 +49,8 @@ export default function CompanyMainContent({
   return (
     <div className="lg:col-span-6 space-y-4">
       {activeTab === "About" && <AboutTab company={company} />}
-      {activeTab === "Jobs" && <JobsTab jobs={jobs} />}
+      {activeTab === "Posts" && <PostTab posts={posts} onAddPost={onAddPost} />}
+      {activeTab === "Jobs" && <JobsTab jobs={jobs} onJobPost={onJobPost} />}
       {activeTab === "Reviews" && (
         <ReviewsTab 
           userReviews={userReviews}

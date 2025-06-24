@@ -5,6 +5,9 @@ import (
 	"evoconnect/backend/model/domain"
 	"evoconnect/backend/model/web"
 	"time"
+	"fmt"
+	"github.com/google/uuid"
+	
 	// "evoconnect/backend/repository"
 )
 
@@ -59,41 +62,55 @@ func ToUserProfileResponse(user domain.User, isConnected ...bool) web.UserProfil
 	}
 
 	connected := false
+	var connectedRequest string = ""
+
 	if len(isConnected) > 0 {
 		connected = isConnected[0]
 	}
 
+	// Buat response dengan field baru
 	return web.UserProfileResponse{
-		ID:           user.Id,
-		Name:         user.Name,
-		Email:        user.Email,
-		Username:     user.Username,
-		Birthdate:    birthdate,
-		Gender:       user.Gender,
-		Location:     user.Location,
-		Organization: user.Organization,
-		Website:      user.Website,
-		Phone:        user.Phone,
-		Headline:     user.Headline,
-		About:        user.About,
-		Skills:       skillsInterface,
-		Socials:      socialsInterface,
-		Photo:        user.Photo,
-		IsVerified:   user.IsVerified,
-		IsConnected:  connected,
-		CreatedAt:    user.CreatedAt.Format("2006-01-02T15:04:05Z"),
-		UpdatedAt:    user.UpdatedAt.Format("2006-01-02T15:04:05Z"),
+		ID:                 user.Id,
+		Name:               user.Name,
+		Email:              user.Email,
+		Username:           user.Username,
+		Birthdate:          birthdate,
+		Gender:             user.Gender,
+		Location:           user.Location,
+		Organization:       user.Organization,
+		Website:            user.Website,
+		Phone:              user.Phone,
+		Headline:           user.Headline,
+		About:              user.About,
+		Skills:             skillsInterface,
+		Socials:            socialsInterface,
+		Photo:              user.Photo,
+		IsVerified:         user.IsVerified,
+		IsConnected:        connected,
+		IsConnectedRequest: connectedRequest,
+		CreatedAt:          user.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		UpdatedAt:          user.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 	}
 }
 
-func ToUserShortResponse(user domain.User, isConnected bool) web.UserShort {
+func ToUserShortResponse(user domain.User, isConnected bool, isConnectedRequest string) web.UserShort {
+	// Tambahkan log untuk debugging
+	fmt.Printf("ToUserShortResponse: user=%s, isConnected=%v, isConnectedRequest=%s\n",
+		user.Name, isConnected, isConnectedRequest)
+
+	// Jika isConnectedRequest kosong, berikan nilai default "none"
+	if isConnectedRequest == "" {
+		isConnectedRequest = "none"
+	}
+
 	return web.UserShort{
-		Id:          user.Id,
-		Name:        user.Name,
-		Username:    user.Username,
-		Photo:       &user.Photo,
-		Headline:    &user.Headline,
-		IsConnected: isConnected,
+		Id:                 user.Id,
+		Name:               user.Name,
+		Username:           user.Username,
+		Photo:              &user.Photo,
+		Headline:           &user.Headline,
+		IsConnected:        isConnected,
+		IsConnectedRequest: isConnectedRequest,
 	}
 }
 
@@ -110,22 +127,44 @@ func ToPostResponse(post domain.Post) web.PostResponse {
 		LikesCount:    post.LikesCount,
 		CommentsCount: post.CommentsCount,
 		GroupId:       post.GroupId,
+		IsPinned:      post.IsPinned,
+		PinnedAt:      post.PinnedAt,
+		Status:        post.Status,
+		IsReported:    post.IsReported,
 	}
 
-	if post.User != nil {
+	// Perbaikan: Pastikan user tidak nil dan memiliki data yang valid
+	if post.User != nil && post.User.Id != uuid.Nil {
+		photo := post.User.Photo
+		headline := post.User.Headline
+
 		postResponse.User = web.UserShort{
-			Id:          post.User.Id,
-			Name:        post.User.Name,
-			Username:    post.User.Username,
-			Photo:       &post.User.Photo,
-			Headline:    &post.User.Headline,
-			IsConnected: post.User.IsConnected,
+			Id:                 post.User.Id,
+			Name:               post.User.Name,
+			Username:           post.User.Username,
+			Photo:              &photo,
+			Headline:           &headline,
+			IsConnected:        post.User.IsConnected,
+			IsConnectedRequest: "",
 		}
 	}
 
 	if post.Group != nil {
-		group := ToGroupResponse(*post.Group)
-		postResponse.Group = &group
+		// Buat struct baru yang hanya berisi field yang kita inginkan
+		postResponse.Group = &web.GroupResponse{
+			Id:           post.Group.Id,
+			Name:         post.Group.Name,
+			Description:  post.Group.Description,
+			Rule:         post.Group.Rule,
+			PrivacyLevel: post.Group.PrivacyLevel,
+			InvitePolicy: post.Group.InvitePolicy,
+			PostApproval: post.Group.PostApproval,
+			CreatorId:    post.Group.CreatorId,
+		}
+
+		if post.Group.Image != nil && *post.Group.Image != "" {
+			postResponse.Group.Image = post.Group.Image
+		}
 	}
 
 	return postResponse
@@ -160,6 +199,17 @@ func ToCommentResponse(comment domain.Comment) web.CommentResponse {
 			Name:     comment.User.Name,
 			Username: comment.User.Username,
 			Photo:    comment.User.Photo,
+		}
+	}
+
+	// Tambahkan informasi ReplyTo jika ada ReplyToId
+	if comment.ReplyToId != nil && comment.ReplyTo != nil && comment.ReplyTo.User != nil {
+		commentResponse.ReplyTo = &web.ReplyToInfo{
+			Id:           *comment.ReplyToId,
+			Content:      comment.ReplyTo.Content,
+			Username:     comment.ReplyTo.User.Username,
+			Name:         comment.ReplyTo.User.Name,
+			ProfilePhoto: comment.ReplyTo.User.Photo,
 		}
 	}
 
@@ -244,9 +294,11 @@ func ToGroupResponse(group domain.Group) web.GroupResponse {
 		Image:        group.Image,
 		PrivacyLevel: group.PrivacyLevel,
 		InvitePolicy: group.InvitePolicy,
+		PostApproval: group.PostApproval,
 		CreatorId:    group.CreatorId,
 		CreatedAt:    group.CreatedAt,
 		UpdatedAt:    group.UpdatedAt,
+		IsJoined:     false, // Default value
 	}
 
 	if group.Creator != nil {
@@ -273,15 +325,6 @@ func ToUserBriefResponse(user domain.User, isConnected ...bool) web.UserBriefRes
 		IsConnected: connected, // Gunakan nilai dari parameter
 		CreatedAt:   user.CreatedAt.Format("2006-01-02T15:04:05Z"),
 		UpdatedAt:   user.UpdatedAt.Format("2006-01-02T15:04:05Z"),
-	}
-}
-
-func ToAdminResponseBrief(admin domain.Admin) web.AdminResponse {
-	return web.AdminResponse{
-		ID:        admin.Id,
-		Name:      admin.Name,
-		Email:     admin.Email,
-		CreatedAt: admin.CreatedAt,
 	}
 }
 
@@ -329,120 +372,65 @@ func ToGroupInvitationResponses(invitations []domain.GroupInvitation) []web.Grou
 	return responses
 }
 
-func ToCompanySubmissionResponse(submission domain.CompanySubmission) web.CompanySubmissionResponse {
-	response := web.CompanySubmissionResponse{
-		ID:              submission.Id,
-		UserId:          submission.UserId,
-		Name:            submission.Name,
-		LinkedinUrl:     submission.LinkedinUrl,
-		Website:         submission.Website,
-		Industry:        submission.Industry,
-		Size:            submission.Size,
-		Type:            submission.Type,
-		Logo:            submission.Logo,
-		Tagline:         submission.Tagline,
-		Status:          string(submission.Status),
-		RejectionReason: submission.RejectionReason,
-		ReviewedBy:      submission.ReviewedBy,
-		ReviewedAt:      submission.ReviewedAt,
-		CreatedAt:       submission.CreatedAt,
-		UpdatedAt:       submission.UpdatedAt,
-	}
-
-	if submission.User != nil {
-		userResponse := ToUserBriefResponse(*submission.User)
-		response.User = &userResponse
-	}
-
-	if submission.ReviewedByAdmin != nil {
-		adminResponse := ToAdminResponseBrief(*submission.ReviewedByAdmin)
-		response.ReviewedByAdmin = &adminResponse
-	}
-
-	return response
-}
-
-func ToCompanyResponse(company domain.Company) web.CompanyResponse {
-	response := web.CompanyResponse{
-		ID:          company.Id,
-		OwnerId:     company.OwnerId,
-		Name:        company.Name,
-		LinkedinUrl: company.LinkedinUrl,
-		Website:     company.Website,
-		Industry:    company.Industry,
-		Size:        company.Size,
-		Type:        company.Type,
-		Logo:        company.Logo,
-		Tagline:     company.Tagline,
-		Description: company.Description,
-		IsVerified:  company.IsVerified,
-		CreatedAt:   company.CreatedAt,
-		UpdatedAt:   company.UpdatedAt,
-	}
-
-	if company.Owner != nil {
-		ownerResponse := ToUserBriefResponse(*company.Owner)
-		response.Owner = &ownerResponse
-	}
-
-	return response
-}
-
-func ToAdminResponse(admin domain.Admin) web.AdminResponse {
-	return web.AdminResponse{
-		ID:        admin.Id,
-		Name:      admin.Name,
-		Email:     admin.Email,
-		CreatedAt: admin.CreatedAt,
-	}
-}
-
-func ToCompanyJoinRequestResponse(request domain.CompanyJoinRequest) web.CompanyJoinRequestResponse {
-	response := web.CompanyJoinRequestResponse{
-		Id:              request.Id,
-		UserId:          request.UserId,
-		CompanyId:       request.CompanyId,
-		Message:         request.Message,
-		Status:          request.Status,
-		RequestedAt:     request.RequestedAt,
-		ResponsedAt:     request.ResponsedAt,
-		ResponseBy:      request.ResponseBy,
-		RejectionReason: request.RejectionReason,
-		CreatedAt:       request.CreatedAt,
-		UpdatedAt:       request.UpdatedAt,
+func ToJoinRequestResponse(request domain.GroupJoinRequest) web.JoinRequestResponse {
+	response := web.JoinRequestResponse{
+		Id:        request.Id,
+		GroupId:   request.GroupId,
+		UserId:    request.UserId,
+		Status:    request.Status,
+		Message:   request.Message,
+		CreatedAt: request.CreatedAt,
+		UpdatedAt: request.UpdatedAt,
 	}
 
 	if request.User != nil {
-		response.User = &web.UserBriefResponse{
+		response.User = web.UserShort{
 			Id:       request.User.Id,
 			Name:     request.User.Name,
 			Username: request.User.Username,
-			Photo:    request.User.Photo,
-			Headline: request.User.Headline,
+		}
+
+		if request.User.Photo != "" {
+			photo := request.User.Photo
+			response.User.Photo = &photo
+		}
+
+		if request.User.Headline != "" {
+			headline := request.User.Headline
+			response.User.Headline = &headline
 		}
 	}
 
-	if request.Company != nil {
-		response.Company = &web.CompanyBriefResponse{
-			Id:       request.Company.Id,
-			Name:     request.Company.Name,
-			Logo:     &request.Company.Logo,
-			Industry: request.Company.Industry,
-			Website:  &request.Company.Website,
+	if request.Group != nil {
+		response.Group = &web.GroupResponse{
+			Id:           request.Group.Id,
+			Name:         request.Group.Name,
+			Description:  request.Group.Description,
+			PrivacyLevel: request.Group.PrivacyLevel,
 		}
-	}
 
-	if request.Responder != nil {
-		response.Responder = &web.UserBriefResponse{
-			Id:       request.Responder.Id,
-			Name:     request.Responder.Name,
-			Username: request.Responder.Username,
-			Photo:    request.Responder.Photo,
-			Headline: request.Responder.Headline,
+		if request.Group.CreatorId != uuid.Nil {
+			response.Group.CreatorId = request.Group.CreatorId
 		}
 	}
 
 	return response
+}
+
+func ToNotificationResponse(notification domain.Notification) web.NotificationResponse {
+	return web.NotificationResponse{
+		Id:            notification.Id,
+		Category:      string(notification.Category),
+		Type:          string(notification.Type),
+		Title:         notification.Title,
+		Message:       notification.Message,
+		Status:        string(notification.Status),
+		ReferenceId:   notification.ReferenceId,
+		ReferenceType: notification.ReferenceType,
+		CreatedAt:     notification.CreatedAt,
+		UpdatedAt:     notification.UpdatedAt,
+		Actor:         nil, // Untuk sementara set nil, nanti bisa diisi jika diperlukan
+	}
 }
 
 func ToCompanyFollowerResponse(follower domain.CompanyFollower) web.CompanyFollowerResponse {
@@ -633,6 +621,7 @@ func ToJobVacancyResponse(jobVacancy domain.JobVacancy) web.JobVacancyResponse {
 		ExternalLink:        jobVacancy.ExternalLink,
 		CreatedAt:           jobVacancy.CreatedAt,
 		UpdatedAt:           jobVacancy.UpdatedAt,
+    TakenDownAt:         jobVacancy.TakenDownAt,
 		Company:             companyResponse,
 		Creator:             creatorResponse,
 	}
@@ -662,10 +651,108 @@ func ToSavedJobResponse(savedJob domain.SavedJob) web.SavedJobResponse {
 	return response
 }
 
+func ToAdminResponse(admin domain.Admin) web.AdminResponse {
+	return web.AdminResponse{
+		ID:        admin.Id,
+		Name:      admin.Name,
+		Email:     admin.Email,
+		CreatedAt: admin.CreatedAt,
+	}
+}
+
+func ToCompanyJoinRequestResponse(request domain.CompanyJoinRequest) web.CompanyJoinRequestResponse {
+	response := web.CompanyJoinRequestResponse{
+		Id:              request.Id,
+		UserId:          request.UserId,
+		CompanyId:       request.CompanyId,
+		Message:         request.Message,
+		Status:          request.Status,
+		RequestedAt:     request.RequestedAt,
+		ResponsedAt:     request.ResponsedAt,
+		ResponseBy:      request.ResponseBy,
+		RejectionReason: request.RejectionReason,
+		CreatedAt:       request.CreatedAt,
+		UpdatedAt:       request.UpdatedAt,
+	}
+
+	if request.User != nil {
+		response.User = &web.UserBriefResponse{
+			Id:       request.User.Id,
+			Name:     request.User.Name,
+			Username: request.User.Username,
+			Photo:    request.User.Photo,
+			Headline: request.User.Headline,
+		}
+	}
+
+	if request.Company != nil {
+		response.Company = &web.CompanyBriefResponse{
+			Id:       request.Company.Id,
+			Name:     request.Company.Name,
+			Logo:     &request.Company.Logo,
+			Industry: request.Company.Industry,
+			Website:  &request.Company.Website,
+		}
+	}
+
+	if request.Responder != nil {
+		response.Responder = &web.UserBriefResponse{
+			Id:       request.Responder.Id,
+			Name:     request.Responder.Name,
+			Username: request.Responder.Username,
+			Photo:    request.Responder.Photo,
+			Headline: request.Responder.Headline,
+		}
+	}
+
+	return response
+}
+
 func ToSavedJobResponses(savedJobs []domain.SavedJob) []web.SavedJobResponse {
 	var savedJobResponses []web.SavedJobResponse
 	for _, savedJob := range savedJobs {
 		savedJobResponses = append(savedJobResponses, ToSavedJobResponse(savedJob))
 	}
 	return savedJobResponses
+}
+func ToCompanySubmissionResponse(submission domain.CompanySubmission) web.CompanySubmissionResponse {
+	response := web.CompanySubmissionResponse{
+		ID:              submission.Id,
+		UserId:          submission.UserId,
+		Name:            submission.Name,
+		LinkedinUrl:     submission.LinkedinUrl,
+		Website:         submission.Website,
+		Industry:        submission.Industry,
+		Size:            submission.Size,
+		Type:            submission.Type,
+		Logo:            submission.Logo,
+		Tagline:         submission.Tagline,
+		Status:          string(submission.Status),
+		RejectionReason: submission.RejectionReason,
+		ReviewedBy:      submission.ReviewedBy,
+		ReviewedAt:      submission.ReviewedAt,
+		CreatedAt:       submission.CreatedAt,
+		UpdatedAt:       submission.UpdatedAt,
+	}
+
+	if submission.User != nil {
+		userResponse := ToUserBriefResponse(*submission.User)
+		response.User = &userResponse
+	}
+
+	if submission.ReviewedByAdmin != nil {
+		adminResponse := ToAdminResponseBrief(*submission.ReviewedByAdmin)
+		response.ReviewedByAdmin = &adminResponse
+	}
+
+	return response
+}
+
+func ToAdminResponseBrief(admin domain.Admin) web.AdminResponse {
+	return web.AdminResponse{
+		ID:        admin.Id,
+		Name:      admin.Name,
+		Email:     admin.Email,
+		CreatedAt: admin.CreatedAt,
+	}
 }

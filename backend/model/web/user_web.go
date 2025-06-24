@@ -30,25 +30,26 @@ type SocialMediaRequest struct {
 
 // Response models
 type UserProfileResponse struct {
-	ID           uuid.UUID   `json:"id"`
-	Name         string      `json:"name"`
-	Email        string      `json:"email"`
-	Username     string      `json:"username"`
-	Birthdate    string      `json:"birthdate"`
-	Gender       string      `json:"gender"`
-	Location     string      `json:"location"`
-	Organization string      `json:"organization"`
-	Website      string      `json:"website"`
-	Phone        string      `json:"phone"`
-	Headline     string      `json:"headline"`
-	About        string      `json:"about"`
-	Skills       interface{} `json:"skills"`
-	Socials      interface{} `json:"socials"`
-	Photo        string      `json:"photo"`
-	IsVerified   bool        `json:"is_verified"`
-	CreatedAt    string      `json:"created_at"`
-	UpdatedAt    string      `json:"updated_at"`
-	IsConnected  bool        `json:"is_connected"`
+    ID                uuid.UUID   `json:"id"`
+    Name              string      `json:"name"`
+    Email             string      `json:"email"`
+    Username          string      `json:"username"`
+    Birthdate         string      `json:"birthdate"`
+    Gender            string      `json:"gender"`
+    Location          string      `json:"location"`
+    Organization      string      `json:"organization"`
+    Website           string      `json:"website"`
+    Phone             string      `json:"phone"`
+    Headline          string      `json:"headline"`
+    About             string      `json:"about"`
+    Skills            interface{} `json:"skills"`
+    Socials           interface{} `json:"socials"`
+    Photo             string      `json:"photo"`
+    IsVerified        bool        `json:"is_verified"`
+    CreatedAt         string      `json:"created_at"`
+    UpdatedAt         string      `json:"updated_at"`
+    IsConnected       bool        `json:"is_connected"`
+    IsConnectedRequest string `json:"is_connected_request"`
 }
 
 type UserMinimal struct {

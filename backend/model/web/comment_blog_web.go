@@ -20,8 +20,19 @@ type CommentBlogResponse struct {
     ParentId     *uuid.UUID            `json:"parent_id,omitempty"`
     User         CommentBlogUserInfo   `json:"user"`
     Replies      []CommentBlogResponse `json:"replies,omitempty"`
-    RepliesCount int                   `json:"replies_count"` // Tambahkan field ini
+    RepliesCount int                   `json:"replies_count"`
+    ReplyTo      *ReplyToInfo          `json:"reply_to,omitempty"` // Informasi tentang komentar yang dibalas
 }
+
+// Informasi tentang komentar yang dibalas
+type ReplyToInfoBlog struct {
+    Id          uuid.UUID `json:"reply_to_id"`
+    Content     string    `json:"content"`
+    Username    string    `json:"username"`
+    Name        string    `json:"name"`
+    ProfilePhoto string    `json:"profile_photo"`
+}
+
 type CommentBlogUserInfo struct {
 	Id       uuid.UUID `json:"id"`
 	Name     string    `json:"name"`
