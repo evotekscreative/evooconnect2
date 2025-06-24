@@ -1,6 +1,6 @@
-DROP TABLE IF EXISTS failed_attempts CASCADE;
-
--- Create failed_attempts table if you haven't already
+-- SQLBook: Code
+-- +goose Up
+-- +goose StatementBegin
 CREATE TABLE  failed_attempts (
     id SERIAL PRIMARY KEY,
     ip_address VARCHAR(255) NOT NULL,
@@ -11,4 +11,11 @@ CREATE TABLE  failed_attempts (
 
 -- Add index for faster lookups
 CREATE INDEX  idx_failed_attempts_ip_action 
-ON failed_attempts(ip_address, action_type, attempt_time);
+ON failed_attempts(ip_address, action_type, attempt_time); 
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+DROP TABLE IF EXISTS failed_attempts CASCADE;
+-- +goose StatementEnd

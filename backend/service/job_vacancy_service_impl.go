@@ -16,77 +16,77 @@ import (
 )
 
 type JobVacancyServiceImpl struct {
-	JobVacancyRepository repository.JobVacancyRepository
-	CompanyRepository    repository.CompanyRepository
-	UserRepository       repository.UserRepository
-	DB                   *sql.DB
-	Validate             *validator.Validate
+	SavedJobRepository       repository.SavedJobRepository
+	JobVacancyRepository     repository.JobVacancyRepository
+	JobApplicationRepository repository.JobApplicationRepository
+	CompanyRepository        repository.CompanyRepository
+	UserRepository           repository.UserRepository
+	DB                       *sql.DB
+	Validate                 *validator.Validate
 }
 
-func NewJobVacancyService(jobVacancyRepository repository.JobVacancyRepository, companyRepository repository.CompanyRepository, userRepository repository.UserRepository, db *sql.DB, validate *validator.Validate) JobVacancyService {
+func NewJobVacancyService(
+	jobVacancyRepository repository.JobVacancyRepository,
+	companyRepository repository.CompanyRepository,
+	userRepository repository.UserRepository,
+	savedJobRepository repository.SavedJobRepository,
+	jobApplicationRepository repository.JobApplicationRepository,
+	db *sql.DB,
+	validate *validator.Validate) JobVacancyService {
 	return &JobVacancyServiceImpl{
-		JobVacancyRepository: jobVacancyRepository,
-		CompanyRepository:    companyRepository,
-		UserRepository:       userRepository,
-		DB:                   db,
-		Validate:             validate,
+		SavedJobRepository:       savedJobRepository,
+		JobVacancyRepository:     jobVacancyRepository,
+		JobApplicationRepository: jobApplicationRepository,
+		CompanyRepository:        companyRepository,
+		UserRepository:           userRepository,
+		DB:                       db,
+		Validate:                 validate,
 	}
 }
 
-func (service *JobVacancyServiceImpl) Create(ctx context.Context, request web.CreateJobVacancyRequest, creatorId uuid.UUID) web.JobVacancyResponse {
+func (service *JobVacancyServiceImpl) Create(ctx context.Context, request web.CreateJobVacancyRequest, companyId, creatorId uuid.UUID) web.JobVacancyResponse {
 	err := service.Validate.Struct(request)
 	helper.PanicIfError(err)
-
-	// Validate type_apply and external_link combination
-	if request.TypeApply == "external_apply" {
-		if request.ExternalLink == nil || *request.ExternalLink == "" {
-			panic(exception.NewBadRequestError("External link is required when type_apply is external_apply"))
-		}
-	}
-
-	// Validate salary range
-	if request.MinSalary != nil && request.MaxSalary != nil && *request.MinSalary > *request.MaxSalary {
-		panic(exception.NewBadRequestError("Min salary cannot be greater than max salary"))
-	}
 
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
+	// Validate type_apply and external_link combination
+	if request.TypeApply == "external_apply" && (request.ExternalLink == nil || *request.ExternalLink == "") {
+		panic(exception.NewBadRequestError("External link is required when type_apply is external_apply"))
+	}
+
+	// Validate salary range
+	if request.MinSalary != nil && request.MaxSalary != nil && *request.MinSalary > *request.MaxSalary {
+		panic(exception.NewBadRequestError("Minimum salary cannot be greater than maximum salary"))
+	}
+
 	// Verify company exists and user has permission
-	company, err := service.CompanyRepository.FindById(ctx, tx, uuid.MustParse(request.CompanyId.String()))
+	_, err = service.CompanyRepository.FindById(ctx, tx, companyId)
 	if err != nil {
 		panic(exception.NewNotFoundError("Company not found"))
 	}
 
-	// Check if user is owner or member of the company
-	// For now, we'll assume the creator is authorized
-	_ = company
-
 	// Parse application deadline if provided
 	var applicationDeadline *time.Time
-	if request.ApplicationDeadline != nil && *request.ApplicationDeadline != "" {
+	if request.ApplicationDeadline != nil {
 		parsedTime, err := time.Parse("2006-01-02T15:04:05Z", *request.ApplicationDeadline)
 		if err != nil {
-			// Try alternative format
-			parsedTime, err = time.Parse("2006-01-02", *request.ApplicationDeadline)
-			if err != nil {
-				panic(exception.NewBadRequestError("Invalid date format for application deadline"))
-			}
+			panic(exception.NewBadRequestError("Invalid application deadline format. Use: 2006-01-02T15:04:05Z"))
 		}
 		applicationDeadline = &parsedTime
 	}
 
 	// Create job vacancy domain
 	jobVacancy := domain.JobVacancy{
-		Id:                  uuid.New(),
-		CompanyId:           uuid.MustParse(request.CompanyId.String()),
+		CompanyId:           companyId,
 		CreatorId:           &creatorId,
 		Title:               request.Title,
 		Description:         request.Description,
 		Requirements:        request.Requirements,
 		Location:            request.Location,
-		JobType:             domain.JobType(request.JobType),
+		JobType:             request.JobType,
 		ExperienceLevel:     domain.ExperienceLevel(request.ExperienceLevel),
 		MinSalary:           request.MinSalary,
 		MaxSalary:           request.MaxSalary,
@@ -95,40 +95,38 @@ func (service *JobVacancyServiceImpl) Create(ctx context.Context, request web.Cr
 		Benefits:            request.Benefits,
 		WorkType:            domain.WorkType(request.WorkType),
 		ApplicationDeadline: applicationDeadline,
-		Status:              domain.JobVacancyStatusDraft,
+		Status:              domain.JobVacancyStatusActive,
 		TypeApply:           domain.JobApplyType(request.TypeApply),
 		ExternalLink:        request.ExternalLink,
 	}
 
 	// Create job vacancy
-	createdJobVacancy := service.JobVacancyRepository.Create(ctx, tx, jobVacancy)
+	jobVacancy = service.JobVacancyRepository.Create(ctx, tx, jobVacancy)
 
 	// Fetch complete data with relations
-	completeJobVacancy, err := service.JobVacancyRepository.FindById(ctx, tx, createdJobVacancy.Id)
+	jobVacancy, err = service.JobVacancyRepository.FindById(ctx, tx, jobVacancy.Id)
 	helper.PanicIfError(err)
 
-	return toJobVacancyResponse(completeJobVacancy)
+	return service.toJobVacancyResponse(ctx, tx, jobVacancy, &creatorId)
 }
 
 func (service *JobVacancyServiceImpl) Update(ctx context.Context, request web.UpdateJobVacancyRequest, jobVacancyId uuid.UUID, userId uuid.UUID) web.JobVacancyResponse {
 	err := service.Validate.Struct(request)
 	helper.PanicIfError(err)
 
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
 	// Validate type_apply and external_link combination
-	if request.TypeApply == "external_apply" {
-		if request.ExternalLink == nil || *request.ExternalLink == "" {
-			panic(exception.NewBadRequestError("External link is required when type_apply is external_apply"))
-		}
+	if request.TypeApply == "external_apply" && (request.ExternalLink == nil || *request.ExternalLink == "") {
+		panic(exception.NewBadRequestError("External link is required when type_apply is external_apply"))
 	}
 
 	// Validate salary range
 	if request.MinSalary != nil && request.MaxSalary != nil && *request.MinSalary > *request.MaxSalary {
-		panic(exception.NewBadRequestError("Min salary cannot be greater than max salary"))
+		panic(exception.NewBadRequestError("Minimum salary cannot be greater than maximum salary"))
 	}
-
-	tx, err := service.DB.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
 
 	// Check if job vacancy exists
 	existingJobVacancy, err := service.JobVacancyRepository.FindById(ctx, tx, jobVacancyId)
@@ -138,57 +136,45 @@ func (service *JobVacancyServiceImpl) Update(ctx context.Context, request web.Up
 
 	// Check if user has permission to update (creator or company owner/admin)
 	if existingJobVacancy.CreatorId == nil || *existingJobVacancy.CreatorId != userId {
-		// Additional check: verify if user is company owner/admin
-		// For now, we'll just check creator
 		panic(exception.NewForbiddenError("You don't have permission to update this job vacancy"))
 	}
 
 	// Parse application deadline if provided
 	var applicationDeadline *time.Time
-	if request.ApplicationDeadline != nil && *request.ApplicationDeadline != "" {
+	if request.ApplicationDeadline != nil {
 		parsedTime, err := time.Parse("2006-01-02T15:04:05Z", *request.ApplicationDeadline)
 		if err != nil {
-			// Try alternative format
-			parsedTime, err = time.Parse("2006-01-02", *request.ApplicationDeadline)
-			if err != nil {
-				panic(exception.NewBadRequestError("Invalid date format for application deadline"))
-			}
+			panic(exception.NewBadRequestError("Invalid application deadline format. Use: 2006-01-02T15:04:05Z"))
 		}
 		applicationDeadline = &parsedTime
 	}
 
 	// Update job vacancy
-	updatedJobVacancy := domain.JobVacancy{
-		Id:                  jobVacancyId,
-		CompanyId:           existingJobVacancy.CompanyId,
-		CreatorId:           existingJobVacancy.CreatorId,
-		Title:               request.Title,
-		Description:         request.Description,
-		Requirements:        request.Requirements,
-		Location:            request.Location,
-		JobType:             domain.JobType(request.JobType),
-		ExperienceLevel:     domain.ExperienceLevel(request.ExperienceLevel),
-		MinSalary:           request.MinSalary,
-		MaxSalary:           request.MaxSalary,
-		Currency:            request.Currency,
-		Skills:              domain.SkillsArray(request.Skills),
-		Benefits:            request.Benefits,
-		WorkType:            domain.WorkType(request.WorkType),
-		ApplicationDeadline: applicationDeadline,
-		Status:              domain.JobVacancyStatus(request.Status),
-		TypeApply:           domain.JobApplyType(request.TypeApply),
-		ExternalLink:        request.ExternalLink,
-		CreatedAt:           existingJobVacancy.CreatedAt,
-	}
+	existingJobVacancy.Title = request.Title
+	existingJobVacancy.Description = request.Description
+	existingJobVacancy.Requirements = request.Requirements
+	existingJobVacancy.Location = request.Location
+	existingJobVacancy.JobType = request.JobType
+	existingJobVacancy.ExperienceLevel = domain.ExperienceLevel(request.ExperienceLevel)
+	existingJobVacancy.MinSalary = request.MinSalary
+	existingJobVacancy.MaxSalary = request.MaxSalary
+	existingJobVacancy.Currency = request.Currency
+	existingJobVacancy.Skills = domain.SkillsArray(request.Skills)
+	existingJobVacancy.Benefits = request.Benefits
+	existingJobVacancy.WorkType = domain.WorkType(request.WorkType)
+	existingJobVacancy.ApplicationDeadline = applicationDeadline
+	existingJobVacancy.Status = domain.JobVacancyStatus(request.Status)
+	existingJobVacancy.TypeApply = domain.JobApplyType(request.TypeApply)
+	existingJobVacancy.ExternalLink = request.ExternalLink
 
 	// Update in repository
-	service.JobVacancyRepository.Update(ctx, tx, updatedJobVacancy)
+	updatedJobVacancy := service.JobVacancyRepository.Update(ctx, tx, existingJobVacancy)
 
 	// Fetch updated data with relations
-	completeJobVacancy, err := service.JobVacancyRepository.FindById(ctx, tx, jobVacancyId)
+	updatedJobVacancy, err = service.JobVacancyRepository.FindById(ctx, tx, updatedJobVacancy.Id)
 	helper.PanicIfError(err)
 
-	return toJobVacancyResponse(completeJobVacancy)
+	return service.toJobVacancyResponse(ctx, tx, updatedJobVacancy, &userId)
 }
 
 func (service *JobVacancyServiceImpl) Delete(ctx context.Context, jobVacancyId uuid.UUID, userId uuid.UUID) error {
@@ -209,14 +195,12 @@ func (service *JobVacancyServiceImpl) Delete(ctx context.Context, jobVacancyId u
 
 	// Delete job vacancy
 	err = service.JobVacancyRepository.Delete(ctx, tx, jobVacancyId)
-	if err != nil {
-		panic(exception.NewInternalServerError("Failed to delete job vacancy"))
-	}
+	helper.PanicIfError(err)
 
 	return nil
 }
 
-func (service *JobVacancyServiceImpl) FindById(ctx context.Context, jobVacancyId uuid.UUID) web.JobVacancyResponse {
+func (service *JobVacancyServiceImpl) FindById(ctx context.Context, jobVacancyId uuid.UUID, userId *uuid.UUID) web.JobVacancyResponse {
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
@@ -226,118 +210,158 @@ func (service *JobVacancyServiceImpl) FindById(ctx context.Context, jobVacancyId
 		panic(exception.NewNotFoundError("Job vacancy not found"))
 	}
 
-	return toJobVacancyResponse(jobVacancy)
+	return service.toJobVacancyResponse(ctx, tx, jobVacancy, userId)
 }
 
-func (service *JobVacancyServiceImpl) FindByCompanyId(ctx context.Context, companyId uuid.UUID, page, pageSize int) web.JobVacancyListResponse {
+func (service *JobVacancyServiceImpl) FindByCompanyId(ctx context.Context, companyId uuid.UUID, page, pageSize int, userId *uuid.UUID) web.JobVacancyListResponse {
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
+
+	// Set default pagination values
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 || pageSize > 100 {
+		pageSize = 10
+	}
 
 	// Calculate offset
 	offset := (page - 1) * pageSize
 
 	// Get job vacancies
 	jobVacancies := service.JobVacancyRepository.FindByCompanyId(ctx, tx, companyId, pageSize, offset)
+
+	// Get total count
 	totalCount := service.JobVacancyRepository.CountByCompanyId(ctx, tx, companyId)
 
-	// Convert to response
-	var jobResponses []web.JobVacancyResponse
-	for _, job := range jobVacancies {
-		jobResponses = append(jobResponses, toJobVacancyResponse(job))
-	}
+	// Calculate total pages
+	totalPages := int(math.Ceil(float64(totalCount) / float64(pageSize)))
+
+	// Convert to response with user-specific data
+	jobVacancyResponses := service.toJobVacancyResponses(ctx, tx, jobVacancies, userId)
 
 	return web.JobVacancyListResponse{
-		Jobs:       jobResponses,
+		Jobs:       jobVacancyResponses,
 		TotalCount: totalCount,
 		Page:       page,
 		PageSize:   pageSize,
-		TotalPages: int(math.Ceil(float64(totalCount) / float64(pageSize))),
+		TotalPages: totalPages,
 	}
 }
 
-func (service *JobVacancyServiceImpl) FindByCreatorId(ctx context.Context, creatorId uuid.UUID, page, pageSize int) web.JobVacancyListResponse {
+func (service *JobVacancyServiceImpl) FindByCreatorId(ctx context.Context, creatorId uuid.UUID, page, pageSize int, userId *uuid.UUID) web.JobVacancyListResponse {
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
+	// Set default pagination values
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 || pageSize > 100 {
+		pageSize = 10
+	}
+
 	// Calculate offset
 	offset := (page - 1) * pageSize
 
-	// Get job vacancies
+	// Get job vacancies by creator
 	jobVacancies := service.JobVacancyRepository.FindByCreatorId(ctx, tx, creatorId, pageSize, offset)
+
+	// Get total count
 	totalCount := service.JobVacancyRepository.CountByCreatorId(ctx, tx, creatorId)
 
+	// Calculate total pages
+	totalPages := int(math.Ceil(float64(totalCount) / float64(pageSize)))
+
 	// Convert to response
-	var jobResponses []web.JobVacancyResponse
-	for _, job := range jobVacancies {
-		jobResponses = append(jobResponses, toJobVacancyResponse(job))
-	}
+	jobVacancyResponses := service.toJobVacancyResponses(ctx, tx, jobVacancies, userId)
 
 	return web.JobVacancyListResponse{
-		Jobs:       jobResponses,
+		Jobs:       jobVacancyResponses,
 		TotalCount: totalCount,
 		Page:       page,
 		PageSize:   pageSize,
-		TotalPages: int(math.Ceil(float64(totalCount) / float64(pageSize))),
+		TotalPages: totalPages,
 	}
 }
 
-func (service *JobVacancyServiceImpl) FindAll(ctx context.Context, page, pageSize int) web.JobVacancyListResponse {
+func (service *JobVacancyServiceImpl) FindAll(ctx context.Context, page, pageSize int, userId *uuid.UUID) web.JobVacancyListResponse {
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
+
+	// Set default pagination values
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 || pageSize > 100 {
+		pageSize = 10
+	}
 
 	// Calculate offset
 	offset := (page - 1) * pageSize
 
-	// Get job vacancies
+	// Get all job vacancies
 	jobVacancies := service.JobVacancyRepository.FindAll(ctx, tx, pageSize, offset)
+
+	// Get total count
 	totalCount := service.JobVacancyRepository.CountAll(ctx, tx)
 
+	// Calculate total pages
+	totalPages := int(math.Ceil(float64(totalCount) / float64(pageSize)))
+
 	// Convert to response
-	var jobResponses []web.JobVacancyResponse
-	for _, job := range jobVacancies {
-		jobResponses = append(jobResponses, toJobVacancyResponse(job))
-	}
+	jobVacancyResponses := service.toJobVacancyResponses(ctx, tx, jobVacancies, userId)
 
 	return web.JobVacancyListResponse{
-		Jobs:       jobResponses,
+		Jobs:       jobVacancyResponses,
 		TotalCount: totalCount,
 		Page:       page,
 		PageSize:   pageSize,
-		TotalPages: int(math.Ceil(float64(totalCount) / float64(pageSize))),
+		TotalPages: totalPages,
 	}
 }
 
-func (service *JobVacancyServiceImpl) FindActiveJobs(ctx context.Context, page, pageSize int) web.JobVacancyListResponse {
+func (service *JobVacancyServiceImpl) FindActiveJobs(ctx context.Context, page, pageSize int, userId *uuid.UUID) web.JobVacancyListResponse {
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
+
+	// Set default pagination values
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 || pageSize > 100 {
+		pageSize = 10
+	}
 
 	// Calculate offset
 	offset := (page - 1) * pageSize
 
 	// Get active job vacancies
 	jobVacancies := service.JobVacancyRepository.FindActiveJobs(ctx, tx, pageSize, offset)
+
+	// Get total count
 	totalCount := service.JobVacancyRepository.CountActiveJobs(ctx, tx)
 
-	// Convert to response
-	var jobResponses []web.JobVacancyResponse
-	for _, job := range jobVacancies {
-		jobResponses = append(jobResponses, toJobVacancyResponse(job))
-	}
+	// Calculate total pages
+	totalPages := int(math.Ceil(float64(totalCount) / float64(pageSize)))
+
+	// Convert to response with user-specific data
+	jobVacancyResponses := service.toJobVacancyResponses(ctx, tx, jobVacancies, userId)
 
 	return web.JobVacancyListResponse{
-		Jobs:       jobResponses,
+		Jobs:       jobVacancyResponses,
 		TotalCount: totalCount,
 		Page:       page,
 		PageSize:   pageSize,
-		TotalPages: int(math.Ceil(float64(totalCount) / float64(pageSize))),
+		TotalPages: totalPages,
 	}
 }
 
-func (service *JobVacancyServiceImpl) SearchJobs(ctx context.Context, request web.JobVacancySearchRequest) web.JobVacancyListResponse {
+func (service *JobVacancyServiceImpl) SearchJobs(ctx context.Context, request web.JobVacancySearchRequest, userId *uuid.UUID) web.JobVacancyListResponse {
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
@@ -346,7 +370,7 @@ func (service *JobVacancyServiceImpl) SearchJobs(ctx context.Context, request we
 	if request.Page <= 0 {
 		request.Page = 1
 	}
-	if request.PageSize <= 0 {
+	if request.PageSize <= 0 || request.PageSize > 100 {
 		request.PageSize = 10
 	}
 
@@ -355,20 +379,19 @@ func (service *JobVacancyServiceImpl) SearchJobs(ctx context.Context, request we
 
 	// Build filters map
 	filters := make(map[string]interface{})
-
-	if request.Query != "" {
-		filters["query"] = request.Query
+	if request.Search != "" {
+		filters["search"] = request.Search
 	}
 	if request.Location != "" {
 		filters["location"] = request.Location
 	}
-	if len(request.JobType) > 0 {
+	if request.JobType != "" {
 		filters["job_type"] = request.JobType
 	}
-	if len(request.ExperienceLevel) > 0 {
+	if request.ExperienceLevel != "" {
 		filters["experience_level"] = request.ExperienceLevel
 	}
-	if len(request.WorkType) > 0 {
+	if request.WorkType != "" {
 		filters["work_type"] = request.WorkType
 	}
 	if request.MinSalary != nil {
@@ -377,68 +400,55 @@ func (service *JobVacancyServiceImpl) SearchJobs(ctx context.Context, request we
 	if request.MaxSalary != nil {
 		filters["max_salary"] = *request.MaxSalary
 	}
-	if request.CompanyId != nil && *request.CompanyId != "" {
-		filters["company_id"] = *request.CompanyId
+	if len(request.Skills) > 0 {
+		filters["skills"] = request.Skills
 	}
 
 	// Search job vacancies
 	jobVacancies := service.JobVacancyRepository.SearchJobs(ctx, tx, filters, request.PageSize, offset)
+
+	// Get total count
 	totalCount := service.JobVacancyRepository.CountSearchResults(ctx, tx, filters)
 
-	// Convert to response
-	var jobResponses []web.JobVacancyResponse
-	for _, job := range jobVacancies {
-		jobResponses = append(jobResponses, toJobVacancyResponse(job))
-	}
+	// Calculate total pages
+	totalPages := int(math.Ceil(float64(totalCount) / float64(request.PageSize)))
+
+	// Convert to response with user-specific data
+	jobVacancyResponses := service.toJobVacancyResponses(ctx, tx, jobVacancies, userId)
 
 	return web.JobVacancyListResponse{
-		Jobs:       jobResponses,
+		Jobs:       jobVacancyResponses,
 		TotalCount: totalCount,
 		Page:       request.Page,
 		PageSize:   request.PageSize,
-		TotalPages: int(math.Ceil(float64(totalCount) / float64(request.PageSize))),
+		TotalPages: totalPages,
 	}
 }
 
 func (service *JobVacancyServiceImpl) UpdateStatus(ctx context.Context, jobVacancyId uuid.UUID, status string, userId uuid.UUID) error {
-	// Validate status
-	validStatuses := []string{"draft", "active", "closed", "archived"}
-	isValidStatus := false
-	for _, validStatus := range validStatuses {
-		if status == validStatus {
-			isValidStatus = true
-			break
-		}
-	}
-	if !isValidStatus {
-		panic(exception.NewBadRequestError("Invalid status"))
-	}
-
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
-	// Check if job vacancy exists and user has permission
+	// Check if job vacancy exists
 	existingJobVacancy, err := service.JobVacancyRepository.FindById(ctx, tx, jobVacancyId)
 	if err != nil {
 		panic(exception.NewNotFoundError("Job vacancy not found"))
 	}
 
-	// Check permission
+	// Check if user has permission to update
 	if existingJobVacancy.CreatorId == nil || *existingJobVacancy.CreatorId != userId {
 		panic(exception.NewForbiddenError("You don't have permission to update this job vacancy"))
 	}
 
 	// Update status
 	err = service.JobVacancyRepository.UpdateStatus(ctx, tx, jobVacancyId, domain.JobVacancyStatus(status))
-	if err != nil {
-		panic(exception.NewInternalServerError("Failed to update job vacancy status"))
-	}
+	helper.PanicIfError(err)
 
 	return nil
 }
 
-func (service *JobVacancyServiceImpl) GetPublicJobDetail(ctx context.Context, jobVacancyId uuid.UUID) web.JobVacancyPublicResponse {
+func (service *JobVacancyServiceImpl) GetPublicJobDetail(ctx context.Context, jobVacancyId uuid.UUID, userId *uuid.UUID) web.JobVacancyPublicResponse {
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
@@ -448,24 +458,99 @@ func (service *JobVacancyServiceImpl) GetPublicJobDetail(ctx context.Context, jo
 		panic(exception.NewNotFoundError("Job vacancy not found"))
 	}
 
-	// Only return active jobs for public view
-	if jobVacancy.Status != domain.JobVacancyStatusActive {
-		panic(exception.NewNotFoundError("Job vacancy not available"))
-	}
-
-	return toJobVacancyPublicResponse(jobVacancy)
-}
-
-// Helper functions
-func toJobVacancyResponse(jobVacancy domain.JobVacancy) web.JobVacancyResponse {
-	response := web.JobVacancyResponse{
+	response := web.JobVacancyPublicResponse{
 		Id:                  jobVacancy.Id.String(),
 		CompanyId:           jobVacancy.CompanyId.String(),
 		Title:               jobVacancy.Title,
 		Description:         jobVacancy.Description,
 		Requirements:        jobVacancy.Requirements,
 		Location:            jobVacancy.Location,
-		JobType:             string(jobVacancy.JobType),
+		JobType:             jobVacancy.JobType,
+		ExperienceLevel:     string(jobVacancy.ExperienceLevel),
+		MinSalary:           jobVacancy.MinSalary,
+		MaxSalary:           jobVacancy.MaxSalary,
+		Currency:            jobVacancy.Currency,
+		Skills:              []string(jobVacancy.Skills),
+		Benefits:            jobVacancy.Benefits,
+		WorkType:            string(jobVacancy.WorkType),
+		ApplicationDeadline: jobVacancy.ApplicationDeadline,
+		TypeApply:           string(jobVacancy.TypeApply),
+		ExternalLink:        jobVacancy.ExternalLink,
+		HasApplied:          false,
+		IsSaved:             false,
+		CreatedAt:           jobVacancy.CreatedAt,
+	}
+
+	// Set company info if available
+	if jobVacancy.Company != nil {
+		response.Company = &web.CompanyBasicResponse{
+			Id:   jobVacancy.Company.Id.String(),
+			Name: jobVacancy.Company.Name,
+			Logo: &jobVacancy.Company.Logo,
+		}
+	}
+
+	// Set user-specific data if userId is provided
+	if userId != nil {
+		// Check if user has applied
+		response.HasApplied = service.JobApplicationRepository.HasApplied(ctx, tx, jobVacancy.Id, *userId)
+
+		// Check if user has saved this job
+		response.IsSaved = service.SavedJobRepository.IsJobSaved(ctx, tx, *userId, jobVacancy.Id)
+	}
+
+	return response
+}
+
+// FindByCompanyIdWithStatus
+func (service *JobVacancyServiceImpl) FindByCompanyIdWithStatus(ctx context.Context, companyId uuid.UUID, status string, page, pageSize int, userId *uuid.UUID) web.JobVacancyListResponse {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Set default pagination values
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 || pageSize > 100 {
+		pageSize = 10
+	}
+
+	// Calculate offset
+	offset := (page - 1) * pageSize
+
+	// Get job vacancies
+	jobVacancies := service.JobVacancyRepository.FindByCompanyIdWithStatus(ctx, tx, companyId, domain.JobVacancyStatus(status), pageSize, offset)
+
+	// Get total count
+	totalCount := service.JobVacancyRepository.CountByCompanyIdWithStatus(ctx, tx, companyId, domain.JobVacancyStatus(status))
+
+	// Calculate total pages
+	totalPages := int(math.Ceil(float64(totalCount) / float64(pageSize)))
+
+	// Convert to response with user-specific data
+	jobVacancyResponses := service.toJobVacancyResponses(ctx, tx, jobVacancies, userId)
+
+	return web.JobVacancyListResponse{
+		Jobs:       jobVacancyResponses,
+		TotalCount: totalCount,
+		Page:       page,
+		PageSize:   pageSize,
+		TotalPages: totalPages,
+	}
+}
+
+// Helper functions
+func (service *JobVacancyServiceImpl) toJobVacancyResponse(ctx context.Context, tx *sql.Tx, jobVacancy domain.JobVacancy, userId *uuid.UUID) web.JobVacancyResponse {
+	response := web.JobVacancyResponse{
+		Id:                  jobVacancy.Id.String(),
+		CompanyId:           jobVacancy.CompanyId.String(),
+		CreatorId:           nil,
+		Title:               jobVacancy.Title,
+		Description:         jobVacancy.Description,
+		Requirements:        jobVacancy.Requirements,
+		Location:            jobVacancy.Location,
+		JobType:             jobVacancy.JobType,
 		ExperienceLevel:     string(jobVacancy.ExperienceLevel),
 		MinSalary:           jobVacancy.MinSalary,
 		MaxSalary:           jobVacancy.MaxSalary,
@@ -477,65 +562,84 @@ func toJobVacancyResponse(jobVacancy domain.JobVacancy) web.JobVacancyResponse {
 		Status:              string(jobVacancy.Status),
 		TypeApply:           string(jobVacancy.TypeApply),
 		ExternalLink:        jobVacancy.ExternalLink,
+		HasApplied:          false,
+		IsSaved:             false,
 		CreatedAt:           jobVacancy.CreatedAt,
 		UpdatedAt:           jobVacancy.UpdatedAt,
 	}
 
+	// Set creator ID if exists
 	if jobVacancy.CreatorId != nil {
 		creatorIdStr := jobVacancy.CreatorId.String()
 		response.CreatorId = &creatorIdStr
 	}
 
+	// Set company info if available
 	if jobVacancy.Company != nil {
 		response.Company = &web.CompanyBasicResponse{
-			Id:       jobVacancy.Company.Id.String(),
-			Name:     jobVacancy.Company.Name,
-			Logo:     &jobVacancy.Company.Logo,
-			Industry: jobVacancy.Company.Industry,
+			Id:   jobVacancy.Company.Id.String(),
+			Name: jobVacancy.Company.Name,
+			Logo: &jobVacancy.Company.Logo,
 		}
 	}
 
+	// Set creator info if available
 	if jobVacancy.Creator != nil {
 		response.Creator = &web.UserBasicResponse{
 			Id:       jobVacancy.Creator.Id.String(),
 			Name:     jobVacancy.Creator.Name,
-			Email:    jobVacancy.Creator.Email,
 			Username: jobVacancy.Creator.Username,
 			Photo:    &jobVacancy.Creator.Photo,
 		}
 	}
 
+	// Set user-specific data if userId is provided
+	if userId != nil {
+		// Check if user has applied
+		response.HasApplied = service.JobApplicationRepository.HasApplied(ctx, tx, jobVacancy.Id, *userId)
+
+		// Check if user has saved this job
+		response.IsSaved = service.SavedJobRepository.IsJobSaved(ctx, tx, *userId, jobVacancy.Id)
+	}
+
 	return response
 }
 
+// Helper method to convert multiple domain objects to responses
+func (service *JobVacancyServiceImpl) toJobVacancyResponses(ctx context.Context, tx *sql.Tx, jobVacancies []domain.JobVacancy, userId *uuid.UUID) []web.JobVacancyResponse {
+	var responses []web.JobVacancyResponse
+	for _, jobVacancy := range jobVacancies {
+		responses = append(responses, service.toJobVacancyResponse(ctx, tx, jobVacancy, userId))
+	}
+	return responses
+}
+
 func toJobVacancyPublicResponse(jobVacancy domain.JobVacancy) web.JobVacancyPublicResponse {
-	response := web.JobVacancyPublicResponse{
+	var companyInfo *web.CompanyBasicResponse
+	if jobVacancy.Company != nil {
+		companyInfo = &web.CompanyBasicResponse{
+			Id:   jobVacancy.Company.Id.String(),
+			Name: jobVacancy.Company.Name,
+			Logo: &jobVacancy.Company.Logo,
+		}
+	}
+
+	return web.JobVacancyPublicResponse{
 		Id:                  jobVacancy.Id.String(),
-		CompanyId:           jobVacancy.CompanyId.String(),
 		Title:               jobVacancy.Title,
 		Description:         jobVacancy.Description,
 		Location:            jobVacancy.Location,
-		JobType:             string(jobVacancy.JobType),
+		JobType:             jobVacancy.JobType,
 		ExperienceLevel:     string(jobVacancy.ExperienceLevel),
 		MinSalary:           jobVacancy.MinSalary,
 		MaxSalary:           jobVacancy.MaxSalary,
 		Currency:            jobVacancy.Currency,
-		Skills:              []string(jobVacancy.Skills),
+		Skills:              jobVacancy.Skills,
 		WorkType:            string(jobVacancy.WorkType),
 		ApplicationDeadline: jobVacancy.ApplicationDeadline,
 		TypeApply:           string(jobVacancy.TypeApply),
 		ExternalLink:        jobVacancy.ExternalLink,
 		CreatedAt:           jobVacancy.CreatedAt,
+		Company:             companyInfo,
 	}
-
-	if jobVacancy.Company != nil {
-		response.Company = &web.CompanyBasicResponse{
-			Id:       jobVacancy.Company.Id.String(),
-			Name:     jobVacancy.Company.Name,
-			Logo:     &jobVacancy.Company.Logo,
-			Industry: jobVacancy.Company.Industry,
-		}
-	}
-
-	return response
 }

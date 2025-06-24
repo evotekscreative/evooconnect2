@@ -6,34 +6,65 @@ import JobLeftSidebar from "../../components/JobProfile/JobLeftSidebar.jsx";
 import JobMainContent from "../../components/JobProfile/JobMainContent.jsx";
 import JobRightSidebar from "../../components/JobProfile/JobRightSidebar.jsx";
 
-export default function NewPage() {
+const BASE_URL = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
+export default function JobProfile() {
     const params = useParams();
     const jobId = params.jobId;
+    const [job, setJob] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [clickedSave, setClickedSave] = useState(false);
     const [clickedApply, setClickedApply] = useState(false);
     const [savedJobs, setSavedJobs] = useState([]);
     const [appliedJobs, setAppliedJobs] = useState([]);
 
-    // Load saved and applied jobs from localStorage when component mounts
     useEffect(() => {
+        async function fetchJob() {
+            setLoading(true);
+            try {
+                const res = await fetch(
+                    `${BASE_URL}/api/job-details/${jobId}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${localStorage.getItem("token")}`,
+                            "Content-Type": "application/json"
+                        }
+                    }
+                );
+                const data = await res.json();
+                if (data.code === 200) {
+                    setJob(data.data);
+                }
+            } catch (err) {
+                console.error('Error fetching job:', err);
+            }
+            setLoading(false);
+        }
+
         const saved = localStorage.getItem('savedJobs');
         const applied = localStorage.getItem('appliedJobs');
         
         if (saved) {
             const parsedSavedJobs = JSON.parse(saved);
             setSavedJobs(parsedSavedJobs);
-            if (parsedSavedJobs.some(job => job.id === parseInt(jobId))) {
+            if (parsedSavedJobs.some(job => job.id === jobId)) {
                 setClickedSave(true);
             }
+        } else {
+            setClickedSave(job?.is_saved || false);
         }
         
         if (applied) {
             const parsedAppliedJobs = JSON.parse(applied);
             setAppliedJobs(parsedAppliedJobs);
-            if (parsedAppliedJobs.some(job => job.id === parseInt(jobId))) {
+            if (parsedAppliedJobs.some(job => job.id === jobId)) {
                 setClickedApply(true);
             }
+        } else {
+            setClickedApply(job?.has_applied || false);
         }
+
+        fetchJob();
     }, [jobId]);
 
     const handleSaveClick = () => {
@@ -65,48 +96,26 @@ export default function NewPage() {
         }
     };
 
-    const data = [
-        {
-            id: 1,
-            title: "Software Engineer",
-            company: "Angular Company",
-            location: "Remote",
-            description: "We are looking for a Frontend Developer to join our team.",
-            overview: "We are looking for a skilled Software Engineer to develop and maintain our web applications. The ideal candidate will have experience with modern JavaScript frameworks and a passion for creating high-quality code.",
-            aplicantRank: 30,
-            postedDate: "2023-09-30",
-            seniorityLevel: "Director",
-            Industry: "Information Technology",
-            type: "Full-time",
-            jobFunction: "Engineering",
-            salary: "$60,000 - $80,000",
-            companyLogo: "https://via.placeholder.com/150",
-            companyDescription: "Angular Company is a leading tech company specializing in web development.",
-            companySize: "100-500 employees",
-        },
-        {
-            id: 2,
-            title: "Frontend Developer",
-            company: "React Company",
-            location: "Remote",
-            description: "We are looking for a Frontend Developer to join our team.",
-            overview: "Join our team as a Frontend Developer and help build amazing user experiences. You'll work with React, TypeScript, and modern CSS to create responsive and accessible web applications.",
-            aplicantRank: 25,
-            postedDate: "2023-10-15",
-            seniorityLevel: "Mid Level",
-            Industry: "Information Technology",
-            type: "Full-time",
-            jobFunction: "Engineering",
-            salary: "$70,000 - $90,000",
-            companyLogo: "https://via.placeholder.com/150",
-            companyDescription: "React Company is a fast-growing startup focused on creating innovative web solutions.",
-            companySize: "50-200 employees",
-        }
-    ];
+    if (loading) {
+        return (
+            <>
+                <Navbar />
+                <div className="bg-gray-100 min-h-screen py-8 flex items-center justify-center">
+                    <div>Loading job details...</div>
+                </div>
+            </>
+        );
+    }
 
-    const job = data.find(job => job.id === parseInt(jobId));
     if (!job) {
-        return <div>Job not found</div>;
+        return (
+            <>
+                <Navbar />
+                <div className="bg-gray-100 min-h-screen py-8 flex items-center justify-center">
+                    <div>Job not found</div>
+                </div>
+            </>
+        );
     }
 
     return (

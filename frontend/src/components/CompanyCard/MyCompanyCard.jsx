@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 
 export default function MyCompanyCard({ company }) {
   const navigate = useNavigate();
+            const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
 
   const handleDetailClick = () => {
     navigate(`/company-dashboard/${company.id}`);
@@ -14,7 +16,7 @@ export default function MyCompanyCard({ company }) {
         <div className="flex flex-col items-center mb-3">
           <div className="w-16 h-16 rounded-full bg-gray-300 overflow-hidden mb-2">
             <img
-              src={company.logo ? `http://localhost:3000/${company.logo}` : "/default-company-logo.png"}
+              src={company.logo ? `${apiUrl}/${company.logo}` : "/default-company-logo.png"}
               alt="Company Logo"
               className="w-full h-full object-cover"
             />

@@ -133,24 +133,52 @@ The frontend development server should now be running at http://localhost:5173.
 
 ### Backend (.env)
 ```
-# Database Configuration
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=evoconnect
-DB_USER=root
-DB_PASSWORD=yourpassword
+APP_HOST="localhost"
+APP_PORT=3000
 
-# JWT Configuration
-JWT_SECRET=your_jwt_secret_key
-JWT_EXPIRY=24h
+APP_NAME="EvoConnect"
+APP_URL="http://${APP_HOST}:${APP_PORT}"
+APP_ENV=development
+APP_DEBUG=true
+APP_SERVER="${APP_HOST}:${APP_PORT}"
 
-# Server Configuration
-PORT=8080
+JWT_SECRET_KEY="your_jwt_secret_key_here"
+ADMIN_JWT_SECRET_KEY="your_admin_jwt_secret_key_here"
+JWT_EXPIRES_IN=24  
+
+DB_HOST="localhost"
+DB_PORT=5432
+DB_NAME="evoconnect"
+DB_USER="postgres"
+DB_PASSWORD="your_database_password"
+
+EMAIL_HOST="smtp.gmail.com"
+EMAIL_PORT=587
+EMAIL_USERNAME="your_email@gmail.com"
+EMAIL_PASSWORD="your_app_password" 
+EMAIL_FROM="EvoConnect <noreply@evoconnect.com>"
+
+PUSHER_APP_ID=your_pusher_app_id
+PUSHER_KEY=your_pusher_key
+PUSHER_SECRET=your_pusher_secret
+PUSHER_CLUSTER=your_pusher_cluster
+
+GOOSE_DRIVER=postgres
+# GOOSE_DBSTRING=postgres://admin:admin@localhost:5432/admin_db
+GOOSE_DBSTRING="${GOOSE_DRIVER}://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
+GOOSE_MIGRATION_DIR=./db/migrations
+GOOSE_TABLE=custom.goose_migrations
+
+GOOGLE_CLIENT_ID="your_google_client_id.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="your_google_client_secret"
+
+CLIENT_URL="http://localhost:3000"
 ```
 
 ### Frontend (.env)
 ```
-VITE_API_URL=http://localhost:8080/api
+VITE_APP_BACKEND_URL=http://your-backend-url:8080
+VITE_APP_CLIENT_URL=http://your-frontend-url:5173
 ```
 
 ## Project Structure

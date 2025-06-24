@@ -1,23 +1,57 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Mail, Phone, MapPin, HelpCircle, X } from 'lucide-react';
 import ConfirmationDialog from '../../components/ApplicantRequest/ConfirmationDialog.jsx';
 
-const ContactInfo = ({ onNext, isSubmitting, onClose }) => {
-    const [contactData] = useState({
+const ContactInfo = ({ onNext, isSubmitting, onClose, userData, onContactChange }) => {
+    const [contactData, setContactData] = useState({
         profileImage: "https://via.placeholder.com/80",
         title: "Software Engineer",
-        name: "Windha Kusuma Dewi",
-        headline: "Frontend Developer",
-        location: "Bogor, Indonesia",
-        phone: "1234567890",
-        email: "asdfghj@gmail.com",
-        address: "Bogor",
-        linkedin: "linkedin.com/in/yourprofile"
+        name: "",
+        headline: "",
+        location: "",
+        phone: "",
+        email: "",
+        address: "",
+        linkedin: ""
     });
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
+    useEffect(() => {
+        const user = JSON.parse(localStorage.getItem("user"));
+        if (user) {
+            setContactData(prev => ({
+                ...prev,
+                name: user.name || "",
+                headline: user.headline || "",
+                location: user.location || "",
+                phone: user.phone || "",
+                email: user.email || "",
+                address: user.location || "",
+                linkedin: user.socials?.linkedin || "",
+                profileImage: user.photo
+                    ? `${import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000"}/${user.photo.replace(/^\/+/, "")}`
+                    : "https://via.placeholder.com/80",
+            }));
+        }
+    }, []);
+
+    // Tambahkan handler untuk input LinkedIn
+    const handleLinkedinChange = (e) => {
+        setContactData(prev => ({
+            ...prev,
+            linkedin: e.target.value
+        }));
+        if (onContactChange) {
+            onContactChange('linkedin', e.target.value);
+        }
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
+        if (onContactChange) {
+            onContactChange('linkedin', contactData.linkedin);
+        }
         onNext();
     };
 
@@ -94,9 +128,14 @@ const ContactInfo = ({ onNext, isSubmitting, onClose }) => {
                                 <label className="text-xs font-medium text-gray-600 mb-1">
                                     LinkedIn Profile*
                                 </label>
-                                <div className="p-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50">
-                                    {contactData.linkedin}
-                                </div>
+                                <input
+                                    type="text"
+                                    className="p-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50 w-full"
+                                    value={contactData.linkedin}
+                                    onChange={handleLinkedinChange}
+                                    placeholder="Enter your LinkedIn profile URL"
+                                    required
+                                />
                             </div>
                         </div>
 

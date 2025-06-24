@@ -20,10 +20,10 @@ const (
 )
 
 type ContactInfo struct {
-	Phone    string `json:"phone"`
-	Email    string `json:"email"`
-	LinkedIn string `json:"linkedin,omitempty"`
-	Address  string `json:"address,omitempty"`
+	Phone    string `json:"phone" validate:"required,min=10,max=20"`
+	Email    string `json:"email" validate:"required,email"`
+	Address  string `json:"address" validate:"required,min=10,max=500"`
+	LinkedIn string `json:"linkedin,omitempty" validate:"omitempty,url"`
 }
 
 // Value implements the driver.Valuer interface for ContactInfo
@@ -49,18 +49,18 @@ type JobApplication struct {
 	Id                   uuid.UUID            `json:"id"`
 	JobVacancyId         uuid.UUID            `json:"job_vacancy_id"`
 	ApplicantId          uuid.UUID            `json:"applicant_id"`
-	CvFilePath           string               `json:"cv_file_path"`
-	ContactInfo          ContactInfo          `json:"contact_info"`
-	MotivationLetter     string               `json:"motivation_letter"`
-	CoverLetter          string               `json:"cover_letter"`
-	ExpectedSalary       *float64             `json:"expected_salary"`
-	AvailableStartDate   *time.Time           `json:"available_start_date"`
+	CvFilePath           string               `json:"cv_file_path"`                   // Changed to string (required)
+	ContactInfo          ContactInfo          `json:"contact_info"`                   // Required
+	MotivationLetter     *string              `json:"motivation_letter,omitempty"`    // Now optional
+	CoverLetter          *string              `json:"cover_letter,omitempty"`         // Now optional
+	ExpectedSalary       *float64             `json:"expected_salary,omitempty"`      // Now optional
+	AvailableStartDate   *time.Time           `json:"available_start_date,omitempty"` // Now optional
 	Status               JobApplicationStatus `json:"status"`
-	RejectionReason      string               `json:"rejection_reason"`
-	Notes                string               `json:"notes"`
-	ReviewedBy           *uuid.UUID           `json:"reviewed_by"`
-	ReviewedAt           *time.Time           `json:"reviewed_at"`
-	InterviewScheduledAt *time.Time           `json:"interview_scheduled_at"`
+	RejectionReason      *string              `json:"rejection_reason,omitempty"`
+	Notes                *string              `json:"notes,omitempty"`
+	ReviewedBy           *uuid.UUID           `json:"reviewed_by,omitempty"`
+	ReviewedAt           *time.Time           `json:"reviewed_at,omitempty"`
+	InterviewScheduledAt *time.Time           `json:"interview_scheduled_at,omitempty"`
 	SubmittedAt          time.Time            `json:"submitted_at"`
 	CreatedAt            time.Time            `json:"created_at"`
 	UpdatedAt            time.Time            `json:"updated_at"`
@@ -69,4 +69,15 @@ type JobApplication struct {
 	JobVacancy *JobVacancy `json:"job_vacancy,omitempty"`
 	Applicant  *User       `json:"applicant,omitempty"`
 	Reviewer   *User       `json:"reviewer,omitempty"`
+}
+
+// New domain for CV storage
+type UserCvStorage struct {
+	Id               uuid.UUID `json:"id"`
+	UserId           uuid.UUID `json:"user_id"`
+	CvFilePath       string    `json:"cv_file_path"`
+	OriginalFilename string    `json:"original_filename"`
+	FileSize         int64     `json:"file_size"`
+	UploadedAt       time.Time `json:"uploaded_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
 }

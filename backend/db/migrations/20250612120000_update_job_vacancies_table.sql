@@ -8,13 +8,23 @@ CREATE TYPE work_type AS ENUM ('remote', 'hybrid', 'in-office');
 ALTER TABLE job_vacancies DROP CONSTRAINT IF EXISTS chk_job_vacancies_remote_work_allowed;
 
 -- Add new work_type column
-ALTER TABLE job_vacancies ADD COLUMN work_type work_type;
+ALTER TABLE job_vacancies ADD COLUMN IF NOT EXISTS work_type work_type;
 
--- Migrate existing data: if remote_work_allowed is true, set to 'remote', otherwise 'in-office'
-UPDATE job_vacancies SET work_type = CASE 
-    WHEN remote_work_allowed = true THEN 'remote'::work_type
-    ELSE 'in-office'::work_type
-END;
+-- Migrate existing data: only if column remote_work_allowed exists
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_name = 'job_vacancies' AND column_name = 'remote_work_allowed'
+  ) THEN
+    EXECUTE $f$
+      UPDATE job_vacancies SET work_type = CASE 
+        WHEN remote_work_allowed = true THEN 'remote'::work_type
+        ELSE 'in-office'::work_type
+      $f$ || 'END;';
+  END IF;
+END $$;
 
 -- Make work_type NOT NULL and set default
 ALTER TABLE job_vacancies ALTER COLUMN work_type SET NOT NULL;
