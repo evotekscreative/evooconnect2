@@ -187,7 +187,7 @@ export default function Sidebar() {
                                             ? "text-sky-500 hover:text-sky-600"
                                             : "text-gray-700 hover:text-gray-500")
                                     }
-                                    to="/company-dashboard/manage-vacancy"
+                                    to={`/company-dashboard/${selectedCompany ? selectedCompany.id : ""}/manage-vacancy`}
                                 >
                                     <i
                                         className={

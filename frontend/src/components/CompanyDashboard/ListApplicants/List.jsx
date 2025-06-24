@@ -55,37 +55,35 @@ const ListApplicants = () => {
     }
   };
 
-const handleDeleteApplicant = async (applicationId) => {
-  if (!confirm("Are you sure you want to delete this application?")) {
-    return;
-  }
-  
-  setDeleteLoading(true);
-  try {
-    const userToken = localStorage.getItem("token");
-    // Menggunakan endpoint /api/job-app/{applicationId} yang disebutkan di user_routes.go
-    await axios.delete(
-      `${apiUrl}/api/job-app/${applicationId}`,
-      {
-        headers: { Authorization: `Bearer ${userToken}` },
-      }
-    );
-    
-    // Refresh the list after deletion
-    fetchApplicants();
-    
-    // Close modal if the deleted applicant was being viewed
-    if (selectedApplicant && selectedApplicant.id === applicationId) {
-      setSelectedApplicant(null);
+  const handleDeleteApplicant = async (applicationId) => {
+    if (!confirm("Are you sure you want to delete this application?")) {
+      return;
     }
-  } catch (error) {
-    console.error("Failed to delete applicant:", error);
-    alert("Failed to delete application. Please try again.");
-  } finally {
-    setDeleteLoading(false);
-  }
-};
-
+    
+    setDeleteLoading(true);
+    try {
+      const userToken = localStorage.getItem("token");
+      await axios.delete(
+        `${apiUrl}/api/job-app/${applicationId}`,
+        {
+          headers: { Authorization: `Bearer ${userToken}` },
+        }
+      );
+      
+      // Refresh the list after deletion
+      fetchApplicants();
+      
+      // Close modal if the deleted applicant was being viewed
+      if (selectedApplicant && selectedApplicant.id === applicationId) {
+        setSelectedApplicant(null);
+      }
+    } catch (error) {
+      console.error("Failed to delete applicant:", error);
+      alert("Failed to delete application. Please try again.");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   const filteredApplicants = applicants.filter(applicant => {
     const matchesSearch = applicant.applicant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -152,9 +150,11 @@ const handleDeleteApplicant = async (applicationId) => {
                 >
                   <option>All Status</option>
                   <option>submitted</option>
-                  <option>reviewed</option>
+                  <option>under_review</option>
+                  <option>shortlisted</option>
+                  <option>interview_scheduled</option>
+                  <option>accepted</option>
                   <option>rejected</option>
-                  <option>hired</option>
                 </select>
               </div>
             </div>
@@ -226,12 +226,18 @@ const handleDeleteApplicant = async (applicationId) => {
                         <span
                           className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                             applicant.status === "submitted"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : applicant.status === "reviewed"
-                                ? "bg-blue-100 text-blue-800"
-                                : applicant.status === "rejected"
-                                  ? "bg-red-100 text-red-800"
-                                  : "bg-green-100 text-green-800"
+                              ? "bg-blue-100 text-blue-800"
+                              : applicant.status === "under_review"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : applicant.status === "shortlisted"
+                                  ? "bg-purple-100 text-purple-800"
+                                  : applicant.status === "interview_scheduled"
+                                    ? "bg-indigo-100 text-indigo-800"
+                                    : applicant.status === "accepted"
+                                      ? "bg-green-100 text-green-800"
+                                      : applicant.status === "rejected"
+                                        ? "bg-red-100 text-red-800"
+                                        : "bg-gray-100 text-gray-800"
                           }`}
                         >
                           {applicant.status}
