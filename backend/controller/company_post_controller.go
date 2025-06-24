@@ -14,7 +14,6 @@ type CompanyPostController interface {
 	FindByCompanyId(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	FindByCreatorId(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	FindWithFilters(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
-	UpdateStatus(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 
 	// Like functionality - following same pattern as PostController
 	LikePost(writer http.ResponseWriter, request *http.Request, params httprouter.Params)

@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"evoconnect/backend/model/domain"
 	"evoconnect/backend/model/web"
+	"time"
 	"fmt"
 
 	"github.com/google/uuid"
-
-	"time"
+	
 	// "evoconnect/backend/repository"
 )
 
@@ -635,6 +635,22 @@ func ToJobVacancyResponses(jobVacancies []domain.JobVacancy) []web.JobVacancyRes
 	return responses
 }
 
+func ToSavedJobResponse(savedJob domain.SavedJob) web.SavedJobResponse {
+	response := web.SavedJobResponse{
+		Id:           savedJob.Id,
+		UserId:       savedJob.UserId,
+		JobVacancyId: savedJob.JobVacancyId,
+		CreatedAt:    savedJob.CreatedAt,
+	}
+
+	if savedJob.JobVacancy != nil {
+		jobVacancyResponse := ToJobVacancyResponse(*savedJob.JobVacancy)
+		response.JobVacancy = &jobVacancyResponse
+	}
+
+	return response
+}
+
 func ToAdminResponse(admin domain.Admin) web.AdminResponse {
 	return web.AdminResponse{
 		ID:        admin.Id,
@@ -692,6 +708,13 @@ func ToCompanyJoinRequestResponse(request domain.CompanyJoinRequest) web.Company
 	return response
 }
 
+func ToSavedJobResponses(savedJobs []domain.SavedJob) []web.SavedJobResponse {
+	var savedJobResponses []web.SavedJobResponse
+	for _, savedJob := range savedJobs {
+		savedJobResponses = append(savedJobResponses, ToSavedJobResponse(savedJob))
+	}
+	return savedJobResponses
+}
 func ToCompanySubmissionResponse(submission domain.CompanySubmission) web.CompanySubmissionResponse {
 	response := web.CompanySubmissionResponse{
 		ID:              submission.Id,

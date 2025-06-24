@@ -92,10 +92,8 @@ func (service *CompanyPostServiceImpl) Create(ctx context.Context, userId uuid.U
 	post := domain.CompanyPost{
 		CompanyId:      request.CompanyId,
 		CreatorId:      userId,
-		Title:          request.Title,
 		Content:        request.Content,
 		Images:         imagePaths,
-		Status:         request.Status,
 		Visibility:     request.Visibility,
 		IsAnnouncement: request.IsAnnouncement,
 	}
@@ -104,9 +102,7 @@ func (service *CompanyPostServiceImpl) Create(ctx context.Context, userId uuid.U
 	helper.PanicIfError(err)
 
 	// Send notification to company members if published
-	if request.Status == "published" {
-		service.sendNotificationToCompanyMembers(post, userId)
-	}
+	service.sendNotificationToCompanyMembers(post, userId)
 
 	return service.toCompanyPostResponse(post, userId)
 }
@@ -173,10 +169,8 @@ func (service *CompanyPostServiceImpl) Update(ctx context.Context, userId, postI
 	}
 
 	// Update post data
-	post.Title = request.Title
 	post.Content = request.Content
 	post.Images = imagePaths
-	post.Status = request.Status
 	post.Visibility = request.Visibility
 	post.IsAnnouncement = request.IsAnnouncement
 
@@ -328,7 +322,7 @@ func (service *CompanyPostServiceImpl) FindWithFilters(ctx context.Context, user
 	defer helper.CommitOrRollback(tx)
 
 	posts, total, err := service.CompanyPostRepository.FindWithFilters(
-		ctx, tx, filter.CompanyId, filter.Status, filter.Visibility,
+		ctx, tx, filter.CompanyId, filter.Visibility,
 		filter.CreatorId, filter.Search, filter.Limit, filter.Offset,
 	)
 	helper.PanicIfError(err)
@@ -355,44 +349,6 @@ func (service *CompanyPostServiceImpl) FindWithFilters(ctx context.Context, user
 			HasPrev: filter.Offset > 0,
 		},
 	}
-}
-
-func (service *CompanyPostServiceImpl) UpdateStatus(ctx context.Context, userId, postId uuid.UUID, status string) web.CompanyPostResponse {
-	tx, err := service.DB.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
-
-	// Get existing post
-	post, err := service.CompanyPostRepository.FindById(ctx, tx, postId)
-	if err != nil {
-		panic(exception.NewNotFoundError("company post not found"))
-	}
-
-	// Check permission (only creator or company super_admin can update status)
-	if post.CreatorId != userId {
-		member, err := service.MemberCompanyRepository.FindByUserAndCompany(ctx, tx, userId, post.CompanyId)
-		if err != nil {
-			panic(exception.NewForbiddenError("you don't have permission to update this post"))
-		}
-
-		if member.Role != entity.RoleSuperAdmin {
-			panic(exception.NewForbiddenError("you don't have permission to update this post"))
-		}
-	}
-
-	err = service.CompanyPostRepository.UpdateStatus(ctx, tx, postId, status)
-	helper.PanicIfError(err)
-
-	// Get updated post
-	post, err = service.CompanyPostRepository.FindById(ctx, tx, postId)
-	helper.PanicIfError(err)
-
-	// Send notification if status changed to published
-	if status == "published" && post.Status != "published" {
-		service.sendNotificationToCompanyMembers(post, userId)
-	}
-
-	return service.toCompanyPostResponse(post, userId)
 }
 
 // func (service *CompanyPostServiceImpl) toCompanyPostResponse(post domain.CompanyPost, userId uuid.UUID) web.CompanyPostResponse {
@@ -576,10 +532,8 @@ func (service *CompanyPostServiceImpl) toCompanyPostResponse(post domain.Company
 		Id:             post.Id,
 		CompanyId:      post.CompanyId,
 		CreatorId:      post.CreatorId,
-		Title:          post.Title,
 		Content:        post.Content,
 		Images:         post.Images,
-		Status:         post.Status,
 		Visibility:     post.Visibility,
 		IsAnnouncement: post.IsAnnouncement,
 		CreatedAt:      post.CreatedAt,

@@ -41,9 +41,7 @@ func (controller *CompanyPostControllerImpl) Create(writer http.ResponseWriter, 
 	// Create request object
 	createRequest := web.CreateCompanyPostRequest{
 		CompanyId:      companyId,
-		Title:          request.FormValue("title"),
 		Content:        request.FormValue("content"),
-		Status:         request.FormValue("status"),
 		Visibility:     request.FormValue("visibility"),
 		IsAnnouncement: request.FormValue("is_announcement") == "true",
 	}
@@ -99,9 +97,7 @@ func (controller *CompanyPostControllerImpl) Update(writer http.ResponseWriter, 
 
 	// Create update request
 	updateRequest := web.UpdateCompanyPostRequest{
-		Title:          request.FormValue("title"),
 		Content:        request.FormValue("content"),
-		Status:         request.FormValue("status"),
 		Visibility:     request.FormValue("visibility"),
 		IsAnnouncement: request.FormValue("is_announcement") == "true",
 		ExistingImages: existingImages,
@@ -304,7 +300,6 @@ func (controller *CompanyPostControllerImpl) FindWithFilters(writer http.Respons
 	// Create filter request
 	filter := web.CompanyPostFilterRequest{
 		CompanyId:  companyId,
-		Status:     query.Get("status"),
 		Visibility: query.Get("visibility"),
 		CreatorId:  creatorId,
 		Search:     query.Get("search"),
@@ -313,34 +308,6 @@ func (controller *CompanyPostControllerImpl) FindWithFilters(writer http.Respons
 	}
 
 	response := controller.CompanyPostService.FindWithFilters(request.Context(), userId, filter)
-
-	webResponse := web.WebResponse{
-		Code:   200,
-		Status: "OK",
-		Data:   response,
-	}
-
-	helper.WriteToResponseBody(writer, webResponse)
-}
-
-func (controller *CompanyPostControllerImpl) UpdateStatus(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	// Get user ID from context
-	userIdStr := request.Context().Value("user_id").(string)
-	userId, err := uuid.Parse(userIdStr)
-	helper.PanicIfError(err)
-
-	// Get post ID from URL params
-	postIdStr := params.ByName("postId")
-	postId, err := uuid.Parse(postIdStr)
-	helper.PanicIfError(err)
-
-	// Parse request body
-	var statusRequest struct {
-		Status string `json:"status" validate:"required,oneof=draft published archived"`
-	}
-	helper.ReadFromRequestBody(request, &statusRequest)
-
-	response := controller.CompanyPostService.UpdateStatus(request.Context(), userId, postId, statusRequest.Status)
 
 	webResponse := web.WebResponse{
 		Code:   200,

@@ -8,17 +8,13 @@ import (
 
 type CreateCompanyPostRequest struct {
 	CompanyId      uuid.UUID `json:"company_id" validate:"required"`
-	Title          string    `json:"title" validate:"required,min=1,max=200"`
 	Content        string    `json:"content" validate:"required,min=1"`
-	Status         string    `json:"status" validate:"required,oneof=draft published"`
 	Visibility     string    `json:"visibility" validate:"required,oneof=public members_only"`
 	IsAnnouncement bool      `json:"is_announcement"`
 }
 
 type UpdateCompanyPostRequest struct {
-	Title          string   `json:"title" validate:"required,min=1,max=200"`
 	Content        string   `json:"content" validate:"required,min=1"`
-	Status         string   `json:"status" validate:"required,oneof=draft published archived"`
 	Visibility     string   `json:"visibility" validate:"required,oneof=public members_only"`
 	IsAnnouncement bool     `json:"is_announcement"`
 	ExistingImages []string `json:"existing_images"`
@@ -27,7 +23,6 @@ type UpdateCompanyPostRequest struct {
 
 type CompanyPostFilterRequest struct {
 	CompanyId  *uuid.UUID `query:"company_id"`
-	Status     string     `query:"status"`
 	Visibility string     `query:"visibility"`
 	CreatorId  *uuid.UUID `query:"creator_id"`
 	Search     string     `query:"search"`
@@ -39,10 +34,8 @@ type CompanyPostResponse struct {
 	Id             uuid.UUID                 `json:"id"`
 	CompanyId      uuid.UUID                 `json:"company_id"`
 	CreatorId      uuid.UUID                 `json:"creator_id"`
-	Title          string                    `json:"title"`
 	Content        string                    `json:"content"`
 	Images         []string                  `json:"images"`
-	Status         string                    `json:"status"`
 	Visibility     string                    `json:"visibility"`
 	IsAnnouncement bool                      `json:"is_announcement"`
 	CreatedAt      time.Time                 `json:"created_at"`
