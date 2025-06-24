@@ -15,7 +15,7 @@ const CompanySidebar = () => {
       <ul className="text-sm sm:text-base text-gray-800 space-y-2">
         <li className="border-b pb-3">
           <NavLink
-            to="/company-detail"
+            to="/company-management/my-company"
             className={({ isActive }) => 
               `flex justify-between items-center hover:text-primary transition ${
                 isActive ? "text-primary font-semibold" : ""
@@ -36,7 +36,7 @@ const CompanySidebar = () => {
         </li>
         <li className="border-b pb-3">
           <NavLink
-            to="/company-pending"
+            to="/company-management/company-pending"
             className={({ isActive }) => 
               `flex justify-between items-center hover:text-primary transition ${
                 isActive ? "text-primary font-semibold" : ""
@@ -57,7 +57,7 @@ const CompanySidebar = () => {
         </li>
         <li className="border-b pb-3">
           <NavLink
-            to="/company-edit"
+            to="/company-management/company-edit"
             className={({ isActive }) => 
               `flex justify-between items-center hover:text-primary transition ${
                 isActive ? "text-primary font-semibold" : ""

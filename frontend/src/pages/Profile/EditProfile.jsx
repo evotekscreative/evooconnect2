@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import Case from "../components/Case";
+import Case from "../../components/Case";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "../components/ui/card";
+} from "../../components/ui/card";
 import {
   Facebook,
   Twitter,
@@ -66,7 +66,7 @@ const socialPlatforms = [
   },
 ];
 
-export default function ProfileEdit() {
+export default function EditProfile() {
   const apiUrl =
     import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
@@ -726,11 +726,16 @@ export default function ProfileEdit() {
                           className="w-full pl-10 border-gray-200 focus:ring-blue-500"
                           value={phone}
                           onChange={(e) => {
-                            const onlyNums = e.target.value.replace(
-                              /[^0-9]/g,
-                              ""
-                            );
-                            setPhone(onlyNums);
+                            let val = e.target.value.replace(/[^0-9]/g, "");
+                            // Jika user mengetik 08 di awal, otomatis ubah ke +628
+                            if (val.startsWith("08")) {
+                              val = "62" + val.slice(1);
+                            }
+                            // Tambahkan + di depan jika belum ada
+                            if (val && !val.startsWith("+")) {
+                              val = "+" + val;
+                            }
+                            setPhone(val);
                           }}
                           onKeyDown={(e) => {
                             const allowedKeys = [

@@ -28,7 +28,13 @@ func ToBlogResponse(blog domain.Blog) web.BlogResponse {
 
 // Fungsi baru yang menerima user dan isConnected sebagai parameter terpisah
 func ToBlogResponseWithUser(blog domain.Blog, user domain.User, isConnected bool) web.BlogResponse {
-    blogResponse := web.BlogResponse{
+    // Tambahkan warning jika blog di-take down
+    warning := ""
+    if blog.Status == "taken_down" {
+        warning = "This blog has been removed for violating our community guidelines. Only you can view this content."
+    }
+    
+    return web.BlogResponse{
         ID:        blog.ID,
         Title:     blog.Title,
         Slug:      blog.Slug,
@@ -36,6 +42,7 @@ func ToBlogResponseWithUser(blog domain.Blog, user domain.User, isConnected bool
         Content:   blog.Content,
         Photo:     blog.ImagePath,
         UserID:    blog.UserID,
+        Warning:   warning,
         CreatedAt: blog.CreatedAt,
         UpdatedAt: blog.UpdatedAt,
         User: web.BlogUserResponse{
@@ -46,7 +53,6 @@ func ToBlogResponseWithUser(blog domain.Blog, user domain.User, isConnected bool
             IsConnected: isConnected,
         },
     }
-    return blogResponse
 }
 
 func ValidateBlogInput(title, content, category string) error {

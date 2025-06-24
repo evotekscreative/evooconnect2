@@ -65,8 +65,7 @@ type Notification struct {
 	Status        NotificationStatus   `json:"status" db:"status"`
 	ReferenceId   *uuid.UUID           `json:"reference_id" db:"reference_id"`
 	ReferenceType *string              `json:"reference_type" db:"reference_type"`
-	ActorId       *uuid.UUID           `json:"actor_id" db:"actor_id"`
+	ActorId       *uuid.UUID           `json:"actor_id" db:"actor_id"` // Kembali ke UUID
 	CreatedAt     time.Time            `json:"created_at" db:"created_at"`
 	UpdatedAt     time.Time            `json:"updated_at" db:"updated_at"`
-	Actor         *User                `json:"actor,omitempty" db:"-"`
 }

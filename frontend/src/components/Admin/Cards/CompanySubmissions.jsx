@@ -15,6 +15,7 @@ const CompanySubmissions = ({ color = "light" }) => {
   const [rejectionModalOpen, setRejectionModalOpen] = useState(false);
   const [currentSubmissionId, setCurrentSubmissionId] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const rowsPerPage = 10;
 
   const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
@@ -33,15 +34,19 @@ const CompanySubmissions = ({ color = "light" }) => {
         return;
       }
 
-      const response = await fetch(
-        `${apiUrl}/api/admin/company-submissions?limit=${rowsPerPage}&offset=${(currentPage - 1) * rowsPerPage}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+      let url;
+      if (statusFilter !== 'all') {
+        url = `${apiUrl}/api/admin/company-submissions/status/${statusFilter}?limit=${rowsPerPage}&offset=${(currentPage - 1) * rowsPerPage}`;
+      } else {
+        url = `${apiUrl}/api/admin/company-submissions?limit=${rowsPerPage}&offset=${(currentPage - 1) * rowsPerPage}`;
+      }
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-      );
+      });
 
       if (!response.ok) {
         throw new Error(`Failed to fetch submissions: ${response.status} ${response.statusText}`);
@@ -62,6 +67,21 @@ const CompanySubmissions = ({ color = "light" }) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
+    const token = localStorage.getItem("adminToken");
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+
+    fetchSubmissions();
+  }, [currentPage, statusFilter]);
+
+  const handleStatusFilterChange = (status) => {
+    setStatusFilter(status);
+    setCurrentPage(1);
   };
 
   const handlePageChange = (page) => {
@@ -93,9 +113,9 @@ const CompanySubmissions = ({ color = "light" }) => {
         ...(status === 'rejected' && reason && { rejection_reason: reason })
       };
 
-      console.log(`Trying with Axios-like approach for ${status}`);
+      // Tambahkan log payload
+      console.log("Review payload:", payload);
 
-      // Gunakan pendekatan yang mirip dengan Postman
       const xhr = new XMLHttpRequest();
       xhr.open('PUT', `${apiUrl}/api/admin/company-submissions/review/${submissionId}`);
       xhr.setRequestHeader('Content-Type', 'application/json');
@@ -107,7 +127,6 @@ const CompanySubmissions = ({ color = "light" }) => {
           console.log("Response:", xhr.responseText);
 
           if (xhr.status >= 200 && xhr.status < 300) {
-            // Sukses - refresh data
             fetchSubmissions().then(() => {
               toast.success(`Submission ${status} successfully`);
               setRejectionModalOpen(false);
@@ -116,9 +135,14 @@ const CompanySubmissions = ({ color = "light" }) => {
               setIsReviewing(false);
             });
           } else {
-            // Error
+            // Log error detail
             console.error("Error response:", xhr.responseText);
-            toast.error(`Failed to ${status} submission`);
+            let errorMessage = `Failed to ${status} submission`;
+            try {
+              const errorData = JSON.parse(xhr.responseText);
+              errorMessage = errorData?.data || errorMessage;
+            } catch (e) { }
+            toast.error(errorMessage);
             setIsReviewing(false);
           }
         }
@@ -126,12 +150,11 @@ const CompanySubmissions = ({ color = "light" }) => {
 
       xhr.send(JSON.stringify(payload));
     } catch (error) {
-      console.error(`Error ${status} submission:`, error);
-      toast.error(`Failed to ${status} submission`);
+      let errorMessage = "Failed to review company submission";
+      toast.error(errorMessage);
       setIsReviewing(false);
     }
   };
-
   const handleApprove = (submissionId) => {
     handleReviewAction(submissionId, 'approved');
   };
@@ -185,7 +208,22 @@ const CompanySubmissions = ({ color = "light" }) => {
           <h3 className="text-lg font-semibold text-white">
             Company Submissions ({totalCount})
           </h3>
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Status Filter */}
+            <div className="flex items-center space-x-2">
+              <select
+                value={statusFilter}
+                onChange={(e) => handleStatusFilterChange(e.target.value)}
+                className="px-3 py-2 border border-gray-900 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+
+            {/* Search Box */}
             <div className="relative flex-grow">
               <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                 <Search className="w-5 h-5 text-gray-400" />
@@ -198,6 +236,8 @@ const CompanySubmissions = ({ color = "light" }) => {
                 onChange={handleSearchChange}
               />
             </div>
+
+            {/* Refresh Button */}
             <button
               onClick={handleRefresh}
               className="flex items-center justify-center p-2.5 border border-gray-900 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"

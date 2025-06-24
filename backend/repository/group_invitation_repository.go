@@ -15,4 +15,5 @@ type GroupInvitationRepository interface {
 	FindByInviteeId(ctx context.Context, tx *sql.Tx, inviteeId uuid.UUID) []domain.GroupInvitation
 	FindByGroupIdAndInviteeId(ctx context.Context, tx *sql.Tx, groupId, inviteeId uuid.UUID) domain.GroupInvitation
 	CancelRequest(ctx context.Context, tx *sql.Tx, invitationId uuid.UUID) error
+	CountPendingInvitationsByInviteeId(ctx context.Context, tx *sql.Tx, inviteeId uuid.UUID) (int, error)
 }

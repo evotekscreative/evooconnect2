@@ -127,3 +127,17 @@ func (repository *GroupInvitationRepositoryImpl) CancelRequest(ctx context.Conte
 	}
 	return nil
 }
+
+func (repository *GroupInvitationRepositoryImpl) CountPendingInvitationsByInviteeId(ctx context.Context, tx *sql.Tx, inviteeId uuid.UUID) (int, error) {
+	SQL := `SELECT COUNT(*) FROM group_invitations WHERE invitee_id = $1 AND status = 'pending'`
+	
+	var count int
+	err := tx.QueryRowContext(ctx, SQL, inviteeId).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	
+	return count, nil
+}
+
+

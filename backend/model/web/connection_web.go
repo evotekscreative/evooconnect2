@@ -43,12 +43,13 @@ type ConnectionListResponse struct {
 
 // UserShort represents a shortened user response with basic info
 type UserShort struct {
-	Id          uuid.UUID `json:"id"`
-	Name        string    `json:"name"`
-	Username    string    `json:"username"`
-	Headline    *string   `json:"headline,omitempty"`
-	Photo       *string   `json:"photo,omitempty"`
-	IsConnected bool      `json:"is_connected"`
+    Id                 uuid.UUID `json:"id"`
+    Name               string    `json:"name"`
+    Username           string    `json:"username"`
+    Photo              *string   `json:"photo"`
+    Headline           *string   `json:"headline,omitempty"`
+    IsConnected        bool      `json:"is_connected"`
+    IsConnectedRequest string    `json:"is_connected_request,omitempty"` // Pastikan tag JSON benar
 }
 
 type DisconnectResponse struct {
