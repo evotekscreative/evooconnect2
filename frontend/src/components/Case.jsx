@@ -1,10 +1,10 @@
 import React from "react";
 import Navbar from "./Navbar";
 
-export default function Case({ children }) {
+export default function Case({ children, className }) {
     return (
         <>
-        <Navbar />
+        <Navbar className={className} />
         <section>{children}</section>
         </>
     );

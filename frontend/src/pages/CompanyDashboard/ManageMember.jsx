@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Users, UserMinus, UserPlus, Search, X, Check } from "lucide-react";
 import Sidebar from "../../components/CompanyDashboard/Sidebar/sidebar";
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
 import { useRef } from "react";
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Case from "../../components/Case";
 
 const ManageMember = ({ currentUserRole }) => {
@@ -17,27 +17,29 @@ const ManageMember = ({ currentUserRole }) => {
   const [selectedMember, setSelectedMember] = useState(null);
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
-  const [newRole, setNewRole] = useState('admin');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [newRole, setNewRole] = useState("admin");
+  const [searchTerm, setSearchTerm] = useState("");
   const [company, setCompany] = useState(null);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [joinMessage, setJoinMessage] = useState("");
   const [showPendingModal, setShowPendingModal] = useState(false);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [pendingLoading, setPendingLoading] = useState(false);
-  const [pendingError, setPendingError] = useState('');
-  const [pendingRejectReason, setPendingRejectReason] = useState('');
+  const [pendingError, setPendingError] = useState("");
+  const [pendingRejectReason, setPendingRejectReason] = useState("");
   const [pendingRejectingId, setPendingRejectingId] = useState(null);
-  const [roleFilter, setRoleFilter] = useState('all');
+  const [roleFilter, setRoleFilter] = useState("all");
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState(null);
 
   const fetchCompanies = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const url = `${import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:3000'}/api/companies?limit=100&offset=0`;
+      const token = localStorage.getItem("token");
+      const url = `${
+        import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000"
+      }/api/companies?limit=100&offset=0`;
       const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
         const data = await response.json();
@@ -53,10 +55,12 @@ const ManageMember = ({ currentUserRole }) => {
   const fetchMembers = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const url = `${import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:3000'}/api/companies/${company_id}/member-companies?limit=100&offset=0`;
+      const token = localStorage.getItem("token");
+      const url = `${
+        import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000"
+      }/api/companies/${company_id}/member-companies?limit=100&offset=0`;
       const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
@@ -66,23 +70,23 @@ const ManageMember = ({ currentUserRole }) => {
           setMembers(Array.isArray(data.data.members) ? data.data.members : []);
         } else {
           setMembers([]);
-          toast.error('Response is not JSON');
+          toast.error("Response is not JSON");
         }
       } else {
-        let errorMsg = 'Failed to fetch members';
+        let errorMsg = "Failed to fetch members";
         try {
           const contentType = response.headers.get("content-type");
           if (contentType && contentType.includes("application/json")) {
             const errorData = await response.json();
             errorMsg = errorData.message || errorMsg;
           }
-        } catch { }
+        } catch {}
         toast.error(errorMsg);
         setMembers([]);
       }
     } catch (error) {
-      console.error('Error fetching members:', error);
-      toast.error('Failed to fetch members');
+      console.error("Error fetching members:", error);
+      toast.error("Failed to fetch members");
       setMembers([]);
     }
     setLoading(false);
@@ -110,14 +114,18 @@ const ManageMember = ({ currentUserRole }) => {
 
   const fetchCompanyDetail = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const url = `${import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:3000'}/api/companies/${company_id}/details`;
+      const token = localStorage.getItem("token");
+      const url = `${
+        import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000"
+      }/api/companies/${company_id}/details`;
       const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       let data = null;
-      let isJson = response.headers.get("content-type")?.includes("application/json");
+      let isJson = response.headers
+        .get("content-type")
+        ?.includes("application/json");
       if (isJson) {
         data = await response.json();
       } else {
@@ -131,7 +139,7 @@ const ManageMember = ({ currentUserRole }) => {
         setCompany(null);
         toast.error(
           isJson
-            ? (data.message || "Failed to fetch company detail")
+            ? data.message || "Failed to fetch company detail"
             : `Failed to fetch company detail: ${data}`
         );
       }
@@ -144,24 +152,30 @@ const ManageMember = ({ currentUserRole }) => {
 
   const fetchMyJoinRequests = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const url = `${import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:3000'}/api/companies/${company_id}/join-requests?status=pending&limit=10&offset=0`;
+      const token = localStorage.getItem("token");
+      const url = `${
+        import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000"
+      }/api/companies/${company_id}/join-requests?status=pending&limit=10&offset=0`;
       const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
         const raw = await response.json();
         const data = Array.isArray(raw.data) ? raw.data : [];
-        const formatted = data.map(request => ({
+        const formatted = data.map((request) => ({
           ...request,
-          name: request.user?.name || '-',
-          email: request.user?.email || '-'
+          name: request.user?.name || "-",
+          email: request.user?.email || "-",
         }));
         setMyJoinRequests(formatted);
       } else {
         const errText = await response.text();
-        console.error("[fetchMyJoinRequests] response not ok:", response.status, errText);
+        console.error(
+          "[fetchMyJoinRequests] response not ok:",
+          response.status,
+          errText
+        );
         toast.error(`Failed to load join requests: ${response.status}`);
         setMyJoinRequests([]);
       }
@@ -174,23 +188,25 @@ const ManageMember = ({ currentUserRole }) => {
 
   const fetchPendingRequests = async () => {
     setPendingLoading(true);
-    setPendingError('');
+    setPendingError("");
     try {
-      const token = localStorage.getItem('token');
-      const url = `${import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:3000'}/api/companies/${company_id}/join-requests?status=pending&limit=100&offset=0`;
+      const token = localStorage.getItem("token");
+      const url = `${
+        import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000"
+      }/api/companies/${company_id}/join-requests?status=pending&limit=100&offset=0`;
       const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
         const raw = await response.json();
         const data = Array.isArray(raw.data) ? raw.data : [];
         setPendingRequests(data);
       } else {
-        setPendingError('Failed to load pending requests');
+        setPendingError("Failed to load pending requests");
         setPendingRequests([]);
       }
     } catch (error) {
-      setPendingError('Failed to load pending requests');
+      setPendingError("Failed to load pending requests");
       setPendingRequests([]);
     }
     setPendingLoading(false);
@@ -198,66 +214,73 @@ const ManageMember = ({ currentUserRole }) => {
 
   const handleApprovePending = async (requestId) => {
     try {
-      const token = localStorage.getItem('token');
-      const url = `${import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:3000'}/api/company-join-requests/${requestId}/review`;
+      const token = localStorage.getItem("token");
+      const url = `${
+        import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000"
+      }/api/company-join-requests/${requestId}/review`;
       const response = await fetch(url, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ status: 'approved' }),
+        body: JSON.stringify({ status: "approved" }),
       });
 
       if (response.ok) {
-        toast.success('Request approved');
+        toast.success("Request approved");
         setShowPendingModal(false); // Tutup modal setelah approve
         fetchPendingRequests();
         fetchMyJoinRequests();
         fetchMembers();
       } else {
         const errorData = await response.json();
-        toast.error(errorData.message || 'Failed to approve request');
+        toast.error(errorData.message || "Failed to approve request");
       }
     } catch (error) {
-      toast.error('Failed to approve request');
+      toast.error("Failed to approve request");
     }
   };
 
   const handleRejectPending = async (requestId) => {
     if (!pendingRejectReason) {
-      toast.error('Please provide a rejection reason');
+      toast.error("Please provide a rejection reason");
       return;
     }
     try {
-      const token = localStorage.getItem('token');
-      const url = `${import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:3000'}/api/company-join-requests/${requestId}/review`;
+      const token = localStorage.getItem("token");
+      const url = `${
+        import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000"
+      }/api/company-join-requests/${requestId}/review`;
       const response = await fetch(url, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ status: 'rejected', rejection_reason: pendingRejectReason }),
+        body: JSON.stringify({
+          status: "rejected",
+          rejection_reason: pendingRejectReason,
+        }),
       });
       if (response.ok) {
-        toast.success('Request rejected');
+        toast.success("Request rejected");
         setPendingRejectingId(null);
-        setPendingRejectReason('');
+        setPendingRejectReason("");
         setShowPendingModal(false); // Tutup modal setelah reject
         fetchPendingRequests();
         fetchMyJoinRequests();
       } else {
         const errorData = await response.json();
-        toast.error(errorData.message || 'Failed to reject request');
+        toast.error(errorData.message || "Failed to reject request");
       }
     } catch (error) {
-      toast.error('Failed to reject request');
+      toast.error("Failed to reject request");
     }
   };
 
   const handleRemoveMember = (memberId) => {
-    const member = members.find(m => m.id === memberId);
+    const member = members.find((m) => m.id === memberId);
     setMemberToRemove(member);
     setShowRemoveModal(true);
   };
@@ -265,27 +288,29 @@ const ManageMember = ({ currentUserRole }) => {
   const confirmRemoveMember = async () => {
     if (!memberToRemove) return;
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       const response = await fetch(
-        `${import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:3000'}/api/member-companies/${memberToRemove.id}`,
+        `${
+          import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000"
+        }/api/member-companies/${memberToRemove.id}`,
         {
-          method: 'DELETE',
+          method: "DELETE",
           headers: {
-            'Authorization': `Bearer ${token}`,
-          }
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
 
       if (response.ok) {
-        toast.success('Member removed successfully');
+        toast.success("Member removed successfully");
         fetchMembers();
       } else {
         const errorData = await response.json();
-        toast.error(errorData.message || 'Failed to remove member');
+        toast.error(errorData.message || "Failed to remove member");
       }
     } catch (error) {
-      console.error('Error removing member:', error);
-      toast.error('Failed to remove member');
+      console.error("Error removing member:", error);
+      toast.error("Failed to remove member");
     }
     setShowRemoveModal(false);
     setMemberToRemove(null);
@@ -295,26 +320,32 @@ const ManageMember = ({ currentUserRole }) => {
     if (!selectedMember) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       const response = await fetch(
-        `${import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:3000'}/api/member-companies/${selectedMember.id}/role`,
+        `${
+          import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000"
+        }/api/member-companies/${selectedMember.id}/role`,
         {
-          method: 'PUT',
+          method: "PUT",
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
-          body: JSON.stringify({ role: newRole })
+          body: JSON.stringify({ role: newRole }),
         }
       );
 
       if (response.ok) {
-        toast.success(`Role updated to ${newRole.charAt(0).toUpperCase() + newRole.slice(1)} successfully`);
+        toast.success(
+          `Role updated to ${
+            newRole.charAt(0).toUpperCase() + newRole.slice(1)
+          } successfully`
+        );
         setShowRoleModal(false);
 
         // Update state members secara lokal
-        setMembers(prev =>
-          prev.map(m =>
+        setMembers((prev) =>
+          prev.map((m) =>
             m.id === selectedMember.id ? { ...m, role: newRole } : m
           )
         );
@@ -322,23 +353,25 @@ const ManageMember = ({ currentUserRole }) => {
         // fetchMembers(); // Boleh tetap dipanggil jika ingin sync dengan backend
       } else {
         const errorData = await response.json();
-        toast.error(errorData.message || 'Failed to update role');
+        toast.error(errorData.message || "Failed to update role");
       }
     } catch (error) {
-      console.error('Error updating role:', error);
-      toast.error('Failed to update role');
+      console.error("Error updating role:", error);
+      toast.error("Failed to update role");
     }
   };
 
   const handleSubmitJoinRequest = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const url = `${import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:3000'}/api/companies/${company_id}/join-requests`;
+      const token = localStorage.getItem("token");
+      const url = `${
+        import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000"
+      }/api/companies/${company_id}/join-requests`;
       const response = await fetch(url, {
         method: "POST",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ message: joinMessage }),
       });
@@ -358,136 +391,182 @@ const ManageMember = ({ currentUserRole }) => {
   };
 
   const filteredMembers = Array.isArray(members)
-    ? members.filter(member => {
-      const matchesSearch =
-        member.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        member.user?.email?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesRole =
-        roleFilter === 'all' ? true : member.role === roleFilter;
-      return matchesSearch && matchesRole;
-    })
+    ? members.filter((member) => {
+        const matchesSearch =
+          member.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          member.user?.email?.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesRole =
+          roleFilter === "all" ? true : member.role === roleFilter;
+        return matchesSearch && matchesRole;
+      })
     : [];
 
   const myCompanyJoinRequests = Array.isArray(myJoinRequests)
     ? myJoinRequests.filter(
-      (req) => String(req.company_id) === String(company_id)
-    )
+        (req) => String(req.company_id) === String(company_id)
+      )
     : [];
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <>
+                <Sidebar />
+                <div className="relative md:ml-64 bg-blueGray-100">
+      <Case />
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Users className="w-6 h-6" />
+            Manage Members
+            {company && (
+              <span className="ml-4 text-lg font-semibold text-gray-600">
+                ({company.name})
+              </span>
+            )}
+          </h2>
+          <button
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            onClick={() => {
+              setShowPendingModal(true);
+              fetchPendingRequests();
+            }}
+          >
+            Pending Join Users
+          </button>
+        </div>
 
-      <div className="w-64 flex-shrink-0">
-        <Sidebar />
-      </div>
-
-      <div className="flex-1 p-6">
-        <Case/>
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold flex items-center gap-2">
-              <Users className="w-6 h-6" />
-              Manage Members
-              {company && (
-                <span className="ml-4 text-lg font-semibold text-gray-600">
-                  ({company.name})
-                </span>
-              )}
-            </h2>
-            <button
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              onClick={() => {
-                setShowPendingModal(true);
-                fetchPendingRequests();
-              }}
-            >
-              Pending Join Users
-            </button>
+        <div className="flex items-center gap-4 mb-4">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              placeholder="Search members..."
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded w-full focus:outline-none focus:ring focus:border-blue-300 text-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
           </div>
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="border border-gray-300 rounded px-3 py-2 text-sm"
+          >
+            <option value="all">All Roles</option>
+            <option value="super_admin">Super Admin</option>
+            <option value="admin">Admin</option>
+            <option value="hrd">HRD</option>
+            <option value="member">Member</option>
+          </select>
+        </div>
 
-          <div className="flex items-center gap-4 mb-4">
-            <div className="relative flex-1">
-              <input
-                type="text"
-                placeholder="Search members..."
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded w-full focus:outline-none focus:ring focus:border-blue-300 text-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
-            </div>
-            <select
-              value={roleFilter}
-              onChange={e => setRoleFilter(e.target.value)}
-              className="border border-gray-300 rounded px-3 py-2 text-sm"
-            >
-              <option value="all">All Roles</option>
-              <option value="super_admin">Super Admin</option>
-              <option value="admin">Admin</option>
-              <option value="hrd">HRD</option>
-              <option value="member">Member</option>
-            </select>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-white border rounded">
-              <thead>
-                <tr className="text-left border-b bg-gray-50">
-                  <th className="px-4 py-3 text-sm text-gray-600 font-medium">Name</th>
-                  <th className="px-4 py-3 text-sm text-gray-600 font-medium">Email</th>
-                  <th className="px-4 py-3 text-sm text-gray-600 font-medium">Role</th> {/* Tambahkan ini */}
-                  <th className="px-4 py-3 text-sm text-gray-600 font-medium">Status</th>
-                  <th className="px-4 py-3 text-sm text-gray-600 font-medium text-right">Actions</th>
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white border rounded">
+            <thead>
+              <tr className="text-left border-b bg-gray-50">
+                <th className="px-4 py-3 text-sm text-gray-600 font-medium">
+                  Name
+                </th>
+                <th className="px-4 py-3 text-sm text-gray-600 font-medium">
+                  Email
+                </th>
+                <th className="px-4 py-3 text-sm text-gray-600 font-medium">
+                  Role
+                </th>{" "}
+                {/* Tambahkan ini */}
+                <th className="px-4 py-3 text-sm text-gray-600 font-medium">
+                  Status
+                </th>
+                <th className="px-4 py-3 text-sm text-gray-600 font-medium text-right">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td
+                    colSpan="5"
+                    className="px-4 py-6 text-center text-gray-500"
+                  >
+                    Loading members...
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan="5" className="px-4 py-6 text-center text-gray-500">
-                      Loading members...
+              ) : filteredMembers.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan="5"
+                    className="px-4 py-6 text-center text-gray-500"
+                  >
+                    {roleFilter === "all"
+                      ? "No members found"
+                      : "No members found for this role."}
+                  </td>
+                </tr>
+              ) : (
+                filteredMembers.map((member) => (
+                  <tr key={member.id} className="border-b hover:bg-gray-50">
+                    <td className="px-4 py-3 flex items-center gap-3">
+                      <img
+                        src={
+                          member.user?.avatar ||
+                          `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                            member.user?.name || ""
+                          )}`
+                        }
+                        alt={member.user?.name}
+                        className="w-8 h-8 rounded-full"
+                      />
+                      <span className="font-medium text-gray-800">
+                        {member.user?.name}
+                      </span>
                     </td>
-                  </tr>
-                ) : filteredMembers.length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="px-4 py-6 text-center text-gray-500">
-                      {roleFilter === 'all'
-                        ? 'No members found'
-                        : 'No members found for this role.'}
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {member.user?.email}
                     </td>
-                  </tr>
-                ) : (
-                  filteredMembers.map(member => (
-                    <tr key={member.id} className="border-b hover:bg-gray-50">
-                      <td className="px-4 py-3 flex items-center gap-3">
-                        <img
-                          src={member.user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.user?.name || '')}`}
-                          alt={member.user?.name}
-                          className="w-8 h-8 rounded-full"
-                        />
-                        <span className="font-medium text-gray-800">{member.user?.name}</span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{member.user?.email}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600 capitalize">
-                        <span className={`text-xs px-2 py-1 rounded 
-              ${member.role === 'admin' ? 'bg-blue-200 text-blue-700' : ''}
-              ${member.role === 'super_admin' ? 'bg-purple-200 text-purple-700' : ''}
-              ${member.role === 'hrd' ? 'bg-yellow-200 text-yellow-700' : ''}
-              ${member.role === 'member' ? 'bg-gray-200 text-gray-700' : ''}
-            `}>
-                          {member.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 capitalize">
-                        <span className={`text-xs px-2 py-1 rounded 
-    ${member.status === 'pending' ? 'bg-gray-200 text-gray-700' : ''}
-    ${member.status === 'approved' ? 'bg-green-200 text-green-700' : ''}
-    ${member.status === 'rejected' ? 'bg-red-200 text-red-700' : ''}
-  `}>
-                          {member.status.charAt(0).toUpperCase() + member.status.slice(1)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {member.status === 'active' && member.role !== 'super_admin' && (
+                    <td className="px-4 py-3 text-sm text-gray-600 capitalize">
+                      <span
+                        className={`text-xs px-2 py-1 rounded 
+              ${member.role === "admin" ? "bg-blue-200 text-blue-700" : ""}
+              ${
+                member.role === "super_admin"
+                  ? "bg-purple-200 text-purple-700"
+                  : ""
+              }
+              ${member.role === "hrd" ? "bg-yellow-200 text-yellow-700" : ""}
+              ${member.role === "member" ? "bg-gray-200 text-gray-700" : ""}
+            `}
+                      >
+                        {member.role
+                          .replace("_", " ")
+                          .replace(/\b\w/g, (l) => l.toUpperCase())}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 capitalize">
+                      <span
+                        className={`text-xs px-2 py-1 rounded 
+                            ${
+                              member.status === "pending"
+                                ? "bg-gray-200 text-gray-700"
+                                : ""
+                            }
+                            ${
+                              member.status === "approved"
+                                ? "bg-green-200 text-green-700"
+                                : ""
+                            }
+                            ${
+                              member.status === "rejected"
+                                ? "bg-red-200 text-red-700"
+                                : ""
+                            }
+                          `}
+                      >
+                        {member.status.charAt(0).toUpperCase() +
+                          member.status.slice(1)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {member.status === "active" &&
+                        member.role !== "super_admin" && (
                           <div className="flex gap-2 justify-end items-center">
                             <button
                               onClick={() => handleRemoveMember(member.id)}
@@ -498,25 +577,31 @@ const ManageMember = ({ currentUserRole }) => {
                             <button
                               onClick={() => {
                                 setSelectedMember(member);
-                                setNewRole(member.role === 'admin' ? 'member' : 'admin');
+                                setNewRole(
+                                  member.role === "admin" ? "member" : "admin"
+                                );
                                 setShowRoleModal(true);
                               }}
-                              className={`text-sm ${member.role === 'admin' ? 'bg-gray-500 hover:bg-gray-600' : 'bg-blue-500 hover:bg-blue-600'} text-white px-3 py-1 rounded flex items-center`}
+                              className={`text-sm ${
+                                member.role === "admin"
+                                  ? "bg-gray-500 hover:bg-gray-600"
+                                  : "bg-blue-500 hover:bg-blue-600"
+                              } text-white px-3 py-1 rounded flex items-center`}
                             >
-                              {member.role === 'admin' ? 'Change Role' : 'Change Role'}
+                              {member.role === "admin"
+                                ? "Change Role"
+                                : "Change Role"}
                             </button>
                           </div>
                         )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
-
       {/* Modal Pending Users */}
       {showPendingModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -528,7 +613,7 @@ const ManageMember = ({ currentUserRole }) => {
                   setShowPendingModal(false);
                   setPendingRequests([]);
                   setPendingRejectingId(null);
-                  setPendingRejectReason('');
+                  setPendingRejectReason("");
                 }}
                 className="text-gray-500 hover:text-gray-700"
               >
@@ -538,19 +623,32 @@ const ManageMember = ({ currentUserRole }) => {
             {pendingLoading ? (
               <div className="text-center py-8 text-gray-500">Loading...</div>
             ) : pendingError ? (
-              <div className="text-center py-8 text-red-500">{pendingError}</div>
+              <div className="text-center py-8 text-red-500">
+                {pendingError}
+              </div>
             ) : pendingRequests.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">No pending requests.</div>
+              <div className="text-center py-8 text-gray-500">
+                No pending requests.
+              </div>
             ) : (
               <div className="space-y-4 max-h-[60vh] overflow-y-auto">
                 {pendingRequests.map((req) => (
-                  <div key={req.id} className="border-b pb-3 flex flex-col gap-1">
+                  <div
+                    key={req.id}
+                    className="border-b pb-3 flex flex-col gap-1"
+                  >
                     <div className="flex items-center gap-3">
-                      <span className="font-medium">{req.user?.name || '-'}</span>
-                      <span className="text-sm text-gray-500">{req.user?.email || '-'}</span>
+                      <span className="font-medium">
+                        {req.user?.name || "-"}
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        {req.user?.email || "-"}
+                      </span>
                     </div>
                     <div className="text-sm text-gray-600 mb-1">
-                      {req.message || <span className="italic text-gray-400">No message</span>}
+                      {req.message || (
+                        <span className="italic text-gray-400">No message</span>
+                      )}
                     </div>
                     <div className="flex gap-2">
                       <button
@@ -573,14 +671,16 @@ const ManageMember = ({ currentUserRole }) => {
                           rows={2}
                           placeholder="Enter rejection reason..."
                           value={pendingRejectReason}
-                          onChange={e => setPendingRejectReason(e.target.value)}
+                          onChange={(e) =>
+                            setPendingRejectReason(e.target.value)
+                          }
                         />
                         <div className="flex gap-2">
                           <button
                             className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm"
                             onClick={() => {
                               setPendingRejectingId(null);
-                              setPendingRejectReason('');
+                              setPendingRejectReason("");
                             }}
                           >
                             Cancel
@@ -609,17 +709,27 @@ const ManageMember = ({ currentUserRole }) => {
           <div className="bg-white p-6 rounded-lg max-w-md w-full">
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-xl font-bold">Member Details</h3>
-              <button onClick={() => setShowMemberModal(false)} className="text-gray-500 hover:text-gray-700">
+              <button
+                onClick={() => setShowMemberModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
                 &times;
               </button>
             </div>
             <div className="flex flex-col items-center mb-4">
               <img
-                src={selectedMember.user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedMember.user?.name || '')}`}
+                src={
+                  selectedMember.user?.avatar ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    selectedMember.user?.name || ""
+                  )}`
+                }
                 alt={selectedMember.user?.name}
                 className="w-16 h-16 rounded-full mb-3"
               />
-              <h4 className="text-lg font-medium">{selectedMember.user?.name}</h4>
+              <h4 className="text-lg font-medium">
+                {selectedMember.user?.name}
+              </h4>
               <p className="text-gray-600">{selectedMember.user?.email}</p>
               <p className="mt-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm capitalize">
                 {selectedMember.role}
@@ -628,7 +738,8 @@ const ManageMember = ({ currentUserRole }) => {
             <div className="border-t pt-4">
               <h4 className="font-medium mb-2">Additional Information</h4>
               <p className="text-sm text-gray-600">
-                Joined on: {new Date(selectedMember.created_at).toLocaleDateString()}
+                Joined on:{" "}
+                {new Date(selectedMember.created_at).toLocaleDateString()}
               </p>
               <p className="text-sm text-gray-600">
                 Status: {selectedMember.status}
@@ -644,17 +755,22 @@ const ManageMember = ({ currentUserRole }) => {
           <div className="bg-white p-6 rounded-lg max-w-md w-full">
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-xl font-bold">Change Member Role</h3>
-              <button onClick={() => setShowRoleModal(false)} className="text-gray-500 hover:text-gray-700">
+              <button
+                onClick={() => setShowRoleModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
                 &times;
               </button>
             </div>
             <div className="mb-4">
               <p className="mb-2">
-                Change role for <span className="font-medium">{selectedMember.user?.name}</span> to:
+                Change role for{" "}
+                <span className="font-medium">{selectedMember.user?.name}</span>{" "}
+                to:
               </p>
               <select
                 value={newRole}
-                onChange={e => setNewRole(e.target.value)}
+                onChange={(e) => setNewRole(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded"
               >
                 <option value="admin">Admin</option>
@@ -702,7 +818,7 @@ const ManageMember = ({ currentUserRole }) => {
               </label>
               <textarea
                 value={joinMessage}
-                onChange={e => setJoinMessage(e.target.value)}
+                onChange={(e) => setJoinMessage(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded"
                 rows={3}
                 placeholder="Why do you want to join?"
@@ -747,7 +863,11 @@ const ManageMember = ({ currentUserRole }) => {
             </div>
             <div className="mb-4">
               <p>
-                Are you sure you want to remove <span className="font-semibold">{memberToRemove.user?.name}</span> from this company?
+                Are you sure you want to remove{" "}
+                <span className="font-semibold">
+                  {memberToRemove.user?.name}
+                </span>{" "}
+                from this company?
               </p>
             </div>
             <div className="flex justify-end gap-3">
@@ -771,6 +891,7 @@ const ManageMember = ({ currentUserRole }) => {
         </div>
       )}
     </div>
+    </>
   );
 };
 
