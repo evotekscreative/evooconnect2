@@ -29,10 +29,9 @@ const (
 	ExperienceLevelExecutive ExperienceLevel = "executive"
 
 	// Job Vacancy Status
-	JobVacancyStatusDraft    JobVacancyStatus = "draft"
-	JobVacancyStatusActive   JobVacancyStatus = "active"
-	JobVacancyStatusClosed   JobVacancyStatus = "closed"
-	JobVacancyStatusArchived JobVacancyStatus = "archived"
+	JobVacancyStatusActive JobVacancyStatus = "active"
+	JobVacancyStatusClosed JobVacancyStatus = "closed"
+	JobVacancyStatusAll    JobVacancyStatus = "all"
 
 	// Work Types
 	WorkTypeRemote   WorkType = "remote"

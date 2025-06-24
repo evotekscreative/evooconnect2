@@ -540,6 +540,38 @@ func (service *JobVacancyServiceImpl) FindByCompanyIdWithStatus(ctx context.Cont
 	}
 }
 
+// GetRandomJobs returns a random selection of job vacancies
+func (service *JobVacancyServiceImpl) GetRandomJobs(ctx context.Context, page, pageSize int, userId *uuid.UUID) web.JobVacancyListResponse {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Set default pagination values
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 || pageSize > 100 {
+		pageSize = 10
+
+	}
+	// Calculate offset
+	offset := (page - 1) * pageSize
+	// Get random job vacancies
+	jobVacancies, totalCount := service.JobVacancyRepository.FindRandomJobs(ctx, tx, pageSize, offset)
+	// Calculate total pages
+	totalPages := int(math.Ceil(float64(totalCount) / float64(pageSize)))
+	// Convert to response with user-specific data
+	jobVacancyResponses := service.toJobVacancyResponses(ctx, tx, jobVacancies, userId)
+	return web.JobVacancyListResponse{
+		Jobs: jobVacancyResponses,
+
+		TotalCount: totalCount,
+		Page:       page,
+		PageSize:   pageSize,
+		TotalPages: totalPages,
+	}
+}
+
 // Helper functions
 func (service *JobVacancyServiceImpl) toJobVacancyResponse(ctx context.Context, tx *sql.Tx, jobVacancy domain.JobVacancy, userId *uuid.UUID) web.JobVacancyResponse {
 	response := web.JobVacancyResponse{

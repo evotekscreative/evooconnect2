@@ -56,6 +56,7 @@ func setupUserRoutes(
 
 	// ========== PUBLIC JOB VACANCY ROUTES ==========
 	// All specific routes MUST come before wildcard routes
+	router.GET("/api/jobs/random", jobVacancyController.GetRandomJobs)
 	router.GET("/api/jobs/active", jobVacancyController.FindActiveJobs)
 	router.GET("/api/jobs/search", jobVacancyController.SearchJobs)
 	router.GET("/api/jobs", jobVacancyController.FindAll)

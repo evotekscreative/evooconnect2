@@ -354,6 +354,22 @@ func (controller *JobVacancyControllerImpl) GetPublicJobDetail(writer http.Respo
 	helper.WriteToResponseBody(writer, webResponse)
 }
 
+// GetRandomJobs returns a list of random job vacancies
+func (controller *JobVacancyControllerImpl) GetRandomJobs(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	// Get 2 random job vacancies
+	page := parseInt(request.URL.Query().Get("page"), 1)
+	pageSize := parseInt(request.URL.Query().Get("pageSize"), 2)
+	jobVacanciesResponse := controller.JobVacancyService.GetRandomJobs(request.Context(), page, pageSize, nil)
+	webResponse := web.WebResponse{
+		Code:   200,
+		Status: "OK",
+		Data:   jobVacanciesResponse,
+	}
+
+	helper.WriteToResponseBody(writer, webResponse)
+
+}
+
 // Helper functions
 func parseFloatPtr(s string) *float64 {
 	if s == "" {
