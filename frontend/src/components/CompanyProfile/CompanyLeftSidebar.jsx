@@ -5,6 +5,7 @@ import { Button } from "../../components/Button";
 import PostJobModal from "../../components/Jobs/PostJobModal.jsx";
 
 export default function CompanyLeftSidebar({ company }) {
+          const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
   const [showPostAJobModal, setShowPostAJobModal] = useState(false);
 
@@ -100,7 +101,7 @@ export default function CompanyLeftSidebar({ company }) {
       />
 
       <div className="flex flex-col items-center bg-white p-6 rounded-md shadow">
-        <img src={'http://localhost:3000/' + company.logo}
+        <img src={apiUrl+'/' + company.logo}
         alt="Company Logo" 
         className="w-40 h-40" />
         <h2 className="text-lg font-bold mt-4">{company.name}</h2>

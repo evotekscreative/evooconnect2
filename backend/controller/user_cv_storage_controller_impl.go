@@ -104,6 +104,9 @@ func (controller *UserCvStorageControllerImpl) GetUserCv(writer http.ResponseWri
 			})
 			return
 		}
+	} else {
+		// If no userId in params, use the authenticated user's ID
+		paramUserId = userId
 	}
 
 	// Check authorization

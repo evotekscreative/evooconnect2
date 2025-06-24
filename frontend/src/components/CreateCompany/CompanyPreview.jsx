@@ -1,7 +1,7 @@
 export default function CompanyPreview({ form, logoPreview }) {
     return (
         <div className="w-1/3">
-            <div className="bg-white p-4 rounded-xl shadow border">
+            <div className="sticky top-8 bg-white p-4 rounded-xl shadow border">
                 <div className="mb-4">
                     <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-1">
                         Page preview

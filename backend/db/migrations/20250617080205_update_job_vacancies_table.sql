@@ -90,8 +90,17 @@ ALTER TABLE job_vacancies ADD CONSTRAINT job_vacancies_experience_level_check
 ALTER TABLE job_vacancies ADD CONSTRAINT job_vacancies_status_check 
     CHECK (status IN ('draft', 'active', 'closed', 'archived'));
 
-ALTER TABLE job_vacancies ADD CONSTRAINT job_vacancies_work_type_check 
-    CHECK (work_type IN ('remote', 'hybrid', 'in-office'));
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'job_vacancies_work_type_check'
+    ) THEN
+        ALTER TABLE job_vacancies ADD CONSTRAINT job_vacancies_work_type_check 
+            CHECK (work_type IN ('remote', 'hybrid', 'in-office'));
+    END IF;
+END $$;
+
 
 -- Update creator_id to allow NULL (check if constraint exists)
 DO $$ BEGIN
