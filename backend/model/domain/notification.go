@@ -44,6 +44,10 @@ const (
 	NotificationTypeBlogNew          NotificationType = "blog_new"
 	NotificationTypeBlogComment      NotificationType = "blog_comment"
 	NotificationTypeBlogCommentReply NotificationType = "blog_comment_reply"
+
+	// Company notifications
+	NotificationTypeJobApplicationReceived NotificationType = "job_application_received"
+    NotificationTypeJobApplicationReviewed NotificationType = "job_application_reviewed"
 )
 
 // NotificationStatus represents the status of a notification

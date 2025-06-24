@@ -9,7 +9,7 @@ import TermsCondition from "./pages/TermsCondition.jsx";
 import Jobs from "./pages/Jobs/jobs.jsx";
 import JobProfile from "./pages/company-profile/JobProfile.jsx";
 import Faq from "./pages/Faq/faq.jsx";
-import CompanyProfile from "./pages/company-profile/CompanyProfile.jsx";
+
 import Groups from "./pages/Groups.jsx";
 import CreateBlog from "./pages/Blog/CreateBlog.jsx";
 import BlogDetail from "./pages/Blog/BlogDetail.jsx";

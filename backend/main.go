@@ -314,6 +314,7 @@ func main() {
 		jobVacancyRepository,
 		userRepository,
 		memberCompanyRepository,
+		notificationService,
 		db,
 		validate,
 	)
