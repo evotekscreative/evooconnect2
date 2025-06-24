@@ -10,7 +10,7 @@ import (
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
 
-	// "fmt"
+	"fmt"
 	"log"
 	"mime/multipart"
 	"time"
@@ -270,34 +270,34 @@ func (service *CompanySubmissionServiceImpl) Review(ctx context.Context, submiss
 	}
 
 	// Send notification to user
-	// if service.NotificationService != nil {
-	// 	go func() {
-	// 		var title, message string
-	// 		refType := "company_submission_reviewed"
+	if service.NotificationService != nil {
+		go func() {
+			var title, message string
+			refType := "company_submission_reviewed"
 
-	// 		if submission.Status == domain.CompanySubmissionStatusApproved {
-	// 			title = "Company Submission Approved"
-	// 			message = fmt.Sprintf("Congratulations! Your company submission for '%s' has been approved", submission.Name)
-	// 		} else {
-	// 			title = "Company Submission Rejected"
-	// 			message = fmt.Sprintf("Your company submission for '%s' has been rejected. Reason: %s", submission.Name, submission.RejectionReason)
-	// 		}
+			if submission.Status == domain.CompanySubmissionStatusApproved {
+				title = "Company Submission Approved"
+				message = fmt.Sprintf("Congratulations! Your company submission for '%s' has been approved", submission.Name)
+			} else {
+				title = "Company Submission Rejected"
+				message = fmt.Sprintf("Your company submission for '%s' has been rejected. Reason: %s", submission.Name, submission.RejectionReason)
+			}
 
-	// 		// Fix: Jangan kirim reviewerId sebagai actor_id karena itu admin ID, bukan user ID
-	// 		// Kirim nil untuk actor_id atau buat sistem admin notification terpisah
-	// 		service.NotificationService.Create(
-	// 			context.Background(),
-	// 			submission.UserId,
-	// 			string(domain.NotificationCategoryCompany),
-	// 			"company_submission_reviewed",
-	// 			title,
-	// 			message,
-	// 			&submission.Id,
-	// 			&refType,
-	// 			nil, // Set actor_id ke nil karena admin bukan user
-	// 		)
-	// 	}()
-	// }
+			// Fix: Jangan kirim reviewerId sebagai actor_id karena itu admin ID, bukan user ID
+			// Kirim nil untuk actor_id atau buat sistem admin notification terpisah
+			service.NotificationService.Create(
+				context.Background(),
+				submission.UserId,
+				string(domain.NotificationCategoryCompany),
+				"company_submission_reviewed",
+				title,
+				message,
+				&submission.Id,
+				&refType,
+				nil, // Set actor_id ke nil karena admin bukan user
+			)
+		}()
+	}
 
 	log.Printf("Review process completed successfully")
 	return helper.ToCompanySubmissionResponse(submission)
