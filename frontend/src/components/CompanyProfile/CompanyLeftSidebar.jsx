@@ -89,7 +89,7 @@ export default function CompanyLeftSidebar({ company }) {
     toast.success("Job posted successfully!");
   };
   return (
-    <div className="lg:col-span-3 space-y-6">
+    <div className="lg:col-span-3 space-y-6 mt-1">
 
       <PostJobModal
         showModal={showPostAJobModal}

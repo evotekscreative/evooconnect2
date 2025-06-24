@@ -314,7 +314,7 @@ export default function CompanyHeader({ company, currentUser }) {
               <button
                 onClick={handleFollow}
                 disabled={isSubmitting}
-                className={`px-4 py-2 rounded-md text-white text-sm transition-colors ${company.is_following ? "bg-green-500 hover:bg-green-600" : "bg-blue-500 hover:bg-blue-600"
+                className={`px-4 py-2 rounded bg-blue-600 text-white ${company.is_following ? "bg-green-500 hover:bg-green-600" : "bg-blue-500 hover:bg-blue-600"
                   }`}
               >
                 {isSubmitting ? 'Processing...' : company.is_following ? 'Followed' : '+ Follow'}

@@ -8,10 +8,9 @@ export default function JobMainContent({ job, clickedSave, handleSaveClick }) {
         <div className="lg:col-span-2 space-y-4 w-full max-w-3xl mx-auto">
             {/* Header */}
             <JobHeader job={job} clickedSave={clickedSave} handleSaveClick={handleSaveClick} />
-
-            {/* Kotak besar: Overview/Detail Lowongan */}
+            {/*Vacancy Details*/}
             <div className="bg-white p-6 rounded-lg shadow mt-2">
-                <h2 className="text-xl font-semibold mb-2">Detail Lowongan</h2>
+                <h2 className="text-xl font-semibold mb-2">Detail Vacancy</h2>
                 <hr />
                 <div className="text-sm text-gray-600 mt-3 break-words whitespace-pre-line">
                     {job.description}
