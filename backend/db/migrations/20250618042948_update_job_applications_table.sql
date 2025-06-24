@@ -1,13 +1,19 @@
+-- +goose Up
 -- Update job_applications table for CV management
-ALTER TABLE job_applications 
-ALTER COLUMN cv_file_path SET NOT NULL,
-ALTER COLUMN contact_info SET NOT NULL,
-ALTER COLUMN motivation_letter DROP NOT NULL,
-ALTER COLUMN cover_letter DROP NOT NULL,
-ALTER COLUMN expected_salary DROP NOT NULL,
-ALTER COLUMN available_start_date DROP NOT NULL;
 
--- Add constraint to ensure contact_info has required fields
+-- Check if cv_file_path column exists and update constraints
+ALTER TABLE job_applications ALTER COLUMN cv_file_path SET NOT NULL;
+
+-- Check if contact_info column exists and update constraints
+ALTER TABLE job_applications ALTER COLUMN contact_info SET NOT NULL;
+
+-- Drop NOT NULL constraints from optional columns
+ALTER TABLE job_applications ALTER COLUMN motivation_letter DROP NOT NULL;
+ALTER TABLE job_applications ALTER COLUMN cover_letter DROP NOT NULL;
+ALTER TABLE job_applications ALTER COLUMN expected_salary DROP NOT NULL;
+ALTER TABLE job_applications ALTER COLUMN available_start_date DROP NOT NULL;
+
+-- Add constraint
 ALTER TABLE job_applications 
 ADD CONSTRAINT check_contact_info_required 
 CHECK (
@@ -19,7 +25,7 @@ CHECK (
     length(contact_info::jsonb->>'address') > 0
 );
 
--- Add user_cv_path table for CV management
+-- Create table only if it doesn't exist
 CREATE TABLE IF NOT EXISTS user_cv_storage (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -31,6 +37,23 @@ CREATE TABLE IF NOT EXISTS user_cv_storage (
     UNIQUE(user_id)
 );
 
--- Create index for faster lookups
-CREATE INDEX idx_user_cv_storage_user_id ON user_cv_storage(user_id);
+-- Create index
+CREATE INDEX IF NOT EXISTS idx_user_cv_storage_user_id ON user_cv_storage(user_id);
 
+-- +goose Down
+-- Drop index
+DROP INDEX IF EXISTS idx_user_cv_storage_user_id;
+
+-- Drop table
+DROP TABLE IF EXISTS user_cv_storage;
+
+-- Drop constraint
+ALTER TABLE job_applications DROP CONSTRAINT IF EXISTS check_contact_info_required;
+
+-- Revert column constraints
+ALTER TABLE job_applications ALTER COLUMN cv_file_path DROP NOT NULL;
+ALTER TABLE job_applications ALTER COLUMN contact_info DROP NOT NULL;
+ALTER TABLE job_applications ALTER COLUMN motivation_letter SET NOT NULL;
+ALTER TABLE job_applications ALTER COLUMN cover_letter SET NOT NULL;
+ALTER TABLE job_applications ALTER COLUMN expected_salary SET NOT NULL;
+ALTER TABLE job_applications ALTER COLUMN available_start_date SET NOT NULL;

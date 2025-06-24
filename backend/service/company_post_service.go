@@ -16,7 +16,6 @@ type CompanyPostService interface {
 	FindByCompanyId(ctx context.Context, companyId uuid.UUID, userId uuid.UUID, limit, offset int) web.CompanyPostListResponse
 	FindByCreatorId(ctx context.Context, creatorId uuid.UUID, userId uuid.UUID, limit, offset int) web.CompanyPostListResponse
 	FindWithFilters(ctx context.Context, userId uuid.UUID, filter web.CompanyPostFilterRequest) web.CompanyPostListResponse
-	UpdateStatus(ctx context.Context, userId, postId uuid.UUID, status string) web.CompanyPostResponse
 
 	// Like functionality - following same pattern as PostService
 	LikePost(ctx context.Context, userId, postId uuid.UUID)

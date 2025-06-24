@@ -14,8 +14,7 @@ type CompanyPostRepository interface {
 	FindById(ctx context.Context, tx *sql.Tx, postId uuid.UUID) (domain.CompanyPost, error)
 	FindByCompanyId(ctx context.Context, tx *sql.Tx, companyId uuid.UUID, limit, offset int) ([]domain.CompanyPost, int, error)
 	FindByCreatorId(ctx context.Context, tx *sql.Tx, creatorId uuid.UUID, limit, offset int) ([]domain.CompanyPost, int, error)
-	FindWithFilters(ctx context.Context, tx *sql.Tx, companyId *uuid.UUID, status, visibility string, creatorId *uuid.UUID, search string, limit, offset int) ([]domain.CompanyPost, int, error)
-	UpdateStatus(ctx context.Context, tx *sql.Tx, postId uuid.UUID, status string) error
+	FindWithFilters(ctx context.Context, tx *sql.Tx, companyId *uuid.UUID, visibility string, creatorId *uuid.UUID, search string, limit, offset int) ([]domain.CompanyPost, int, error)
 	CountByCompanyId(ctx context.Context, tx *sql.Tx, companyId uuid.UUID) (int, error)
 	GetCommentsCount(ctx context.Context, tx *sql.Tx, postId uuid.UUID) (int, error)
 

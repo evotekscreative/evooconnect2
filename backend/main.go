@@ -98,6 +98,8 @@ func main() {
 	jobApplicationRepository := repository.NewJobApplicationRepository()
 	userCvStorageRepository := repository.NewUserCvStorageRepository()
 
+	savedJobRepository := repository.NewSavedJobRepository()
+
 	// ===== Services =====
 	// Notification service (moved up because it's used by many other services)
 	notificationService := service.NewNotificationService(
@@ -305,6 +307,8 @@ func main() {
 		jobVacancyRepository,
 		companyRepository,
 		userRepository,
+		savedJobRepository,
+		jobApplicationRepository,
 		db,
 		validate,
 	)
@@ -319,6 +323,13 @@ func main() {
 	)
 
 	userCvStorageService := service.NewUserCvStorageService(userCvStorageRepository, userRepository, db, validate)
+
+	savedJobService := service.NewSavedJobService(
+		savedJobRepository,
+		jobVacancyRepository,
+		db,
+		validate,
+	)
 
 	// ===== Controllers =====
 	// User-related controllers
@@ -388,6 +399,9 @@ func main() {
 	jobApplicationController := controller.NewJobApplicationController(jobApplicationService)
 	userCvStorageController := controller.NewUserCvStorageController(userCvStorageService)
 
+	// Add to the controllers section:
+	savedJobController := controller.NewSavedJobController(savedJobService)
+
 	// ===== Router and Middleware =====
 	// Initialize router with all controllers and JWT secret
 	router := app.NewRouter(
@@ -421,6 +435,7 @@ func main() {
 		jobVacancyController,
 		jobApplicationController,
 		userCvStorageController,
+		savedJobController,
 	)
 
 	// Seed admin data
@@ -439,7 +454,7 @@ func main() {
 		Handler: handler,
 	}
 
-	fmt.Println("\nServer starting on ", address)
+	fmt.Println("\nServer starting on", "http://"+address)
 	err := server.ListenAndServe()
 	helper.PanicIfError(err)
 }

@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"evoconnect/backend/model/domain"
 	"evoconnect/backend/model/web"
+	"time"
 	"fmt"
 	"github.com/google/uuid"
 	
-	"time"
 	// "evoconnect/backend/repository"
 )
 
@@ -418,19 +418,21 @@ func ToJoinRequestResponse(request domain.GroupJoinRequest) web.JoinRequestRespo
 }
 
 func ToNotificationResponse(notification domain.Notification) web.NotificationResponse {
-    return web.NotificationResponse{
-        Id:           notification.Id,
-        Category:     string(notification.Category),
-        Type:         string(notification.Type),
-        Title:        notification.Title,
-        Message:      notification.Message,
-        Status:       string(notification.Status),
-        ReferenceId:  notification.ReferenceId,
-        ReferenceType: notification.ReferenceType,
-        CreatedAt:    notification.CreatedAt,
-        UpdatedAt:    notification.UpdatedAt,
-        Actor:        nil, // Untuk sementara set nil, nanti bisa diisi jika diperlukan
-    }}
+	return web.NotificationResponse{
+		Id:            notification.Id,
+		Category:      string(notification.Category),
+		Type:          string(notification.Type),
+		Title:         notification.Title,
+		Message:       notification.Message,
+		Status:        string(notification.Status),
+		ReferenceId:   notification.ReferenceId,
+		ReferenceType: notification.ReferenceType,
+		CreatedAt:     notification.CreatedAt,
+		UpdatedAt:     notification.UpdatedAt,
+		Actor:         nil, // Untuk sementara set nil, nanti bisa diisi jika diperlukan
+	}
+}
+
 func ToCompanyFollowerResponse(follower domain.CompanyFollower) web.CompanyFollowerResponse {
 	response := web.CompanyFollowerResponse{
 		Id:        follower.Id.String(),
@@ -619,6 +621,7 @@ func ToJobVacancyResponse(jobVacancy domain.JobVacancy) web.JobVacancyResponse {
 		ExternalLink:        jobVacancy.ExternalLink,
 		CreatedAt:           jobVacancy.CreatedAt,
 		UpdatedAt:           jobVacancy.UpdatedAt,
+    TakenDownAt:         jobVacancy.TakenDownAt,
 		Company:             companyResponse,
 		Creator:             creatorResponse,
 	}
@@ -630,6 +633,22 @@ func ToJobVacancyResponses(jobVacancies []domain.JobVacancy) []web.JobVacancyRes
 		responses = append(responses, ToJobVacancyResponse(jobVacancy))
 	}
 	return responses
+}
+
+func ToSavedJobResponse(savedJob domain.SavedJob) web.SavedJobResponse {
+	response := web.SavedJobResponse{
+		Id:           savedJob.Id,
+		UserId:       savedJob.UserId,
+		JobVacancyId: savedJob.JobVacancyId,
+		CreatedAt:    savedJob.CreatedAt,
+	}
+
+	if savedJob.JobVacancy != nil {
+		jobVacancyResponse := ToJobVacancyResponse(*savedJob.JobVacancy)
+		response.JobVacancy = &jobVacancyResponse
+	}
+
+	return response
 }
 
 func ToAdminResponse(admin domain.Admin) web.AdminResponse {
@@ -689,6 +708,13 @@ func ToCompanyJoinRequestResponse(request domain.CompanyJoinRequest) web.Company
 	return response
 }
 
+func ToSavedJobResponses(savedJobs []domain.SavedJob) []web.SavedJobResponse {
+	var savedJobResponses []web.SavedJobResponse
+	for _, savedJob := range savedJobs {
+		savedJobResponses = append(savedJobResponses, ToSavedJobResponse(savedJob))
+	}
+	return savedJobResponses
+}
 func ToCompanySubmissionResponse(submission domain.CompanySubmission) web.CompanySubmissionResponse {
 	response := web.CompanySubmissionResponse{
 		ID:              submission.Id,

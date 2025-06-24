@@ -252,15 +252,18 @@ func (repository *JobVacancyRepositoryImpl) FindById(ctx context.Context, tx *sq
 
 func (repository *JobVacancyRepositoryImpl) FindByCompanyId(ctx context.Context, tx *sql.Tx, companyId uuid.UUID, limit, offset int) []domain.JobVacancy {
 	query := `
-        SELECT 
-            id, company_id, creator_id, title, description, requirements, 
-            location, job_type, experience_level, min_salary, max_salary, 
-            currency, skills, benefits, work_type, application_deadline, 
-            status, type_apply, external_link, created_at, updated_at
-        FROM job_vacancies 
-        WHERE company_id = $1 
-        ORDER BY created_at DESC 
-        LIMIT $2 OFFSET $3`
+		SELECT 
+			jv.id, jv.company_id, jv.creator_id, jv.title, jv.description, 
+			jv.requirements, jv.location, jv.job_type, jv.experience_level, 
+			jv.min_salary, jv.max_salary, jv.currency, jv.skills, jv.benefits, 
+			jv.work_type, jv.application_deadline, jv.status, jv.type_apply, 
+			jv.external_link, jv.created_at, jv.updated_at,
+			c.id, c.name, c.logo, c.industry
+		FROM job_vacancies jv
+		LEFT JOIN companies c ON jv.company_id = c.id
+		WHERE jv.company_id = $1 
+		ORDER BY jv.created_at DESC 
+		LIMIT $2 OFFSET $3`
 
 	rows, err := tx.QueryContext(ctx, query, companyId, limit, offset)
 	helper.PanicIfError(err)
@@ -269,10 +272,12 @@ func (repository *JobVacancyRepositoryImpl) FindByCompanyId(ctx context.Context,
 	var jobVacancies []domain.JobVacancy
 	for rows.Next() {
 		var jobVacancy domain.JobVacancy
+		var company domain.Company
 		var minSalary, maxSalary sql.NullFloat64
 		var applicationDeadline sql.NullTime
 		var externalLink sql.NullString
 		var creatorId sql.NullString
+		var companyLogo, companyIndustry sql.NullString
 
 		err := rows.Scan(
 			&jobVacancy.Id,
@@ -296,6 +301,10 @@ func (repository *JobVacancyRepositoryImpl) FindByCompanyId(ctx context.Context,
 			&externalLink,
 			&jobVacancy.CreatedAt,
 			&jobVacancy.UpdatedAt,
+			&company.Id,
+			&company.Name,
+			&companyLogo,
+			&companyIndustry,
 		)
 		helper.PanicIfError(err)
 
@@ -317,6 +326,15 @@ func (repository *JobVacancyRepositoryImpl) FindByCompanyId(ctx context.Context,
 			jobVacancy.ExternalLink = &externalLink.String
 		}
 
+		// Handle nullable company fields
+		if companyLogo.Valid {
+			company.Logo = companyLogo.String
+		}
+		if companyIndustry.Valid {
+			company.Industry = companyIndustry.String
+		}
+
+		jobVacancy.Company = &company
 		jobVacancies = append(jobVacancies, jobVacancy)
 	}
 
@@ -387,14 +405,17 @@ func (repository *JobVacancyRepositoryImpl) CountByCreatorId(ctx context.Context
 
 func (repository *JobVacancyRepositoryImpl) FindAll(ctx context.Context, tx *sql.Tx, limit, offset int) []domain.JobVacancy {
 	query := `
-        SELECT 
-            id, company_id, creator_id, title, description, requirements, 
-            location, job_type, experience_level, min_salary, max_salary, 
-            currency, skills, benefits, work_type, application_deadline, 
-            status, type_apply, external_link, created_at, updated_at
-        FROM job_vacancies 
-        ORDER BY created_at DESC 
-        LIMIT $1 OFFSET $2`
+		SELECT 
+			jv.id, jv.company_id, jv.creator_id, jv.title, jv.description, 
+			jv.requirements, jv.location, jv.job_type, jv.experience_level, 
+			jv.min_salary, jv.max_salary, jv.currency, jv.skills, jv.benefits, 
+			jv.work_type, jv.application_deadline, jv.status, jv.type_apply, 
+			jv.external_link, jv.created_at, jv.updated_at,
+			c.id, c.name, c.logo, c.industry
+		FROM job_vacancies jv
+		LEFT JOIN companies c ON jv.company_id = c.id
+		ORDER BY jv.created_at DESC 
+		LIMIT $1 OFFSET $2`
 
 	rows, err := tx.QueryContext(ctx, query, limit, offset)
 	helper.PanicIfError(err)
@@ -403,10 +424,12 @@ func (repository *JobVacancyRepositoryImpl) FindAll(ctx context.Context, tx *sql
 	var jobVacancies []domain.JobVacancy
 	for rows.Next() {
 		var jobVacancy domain.JobVacancy
+		var company domain.Company
 		var minSalary, maxSalary sql.NullFloat64
 		var applicationDeadline sql.NullTime
 		var externalLink sql.NullString
 		var creatorId sql.NullString
+		var companyLogo, companyIndustry sql.NullString
 
 		err := rows.Scan(
 			&jobVacancy.Id,
@@ -430,6 +453,10 @@ func (repository *JobVacancyRepositoryImpl) FindAll(ctx context.Context, tx *sql
 			&externalLink,
 			&jobVacancy.CreatedAt,
 			&jobVacancy.UpdatedAt,
+			&company.Id,
+			&company.Name,
+			&companyLogo,
+			&companyIndustry,
 		)
 		helper.PanicIfError(err)
 
@@ -451,6 +478,15 @@ func (repository *JobVacancyRepositoryImpl) FindAll(ctx context.Context, tx *sql
 			jobVacancy.ExternalLink = &externalLink.String
 		}
 
+		// Handle nullable company fields
+		if companyLogo.Valid {
+			company.Logo = companyLogo.String
+		}
+		if companyIndustry.Valid {
+			company.Industry = companyIndustry.String
+		}
+
+		jobVacancy.Company = &company
 		jobVacancies = append(jobVacancies, jobVacancy)
 	}
 
@@ -459,16 +495,19 @@ func (repository *JobVacancyRepositoryImpl) FindAll(ctx context.Context, tx *sql
 
 func (repository *JobVacancyRepositoryImpl) FindActiveJobs(ctx context.Context, tx *sql.Tx, limit, offset int) []domain.JobVacancy {
 	query := `
-        SELECT 
-            id, company_id, creator_id, title, description, requirements, 
-            location, job_type, experience_level, min_salary, max_salary, 
-            currency, skills, benefits, work_type, application_deadline, 
-            status, type_apply, external_link, created_at, updated_at
-        FROM job_vacancies 
-        WHERE status = 'active' 
-        AND (application_deadline IS NULL OR application_deadline > NOW())
-        ORDER BY created_at DESC 
-        LIMIT $1 OFFSET $2`
+		SELECT 
+			jv.id, jv.company_id, jv.creator_id, jv.title, jv.description, 
+			jv.requirements, jv.location, jv.job_type, jv.experience_level, 
+			jv.min_salary, jv.max_salary, jv.currency, jv.skills, jv.benefits, 
+			jv.work_type, jv.application_deadline, jv.status, jv.type_apply, 
+			jv.external_link, jv.created_at, jv.updated_at,
+			c.id, c.name, c.logo, c.industry
+		FROM job_vacancies jv
+		LEFT JOIN companies c ON jv.company_id = c.id
+		WHERE jv.status = 'active' 
+		AND (jv.application_deadline IS NULL OR jv.application_deadline > NOW())
+		ORDER BY jv.created_at DESC 
+		LIMIT $1 OFFSET $2`
 
 	rows, err := tx.QueryContext(ctx, query, limit, offset)
 	helper.PanicIfError(err)
@@ -477,10 +516,12 @@ func (repository *JobVacancyRepositoryImpl) FindActiveJobs(ctx context.Context, 
 	var jobVacancies []domain.JobVacancy
 	for rows.Next() {
 		var jobVacancy domain.JobVacancy
+		var company domain.Company
 		var minSalary, maxSalary sql.NullFloat64
 		var applicationDeadline sql.NullTime
 		var externalLink sql.NullString
 		var creatorId sql.NullString
+		var companyLogo, companyIndustry sql.NullString
 
 		err := rows.Scan(
 			&jobVacancy.Id,
@@ -504,6 +545,10 @@ func (repository *JobVacancyRepositoryImpl) FindActiveJobs(ctx context.Context, 
 			&externalLink,
 			&jobVacancy.CreatedAt,
 			&jobVacancy.UpdatedAt,
+			&company.Id,
+			&company.Name,
+			&companyLogo,
+			&companyIndustry,
 		)
 		helper.PanicIfError(err)
 
@@ -525,6 +570,15 @@ func (repository *JobVacancyRepositoryImpl) FindActiveJobs(ctx context.Context, 
 			jobVacancy.ExternalLink = &externalLink.String
 		}
 
+		// Handle nullable company fields
+		if companyLogo.Valid {
+			company.Logo = companyLogo.String
+		}
+		if companyIndustry.Valid {
+			company.Industry = companyIndustry.String
+		}
+
+		jobVacancy.Company = &company
 		jobVacancies = append(jobVacancies, jobVacancy)
 	}
 
