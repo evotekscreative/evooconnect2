@@ -13,8 +13,8 @@ export default function CompanyDashboard() {
             <div className="relative md:ml-64 bg-blueGray-100">
                 <Case />
                 <HeaderStats />
-                <div className="px-4 md:px-10 mx-auto w-full pt-20 -m-44">
-                    <div className="flex flex-wrap mt-4">
+                <div className="px-4 md:px-10 mx-auto w-full pt-20 -m-32">
+            <div className="flex flex-wrap mt-4">
                         <div className="w-full mb-12 px-4">
                             <TableSetting />
                         </div>
