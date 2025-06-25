@@ -22,18 +22,19 @@ var validReasons = []string{
 }
 
 type reportServiceImpl struct {
-	reportRepository      repository.ReportRepository
-	userRepository        repository.UserRepository
-	postRepository        repository.PostRepository
-	commentRepository     repository.CommentRepository
-	blogRepository        repository.BlogRepository
-	commentBlogRepository repository.CommentBlogRepository
-	groupRepository       repository.GroupRepository
-	companyRepository     repository.CompanyRepository
-	companyPostRepository repository.CompanyPostRepository
-	jobVacancyRepository  repository.JobVacancyRepository
-	notificationService   NotificationService
-	db                    *sql.DB
+	reportRepository             repository.ReportRepository
+	userRepository               repository.UserRepository
+	postRepository               repository.PostRepository
+	commentRepository            repository.CommentRepository
+	blogRepository               repository.BlogRepository
+	commentBlogRepository        repository.CommentBlogRepository
+	groupRepository              repository.GroupRepository
+	companyRepository            repository.CompanyRepository
+	companyPostRepository        repository.CompanyPostRepository
+	companyPostCommentRepository repository.CompanyPostCommentRepository
+	jobVacancyRepository         repository.JobVacancyRepository
+	notificationService          NotificationService
+	db                           *sql.DB
 }
 
 func NewReportService(
@@ -46,23 +47,25 @@ func NewReportService(
 	groupRepo repository.GroupRepository,
 	companyRepo repository.CompanyRepository,
 	companyPostRepo repository.CompanyPostRepository,
+	companyPostCommentRepo repository.CompanyPostCommentRepository,
 	jobVacancyRepo repository.JobVacancyRepository,
 	notificationService NotificationService,
 	db *sql.DB,
 ) ReportService {
 	return &reportServiceImpl{
-		reportRepository:      reportRepo,
-		userRepository:        userRepo,
-		postRepository:        postRepo,
-		commentRepository:     commentRepo,
-		blogRepository:        blogRepo,
-		commentBlogRepository: commentBlogRepo,
-		groupRepository:       groupRepo,
-		companyRepository:     companyRepo,
-		companyPostRepository: companyPostRepo,
-		jobVacancyRepository:  jobVacancyRepo,
-		notificationService:   notificationService,
-		db:                    db,
+		reportRepository:             reportRepo,
+		userRepository:               userRepo,
+		postRepository:               postRepo,
+		commentRepository:            commentRepo,
+		blogRepository:               blogRepo,
+		commentBlogRepository:        commentBlogRepo,
+		groupRepository:              groupRepo,
+		companyRepository:            companyRepo,
+		companyPostRepository:        companyPostRepo,
+		companyPostCommentRepository: companyPostCommentRepo,
+		jobVacancyRepository:         jobVacancyRepo,
+		notificationService:          notificationService,
+		db:                           db,
 	}
 }
 
@@ -106,6 +109,8 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 		_, err = s.companyRepository.FindById(ctx, tx, targetUUID) // Add this case
 	case "company_post":
 		_, err = s.companyPostRepository.FindById(ctx, tx, targetUUID)
+	case "company_post_comment": // TAMBAH INI
+		_, err = s.companyPostCommentRepository.FindById(ctx, tx, targetUUID)
 	case "vacancy_job":
 		_, err = s.jobVacancyRepository.FindById(ctx, tx, targetUUID)
 	default:
@@ -379,6 +384,27 @@ func (s *reportServiceImpl) enrichReportResponse(ctx context.Context, report dom
 				}
 			}
 		}
+	case "company_post_comment": // TAMBAH INI
+		targetUUID, err := uuid.Parse(report.TargetID)
+		if err == nil {
+			comment, err := s.companyPostCommentRepository.FindById(ctx, tx, targetUUID)
+			if err == nil {
+				// Ambil data user pemilik komentar
+				user, _ := s.userRepository.FindById(ctx, tx, comment.UserId)
+
+				response.TargetContent = truncateText(comment.Content, 100)
+				response.TargetAuthorName = user.Name
+
+				// Ambil data company post untuk context
+				post, _ := s.companyPostRepository.FindById(ctx, tx, comment.PostId)
+				if post.Id != uuid.Nil {
+					company, _ := s.companyRepository.FindById(ctx, tx, post.CompanyId)
+					if company.Id != uuid.Nil {
+						response.TargetTitle = "Comment on " + company.Name + " post"
+					}
+				}
+			}
+		}
 	}
 
 	// Check if the user has already reported this content
@@ -582,6 +608,39 @@ func (s *reportServiceImpl) FindById(ctx context.Context, id string) (web.Detail
 					"creator_name": userName,
 					"content":      post.Content,
 					"created_at":   post.CreatedAt,
+				}
+			}
+		}
+	case "company_post_comment": // TAMBAH INI
+		targetUUID, err := uuid.Parse(report.TargetID)
+		if err == nil {
+			comment, err := s.companyPostCommentRepository.FindById(ctx, tx, targetUUID)
+			if err == nil {
+				// Ambil data user pemilik komentar
+				user, _ := s.userRepository.FindById(ctx, tx, comment.UserId)
+				var userName string
+				if user.Name != "" {
+					userName = user.Name
+				}
+
+				// Ambil data company post untuk context
+				post, _ := s.companyPostRepository.FindById(ctx, tx, comment.PostId)
+				var companyName string
+				if post.Id != uuid.Nil {
+					company, _ := s.companyRepository.FindById(ctx, tx, post.CompanyId)
+					if company.Id != uuid.Nil {
+						companyName = company.Name
+					}
+				}
+
+				targetDetail = map[string]interface{}{
+					"id":           comment.Id,
+					"post_id":      comment.PostId,
+					"user_id":      comment.UserId,
+					"user_name":    userName,
+					"content":      comment.Content,
+					"company_name": companyName,
+					"created_at":   comment.CreatedAt,
 				}
 			}
 		}
@@ -1007,6 +1066,52 @@ func (s *reportServiceImpl) TakeAction(ctx context.Context, id string, request w
 						"company_post_taken_down",
 						"Company Post Taken Down",
 						fmt.Sprintf("Admin Evoconnect has taken down your company post: %s", request.Reason),
+						&targetUUID,
+						&refType,
+						nil, // actorId nil untuk admin
+					)
+				}
+			}
+		case "company_post_comment": // TAMBAH INI
+			if request.Action == "take_down" {
+				targetUUID, err := uuid.Parse(report.TargetID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
+				// Ambil informasi comment sebelum di-take down untuk notifikasi
+				comment, err := s.companyPostCommentRepository.FindById(ctx, tx, targetUUID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
+				// Jika comment utama di-take down, hapus semua replies
+				if comment.ParentId == nil {
+					// Hapus semua replies dari comment utama ini
+					query := "DELETE FROM company_post_comments WHERE parent_id = $1"
+					_, err = tx.ExecContext(ctx, query, targetUUID)
+					if err != nil {
+						return web.AdminActionResponse{}, err
+					}
+				}
+
+				// Take down/delete comment
+				query := "DELETE FROM company_post_comments WHERE id = $1"
+				_, err = tx.ExecContext(ctx, query, targetUUID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
+				// Kirim notifikasi ke pemilik comment
+				if s.notificationService != nil {
+					refType := "company_post_comment_taken_down"
+					s.notificationService.Create(
+						ctx,
+						comment.UserId,
+						string(domain.NotificationCategoryEngagement),
+						"company_post_comment_taken_down",
+						"Comment Taken Down",
+						fmt.Sprintf("Admin Evoconnect has taken down your company post comment: %s", request.Reason),
 						&targetUUID,
 						&refType,
 						nil, // actorId nil untuk admin
