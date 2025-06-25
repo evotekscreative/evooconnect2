@@ -4,10 +4,9 @@ import (
 	"encoding/json"
 	"evoconnect/backend/model/domain"
 	"evoconnect/backend/model/web"
-	"time"
 	"fmt"
 	"github.com/google/uuid"
-	
+	"time"
 	// "evoconnect/backend/repository"
 )
 
@@ -621,7 +620,6 @@ func ToJobVacancyResponse(jobVacancy domain.JobVacancy) web.JobVacancyResponse {
 		ExternalLink:        jobVacancy.ExternalLink,
 		CreatedAt:           jobVacancy.CreatedAt,
 		UpdatedAt:           jobVacancy.UpdatedAt,
-    TakenDownAt:         jobVacancy.TakenDownAt,
 		Company:             companyResponse,
 		Creator:             creatorResponse,
 	}

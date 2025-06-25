@@ -12,6 +12,7 @@ type CreateCompanyEditRequestRequest struct {
 	Size        string `json:"size" validate:"required"`
 	Type        string `json:"type" validate:"required"`
 	Tagline     string `json:"tagline,omitempty"`
+	Location    string `json:"location"  validate:"omitempty,max=250"`
 }
 
 type CompanyEditData struct {

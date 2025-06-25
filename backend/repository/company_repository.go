@@ -14,4 +14,5 @@ type CompanyRepository interface {
 	FindById(ctx context.Context, tx *sql.Tx, companyId uuid.UUID) (domain.Company, error)
 	FindByOwnerId(ctx context.Context, tx *sql.Tx, ownerId uuid.UUID) []domain.Company
 	FindAll(ctx context.Context, tx *sql.Tx, limit, offset int) []domain.Company
+	FindRandomCompanies(ctx context.Context, tx *sql.Tx, limit, offset int) []domain.Company
 }

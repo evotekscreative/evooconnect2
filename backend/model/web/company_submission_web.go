@@ -52,6 +52,7 @@ type CompanyResponse struct {
 	Size        string             `json:"size"`
 	Type        string             `json:"type"`
 	Logo        string             `json:"logo"`
+	Location    string             `json:"location"`
 	Tagline     string             `json:"tagline"`
 	Description string             `json:"description"`
 	IsVerified  bool               `json:"is_verified"`

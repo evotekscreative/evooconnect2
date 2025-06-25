@@ -10,6 +10,7 @@ import (
 type CompanyManagementService interface {
 	// User Company Management
 	GetAllCompanies(ctx context.Context, userId uuid.UUID, limit, offset int) web.CompanyListResponse
+	GetRandomCompanies(ctx context.Context, page, pageSize int) web.CompanyListResponse
 	GetMyCompanies(ctx context.Context, userId uuid.UUID) []web.CompanyManagementResponse
 	// GetCompanyById(ctx context.Context, companyId uuid.UUID, userId uuid.UUID) web.CompanyPublicResponse
 	GetCompanyDetail(ctx context.Context, companyId uuid.UUID, userId uuid.UUID) web.CompanyDetailResponse
