@@ -5,7 +5,7 @@ export default function JobMainContent({ job, clickedSave, handleSaveClick }) {
     if (!job) return null;
 
     return (
-        <div className="lg:col-span-2 space-y-4 w-full max-w-3xl mx-auto">
+        <div className="lg:col-span-2 space-y-4 w-full">
             {/* Header */}
             <JobHeader job={job} clickedSave={clickedSave} handleSaveClick={handleSaveClick} />
             {/*Vacancy Details*/}

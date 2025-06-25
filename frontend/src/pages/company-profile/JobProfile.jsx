@@ -126,7 +126,7 @@ export default function JobProfile() {
                 <div className="container mx-auto px-4 md:px-6 lg:px-24 xl:px-38">
                     <div className="grid grid-cols-1 lg:grid-cols-6 gap-5">
                         {/* Sidebar kiri diperbesar */}
-                        <div className="lg:col-span-2">
+                        <div className="lg:col-span-2 hidden lg:block">
                             <JobLeftSidebar
                                 onSelectJob={setSelectedJob}
                                 selectedJobId={selectedJob?.id}

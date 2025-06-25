@@ -154,6 +154,26 @@ export default function SocialNetworkFeed() {
     targetType: null,
     targetId: null
   });
+  const [randomJobs, setRandomJobs] = useState([]);
+  const [loadingJobs, setLoadingJobs] = useState(false);
+
+  const fetchRandomJobs = async () => {
+    try {
+      setLoadingJobs(true);
+      const userToken = localStorage.getItem("token");
+      const response = await axios.get(apiUrl + "/api/jobs/random", {
+        headers: { Authorization: `Bearer ${userToken}` },
+      });
+
+      if (response.data?.data?.jobs) {
+        setRandomJobs(response.data.data.jobs.slice(0, 3)); // Ambil maksimal 3 jobs
+      }
+    } catch (error) {
+      console.error("Failed to fetch random jobs:", error);
+    } finally {
+      setLoadingJobs(false);
+    }
+  };
 
   const fetchSuggestedConnections = async () => {
     try {
@@ -304,6 +324,7 @@ export default function SocialNetworkFeed() {
       await fetchProfileViews();
       await fetchConnections();
       await fetchSuggestedConnections();
+      await fetchRandomJobs();
     };
 
     fetchData();
@@ -3726,37 +3747,97 @@ export default function SocialNetworkFeed() {
 
         {/* Jobs */}
         <div className="bg-white rounded-lg shadow p-3">
-          <h3 className="font-medium text-sm mb-3">Jobs</h3>
-          <div className="mb-4">
-            <div className="bg-gray-100 p-3 md:p-4 rounded-lg">
-              <div className="flex justify-between mb-1">
-                <h3 className="font-semibold text-xs md:text-sm">
-                  Product Director
-                </h3>
-                <div className="bg-white rounded-full p-1 w-8 md:w-10 h-8 md:h-10 flex items-center justify-center">
-                  <img
-                    src="/api/placeholder/24/24"
-                    alt="Company Logo"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              </div>
-              <p className="text-blue-500 text-xs md:text-sm">Spotify Inc.</p>
-              <div className="flex items-center text-gray-600 text-xs">
-                <MapPin size={12} className="mr-1" />
-                <span>India, Punjab</span>
-              </div>
-              <div className="mt-2 flex items-center">
-                <div className="flex -space-x-1 md:-space-x-2">
-                  <div className="w-5 md:w-6 h-5 md:h-6 rounded-full bg-gray-300 border-2 border-white"></div>
-                  <div className="w-5 md:w-6 h-5 md:h-6 rounded-full bg-gray-400 border-2 border-white"></div>
-                  <div className="w-5 md:w-6 h-5 md:h-6 rounded-full bg-gray-500 border-2 border-white"></div>
-                </div>
-                <span className="text-gray-600 text-xs ml-2">
-                  18 connections
-                </span>
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="font-medium text-sm">Jobs for you</h3>
+            <button
+              onClick={fetchRandomJobs}
+              disabled={loadingJobs}
+              className="flex items-center gap-1 text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors duration-200 disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${loadingJobs ? "animate-spin" : ""}`}
+              />
+            </button>
+          </div>
+          
+          {loadingJobs ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="flex items-center gap-2 text-gray-500">
+                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-sm">Loading jobs...</span>
               </div>
             </div>
+          ) : randomJobs.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500 text-sm">No jobs available</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {randomJobs.map((job, index) => (
+                <div
+                  key={job.id}
+                  className="bg-gray-50 p-3 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                  onClick={() => navigate(`/jobs/${job.id}`)}
+                >
+                  <div className="flex justify-between items-start mb-1">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-sm text-gray-900 truncate">
+                        {job.title}
+                      </h4>
+                      <p className="text-blue-500 text-xs font-medium">
+                        {job.company?.name || 'Company'}
+                      </p>
+                    </div>
+                    {job.company?.logo && (
+                      <div className="bg-white rounded-full p-1 w-8 h-8 flex items-center justify-center ml-2 flex-shrink-0">
+                        <img
+                          src={job.company.logo.startsWith("http") ? job.company.logo : `${apiUrl}/${job.company.logo}`}
+                          alt="Company Logo"
+                          className="w-full h-full object-cover rounded-full"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center text-gray-600 text-xs mb-2">
+                    <MapPin size={12} className="mr-1 flex-shrink-0" />
+                    <span className="truncate">{job.location || 'Remote'}</span>
+                  </div>
+                  
+                  {(job.min_salary || job.max_salary) && (
+                    <div className="text-green-600 text-xs font-medium mb-2">
+                      {job.min_salary && job.max_salary 
+                        ? `${job.currency || '$'} ${job.min_salary.toLocaleString()} - ${job.max_salary.toLocaleString()}`
+                        : job.min_salary 
+                        ? `From ${job.currency || '$'} ${job.min_salary.toLocaleString()}`
+                        : `Up to ${job.currency || '$'} ${job.max_salary.toLocaleString()}`
+                      }
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">
+                      {job.job_type || 'Full-time'}
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      {job.created_at ? dayjs(job.created_at).fromNow() : 'Recently posted'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          <div className="mt-3 pt-3 border-t">
+            <Link 
+              to="/jobs" 
+              className="text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors"
+            >
+              View all jobs →
+            </Link>
           </div>
         </div>
       </div>

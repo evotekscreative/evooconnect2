@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime);
 
 const BASE_URL = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
@@ -33,13 +37,7 @@ export default function JobListSidebar({ onSelectJob, selectedJobId }) {
     return matchesSearch
   });
 
-  const getDaysAgo = (dateString) => {
-    const date = new Date(dateString);
-    const today = new Date();
-    const diffTime = Math.abs(today - date);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-  };
+
 
   const handleJobClick = (job) => {
     // Ganti URL ke /company-profile/:companyId/:jobId
@@ -97,7 +95,7 @@ return (
                             <p className="text-xs text-gray-600 mb-1">{job.company.name}</p>
                             <p className="text-xs text-gray-500 mb-2">{job.location}</p>
                             <div className="flex items-center gap-4 text-xs text-gray-400">
-                                <span>Posted {getDaysAgo(job.created_at)} days ago</span>
+                                <span>{job.created_at ? dayjs(job.created_at).fromNow() : 'Recently posted'}</span>
                             </div>
                         </div>
                     </div>

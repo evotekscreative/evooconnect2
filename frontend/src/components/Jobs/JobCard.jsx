@@ -1,5 +1,9 @@
 import { Link } from "react-router-dom";
 import {StickyNote} from "lucide-react";
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime);
 export default function JobCard({ job }) {
     const rating = job.rating || 0;
     const ratingStars = Math.max(0, Math.min(5, Math.floor(rating)));
@@ -52,7 +56,7 @@ export default function JobCard({ job }) {
                         </div>
                     )}
                 </div>
-                <span className="text-gray-400">Posted {Math.floor((new Date() - new Date(job.created_at)) / (1000 * 60 * 60 * 24)) || 0} days ago</span>
+                <span className="text-gray-400">{job.created_at ? dayjs(job.created_at).fromNow() : 'Recently posted'}</span>
             </div>
         </div>
     );

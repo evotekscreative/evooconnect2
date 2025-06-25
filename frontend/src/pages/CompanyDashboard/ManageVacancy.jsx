@@ -228,6 +228,18 @@ export default function ManageVacancy() {
     }));
   };
 
+  // Close status dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setStatusDropdown({});
+    };
+    
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
+
   const formatCurrency = (value, currency) => {
     if (value === "" || isNaN(value)) return "";
 
@@ -1076,27 +1088,33 @@ export default function ManageVacancy() {
                                       {job.status}
                                     </span>
                                     <button
-                                      onClick={() =>
-                                        toggleStatusDropdown(job.id)
-                                      }
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleStatusDropdown(job.id);
+                                      }}
                                       className="ml-2 p-1 rounded hover:bg-gray-100 flex-shrink-0"
                                     >
                                       <Edit size={14} />
                                     </button>
                                     {statusDropdown[job.id] && (
-                                      <div className="absolute top-full left-0 mt-1 bg-white border rounded shadow-lg z-50 min-w-[120px]">
+                                      <div 
+                                        className="absolute top-full left-0 mt-1 bg-white border rounded shadow-lg z-50 min-w-[120px]"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
                                         <button
-                                          onClick={() =>
-                                            handleStatusChange(job.id, "active")
-                                          }
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleStatusChange(job.id, "active");
+                                          }}
                                           className="block w-full px-3 py-2 text-left hover:bg-gray-100 text-xs"
                                         >
                                           Active
                                         </button>
                                         <button
-                                          onClick={() =>
-                                            handleStatusChange(job.id, "closed")
-                                          }
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleStatusChange(job.id, "closed");
+                                          }}
                                           className="block w-full px-3 py-2 text-left hover:bg-gray-100 text-xs"
                                         >
                                           Closed

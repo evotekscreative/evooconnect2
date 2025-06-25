@@ -18,6 +18,11 @@ import {
 } from "lucide-react";
 import Case from "../components/Case";
 import Alert from "../components/Auth/alert";
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import { useNavigate } from 'react-router-dom';
+
+dayjs.extend(relativeTime);
 
 const NotificationPage = () => {
   const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
@@ -51,12 +56,32 @@ const NotificationPage = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [pusherChannel, setPusherChannel] = useState(null);
   const [processingAction, setProcessingAction] = useState(null); // Track which notification is being processed
+  const [randomJobs, setRandomJobs] = useState([]);
+  const [loadingJobs, setLoadingJobs] = useState(false);
 
   const [alertInfo, setAlertInfo] = React.useState({
     show: false,
     type: "success",
     message: "",
   });
+
+  const fetchRandomJobs = async () => {
+    try {
+      setLoadingJobs(true);
+      const userToken = localStorage.getItem("token");
+      const response = await axios.get(apiUrl + "/api/jobs/random", {
+        headers: { Authorization: `Bearer ${userToken}` },
+      });
+
+      if (response.data?.data?.jobs) {
+        setRandomJobs(response.data.data.jobs.slice(0, 3));
+      }
+    } catch (error) {
+      console.error("Failed to fetch random jobs:", error);
+    } finally {
+      setLoadingJobs(false);
+    }
+  };
 
   const notifTabs = [
     { key: "all", label: "All" },
@@ -86,6 +111,7 @@ const NotificationPage = () => {
 
 useEffect(() => {
   fetchProfileViews();
+  fetchRandomJobs();
 }, []);
 
 const fetchProfileViews = async () => {
@@ -560,7 +586,7 @@ const fetchProfileViews = async () => {
 
   return (
     <Case>
-      <div className="bg-gray-100 min-h-screen">
+      <div className="bg-gray-50 min-h-screen">
         {alertInfo.show && (
           <div className="fixed top-5 right-5 z-50">
             <Alert
@@ -571,18 +597,11 @@ const fetchProfileViews = async () => {
           </div>
         )}
 
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-col lg:flex-row gap-6">
+        <div className="container mx-auto px-3 py-5 max-w-7xl">
+          <div className="flex flex-col lg:flex-row gap-5">
             {/* Left Column - Mobile First Hidden, Show on LG */}
-            <div className="hidden lg:block lg:w-1/4">
+            <div className="hidden lg:block lg:w-1/5">
               <div className="bg-white rounded-lg shadow mb-4">
-                <div className="">
-                  <img
-                    src="https://images.unsplash.com/photo-1511485977113-f34c92461ad9?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                    alt=""
-                    className="w-full h-auto"
-                  />
-                </div>
                 <div className="p-4">
                   <div className="text-center mb-2">
                     <h2 className="text-xl font-bold text-gray-800">
@@ -611,34 +630,58 @@ const fetchProfileViews = async () => {
                   </div>
                 </div>
               </div>
-              <div className="max-w-sm rounded-lg bg-white shadow-md overflow-hidden">
+
+              <div className="bg-white rounded-lg shadow">
                 <div className="p-4">
-                  <div className="flex justify-center mb-6">
-                    <div className="w-24 h-24 bg-green-500 rounded-full"></div>
-                  </div>
-
-                  <div className="text-center mb-2">
-                    <h2 className="text-xl font-bold text-gray-800">Envato</h2>
-                    <p className="text-gray-500">Melbourne, AU</p>
-                  </div>
-                </div>
-
-                <div className="border-t border-gray-200 p-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Posted</span>
-                    <span className="font-medium">1 day ago</span>
-                  </div>
-
-                  <div className="flex justify-between items-center mt-2">
-                    <span className="text-gray-600">Applicant Rank</span>
-                    <span className="font-medium">25</span>
-                  </div>
+                  <h2 className="text-xl font-semibold mb-4">
+                    Who viewed your profile
+                  </h2>
+                  
+                  {profileViews.dailyViews && profileViews.dailyViews.length > 0 ? (
+                    profileViews.dailyViews.slice(0, 3).map((viewer) => (
+                      <div key={viewer.id} className="flex items-center justify-between mb-3 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors" onClick={() => window.location.href = `/user-profile/${viewer.username}`}>
+                        <div className="flex items-center">
+                          <div className="w-12 h-12 mr-3 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                            {viewer.photo ? (
+                              <img
+                                src={`${apiUrl}/${viewer.photo}`}
+                                alt={viewer.name}
+                                className="w-full h-full object-cover rounded-full"
+                              />
+                            ) : (
+                              <div className="flex items-center justify-center w-full h-full bg-gray-300 rounded-full">
+                                <span className="text-sm font-bold text-gray-600">
+                                  {viewer.name.split(" ").map(n => n[0]).join("")}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-semibold">{viewer.name}</p>
+                            <p className="text-gray-600 text-sm">{viewer.headline || "No headline yet"}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center text-gray-400 py-4">
+                      No profile views yet
+                    </div>
+                  )}
+                  
+                  {profileViews.dailyViews && profileViews.dailyViews.length > 3 && (
+                    <div className="text-center mt-2">
+                      <button className="text-blue-600 text-sm hover:underline">
+                        See all {profileViews.dailyViews.length} viewers
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Center Column - Full width on mobile, 2/4 on LG */}
-            <div className="w-full lg:w-2/4">
+            {/* Center Column - Full width on mobile, 3/5 on LG */}
+            <div className="w-full lg:w-3/5">
               <div className="bg-white rounded-lg shadow mb-4">
                 <div className="p-4 border-b">
                   <div className="flex justify-between items-center">
@@ -864,101 +907,87 @@ const fetchProfileViews = async () => {
             </div>
 
             {/* Right Column - Mobile First Hidden, Show on LG */}
-            <div className="hidden lg:block lg:w-1/4">
+            <div className="hidden lg:block lg:w-1/5">
               <div className="bg-white rounded-lg shadow mb-4">
-                <div className="p-4 border-b">
-                  <button className="bg-red-500 text-white rounded-lg flex items-center justify-center py-2 px-4 w-full">
-                    <Bell className="mr-2" size={18} />
-                    Set alert for jobs
-                  </button>
-                </div>
                 <div className="p-4">
                   <h2 className="text-xl font-semibold mb-4 border-b">
                     Similar Jobs
                   </h2>
 
-                  <div className="mb-4">
-                    <div className="bg-gray-100 p-4 rounded-lg ">
-                      <div className="flex justify-between mb-1">
-                        <h3 className="font-semibold">Product Director</h3>
-                        <div className="bg-white rounded-full p-1 w-10 h-10 flex items-center justify-center">
-                          <img
-                            src="/api/placeholder/24/24"
-                            alt="Company Logo"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      </div>
-                      <p className="text-blue-500">Spotify Inc.</p>
-                      <div className="flex items-center text-gray-600 text-sm">
-                        <MapPin size={14} className="mr-1" />
-                        <span>India, Punjab</span>
-                      </div>
-                      <div className="mt-2 flex items-center">
-                        <div className="flex -space-x-2">
-                          <div className="w-6 h-6 rounded-full bg-gray-300 border-2 border-white"></div>
-                          <div className="w-6 h-6 rounded-full bg-gray-400 border-2 border-white"></div>
-                          <div className="w-6 h-6 rounded-full bg-gray-500 border-2 border-white"></div>
-                        </div>
-                        <span className="text-gray-600 text-sm ml-2">
-                          18 connections
-                        </span>
+                  {loadingJobs ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="flex items-center gap-2 text-gray-500">
+                        <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-sm">Loading jobs...</span>
                       </div>
                     </div>
-                  </div>
+                  ) : randomJobs.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500 text-sm">No jobs available</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {randomJobs.map((job, index) => (
+                        <div
+                          key={job.id}
+                          className="bg-gray-50 p-3 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                          onClick={() => window.location.href = `/jobs/${job.id}`}
+                        >
+                          <div className="flex justify-between items-start mb-1">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-sm text-gray-900 truncate">
+                                {job.title}
+                              </h4>
+                              <p className="text-blue-500 text-xs font-medium">
+                                {job.company?.name || 'Company'}
+                              </p>
+                            </div>
+                            {job.company?.logo && (
+                              <div className="bg-white rounded-full p-1 w-8 h-8 flex items-center justify-center ml-2 flex-shrink-0">
+                                <img
+                                  src={job.company.logo.startsWith("http") ? job.company.logo : `${apiUrl}/${job.company.logo}`}
+                                  alt="Company Logo"
+                                  className="w-full h-full object-cover rounded-full"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center text-gray-600 text-xs mb-2">
+                            <MapPin size={12} className="mr-1 flex-shrink-0" />
+                            <span className="truncate">{job.location || 'Remote'}</span>
+                          </div>
+                          
+                          {(job.min_salary || job.max_salary) && (
+                            <div className="text-green-600 text-xs font-medium mb-2">
+                              {job.min_salary && job.max_salary 
+                                ? `${job.currency || '$'} ${job.min_salary.toLocaleString()} - ${job.max_salary.toLocaleString()}`
+                                : job.min_salary 
+                                ? `From ${job.currency || '$'} ${job.min_salary.toLocaleString()}`
+                                : `Up to ${job.currency || '$'} ${job.max_salary.toLocaleString()}`
+                              }
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-500">
+                              {job.job_type || 'Full-time'}
+                            </span>
+                            <span className="text-xs text-gray-400">
+                              {job.created_at ? dayjs(job.created_at).fromNow() : 'Recently posted'}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow">
-  <div className="p-4">
-    <h2 className="text-xl font-semibold mb-4">
-      Who viewed your profile
-    </h2>
-    
-    {profileViews.dailyViews && profileViews.dailyViews.length > 0 ? (
-      profileViews.dailyViews.slice(0, 3).map((viewer) => (
-        <div key={viewer.id} className="flex items-center justify-between mb-3">
-          <div className="flex items-center">
-            <div className="w-12 h-12 mr-3 rounded-full bg-gray-200 overflow-hidden">
-              {viewer.photo ? (
-                <img
-                  src={`${apiUrl}/${viewer.photo}`}
-                  alt={viewer.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gray-300">
-                  <span className="text-sm font-bold text-gray-600">
-                    {viewer.name.split(" ").map(n => n[0]).join("")}
-                  </span>
-                </div>
-              )}
-            </div>
-            <div>
-              <p className="font-semibold">{viewer.name}</p>
-              <p className="text-gray-600 text-sm">@{viewer.username}</p>
-            </div>
-          </div>
-          <button className="border border-blue-500 text-blue-500 rounded-full px-4 py-1">
-            Connect
-          </button>
-        </div>
-      ))
-    ) : (
-      <div className="text-center text-gray-400 py-4">
-        No profile views yet
-      </div>
-    )}
-    
-    {profileViews.dailyViews && profileViews.dailyViews.length > 3 && (
-      <div className="text-center mt-2">
-        <button className="text-blue-600 text-sm hover:underline">
-          See all {profileViews.dailyViews.length} viewers
-        </button>
-      </div>
-    )}
-  </div>
-</div>
+
 
             </div>
           </div>

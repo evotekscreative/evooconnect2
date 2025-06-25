@@ -99,9 +99,14 @@ const ContactInfo = ({ onNext, isSubmitting, onClose, userData, onContactChange 
                                     <Phone className="h-3.5 w-3.5 text-gray-500" />
                                     Phone*
                                 </label>
-                                <div className="p-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50">
-                                    {contactData.phone}
-                                </div>
+                                <input
+                                    type="text"
+                                    className="p-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50 w-full"
+                                    value={contactData.phone}
+                                    onChange={e => setContactData(prev => ({ ...prev, phone: e.target.value }))}
+                                    placeholder="Enter your phone number"
+                                    required
+                                />
                             </div>
 
                             <div>
@@ -109,9 +114,14 @@ const ContactInfo = ({ onNext, isSubmitting, onClose, userData, onContactChange 
                                     <Mail className="h-3.5 w-3.5 text-gray-500" />
                                     Email*
                                 </label>
-                                <div className="p-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50">
-                                    {contactData.email}
-                                </div>
+                                <input
+                                    type="email"
+                                    className="p-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50 w-full"
+                                    value={contactData.email}
+                                    onChange={e => setContactData(prev => ({ ...prev, email: e.target.value }))}
+                                    placeholder="Enter your email"
+                                    required
+                                />
                             </div>
 
                             <div>
@@ -119,9 +129,14 @@ const ContactInfo = ({ onNext, isSubmitting, onClose, userData, onContactChange 
                                     <MapPin className="h-3.5 w-3.5 text-gray-500" />
                                     Address*
                                 </label>
-                                <div className="p-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50">
-                                    {contactData.address}
-                                </div>
+                                <input
+                                    type="text"
+                                    className="p-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50 w-full"
+                                    value={contactData.address}
+                                    onChange={e => setContactData(prev => ({ ...prev, address: e.target.value }))}
+                                    placeholder="Enter your address"
+                                    required
+                                />
                             </div>
 
                             <div>
@@ -149,9 +164,8 @@ const ContactInfo = ({ onNext, isSubmitting, onClose, userData, onContactChange 
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className={`px-5 py-2 text-sm bg-blue-600 text-white font-medium rounded-full hover:bg-blue-700 transition-colors ${
-                                        isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
-                                    }`}
+                                    className={`px-5 py-2 text-sm bg-blue-600 text-white font-medium rounded-full hover:bg-blue-700 transition-colors ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
+                                        }`}
                                 >
                                     {isSubmitting ? 'Processing...' : 'Next'}
                                 </button>
@@ -161,7 +175,7 @@ const ContactInfo = ({ onNext, isSubmitting, onClose, userData, onContactChange 
                 </div>
             </div>
 
-           {showConfirmDialog && (
+            {showConfirmDialog && (
                 <ConfirmationDialog
                     onConfirm={() => setShowConfirmDialog(false)}
                     onDiscard={onClose} // Langsung panggil onClose

@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
-import { SquareArrowOutUpRight, StickyNote, BriefcaseBusiness } from 'lucide-react';
+import { SquareArrowOutUpRight, StickyNote, BriefcaseBusiness, MoreHorizontal, Flag, Bookmark } from 'lucide-react';
+import JobApplicationModal from '../ApplicantRequest/JobApplicationModal.jsx';
+import ReportModal from '../Blog/ReportModal.jsx';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime);
 
 const BASE_URL = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
@@ -52,6 +58,25 @@ export default function JobHeader({ job, clickedSave, handleSaveClick }) {
     const [showUnsaveModal, setShowUnsaveModal] = useState(false);
     const [hasApplied, setHasApplied] = useState(job.has_applied || false);
     const [applicationStatus, setApplicationStatus] = useState(job.application_status || null);
+    const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [selectedReason, setSelectedReason] = useState('');
+    const [customReason, setCustomReason] = useState('');
+
+    // Close options menu when clicking outside
+    React.useEffect(() => {
+        const handleClickOutside = () => {
+            setShowOptionsMenu(false);
+        };
+        
+        if (showOptionsMenu) {
+            document.addEventListener('click', handleClickOutside);
+        }
+        
+        return () => {
+            document.removeEventListener('click', handleClickOutside);
+        };
+    }, [showOptionsMenu]);
 
     // Check if current user is the job creator
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -103,7 +128,47 @@ export default function JobHeader({ job, clickedSave, handleSaveClick }) {
     };
 
     return (
-        <div className="bg-white rounded-xl shadow-md p-6 mb-2 w-full max-w-3xl mx-auto">
+        <div className="bg-white rounded-xl shadow-md p-6 mb-2 w-full relative">
+            {/* Mobile bookmark and three dots menu */}
+            <div className="absolute top-4 right-4 flex items-center gap-2">
+                {/* Mobile bookmark button */}
+                <button
+                    onClick={handleJobSave}
+                    className="md:hidden p-1 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                    <Bookmark 
+                        size={20} 
+                        className={`${clickedSave ? 'text-green-600 fill-current' : 'text-gray-600'}`} 
+                    />
+                </button>
+                {/* Three dots menu */}
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setShowOptionsMenu(!showOptionsMenu);
+                    }}
+                    className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                    <MoreHorizontal size={20} className="text-gray-600" />
+                </button>
+                {showOptionsMenu && (
+                    <div 
+                        className="absolute right-0 mt-1 w-32 bg-white rounded-lg shadow-lg border z-10"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <button
+                            onClick={() => {
+                                setShowReportModal(true);
+                                setShowOptionsMenu(false);
+                            }}
+                            className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-sm"
+                        >
+                            <Flag size={14} />
+                            Report
+                        </button>
+                    </div>
+                )}
+            </div>
             {/* Logo & company */}
             <div className="flex items-center mb-1">
                 <img
@@ -123,13 +188,7 @@ export default function JobHeader({ job, clickedSave, handleSaveClick }) {
                 {job.created_at && (
                     <>
                         <span className="mx-1">·</span>
-                        <span>Posted {(() => {
-                            // Calculate day difference
-                            const now = new Date();
-                            const posted = new Date(job.created_at);
-                            const diff = Math.floor((now - posted) / (1000 * 60 * 60 * 24));
-                            return diff < 1 ? 'today' : `${diff} day${diff > 1 ? 's' : ''} ago`;
-                        })()}</span>
+                        <span>Posted {dayjs(job.created_at).fromNow()}</span>
                     </>
                 )}
                 {/* Example: · More than 100 people clicked Apply */}
@@ -199,8 +258,9 @@ export default function JobHeader({ job, clickedSave, handleSaveClick }) {
                                             </>
                                         )}
                 </button>
+                {/* Save button - visible on desktop, hidden on mobile */}
                 <button
-                    className={`flex-1 px-4 py-2 rounded-md font-semibold border transition-colors
+                    className={`hidden md:block flex-1 px-4 py-2 rounded-md font-semibold border transition-colors
                         ${clickedSave ? 'bg-green-500 text-white' : 'border-[#0A66C2] text-[#0A66C2] bg-white hover:bg-blue-50'}
                     `}
                     onClick={handleJobSave}
@@ -252,6 +312,50 @@ export default function JobHeader({ job, clickedSave, handleSaveClick }) {
                     </div>
                 </div>
             )}
+            <ReportModal
+                show={showReportModal}
+                onClose={() => {
+                    setShowReportModal(false);
+                    setSelectedReason('');
+                    setCustomReason('');
+                }}
+                onSubmit={async () => {
+                    try {
+                        const token = localStorage.getItem('token');
+                        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+                        const response = await fetch(
+                            `${BASE_URL}/api/reports/${currentUser.id}/vacancy_job/${job.id}`,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    reason: selectedReason.toLowerCase().replace(' ', '_'),
+                                    description: selectedReason === 'Other' ? customReason : `This job posting contains ${selectedReason.toLowerCase()} content.`
+                                })
+                            }
+                        );
+                        
+                        if (response.ok) {
+                            toast.success('Job reported successfully');
+                        } else {
+                            toast.error('Failed to report job');
+                        }
+                    } catch (error) {
+                        toast.error('An error occurred while reporting');
+                    }
+                    
+                    setShowReportModal(false);
+                    setSelectedReason('');
+                    setCustomReason('');
+                }}
+                selectedReason={selectedReason}
+                setSelectedReason={setSelectedReason}
+                customReason={customReason}
+                setCustomReason={setCustomReason}
+            />
         </div>
     );
 }
