@@ -10,19 +10,21 @@ import (
 	"evoconnect/backend/repository"
 	"math"
 	"time"
-
+	"fmt"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
 
 type JobVacancyServiceImpl struct {
-	SavedJobRepository       repository.SavedJobRepository
-	JobVacancyRepository     repository.JobVacancyRepository
-	JobApplicationRepository repository.JobApplicationRepository
-	CompanyRepository        repository.CompanyRepository
-	UserRepository           repository.UserRepository
-	DB                       *sql.DB
-	Validate                 *validator.Validate
+	SavedJobRepository        repository.SavedJobRepository
+	JobVacancyRepository      repository.JobVacancyRepository
+	JobApplicationRepository  repository.JobApplicationRepository
+	CompanyRepository         repository.CompanyRepository
+	UserRepository            repository.UserRepository
+	CompanyFollowerRepository repository.CompanyFollowerRepository // Tambah ini
+	NotificationService       NotificationService                  // Tambah ini
+	DB                        *sql.DB
+	Validate                  *validator.Validate
 }
 
 func NewJobVacancyService(
@@ -31,6 +33,8 @@ func NewJobVacancyService(
 	userRepository repository.UserRepository,
 	savedJobRepository repository.SavedJobRepository,
 	jobApplicationRepository repository.JobApplicationRepository,
+	companyFollowerRepository repository.CompanyFollowerRepository, // Tambah ini
+	notificationService NotificationService, // Tambah ini
 	db *sql.DB,
 	validate *validator.Validate) JobVacancyService {
 	return &JobVacancyServiceImpl{
@@ -106,7 +110,7 @@ func (service *JobVacancyServiceImpl) Create(ctx context.Context, request web.Cr
 	// Fetch complete data with relations
 	jobVacancy, err = service.JobVacancyRepository.FindById(ctx, tx, jobVacancy.Id)
 	helper.PanicIfError(err)
-
+	service.sendNotificationToCompanyFollowers(jobVacancy, creatorId) // Tambah ini
 	return service.toJobVacancyResponse(ctx, tx, jobVacancy, &creatorId)
 }
 
@@ -598,6 +602,7 @@ func (service *JobVacancyServiceImpl) toJobVacancyResponse(ctx context.Context, 
 		IsSaved:             false,
 		CreatedAt:           jobVacancy.CreatedAt,
 		UpdatedAt:           jobVacancy.UpdatedAt,
+		TakenDownAt:         jobVacancy.TakenDownAt,
 	}
 
 	// Set creator ID if exists
@@ -674,4 +679,51 @@ func toJobVacancyPublicResponse(jobVacancy domain.JobVacancy) web.JobVacancyPubl
 		CreatedAt:           jobVacancy.CreatedAt,
 		Company:             companyInfo,
 	}
+}
+
+
+func (service *JobVacancyServiceImpl) sendNotificationToCompanyFollowers(jobVacancy domain.JobVacancy, creatorId uuid.UUID) {
+	if service.NotificationService == nil {
+		return
+	}
+
+	go func() {
+		tx, err := service.DB.Begin()
+		if err != nil {
+			return
+		}
+		defer helper.CommitOrRollback(tx)
+
+		// Get company info
+		company, err := service.CompanyRepository.FindById(context.Background(), tx, jobVacancy.CompanyId)
+		if err != nil {
+			return
+		}
+
+		// Get company followers
+		followers, _, err := service.CompanyFollowerRepository.FindFollowersByCompanyId(context.Background(), tx, jobVacancy.CompanyId, 1000, 0)
+		if err != nil {
+			return
+		}
+
+		refType := "job_vacancy_new"
+		notificationTitle := "New Job Opening at " + company.Name
+
+		// Send to 90% of followers randomly
+		for i, follower := range followers {
+			if follower.UserId != creatorId && i%10 < 9 {
+				service.NotificationService.Create(
+					context.Background(),
+					follower.UserId,
+					string(domain.NotificationCategoryCompany),
+					"job_vacancy_new",
+					notificationTitle,
+					fmt.Sprintf("%s is hiring: %s in %s", company.Name, jobVacancy.Title, jobVacancy.Location),
+					&jobVacancy.Id,
+					&refType,
+					&creatorId,
+				)
+			}
+		}
+	}()
 }

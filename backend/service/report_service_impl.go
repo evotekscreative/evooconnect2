@@ -22,15 +22,19 @@ var validReasons = []string{
 }
 
 type reportServiceImpl struct {
-	reportRepository      repository.ReportRepository
-	userRepository        repository.UserRepository
-	postRepository        repository.PostRepository
-	commentRepository     repository.CommentRepository
-	blogRepository        repository.BlogRepository
-	commentBlogRepository repository.CommentBlogRepository
-	groupRepository       repository.GroupRepository
-	notificationService   NotificationService // Tambahkan ini
-	db                    *sql.DB
+	reportRepository             repository.ReportRepository
+	userRepository               repository.UserRepository
+	postRepository               repository.PostRepository
+	commentRepository            repository.CommentRepository
+	blogRepository               repository.BlogRepository
+	commentBlogRepository        repository.CommentBlogRepository
+	groupRepository              repository.GroupRepository
+	companyRepository            repository.CompanyRepository
+	companyPostRepository        repository.CompanyPostRepository
+	companyPostCommentRepository repository.CompanyPostCommentRepository
+	jobVacancyRepository         repository.JobVacancyRepository
+	notificationService          NotificationService
+	db                           *sql.DB
 }
 
 func NewReportService(
@@ -41,19 +45,27 @@ func NewReportService(
 	blogRepo repository.BlogRepository,
 	commentBlogRepo repository.CommentBlogRepository,
 	groupRepo repository.GroupRepository,
-	notificationService NotificationService, // Tambahkan ini
+	companyRepo repository.CompanyRepository,
+	companyPostRepo repository.CompanyPostRepository,
+	companyPostCommentRepo repository.CompanyPostCommentRepository,
+	jobVacancyRepo repository.JobVacancyRepository,
+	notificationService NotificationService,
 	db *sql.DB,
 ) ReportService {
 	return &reportServiceImpl{
-		reportRepository:      reportRepo,
-		userRepository:        userRepo,
-		postRepository:        postRepo,
-		commentRepository:     commentRepo,
-		blogRepository:        blogRepo,
-		commentBlogRepository: commentBlogRepo,
-		groupRepository:       groupRepo,
-		notificationService:   notificationService, // Tambahkan ini
-		db:                    db,
+		reportRepository:             reportRepo,
+		userRepository:               userRepo,
+		postRepository:               postRepo,
+		commentRepository:            commentRepo,
+		blogRepository:               blogRepo,
+		commentBlogRepository:        commentBlogRepo,
+		groupRepository:              groupRepo,
+		companyRepository:            companyRepo,
+		companyPostRepository:        companyPostRepo,
+		companyPostCommentRepository: companyPostCommentRepo,
+		jobVacancyRepository:         jobVacancyRepo,
+		notificationService:          notificationService,
+		db:                           db,
 	}
 }
 
@@ -93,6 +105,14 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 		_, err = s.userRepository.FindById(ctx, tx, targetUUID)
 	case "group":
 		_, err = s.groupRepository.FindById(ctx, tx, targetUUID)
+	case "company":
+		_, err = s.companyRepository.FindById(ctx, tx, targetUUID) // Add this case
+	case "company_post":
+		_, err = s.companyPostRepository.FindById(ctx, tx, targetUUID)
+	case "company_post_comment": // TAMBAH INI
+		_, err = s.companyPostCommentRepository.FindById(ctx, tx, targetUUID)
+	case "vacancy_job":
+		_, err = s.jobVacancyRepository.FindById(ctx, tx, targetUUID)
 	default:
 		return web.ReportResponse{}, errors.New("unknown content type")
 	}
@@ -325,7 +345,72 @@ func (s *reportServiceImpl) enrichReportResponse(ctx context.Context, report dom
 				}
 			}
 		}
+	case "company":
+		targetUUID, err := uuid.Parse(report.TargetID)
+		if err == nil {
+			company, err := s.companyRepository.FindById(ctx, tx, targetUUID)
+			if err == nil {
+				response.TargetTitle = company.Name
+				response.TargetContent = company.Tagline
+				response.TargetPhoto = company.Logo
+
+				// Ambil data owner perusahaan
+				owner, err := s.userRepository.FindById(ctx, tx, company.OwnerId)
+				if err == nil {
+					response.TargetAuthorName = owner.Name
+				}
+			}
+		}
+	case "company_post":
+		targetUUID, err := uuid.Parse(report.TargetID)
+		if err == nil {
+			post, err := s.companyPostRepository.FindById(ctx, tx, targetUUID)
+			if err == nil {
+				// Ambil data user pemilik post
+				user, _ := s.userRepository.FindById(ctx, tx, post.CreatorId)
+
+				response.TargetContent = truncateText(post.Content, 100)
+				response.TargetAuthorName = user.Name
+
+				// Periksa apakah post memiliki gambar
+				if len(post.Images) > 0 {
+					response.TargetPhoto = post.Images[0] // Ambil gambar pertama
+				}
+
+				// Ambil data perusahaan
+				company, _ := s.companyRepository.FindById(ctx, tx, post.CompanyId)
+				if company.Id != uuid.Nil {
+					response.TargetTitle = company.Name
+				}
+			}
+		}
+	case "company_post_comment": // TAMBAH INI
+		targetUUID, err := uuid.Parse(report.TargetID)
+		if err == nil {
+			comment, err := s.companyPostCommentRepository.FindById(ctx, tx, targetUUID)
+			if err == nil {
+				// Ambil data user pemilik komentar
+				user, _ := s.userRepository.FindById(ctx, tx, comment.UserId)
+
+				response.TargetContent = truncateText(comment.Content, 100)
+				response.TargetAuthorName = user.Name
+
+				// Ambil data company post untuk context
+				post, _ := s.companyPostRepository.FindById(ctx, tx, comment.PostId)
+				if post.Id != uuid.Nil {
+					company, _ := s.companyRepository.FindById(ctx, tx, post.CompanyId)
+					if company.Id != uuid.Nil {
+						response.TargetTitle = "Comment on " + company.Name + " post"
+					}
+				}
+			}
+		}
 	}
+
+	// Check if the user has already reported this content
+	isReported, _ := s.reportRepository.HasReported(ctx, report.ReporterID, report.TargetType, report.TargetID)
+	response.IsReported = isReported
+
 	return response, nil
 }
 
@@ -466,6 +551,96 @@ func (s *reportServiceImpl) FindById(ctx context.Context, id string) (web.Detail
 					"creator_name": creatorName,
 					"PrivacyLevel": group.PrivacyLevel,
 					"created_at":   group.CreatedAt,
+				}
+			}
+		}
+	case "company":
+		targetUUID, err := uuid.Parse(report.TargetID)
+		if err == nil {
+			company, err := s.companyRepository.FindById(ctx, tx, targetUUID)
+			if err == nil {
+				// Ambil data owner perusahaan
+				owner, _ := s.userRepository.FindById(ctx, tx, company.OwnerId)
+				var ownerName string
+				if owner.Name != "" {
+					ownerName = owner.Name
+				}
+
+				targetDetail = map[string]interface{}{
+					"id":          company.Id,
+					"name":        company.Name,
+					"industry":    company.Industry,
+					"size":        company.Size,
+					"type":        company.Type,
+					"owner_id":    company.OwnerId,
+					"owner_name":  ownerName,
+					"logo":        company.Logo,
+					"tagline":     company.Tagline,
+					"is_verified": company.IsVerified,
+					"created_at":  company.CreatedAt,
+				}
+			}
+		}
+	case "company_post":
+		targetUUID, err := uuid.Parse(report.TargetID)
+		if err == nil {
+			post, err := s.companyPostRepository.FindById(ctx, tx, targetUUID)
+			if err == nil {
+				// Ambil data user pemilik post
+				user, _ := s.userRepository.FindById(ctx, tx, post.CreatorId)
+				var userName string
+				if user.Name != "" {
+					userName = user.Name
+				}
+
+				// Ambil data perusahaan
+				company, _ := s.companyRepository.FindById(ctx, tx, post.CompanyId)
+				var companyName string
+				if company.Id != uuid.Nil {
+					companyName = company.Name
+				}
+
+				targetDetail = map[string]interface{}{
+					"id":           post.Id,
+					"company_id":   post.CompanyId,
+					"company_name": companyName,
+					"creator_id":   post.CreatorId,
+					"creator_name": userName,
+					"content":      post.Content,
+					"created_at":   post.CreatedAt,
+				}
+			}
+		}
+	case "company_post_comment": // TAMBAH INI
+		targetUUID, err := uuid.Parse(report.TargetID)
+		if err == nil {
+			comment, err := s.companyPostCommentRepository.FindById(ctx, tx, targetUUID)
+			if err == nil {
+				// Ambil data user pemilik komentar
+				user, _ := s.userRepository.FindById(ctx, tx, comment.UserId)
+				var userName string
+				if user.Name != "" {
+					userName = user.Name
+				}
+
+				// Ambil data company post untuk context
+				post, _ := s.companyPostRepository.FindById(ctx, tx, comment.PostId)
+				var companyName string
+				if post.Id != uuid.Nil {
+					company, _ := s.companyRepository.FindById(ctx, tx, post.CompanyId)
+					if company.Id != uuid.Nil {
+						companyName = company.Name
+					}
+				}
+
+				targetDetail = map[string]interface{}{
+					"id":           comment.Id,
+					"post_id":      comment.PostId,
+					"user_id":      comment.UserId,
+					"user_name":    userName,
+					"content":      comment.Content,
+					"company_name": companyName,
+					"created_at":   comment.CreatedAt,
 				}
 			}
 		}
@@ -820,6 +995,164 @@ func (s *reportServiceImpl) TakeAction(ctx context.Context, id string, request w
 				_, err = tx.ExecContext(ctx, "DELETE FROM groups WHERE id = $1", targetUUID)
 				if err != nil {
 					return web.AdminActionResponse{}, err
+				}
+			}
+		case "company":
+			if request.Action == "take_down" {
+				targetUUID, err := uuid.Parse(report.TargetID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
+				// Ambil informasi company sebelum di-take down untuk notifikasi
+				company, err := s.companyRepository.FindById(ctx, tx, targetUUID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
+				// Take down company - update status dan set taken_down_at
+				now := time.Now()
+				query := "UPDATE companies SET is_verified = false, taken_down_at = $1 WHERE id = $2"
+				_, err = tx.ExecContext(ctx, query, now, targetUUID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
+				// Kirim notifikasi ke pemilik company
+				if s.notificationService != nil {
+					refType := "company_taken_down"
+					s.notificationService.Create(
+						ctx,
+						company.OwnerId,
+						string(domain.NotificationCategoryPost), // Atau bisa pakai category khusus untuk company
+						"company_taken_down",
+						"Company Taken Down",
+						fmt.Sprintf("Admin Evoconnect has taken down your company '%s': %s", company.Name, request.Reason),
+						&targetUUID,
+						&refType,
+						nil, // actorId nil untuk admin
+					)
+				}
+			}
+
+		case "company_post":
+			if request.Action == "take_down" {
+				targetUUID, err := uuid.Parse(report.TargetID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
+				// Ambil informasi company post sebelum di-take down untuk notifikasi
+				post, err := s.companyPostRepository.FindById(ctx, tx, targetUUID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
+				// Take down company post - update status dan set taken_down_at
+				now := time.Now()
+				query := "UPDATE company_posts SET status = 'taken_down', taken_down_at = $1 WHERE id = $2"
+				_, err = tx.ExecContext(ctx, query, now, targetUUID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
+				// Kirim notifikasi ke pemilik post
+				if s.notificationService != nil {
+					refType := "company_post_taken_down"
+					s.notificationService.Create(
+						ctx,
+						post.CreatorId,
+						string(domain.NotificationCategoryPost),
+						"company_post_taken_down",
+						"Company Post Taken Down",
+						fmt.Sprintf("Admin Evoconnect has taken down your company post: %s", request.Reason),
+						&targetUUID,
+						&refType,
+						nil, // actorId nil untuk admin
+					)
+				}
+			}
+		case "company_post_comment": // TAMBAH INI
+			if request.Action == "take_down" {
+				targetUUID, err := uuid.Parse(report.TargetID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
+				// Ambil informasi comment sebelum di-take down untuk notifikasi
+				comment, err := s.companyPostCommentRepository.FindById(ctx, tx, targetUUID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
+				// Jika comment utama di-take down, hapus semua replies
+				if comment.ParentId == nil {
+					// Hapus semua replies dari comment utama ini
+					query := "DELETE FROM company_post_comments WHERE parent_id = $1"
+					_, err = tx.ExecContext(ctx, query, targetUUID)
+					if err != nil {
+						return web.AdminActionResponse{}, err
+					}
+				}
+
+				// Take down/delete comment
+				query := "DELETE FROM company_post_comments WHERE id = $1"
+				_, err = tx.ExecContext(ctx, query, targetUUID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
+				// Kirim notifikasi ke pemilik comment
+				if s.notificationService != nil {
+					refType := "company_post_comment_taken_down"
+					s.notificationService.Create(
+						ctx,
+						comment.UserId,
+						string(domain.NotificationCategoryEngagement),
+						"company_post_comment_taken_down",
+						"Comment Taken Down",
+						fmt.Sprintf("Admin Evoconnect has taken down your company post comment: %s", request.Reason),
+						&targetUUID,
+						&refType,
+						nil, // actorId nil untuk admin
+					)
+				}
+			}
+		case "vacancy_job":
+			if request.Action == "take_down" {
+				targetUUID, err := uuid.Parse(report.TargetID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
+				// Ambil informasi job vacancy sebelum di-take down untuk notifikasi
+				jobVacancy, err := s.jobVacancyRepository.FindById(ctx, tx, targetUUID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
+				// Take down job vacancy - update status dan set taken_down_at
+				now := time.Now()
+				query := "UPDATE job_vacancies SET status = 'closed', taken_down_at = $1 WHERE id = $2"
+				_, err = tx.ExecContext(ctx, query, now, targetUUID)
+				if err != nil {
+					return web.AdminActionResponse{}, err
+				}
+
+				// Kirim notifikasi ke creator job vacancy jika ada creator
+				if s.notificationService != nil && jobVacancy.CreatorId != nil {
+					refType := "vacancy_job_taken_down"
+					s.notificationService.Create(
+						ctx,
+						*jobVacancy.CreatorId,                   // Dereference pointer
+						string(domain.NotificationCategoryPost), // Gunakan NotificationCategoryPost sementara
+						"vacancy_job_taken_down",
+						"Job Vacancy Taken Down",
+						fmt.Sprintf("Admin Evoconnect has taken down your job vacancy '%s': %s", jobVacancy.Title, request.Reason),
+						&targetUUID,
+						&refType,
+						nil, // actorId nil untuk admin
+					)
 				}
 			}
 		}

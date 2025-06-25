@@ -65,6 +65,7 @@ type JobVacancy struct {
 	ExternalLink        *string          `json:"external_link"`
 	CreatedAt           time.Time        `json:"created_at"`
 	UpdatedAt           time.Time        `json:"updated_at"`
+	TakenDownAt     *time.Time `json:"taken_down_at,omitempty"`
 
 	// Relations
 	Company *Company `json:"company,omitempty"`

@@ -26,6 +26,7 @@ type JobApplicationServiceImpl struct {
 	JobVacancyRepository      repository.JobVacancyRepository
 	UserRepository            repository.UserRepository
 	MemberCompanyReRepository repository.MemberCompanyRepository
+	NotificationService       NotificationService
 	DB                        *sql.DB
 	Validate                  *validator.Validate
 }
@@ -36,6 +37,7 @@ func NewJobApplicationService(
 	jobVacancyRepository repository.JobVacancyRepository,
 	userRepository repository.UserRepository,
 	memberCompanyRepository repository.MemberCompanyRepository,
+	notificationService NotificationService,
 	DB *sql.DB,
 	validate *validator.Validate) JobApplicationService {
 	return &JobApplicationServiceImpl{
@@ -44,6 +46,7 @@ func NewJobApplicationService(
 		JobVacancyRepository:      jobVacancyRepository,
 		UserRepository:            userRepository,
 		MemberCompanyReRepository: memberCompanyRepository,
+		NotificationService:       notificationService,
 		DB:                        DB,
 		Validate:                  validate,
 	}
@@ -136,9 +139,52 @@ func (service *JobApplicationServiceImpl) Create(ctx context.Context, request we
 	jobApplication, err = service.JobApplicationRepository.FindById(ctx, tx, jobApplication.Id)
 	helper.PanicIfError(err)
 
+	if service.NotificationService != nil && jobApplication.JobVacancy != nil && jobApplication.JobVacancy.Company != nil {
+		go func() {
+			// Dapatkan company owner ID
+			companyOwnerId := jobApplication.JobVacancy.Company.OwnerId
+
+			// Buat referensi
+			refType := "job_application_received"
+
+			// Kirim notifikasi ke pemilik perusahaan
+			service.NotificationService.Create(
+				context.Background(),
+				companyOwnerId,
+				string(domain.NotificationCategoryCompany),
+				"job_application_received",
+				"New Job Application Received",
+				fmt.Sprintf("A new application has been submitted for the position: %s", jobApplication.JobVacancy.Title),
+				&jobApplication.Id,
+				&refType,
+				&applicantId,
+			)
+		}()
+	}
+
+	// Tambahkan notifikasi ke HRD yang membuat lowongan
+	if service.NotificationService != nil && jobApplication.JobVacancy != nil && jobApplication.JobVacancy.CreatorId != nil {
+		go func() {
+			// Buat referensi
+			refType := "job_application_received"
+
+			// Kirim notifikasi ke HRD yang membuat lowongan
+			service.NotificationService.Create(
+				context.Background(),
+				*jobApplication.JobVacancy.CreatorId,
+				string(domain.NotificationCategoryJob),
+				"job_application_received",
+				"New Job Application",
+				fmt.Sprintf("New application for: %s", jobApplication.JobVacancy.Title),
+				&jobApplication.Id,
+				&refType,
+				&applicantId,
+			)
+		}()
+	}
+
 	return service.toJobApplicationResponse(jobApplication)
 }
-
 func (service *JobApplicationServiceImpl) Update(ctx context.Context, request web.UpdateJobApplicationRequest, jobApplicationId, applicantId uuid.UUID) web.JobApplicationResponse {
 	err := service.Validate.Struct(request)
 	helper.PanicIfError(err)
@@ -383,6 +429,45 @@ func (service *JobApplicationServiceImpl) ReviewApplication(ctx context.Context,
 	jobApplication, err = service.JobApplicationRepository.FindById(ctx, tx, jobApplication.Id)
 	helper.PanicIfError(err)
 
+	if service.NotificationService != nil {
+		go func() {
+			var title, message string
+			refType := "job_application_reviewed"
+
+			// Buat pesan berdasarkan status
+			switch status {
+			case domain.ApplicationStatusUnderReview:
+				title = "Application Under Review"
+				message = fmt.Sprintf("Your application for %s is now under review", jobApplication.JobVacancy.Title)
+			case domain.ApplicationStatusShortlisted:
+				title = "Application Shortlisted"
+				message = fmt.Sprintf("Congratulations! Your application for %s has been shortlisted", jobApplication.JobVacancy.Title)
+			case domain.ApplicationStatusInterviewScheduled:
+				title = "Interview Scheduled"
+				message = fmt.Sprintf("You have been selected for an interview for the position: %s", jobApplication.JobVacancy.Title)
+			case domain.ApplicationStatusAccepted:
+				title = "Application Accepted"
+				message = fmt.Sprintf("Congratulations! Your application for %s has been accepted", jobApplication.JobVacancy.Title)
+			case domain.ApplicationStatusRejected:
+				title = "Application Rejected"
+				message = fmt.Sprintf("We regret to inform you that your application for %s has been rejected", jobApplication.JobVacancy.Title)
+			}
+
+			// Kirim notifikasi ke pelamar
+			service.NotificationService.Create(
+				context.Background(),
+				jobApplication.ApplicantId,
+				string(domain.NotificationCategoryCompany),
+				"job_application_reviewed",
+				title,
+				message,
+				&jobApplication.Id,
+				&refType,
+				&reviewerId,
+			)
+		}()
+	}
+
 	return service.toJobApplicationResponse(jobApplication)
 }
 
@@ -553,4 +638,33 @@ func (service *JobApplicationServiceImpl) toContactInfoResponse(contactInfo doma
 		Address:  contactInfo.Address,
 		LinkedIn: contactInfo.LinkedIn,
 	}
+}
+
+// Tambahkan sebagai fungsi baru
+func (service *JobApplicationServiceImpl) ViewCv(ctx context.Context, jobApplicationId, viewerId uuid.UUID) web.JobApplicationResponse {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	jobApplication, err := service.JobApplicationRepository.FindById(ctx, tx, jobApplicationId)
+	if err != nil {
+		panic(exception.NewNotFoundError("Job application not found"))
+	}
+
+	// Kirim notifikasi ke pelamar
+	go func() {
+		service.NotificationService.Create(
+			context.Background(),
+			jobApplication.ApplicantId,
+			string(domain.NotificationCategoryJob),
+			"cv_viewed",
+			"CV Viewed",
+			"Your CV has been viewed by the HR team",
+			&jobApplication.Id,
+			nil,
+			&viewerId,
+		)
+	}()
+
+	return service.toJobApplicationResponse(jobApplication)
 }

@@ -15,6 +15,7 @@ const (
 	NotificationCategoryPost       NotificationCategory = "post"
 	NotificationCategoryProfile    NotificationCategory = "profile"
 	NotificationCategoryCompany    NotificationCategory = "company"
+	NotificationCategoryJob        NotificationCategory = "job"
 	NotificationCategoryEngagement NotificationCategory = "engagement"
 )
 
@@ -44,6 +45,12 @@ const (
 	NotificationTypeBlogNew          NotificationType = "blog_new"
 	NotificationTypeBlogComment      NotificationType = "blog_comment"
 	NotificationTypeBlogCommentReply NotificationType = "blog_comment_reply"
+
+	// Company notifications
+	NotificationTypeJobApplicationReceived NotificationType = "job_application_received"
+    NotificationTypeJobApplicationReviewed NotificationType = "job_application_reviewed"
+
+	NotificationTypeCompanyPostCommentTakenDown NotificationType = "company_post_comment_taken_down"
 )
 
 // NotificationStatus represents the status of a notification

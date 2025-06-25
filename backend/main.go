@@ -117,7 +117,7 @@ func main() {
 
 	// ===== Services =====
 	profileViewService := service.NewProfileViewService(db, profileViewRepository, userRepository, notificationService)
-	connectionService := service.NewConnectionService(connectionRepository, userRepository, notificationService, db, groupInvitationRepository , validate)
+	connectionService := service.NewConnectionService(connectionRepository, userRepository, notificationService, db, groupInvitationRepository, validate)
 	userService := service.NewUserService(userRepository, connectionRepository, profileViewService, db, validate)
 	authService := service.NewAuthService(userRepository, db, validate, jwtSecret)
 
@@ -205,7 +205,11 @@ func main() {
 		blogRepository,
 		commentBlogRepository,
 		groupRepository,
-		notificationService, // Tambahkan ini
+		companyRepository,
+		companyPostRepository,
+		companyPostCommentRepository,
+		jobVacancyRepository,
+		notificationService,
 		db,
 	)
 
@@ -218,6 +222,10 @@ func main() {
 		groupRepository,
 		connectionRepository,
 		groupJoinRequestRepository,
+		companyRepository,         // TAMBAH INI
+		companyPostRepository,     // TAMBAH INI
+		jobVacancyRepository,      // TAMBAH INI
+		companyFollowerRepository, // TAMBAH INI
 	)
 
 	adminNotificationService := service.NewAdminNotificationService(
@@ -233,6 +241,7 @@ func main() {
 		memberCompanyRepository,
 		userRepository,
 		companyRepository,
+		notificationService,
 		db,
 		validate,
 	)
@@ -269,6 +278,7 @@ func main() {
 		userRepository,
 		adminRepository,
 		notificationService,
+		reportRepository,
 		db,
 		validate,
 	)
@@ -289,6 +299,7 @@ func main() {
 		memberCompanyRepository,
 		companyRepository,
 		userRepository,
+		companyFollowerRepository,
 		notificationService,
 		validate,
 	)
@@ -309,6 +320,8 @@ func main() {
 		userRepository,
 		savedJobRepository,
 		jobApplicationRepository,
+		companyFollowerRepository, // Tambah ini
+		notificationService,       // Tambah ini
 		db,
 		validate,
 	)
@@ -318,6 +331,7 @@ func main() {
 		jobVacancyRepository,
 		userRepository,
 		memberCompanyRepository,
+		notificationService,
 		db,
 		validate,
 	)

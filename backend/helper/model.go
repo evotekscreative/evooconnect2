@@ -5,6 +5,7 @@ import (
 	"evoconnect/backend/model/domain"
 	"evoconnect/backend/model/web"
 	"fmt"
+
 	"github.com/google/uuid"
 	"time"
 	// "evoconnect/backend/repository"
@@ -431,7 +432,6 @@ func ToNotificationResponse(notification domain.Notification) web.NotificationRe
 		Actor:         nil, // Untuk sementara set nil, nanti bisa diisi jika diperlukan
 	}
 }
-
 func ToCompanyFollowerResponse(follower domain.CompanyFollower) web.CompanyFollowerResponse {
 	response := web.CompanyFollowerResponse{
 		Id:        follower.Id.String(),
@@ -620,6 +620,7 @@ func ToJobVacancyResponse(jobVacancy domain.JobVacancy) web.JobVacancyResponse {
 		ExternalLink:        jobVacancy.ExternalLink,
 		CreatedAt:           jobVacancy.CreatedAt,
 		UpdatedAt:           jobVacancy.UpdatedAt,
+		TakenDownAt:         jobVacancy.TakenDownAt, // Tambahkan field ini
 		Company:             companyResponse,
 		Creator:             creatorResponse,
 	}

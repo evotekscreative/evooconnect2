@@ -56,7 +56,7 @@ func (repository *CompanyRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx,
 }
 
 func (repository *CompanyRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, companyId uuid.UUID) (domain.Company, error) {
-	SQL := `SELECT id, owner_id, name, linkedin_url, website, industry, size, type, logo, tagline, location, is_verified, created_at, updated_at
+	SQL := `SELECT id, owner_id, name, linkedin_url, website, industry, size, type, logo, tagline, location, is_verified, created_at, updated_at, taken_down_at
             FROM companies WHERE id = $1`
 
 	rows, err := tx.QueryContext(ctx, SQL, companyId)
@@ -66,17 +66,22 @@ func (repository *CompanyRepositoryImpl) FindById(ctx context.Context, tx *sql.T
 	company := domain.Company{}
 	if rows.Next() {
 		var website, logo, tagline, location sql.NullString
+		var takenDownAt sql.NullTime
 
 		err := rows.Scan(
 			&company.Id, &company.OwnerId, &company.Name, &company.LinkedinUrl, &website,
 			&company.Industry, &company.Size, &company.Type, &logo, &tagline, &location,
-			&company.IsVerified, &company.CreatedAt, &company.UpdatedAt)
+			&company.IsVerified, &company.CreatedAt, &company.UpdatedAt, &takenDownAt)
 		helper.PanicIfError(err)
 
 		company.Website = website.String
 		company.Logo = logo.String
 		company.Tagline = tagline.String
 		company.Location = location.String
+
+		if takenDownAt.Valid {
+			company.TakenDownAt = &takenDownAt.Time
+		}
 
 		return company, nil
 	} else {

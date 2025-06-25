@@ -22,6 +22,7 @@ type ReportResponse struct {
 	TargetPhoto     string    `json:"target_photo,omitempty"`
 	TargetUsername  string    `json:"target_username,omitempty"`
 	TargetAuthorName string   `json:"target_author_name,omitempty"`
+	IsReported      bool      `json:"is_reported,omitempty"`
 }
 
 type APIResponse struct {

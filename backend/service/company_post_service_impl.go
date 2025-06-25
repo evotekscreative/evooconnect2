@@ -17,13 +17,14 @@ import (
 )
 
 type CompanyPostServiceImpl struct {
-	DB                      *sql.DB
-	CompanyPostRepository   repository.CompanyPostRepository
-	MemberCompanyRepository repository.MemberCompanyRepository
-	CompanyRepository       repository.CompanyRepository
-	UserRepository          repository.UserRepository
-	NotificationService     NotificationService
-	Validate                *validator.Validate
+	DB                        *sql.DB
+	CompanyPostRepository     repository.CompanyPostRepository
+	MemberCompanyRepository   repository.MemberCompanyRepository
+	CompanyRepository         repository.CompanyRepository
+	UserRepository            repository.UserRepository
+	CompanyFollowerRepository repository.CompanyFollowerRepository
+	NotificationService       NotificationService
+	Validate                  *validator.Validate
 }
 
 func NewCompanyPostService(
@@ -32,17 +33,19 @@ func NewCompanyPostService(
 	memberCompanyRepository repository.MemberCompanyRepository,
 	companyRepository repository.CompanyRepository,
 	userRepository repository.UserRepository,
+	companyFollowerRepository repository.CompanyFollowerRepository,
 	notificationService NotificationService,
 	validate *validator.Validate,
 ) CompanyPostService {
 	return &CompanyPostServiceImpl{
-		DB:                      db,
-		CompanyPostRepository:   companyPostRepository,
-		MemberCompanyRepository: memberCompanyRepository,
-		CompanyRepository:       companyRepository,
-		UserRepository:          userRepository,
-		NotificationService:     notificationService,
-		Validate:                validate,
+		DB:                        db,
+		CompanyPostRepository:     companyPostRepository,
+		MemberCompanyRepository:   memberCompanyRepository,
+		CompanyRepository:         companyRepository,
+		UserRepository:            userRepository,
+		CompanyFollowerRepository: companyFollowerRepository,
+		NotificationService:       notificationService,
+		Validate:                  validate,
 	}
 }
 
@@ -103,6 +106,7 @@ func (service *CompanyPostServiceImpl) Create(ctx context.Context, userId uuid.U
 
 	// Send notification to company members if published
 	service.sendNotificationToCompanyMembers(post, userId)
+	service.sendNotificationToCompanyFollowers(post, userId)
 
 	return service.toCompanyPostResponse(post, userId)
 }
@@ -223,15 +227,19 @@ func (service *CompanyPostServiceImpl) FindById(ctx context.Context, postId uuid
 
 	post, err := service.CompanyPostRepository.FindById(ctx, tx, postId)
 	if err != nil {
-		panic(exception.NewNotFoundError("company post not found"))
+		panic(exception.NewNotFoundError("Company post not found"))
 	}
 
-	// Check visibility permissions
-	if post.Visibility == "members_only" {
-		// Check if user is member of the company
-		_, err := service.MemberCompanyRepository.FindByUserAndCompany(ctx, tx, userId, post.CompanyId)
-		if err != nil {
-			panic(exception.NewForbiddenError("you don't have permission to view this post"))
+	// Jika postingan sudah di-takedown, periksa apakah user adalah pemilik atau admin perusahaan
+	if post.Status == "taken_down" && post.TakenDownAt != nil {
+		// Jika user bukan pemilik postingan
+		if post.CreatorId != userId {
+			// Periksa apakah user adalah admin perusahaan
+			memberInfo, err := service.MemberCompanyRepository.FindByUserAndCompany(ctx, tx, userId, post.CompanyId)
+			if err != nil || (memberInfo.Role != "owner" && memberInfo.Role != "admin" && memberInfo.Role != "super_admin") {
+				// Jika bukan admin atau pemilik, kembalikan not found
+				panic(exception.NewNotFoundError("Company post not found"))
+			}
 		}
 	}
 
@@ -435,18 +443,19 @@ func (service *CompanyPostServiceImpl) sendNotificationToCompanyMembers(post dom
 			notificationTitle = "Company Announcement"
 		}
 
-		for _, member := range members {
-			if member.UserID != creatorId && member.Status == "active" {
+		// Send to 70% of members randomly
+		for i, member := range members {
+			if member.UserID != creatorId && member.Status == "active" && i%10 < 7 {
 				service.NotificationService.Create(
 					context.Background(),
 					member.UserID,
 					string(domain.NotificationCategoryCompany),
 					"company_post",
 					notificationTitle,
-					fmt.Sprintf("%s posted: %s", user.Name, post.Title),
-					&post.CompanyId,
-					&refType,
+					fmt.Sprintf("%s posted: %s", user.Name, post.Content[:min(50, len(post.Content))]),
 					&post.Id,
+					&refType,
+					&creatorId,
 				)
 			}
 		}
@@ -534,6 +543,7 @@ func (service *CompanyPostServiceImpl) toCompanyPostResponse(post domain.Company
 		IsAnnouncement: post.IsAnnouncement,
 		CreatedAt:      post.CreatedAt,
 		UpdatedAt:      post.UpdatedAt,
+		TakenDownAt:    post.TakenDownAt, // Tambahkan field ini
 		LikesCount:     likesCount,
 		CommentsCount:  commentsCount,
 		IsLiked:        isLiked,
@@ -600,5 +610,55 @@ func (service *CompanyPostServiceImpl) sendLikeNotification(ctx context.Context,
 			&refType,
 			&post.Id,
 		)
+	}()
+}
+
+
+func (service *CompanyPostServiceImpl) sendNotificationToCompanyFollowers(post domain.CompanyPost, creatorId uuid.UUID) {
+	if service.NotificationService == nil {
+		return
+	}
+
+	go func() {
+		tx, err := service.DB.Begin()
+		if err != nil {
+			return
+		}
+		defer helper.CommitOrRollback(tx)
+
+		// Get company info
+		company, err := service.CompanyRepository.FindById(context.Background(), tx, post.CompanyId)
+		if err != nil {
+			return
+		}
+
+		// Get company followers
+		followers, _, err := service.CompanyFollowerRepository.FindFollowersByCompanyId(context.Background(), tx, post.CompanyId, 1000, 0)
+		if err != nil {
+			return
+		}
+
+		refType := "company_post_follower"
+		notificationTitle := "New Post from " + company.Name
+		if post.IsAnnouncement {
+			notificationTitle = "Announcement from " + company.Name
+		}
+
+		// Send to 70% of followers randomly
+		for i, follower := range followers {
+			if follower.UserId != creatorId && i%10 < 7 {
+				service.NotificationService.Create(
+					context.Background(),
+					follower.UserId,
+					string(domain.NotificationCategoryCompany),
+					"company_post_follower",
+					notificationTitle,
+					fmt.Sprintf("%s shared: %s", company.Name, post.Content[:min(50, len(post.Content))]),
+					&post.Id,
+					&refType,
+					&creatorId,
+				)
+			}
+		}
 	}()
 }
