@@ -14,4 +14,5 @@ type CompanyManagementController interface {
 	DeleteCompany(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	DeleteCompanyEditRequest(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	GetRandomCompanies(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+	GetCompanyStats(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 }

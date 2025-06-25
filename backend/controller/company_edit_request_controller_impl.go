@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"evoconnect/backend/exception"
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/service"
@@ -279,4 +280,22 @@ func (controller *CompanyManagementControllerImpl) GetRandomCompanies(writer htt
 		Status: "OK",
 		Data:   companies,
 	})
+}
+
+func (controller *CompanyManagementControllerImpl) GetCompanyStats(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	companyIdStr := params.ByName("companyId")
+	companyId, err := uuid.Parse(companyIdStr)
+	if err != nil {
+		panic(exception.NewBadRequestError("Invalid company ID"))
+	}
+
+	stats := controller.CompanyManagementService.GetCompanyStats(request.Context(), companyId)
+
+	webResponse := web.WebResponse{
+		Code:   200,
+		Status: "OK",
+		Data:   stats,
+	}
+
+	helper.WriteToResponseBody(writer, webResponse)
 }

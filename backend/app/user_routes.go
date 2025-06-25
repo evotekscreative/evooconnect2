@@ -235,6 +235,7 @@ func setupUserRoutes(
 	router.DELETE("/api/companies/:companyId", userAuth(companyManagementController.DeleteCompany))
 	router.POST("/api/companies/:companyId/request-edit", userAuth(companyManagementController.RequestEdit))
 	router.DELETE("/api/companies/:companyId/request-edit", userAuth(companyManagementController.DeleteCompanyEditRequest))
+	router.GET("/api/companies/:companyId/stats", userAuth(companyManagementController.GetCompanyStats))
 
 	// ========== MEMBER COMPANY ROUTES ==========
 	router.GET("/api/member-companies/:memberCompanyId", userAuth(memberCompanyController.GetMemberByID))

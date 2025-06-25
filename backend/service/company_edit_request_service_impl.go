@@ -386,9 +386,9 @@ func (service *CompanyManagementServiceImpl) GetCompanyDetail(ctx context.Contex
 		// Edit information
 		HasPendingEdit: hasPendingEdit,
 		PendingEditId:  pendingEditId,
-		
+
 		// Report information
-		IsReported:    isReported,
+		IsReported: isReported,
 	}
 
 	// Set owner info if available
@@ -781,5 +781,49 @@ func (service *CompanyManagementServiceImpl) GetRandomCompanies(ctx context.Cont
 		Total:     len(responses),
 		Limit:     pageSize,
 		Offset:    offset,
+	}
+}
+
+func (service *CompanyManagementServiceImpl) GetCompanyStats(ctx context.Context, companyId uuid.UUID) web.CompanyStatsResponse {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Check if company exists
+	_, err = service.CompanyRepository.FindById(ctx, tx, companyId)
+	if err != nil {
+		panic(exception.NewNotFoundError("Company not found"))
+	}
+
+	// Get total posts
+	var totalPosts int
+	err = tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM company_posts WHERE company_id = $1 AND status != 'taken_down'", companyId).Scan(&totalPosts)
+	helper.PanicIfError(err)
+
+	// Get total job vacancies
+	var totalJobVacancies int
+	err = tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM job_vacancies WHERE company_id = $1 AND taken_down_at IS NULL", companyId).Scan(&totalJobVacancies)
+	helper.PanicIfError(err)
+
+	// Get total members
+	var totalMembers int
+	err = tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM member_company WHERE company_id = $1 AND status = 'active'", companyId).Scan(&totalMembers)
+	helper.PanicIfError(err)
+
+	// Get total applicants for all job vacancies of this company
+	var totalApplicants int
+	err = tx.QueryRowContext(ctx, `
+        SELECT COUNT(*) 
+        FROM job_applications ja 
+        JOIN job_vacancies jv ON ja.job_vacancy_id = jv.id 
+        WHERE jv.company_id = $1
+    `, companyId).Scan(&totalApplicants)
+	helper.PanicIfError(err)
+
+	return web.CompanyStatsResponse{
+		TotalPosts:        totalPosts,
+		TotalJobVacancies: totalJobVacancies,
+		TotalMembers:      totalMembers,
+		TotalApplicants:   totalApplicants,
 	}
 }

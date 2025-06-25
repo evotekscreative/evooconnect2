@@ -25,4 +25,5 @@ type CompanyManagementService interface {
 	GetEditRequestDetail(ctx context.Context, requestId uuid.UUID) web.CompanyEditRequestResponse
 	ReviewEditRequest(ctx context.Context, requestId uuid.UUID, reviewerId uuid.UUID, request web.ReviewCompanyEditRequestRequest) web.CompanyEditRequestResponse
 	GetEditRequestStats(ctx context.Context) map[string]int
+	GetCompanyStats(ctx context.Context, companyId uuid.UUID) web.CompanyStatsResponse
 }

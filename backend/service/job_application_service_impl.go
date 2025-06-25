@@ -144,6 +144,12 @@ func (service *JobApplicationServiceImpl) Create(ctx context.Context, request we
 			// Dapatkan company owner ID
 			companyOwnerId := jobApplication.JobVacancy.Company.OwnerId
 
+			// Validasi companyOwnerId tidak kosong
+			if companyOwnerId == uuid.Nil {
+				fmt.Printf("Warning: Company owner ID is nil for company %s\n", jobApplication.JobVacancy.Company.Name)
+				return
+			}
+
 			// Buat referensi
 			refType := "job_application_received"
 
@@ -165,6 +171,12 @@ func (service *JobApplicationServiceImpl) Create(ctx context.Context, request we
 	// Tambahkan notifikasi ke HRD yang membuat lowongan
 	if service.NotificationService != nil && jobApplication.JobVacancy != nil && jobApplication.JobVacancy.CreatorId != nil {
 		go func() {
+			// Validasi CreatorId tidak kosong
+			if *jobApplication.JobVacancy.CreatorId == uuid.Nil {
+				fmt.Printf("Warning: Job vacancy creator ID is nil for vacancy %s\n", jobApplication.JobVacancy.Title)
+				return
+			}
+
 			// Buat referensi
 			refType := "job_application_received"
 

@@ -8,6 +8,7 @@ import (
 	"evoconnect/backend/model/web"
 	"evoconnect/backend/repository"
 	"fmt"
+
 	"github.com/google/uuid"
 )
 
@@ -19,10 +20,10 @@ type SearchServiceImpl struct {
 	GroupRepository            repository.GroupRepository
 	ConnectionRepository       repository.ConnectionRepository
 	GroupJoinRequestRepository repository.GroupJoinRequestRepository
-	CompanyRepository          repository.CompanyRepository          
-	CompanyPostRepository      repository.CompanyPostRepository     
-	JobVacancyRepository       repository.JobVacancyRepository      
-	CompanyFollowerRepository  repository.CompanyFollowerRepository 
+	CompanyRepository          repository.CompanyRepository
+	CompanyPostRepository      repository.CompanyPostRepository
+	JobVacancyRepository       repository.JobVacancyRepository
+	CompanyFollowerRepository  repository.CompanyFollowerRepository
 }
 
 func NewSearchService(
@@ -33,9 +34,9 @@ func NewSearchService(
 	groupRepository repository.GroupRepository,
 	connectionRepository repository.ConnectionRepository,
 	groupJoinRequestRepository repository.GroupJoinRequestRepository,
-	companyRepository repository.CompanyRepository,        
-	companyPostRepository repository.CompanyPostRepository,  
-	jobVacancyRepository repository.JobVacancyRepository,    
+	companyRepository repository.CompanyRepository,
+	companyPostRepository repository.CompanyPostRepository,
+	jobVacancyRepository repository.JobVacancyRepository,
 	companyFollowerRepository repository.CompanyFollowerRepository,
 ) SearchService {
 	return &SearchServiceImpl{
@@ -46,10 +47,10 @@ func NewSearchService(
 		GroupRepository:            groupRepository,
 		ConnectionRepository:       connectionRepository,
 		GroupJoinRequestRepository: groupJoinRequestRepository,
-		CompanyRepository:          companyRepository,         
-		CompanyPostRepository:      companyPostRepository,      
-		JobVacancyRepository:       jobVacancyRepository,       
-		CompanyFollowerRepository:  companyFollowerRepository,  
+		CompanyRepository:          companyRepository,
+		CompanyPostRepository:      companyPostRepository,
+		JobVacancyRepository:       jobVacancyRepository,
+		CompanyFollowerRepository:  companyFollowerRepository,
 	}
 }
 
@@ -130,7 +131,7 @@ func (service *SearchServiceImpl) searchUsers(ctx context.Context, query string,
 	}
 
 	fmt.Printf("Searching users with query: '%s'\n", query)
-	users := service.UserRepository.Search(ctx, tx, query, limit, offset)
+	users := service.UserRepository.Search(ctx, tx, query, limit, offset, currentUserId) // Tambahkan currentUserId
 	fmt.Printf("User repository returned %d users\n", len(users))
 
 	var results []web.UserSearchResult
@@ -375,7 +376,6 @@ func (service *SearchServiceImpl) searchGroups(ctx context.Context, query string
 	return results
 }
 
-
 func (service *SearchServiceImpl) searchCompanies(ctx context.Context, query string, limit int, offset int, currentUserId uuid.UUID) []web.CompanySearchResult {
 	tx, err := service.DB.Begin()
 	if err != nil {
@@ -459,7 +459,7 @@ func (service *SearchServiceImpl) searchCompanyPosts(ctx context.Context, query 
 	for rows.Next() {
 		var result web.CompanyPostSearchResult
 		var creatorName, creatorUsername sql.NullString
-		
+
 		err := rows.Scan(
 			&result.Id,
 			&result.CompanyId,
