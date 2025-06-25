@@ -77,11 +77,11 @@ func (repository *CompanyRepositoryImpl) FindById(ctx context.Context, tx *sql.T
 		company.Website = website.String
 		company.Logo = logo.String
 		company.Tagline = tagline.String
-		
+		company.Location = location.String
+
 		if takenDownAt.Valid {
 			company.TakenDownAt = &takenDownAt.Time
 		}
-		company.Location = location.String
 
 		return company, nil
 	} else {

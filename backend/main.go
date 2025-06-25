@@ -207,6 +207,7 @@ func main() {
 		groupRepository,
 		companyRepository,
 		companyPostRepository,
+		companyPostCommentRepository,
 		jobVacancyRepository,
 		notificationService,
 		db,
@@ -221,6 +222,10 @@ func main() {
 		groupRepository,
 		connectionRepository,
 		groupJoinRequestRepository,
+		companyRepository,         // TAMBAH INI
+		companyPostRepository,     // TAMBAH INI
+		jobVacancyRepository,      // TAMBAH INI
+		companyFollowerRepository, // TAMBAH INI
 	)
 
 	adminNotificationService := service.NewAdminNotificationService(
@@ -294,6 +299,7 @@ func main() {
 		memberCompanyRepository,
 		companyRepository,
 		userRepository,
+		companyFollowerRepository,
 		notificationService,
 		validate,
 	)
@@ -314,6 +320,8 @@ func main() {
 		userRepository,
 		savedJobRepository,
 		jobApplicationRepository,
+		companyFollowerRepository, // Tambah ini
+		notificationService,       // Tambah ini
 		db,
 		validate,
 	)

@@ -85,6 +85,14 @@ func (service *CompanyManagementServiceImpl) GetAllCompanies(ctx context.Context
 
 		// Get membership info
 		isPendingJoinRequest := service.CompanyJoinRequestRepository.IsPendingJoinRequest(ctx, tx, userId, company.Id)
+		var joinRequest domain.CompanyJoinRequest
+		var joinRequestId *uuid.UUID = nil
+		if isPendingJoinRequest {
+			// If user has a pending join request, get the request ID
+			joinRequest, err = service.CompanyJoinRequestRepository.FindByUserIdAndCompanyId(ctx, tx, userId, company.Id)
+			joinRequestId = &joinRequest.Id
+			helper.PanicIfError(err)
+		}
 		isMember, err := service.MemberCompanyRepository.IsUserMemberOfCompany(ctx, tx, userId, company.Id)
 		if err != nil {
 			panic(exception.NewInternalServerError("Failed to check membership status"))
@@ -129,6 +137,7 @@ func (service *CompanyManagementServiceImpl) GetAllCompanies(ctx context.Context
 
 			// Membership information
 			IsPendingJoinRequest: isPendingJoinRequest,
+			JoinRequestId:        joinRequestId,
 			IsMemberOfCompany:    isMember,
 			UserRole:             userRole,
 
@@ -311,6 +320,14 @@ func (service *CompanyManagementServiceImpl) GetCompanyDetail(ctx context.Contex
 
 	// Get membership information
 	isPendingJoinRequest := service.CompanyJoinRequestRepository.IsPendingJoinRequest(ctx, tx, userId, companyId)
+	var joinRequest domain.CompanyJoinRequest
+	var joinRequestId *uuid.UUID = nil
+	if isPendingJoinRequest {
+		// If user has a pending join request, get the request ID
+		joinRequest, err = service.CompanyJoinRequestRepository.FindByUserIdAndCompanyId(ctx, tx, userId, companyId)
+		joinRequestId = &joinRequest.Id
+		helper.PanicIfError(err)
+	}
 
 	// Check if user is member and get role
 	isMember := false
@@ -362,6 +379,7 @@ func (service *CompanyManagementServiceImpl) GetCompanyDetail(ctx context.Contex
 
 		// Membership information
 		IsPendingJoinRequest: isPendingJoinRequest,
+		JoinRequestId:        joinRequestId,
 		IsMemberOfCompany:    isMember,
 		UserRole:             userRole,
 

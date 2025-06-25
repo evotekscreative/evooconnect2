@@ -39,21 +39,20 @@ type CompanySubmission struct {
 }
 
 type Company struct {
-	Id          uuid.UUID `db:"id"`
-	OwnerId     uuid.UUID `db:"owner_id"`
-	Name        string    `db:"name"`
-	LinkedinUrl string    `db:"linkedin_url"`
-	Website     string    `db:"website"`
-	Industry    string    `db:"industry"`
-	Size        string    `db:"size"`
-	Type        string    `db:"type"`
-	Logo        string    `db:"logo"`
-	Tagline     string    `db:"tagline"`
-	Description string    `db:"description"`
-	Location    string    `json:"location"`
-	IsVerified  bool      `db:"is_verified"`
-	CreatedAt   time.Time `db:"created_at"`
-	UpdatedAt   time.Time `db:"updated_at"`
+	Id          uuid.UUID  `json:"id"`
+	OwnerId     uuid.UUID  `json:"owner_id"`
+	Name        string     `json:"name"`
+	LinkedinUrl string     `json:"linkedin_url"`
+	Website     string     `json:"website"`
+	Industry    string     `json:"industry"`
+	Size        string     `json:"size"`
+	Type        string     `json:"type"`
+	Logo        string     `json:"logo"`
+	Tagline     string     `json:"tagline"`
+	Location    string     `json:"location"`
+	IsVerified  bool       `json:"is_verified"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
 	TakenDownAt *time.Time `db:"taken_down_at"`
 
 	// Relations

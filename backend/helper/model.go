@@ -755,3 +755,33 @@ func ToAdminResponseBrief(admin domain.Admin) web.AdminResponse {
 		CreatedAt: admin.CreatedAt,
 	}
 }
+
+func ToCompanyDetailResponse(company domain.Company) web.CompanyDetailResponse {
+	response := web.CompanyDetailResponse{
+		Id:          company.Id.String(),
+		Name:        company.Name,
+		LinkedinUrl: company.LinkedinUrl,
+		Website:     company.Website,
+		Industry:    company.Industry,
+		Size:        company.Size,
+		Type:        company.Type,
+		Logo:        company.Logo,
+		Tagline:     company.Tagline,
+		Location:    company.Location,
+		IsVerified:  company.IsVerified,
+		CreatedAt:   company.CreatedAt,
+		UpdatedAt:   company.UpdatedAt,
+	}
+
+	// Set owner information if available
+	if company.Owner != nil {
+		response.Owner = &web.UserBasicInfo{
+			Id:       company.Owner.Id.String(),
+			Name:     company.Owner.Name,
+			Username: company.Owner.Username,
+			Photo:    company.Owner.Photo,
+		}
+	}
+
+	return response
+}

@@ -49,6 +49,8 @@ const (
 	// Company notifications
 	NotificationTypeJobApplicationReceived NotificationType = "job_application_received"
     NotificationTypeJobApplicationReviewed NotificationType = "job_application_reviewed"
+
+	NotificationTypeCompanyPostCommentTakenDown NotificationType = "company_post_comment_taken_down"
 )
 
 // NotificationStatus represents the status of a notification
