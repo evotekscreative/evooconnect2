@@ -730,3 +730,38 @@ func (service *CompanyManagementServiceImpl) GetEditRequestStats(ctx context.Con
 
 	return service.CompanyEditRequestRepository.GetStatsByStatus(ctx, tx)
 }
+
+func (service *CompanyManagementServiceImpl) GetRandomCompanies(ctx context.Context, page, pageSize int) web.CompanyListResponse {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	offset := (page - 1) * pageSize
+	companies := service.CompanyRepository.FindRandomCompanies(ctx, tx, pageSize, offset)
+
+	var responses []web.CompanyDetailResponse
+	for _, company := range companies {
+		response := web.CompanyDetailResponse{
+			Id:          company.Id.String(),
+			Name:        company.Name,
+			LinkedinUrl: company.LinkedinUrl,
+			Website:     company.Website,
+			Industry:    company.Industry,
+			Size:        company.Size,
+			Type:        company.Type,
+			Logo:        company.Logo,
+			Tagline:     company.Tagline,
+			IsVerified:  company.IsVerified,
+			CreatedAt:   company.CreatedAt,
+			UpdatedAt:   company.UpdatedAt,
+		}
+		responses = append(responses, response)
+	}
+
+	return web.CompanyListResponse{
+		Companies: responses,
+		Total:     len(responses),
+		Limit:     pageSize,
+		Offset:    offset,
+	}
+}

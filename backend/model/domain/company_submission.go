@@ -50,13 +50,14 @@ type Company struct {
 	Logo        string    `db:"logo"`
 	Tagline     string    `db:"tagline"`
 	Description string    `db:"description"`
+	Location    string    `json:"location"`
 	IsVerified  bool      `db:"is_verified"`
 	CreatedAt   time.Time `db:"created_at"`
 	UpdatedAt   time.Time `db:"updated_at"`
 	TakenDownAt *time.Time `db:"taken_down_at"`
 
 	// Relations
-	Owner *User `db:"-"`
+	Owner *User `json:"owner,omitempty"`
 }
 
 type CompanyFollower struct {

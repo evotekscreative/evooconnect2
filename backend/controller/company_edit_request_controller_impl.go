@@ -160,6 +160,7 @@ func (controller *CompanyManagementControllerImpl) RequestEdit(writer http.Respo
 		Size:        request.FormValue("size"),
 		Type:        request.FormValue("type"),
 		Tagline:     request.FormValue("tagline"),
+		Location:    request.FormValue("location"),
 	}
 
 	// Get logo file if provided
@@ -264,5 +265,18 @@ func (controller *CompanyManagementControllerImpl) DeleteCompanyEditRequest(writ
 	helper.WriteJSON(writer, http.StatusNoContent, web.APIResponse{
 		Code:   http.StatusNoContent,
 		Status: "NO_CONTENT",
+	})
+}
+
+func (controller *CompanyManagementControllerImpl) GetRandomCompanies(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	page := parseInt(request.URL.Query().Get("page"), 1)
+	pageSize := parseInt(request.URL.Query().Get("pageSize"), 2)
+
+	companies := controller.CompanyManagementService.GetRandomCompanies(request.Context(), page, pageSize)
+
+	helper.WriteJSON(writer, http.StatusOK, web.APIResponse{
+		Code:   http.StatusOK,
+		Status: "OK",
+		Data:   companies,
 	})
 }

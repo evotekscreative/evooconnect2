@@ -225,6 +225,7 @@ func setupUserRoutes(
 	// ========== COMPANY MANAGEMENT ROUTES ==========
 	// Specific routes first
 	router.GET("/api/companies", userAuth(companyManagementController.GetAllCompanies))
+	router.GET("/api/companies-random", userAuth(companyManagementController.GetRandomCompanies))
 	router.GET("/api/my-companies", userAuth(companyManagementController.GetMyCompanies))
 	router.GET("/api/my-company-edit-requests", userAuth(companyManagementController.GetMyEditRequests))
 
