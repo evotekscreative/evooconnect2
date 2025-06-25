@@ -4,7 +4,7 @@ import githubIcon from "../../../assets/img/imgAdmin/github.svg";
 import googleIcon from "../../../assets/img/imgAdmin/google.svg";
 import background from "../../../assets/img/imgAdmin/register_bg_2.png";
 import logoB from "../../../assets/img/logoB.png";
-import Alert from "../../../components/Auth/Alert";
+import Alert from "../../../components/Auth/alert.jsx";
 // components
 import FooterSmall from "../../../components/Admin/Footers/FooterSmall.jsx";
 

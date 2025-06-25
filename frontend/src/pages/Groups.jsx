@@ -375,8 +375,8 @@ export default function Groups() {
 
   return (
     <Case>
-      <div className="p-4 sm:p-6 bg-gray-100 min-h-screen">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 mb-10">
           {alert.show && (
             <div className="fixed top-4 right-4 z-50 w-full max-w-sm">
               <Alert

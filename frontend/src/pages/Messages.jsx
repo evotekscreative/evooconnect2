@@ -1130,7 +1130,7 @@ export const Messages = () => {
         <div className="container flex items-center justify-between mx-auto">
             <button
               onClick={() => navigate("/")}
-              className="p-2 -ml-2 rounded-full hover:bg-blue-600"
+              className="p-2 -ml-2 rounded-full"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

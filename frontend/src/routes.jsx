@@ -3,16 +3,17 @@ import Login from "./pages/Auth/Login.jsx";
 import Register from "./pages/Auth/Register.jsx";
 import ForgotPassword from "./pages/Auth/ForgotPassword.jsx";
 import App from "./App";
-import Connections from "./pages/Connections.jsx";
+import Connections from "./pages/Connection/Connections.jsx";
 import PrivacyPolicy from "./pages/PrivacyPolicy.jsx";
 import TermsCondition from "./pages/TermsCondition.jsx";
-import Jobs from "./pages/Jobs/jobs.jsx";
-import JobProfile from "./pages/company-profile/JobProfile.jsx";
-import Faq from "./pages/Faq/faq.jsx";
+import Jobs from "./pages/Jobs/index.jsx";
+import JobProfile from "./pages/CompanyProfile/JobProfile.jsx";
+import Faq from "./pages/Faq/index.jsx";
+import CompanyProfile from "./pages/CompanyProfile/CompanyProfile.jsx";
 import Groups from "./pages/Groups.jsx";
 import CreateBlog from "./pages/Blog/CreateBlog.jsx";
 import BlogDetail from "./pages/Blog/BlogDetail.jsx";
-import ListConnection from "./pages/ListConnection.jsx";
+import ListConnection from "./pages/Connection/ListConnection.jsx";
 import { Messages } from "./pages/Messages.jsx";
 import GroupPage from "./pages/GroupPage.jsx";
 import Blog from "./pages/Blog/Blog.jsx";
@@ -32,7 +33,9 @@ import MemberList from "./pages/MemberList.jsx";
 import SearchResults from "./pages/SearchResults.jsx";
 import ApprovePost from "./pages/ApprovePost.jsx";
 import CreateCompany from "./pages/Jobs/CreateCompany.jsx";
-import UserListConnection from "./pages/UserListConnection.jsx";
+import UserListConnection from "./pages/Connection/UserListConnection.jsx";
+import Page404 from "./pages/Blankpage/Page404.jsx";
+import Page500 from "./pages/Blankpage/Page500.jsx";
 import LoginAdmin from "./pages/Admin/AuthAdmin/LoginAdmin.jsx";
 import Dashboard from "./pages/Admin/Admin1/Dashboard.jsx";
 import Settings from "./pages/Admin/Admin1/Settings.jsx";
@@ -255,7 +258,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/post-page",
+    path: "/post-page/:username",
     element: (
       <ProtectedRoute>
         <PostPage />
@@ -263,16 +266,8 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/post-page/:username",
-    element: (
-      <ProtectedRoute>
-        <UserPostPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/post-page/:username",
-    element: (
+    path: "/user-post-page/:username",
+    element:(
       <ProtectedRoute>
         <UserPostPage />
       </ProtectedRoute>
@@ -437,6 +432,19 @@ const router = createBrowserRouter([
     path: "/company-dashboard/:company_id/manage-member/",
     element: <ManageMember />,
   },
+  
+{
+  path: "/404",
+  element: (
+      <Page404 />
+  ),
+},
+{
+  path: "/500",
+  element: (
+      <Page500 />
+  ),
+},
 ]);
 
 export default router;

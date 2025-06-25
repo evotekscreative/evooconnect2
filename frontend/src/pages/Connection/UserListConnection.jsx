@@ -6,12 +6,12 @@ import {
   MoreHorizontal,
   ArrowLeft,
 } from "lucide-react";
-import Case from "../components/Case.jsx";
+import Case from "../../components/Case.jsx";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
-import Profile from "../assets/img/logo-evo-2.png";
-import NetworkManager from "../components/NetworkManager";
-import Alert from "../components/Auth/alert";
+import Profile from "../../assets/img/logo-evo-2.png";
+import NetworkManager from "../../components/NetworkManager.jsx";
+import Alert from "../../components/Auth/alert.jsx";
 
 // Avatar component for displaying profile photo or initials
 function Avatar({ src, name, size = 64 }) {
@@ -359,7 +359,7 @@ export default function ConnectionList() {
 
   return (
     <Case>
-      <div className="p-4 sm:p-6 bg-gray-100 min-h-screen">
+      <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
         {alert.show && (
         <div className="fixed top-4 right-4 z-50 w-full max-w-sm">
           <Alert 

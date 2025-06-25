@@ -1,17 +1,23 @@
-"use client";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Case from "../../components/Case";
-import Alert from "../../components/Auth/alert";
-import ProfileSidebar from "../../components/Profile/ProfileSidebar";
-import ProfileSkills from "../../components/Profile/ProfileSkills";
-import ProfileSocialMedia from "../../components/Profile/ProfileSocialMedia";
-import ProfileAbout from "../../components/Profile/ProfileAbout";
-import ProfileExperience from "../../components/Profile/ProfileExperience";
-import ProfileEducation from "../../components/Profile/ProfileEducation";
-import ProfilePosts from "../../components/Profile/ProfilePosts";
-import ContactModal from "../../components/Profile/ContactModal";
+import axios from "axios";
+import ProfileAlert from "@/components/Profile/ProfileAlert";
+import ProfileLayout from "@/components/Profile/ProfileLayout";
+import ProfileSidebarSection from "@/components/Profile/ProfileSidebarSection";
+import ProfileMainSection from "@/components/Profile/ProfileMainSection";
+import ProfileSkills from "@/components/Profile/ProfileSkills";
+import ProfileSocialMedia from "@/components/Profile/ProfileSocialMedia";
+import ProfileAbout from "@/components/Profile/ProfileAbout";
+import ProfileExperience from "@/components/Profile/ProfileExperience";
+import ProfileEducation from "@/components/Profile/ProfileEducation";
+import ProfilePosts from "@/components/Profile/ProfilePosts";
+import ProfileContactModal from "@/components/Profile/ProfileContactModal";
+import ProfileExperienceModal from "@/components/Profile/ProfileExperienceModal";
+import ProfileEducationModal from "@/components/Profile/ProfileEducationModal";
 import {
+  User,
+  Calendar,
   Briefcase,
   Users,
   Clock,
@@ -36,7 +42,6 @@ import {
   Link2,
   X,
 } from "lucide-react";
-import axios from "axios";
 
 const socialPlatforms = [
   {
@@ -87,8 +92,8 @@ export default function ProfilePage() {
   });
   const [alert, setAlert] = useState({
     show: false,
-    type: "success",
-    message: "",
+    type: 'success',
+    message: '',
   });
   const showAlert = (type, message) => {
     setAlert({
@@ -98,12 +103,12 @@ export default function ProfilePage() {
     });
     // Auto-hide after 5 seconds
     setTimeout(() => {
-      setAlert((prev) => ({ ...prev, show: false }));
+      setAlert(prev => ({ ...prev, show: false }));
     }, 5000);
   };
 
   const hideAlert = () => {
-    setAlert((prev) => ({ ...prev, show: false }));
+    setAlert(prev => ({ ...prev, show: false }));
   };
   const [user, setUser] = useState({
     id: "",
@@ -187,7 +192,7 @@ export default function ProfilePage() {
       setConnectionsCount(response.data.data.total || 0);
     } catch (error) {
       console.error("Failed to fetch connections:", error);
-      showAlert("error", "Failed to load connections");
+      showAlert('error', "Failed to load connections");
     } finally {
       setIsLoading(false);
     }
@@ -246,7 +251,7 @@ export default function ProfilePage() {
       });
     } catch (error) {
       console.error("Failed to fetch profile views:", error);
-      showAlert("error", "Failed to load profile views");
+      showAlert('error', "Failed to load profile views");
     }
   };
 
@@ -269,7 +274,7 @@ export default function ProfilePage() {
       setUserPosts(response.data.data);
     } catch (error) {
       console.error("Failed to fetch user posts:", error);
-      showAlert("error", "Failed to load posts");
+      showAlert('error', "Failed to load posts");
     } finally {
       setIsLoading(false);
     }
@@ -330,7 +335,7 @@ export default function ProfilePage() {
         await recordProfileView();
       } catch (error) {
         console.error("Failed to fetch profile:", error);
-        showAlert("error", "Failed to load profile data");
+        showAlert('error', "Failed to load profile data");
       } finally {
         setIsLoading(false);
       }
@@ -373,7 +378,7 @@ export default function ProfilePage() {
       setEducation(response.data.data.educations);
     } catch (error) {
       console.error("Failed to fetch education:", error);
-      showAlert("error", "Failed to load education data");
+      showAlert('error', "Failed to load education data");
     } finally {
       setIsLoading(false);
     }
@@ -400,7 +405,7 @@ export default function ProfilePage() {
       );
     } catch (error) {
       console.error("Failed to fetch experience:", error);
-      showAlert("error", "Failed to load experience data");
+      showAlert('error', "Failed to load experience data");
     } finally {
       setIsLoading(false);
     }
@@ -423,8 +428,6 @@ export default function ProfilePage() {
 
     try {
       const token = localStorage.getItem("token");
-
-      // Create FormData to handle file upload
       const formData = new FormData();
       formData.append("job_title", experienceForm.job_title);
       formData.append("company_name", experienceForm.company_name);
@@ -439,7 +442,6 @@ export default function ProfilePage() {
         formData.append("photo", experienceForm.photo);
       }
 
-      // If editing, make PUT request
       if (editingExperience) {
         const response = await axios.put(
           `${apiUrl}/api/experience/${editingExperience.id}`,
@@ -457,27 +459,22 @@ export default function ProfilePage() {
             exp.id === editingExperience.id ? response.data.data : exp
           )
         );
-        toast.success("Experience updated successfully!");
+        showAlert("success", "Experience updated successfully!");
         setEditingExperience(null);
       } else {
-        // If adding new, make POST request
-        const response = await axios.post(
-          apiUrl + "/api/experience",
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await axios.post(`${apiUrl}/api/experience`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         setExperiences((prev) => [...prev, response.data.data]);
         showAlert("success", "Experience added successfully!");
+        showAlert("success", "Experience added successfully!");
       }
 
-      // Reset form and close modal
-      setShowExperienceModal(false);
+      setShowExperienceModal(false); // Close modal
       setExperienceForm({
         job_title: "",
         company_name: "",
@@ -495,6 +492,10 @@ export default function ProfilePage() {
         "error",
         `Failed to ${editingExperience ? "update" : "add"} experience. Please try again.`
       );
+      showAlert(
+        "error",
+        `Failed to ${editingExperience ? "update" : "add"} experience. Please try again.`
+      );
     } finally {
       setIsLoading(false);
     }
@@ -504,6 +505,18 @@ export default function ProfilePage() {
   const handleEducationSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+
+    // Validasi input
+    if (
+      educationForm.major.trim() === "" ||
+      educationForm.institute_name.trim() === "" ||
+      educationForm.start_month === "Month" ||
+      educationForm.start_year === "Year"
+    ) {
+      showAlert("error", "Please fill all required fields!");
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const token = localStorage.getItem("token");
@@ -522,7 +535,6 @@ export default function ProfilePage() {
       }
 
       if (editingEducation) {
-        // Edit existing education
         const response = await axios.put(
           `${apiUrl}/api/education/${editingEducation.id}`,
           formData,
@@ -540,10 +552,10 @@ export default function ProfilePage() {
           )
         );
         showAlert("success", "Education updated successfully!");
+        showAlert("success", "Education updated successfully!");
         setEditingEducation(null);
       } else {
-        // Add new education
-        const response = await axios.post(apiUrl + "/api/education", formData, {
+        const response = await axios.post(`${apiUrl}/api/education`, formData, {
           headers: {
             "Content-Type": "multipart/form-data",
             Authorization: `Bearer ${token}`,
@@ -551,6 +563,7 @@ export default function ProfilePage() {
         });
 
         setEducation((prev) => [...prev, response.data.data]);
+        showAlert("success", "Education added successfully!");
         showAlert("success", "Education added successfully!");
       }
 
@@ -572,6 +585,10 @@ export default function ProfilePage() {
         "error",
         `Failed to ${editingEducation ? "update" : "add"} education. Please try again.`
       );
+      showAlert(
+        "error",
+        `Failed to ${editingEducation ? "update" : "add"} education. Please try again.`
+      );
     } finally {
       setIsLoading(false);
     }
@@ -579,36 +596,14 @@ export default function ProfilePage() {
   const handleEditEducation = (education) => {
     setEditingEducation(education);
 
-    // Parse start date
-    let startMonth = "Month";
-    let startYear = "Year";
-    if (education.start_date) {
-      const startParts = education.start_date.split(" ");
-      if (startParts.length === 2) {
-        startMonth = startParts[0];
-        startYear = startParts[1];
-      }
-    }
-
-    // Parse end date
-    let endMonth = "Month";
-    let endYear = "Year";
-    if (education.end_date && education.end_date !== "Present") {
-      const endParts = education.end_date.split(" ");
-      if (endParts.length === 2) {
-        endMonth = endParts[0];
-        endYear = endParts[1];
-      }
-    }
-
     setEducationForm({
       major: education.major || "",
       institute_name: education.institute_name || "",
       location: education.location || "",
-      start_month: startMonth,
-      start_year: startYear,
-      end_month: endMonth,
-      end_year: endYear,
+      start_month: education.start_month || "Month",
+      start_year: education.start_year || "Year",
+      end_month: education.end_month || "Month",
+      end_year: education.end_year || "Year",
       caption: education.caption || "",
       schoolLogo: education.photo || null,
     });
@@ -629,7 +624,7 @@ export default function ProfilePage() {
       setEducation((prev) =>
         Array.isArray(prev) ? prev.filter((edu) => edu.id !== educationId) : []
       );
-      showAlert("success", "Education deleted successfully!");
+      showAlert('success', "Education deleted successfully!");
     } catch (error) {
       console.error("Failed to delete education:", error);
       showAlert("error", "Failed to delete education. Please try again.");
@@ -690,36 +685,14 @@ export default function ProfilePage() {
   const handleEditExperience = (experience) => {
     setEditingExperience(experience);
 
-    // Parse start date
-    let startMonth = "Month";
-    let startYear = "Year";
-    if (experience.start_date) {
-      const startParts = experience.start_date.split(" ");
-      if (startParts.length === 2) {
-        startMonth = startParts[0];
-        startYear = startParts[1];
-      }
-    }
-
-    // // Parse end date
-    let endMonth = "Month";
-    let endYear = "Year";
-    if (experience.end_date && experience.end_date !== "Present") {
-      const endParts = experience.end_date.split(" ");
-      if (endParts.length === 2) {
-        endMonth = endParts[0];
-        endYear = endParts[1];
-      }
-    }
-
     setExperienceForm({
       job_title: experience.job_title || "",
       company_name: experience.company_name || "",
       location: experience.location || "",
-      start_month: startMonth,
-      start_year: startYear,
-      end_month: endMonth,
-      end_year: endYear,
+      start_month: experience.start_month || "Month",
+      start_year: experience.start_year || "Year",
+      end_month: experience.end_month || "Month",
+      end_year: experience.end_year || "Year",
       caption: experience.caption || "",
       photo: experience.photo || null,
     });
@@ -741,10 +714,10 @@ export default function ProfilePage() {
         Array.isArray(prev) ? prev.filter((exp) => exp.id !== experienceId) : []
       );
 
-      showAlert("success", "Experience deleted successfully!");
+      showAlert('success', "Experience deleted successfully!");
     } catch (error) {
       console.error("Failed to delete experience:", error);
-      showAlert("error", "Failed to delete experience. Please try again.");
+      showAlert('error', "Failed to delete experience. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -759,79 +732,79 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="bg-[#EDF3F7] min-h-screen">
+    <ProfileLayout>
       <Case />
-      <div className="w-full mx-auto py-6 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-6 justify-center">
-          {alert.show && (
-            <div className="fixed top-4 right-4 z-50">
-              <Alert
-                type={alert.type}
-                message={alert.message}
-                onClose={hideAlert}
-              />
-            </div>
-          )}
-          <div className="w-full md:w-1/3 space-y-4">
-            <ProfileSidebar
-              user={user}
-              profileImage={profileImage}
-              apiUrl={apiUrl}
-              connectionsCount={connectionsCount}
-              profileViews={profileViews}
-              onShowContactModal={() => setShowContactModal(true)}
-            />
-            <ProfileSkills skills={user.skills} />
-            <ProfileSocialMedia socials={user.socials} />
-          </div>
-          <div className="w-full md:w-2/3 space-y-4">
-            <ProfileAbout about={user.about} />
-            <ProfileExperience
-              experiences={experiences}
-              apiUrl={apiUrl}
-              formatDate={formatDate}
-              onAdd={() => {
-                setEditingExperience(null);
-                setExperienceForm({
-                  job_title: "",
-                  company_name: "",
-                  location: "",
-                  start_month: "Month",
-                  start_year: "Year",
-                  end_month: "Month",
-                  end_year: "Year",
-                  caption: "",
-                  photo: null,
-                });
-                setShowExperienceModal(true);
-              }}
-              onEdit={handleEditExperience}
-            />
-            <ProfileEducation
-              educations={educations}
-              apiUrl={apiUrl}
-              formatDate={formatDate}
-              onAdd={() => setShowEducationModal(true)}
-              onEdit={handleEditEducation}
-            />
-            <ProfilePosts
-              userPosts={userPosts}
-              user={user}
-              profileImage={profileImage}
-              apiUrl={apiUrl}
-              scrollLeft={scrollLeft}
-              scrollRight={scrollRight}
-            />
-          </div>
+      <div className="w-full px-4 py-6 mx-auto sm:px-6 pb-10">
+        <div className="flex flex-col justify-center max-w-6xl gap-6 mx-auto md:flex-row">
+          <ProfileAlert alert={alert} onClose={hideAlert} />
+          {/* Sidebar */}
+          <ProfileSidebarSection
+            user={user}
+            profileImage={profileImage}
+            apiUrl={apiUrl}
+            connectionsCount={connectionsCount}
+            profileViews={profileViews}
+            onShowContactModal={() => setShowContactModal(true)}
+            socialPlatforms={socialPlatforms}
+          />
+          {/* Main Content */}
+          <ProfileMainSection
+            user={user}
+            experiences={experiences}
+            apiUrl={apiUrl}
+            formatDate={formatDate}
+            handleEditExperience={handleEditExperience}
+            setEditingExperience={setEditingExperience}
+            setExperienceForm={setExperienceForm}
+            setShowExperienceModal={setShowExperienceModal}
+            educations={educations}
+            handleEditEducation={handleEditEducation}
+            setShowEducationModal={setShowEducationModal}
+            userPosts={userPosts}
+            profileImage={profileImage}
+            scrollLeft={scrollLeft}
+            scrollRight={scrollRight}
+          />
         </div>
       </div>
-      <ContactModal
-        show={showContactModal}
+      <ProfileContactModal
         user={user}
-        setShowContactModal={setShowContactModal}
+        show={showContactModal}
+        onClose={() => setShowContactModal(false)}
       />
-      {/* Modal Experience, Education, EditEducation tetap di bawah, bisa dipecah juga */}
-      {/* ...modal code lainnya tetap seperti sebelumnya... */}
-    </div>
+
+      {showExperienceModal && (
+        <ProfileExperienceModal
+          show={showExperienceModal}
+          onClose={() => setShowExperienceModal(false)}
+          experienceForm={experienceForm}
+          setExperienceForm={setExperienceForm}
+          handleExperienceSubmit={handleExperienceSubmit}
+          handleExperienceChange={handleExperienceChange}
+          handleExperienceFileChange={handleExperienceFileChange}
+          editingExperience={editingExperience}
+          apiUrl={apiUrl}
+          setExperiences={setExperiences}
+          showAlert={showAlert}
+        />
+      )}
+
+      {showEducationModal && (
+        <ProfileEducationModal
+          show={showEducationModal}
+          onClose={() => setShowEducationModal(false)}
+          educationForm={educationForm}
+          setEducationForm={setEducationForm}
+          handleEducationSubmit={handleEducationSubmit}
+          handleEducationChange={handleEducationChange}
+          handleEducationFileChange={handleEducationFileChange}
+          editingEducation={editingEducation}
+          apiUrl={apiUrl}
+          setEducation={setEducation}
+          showAlert={showAlert}
+        />
+      )}
+      {/* Modal Experience, Education, Alert, dst tetap seperti sebelumnya */}
+    </ProfileLayout>
   );
 }

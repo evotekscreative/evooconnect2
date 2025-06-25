@@ -8,12 +8,12 @@ export default function ProfileSidebar({
   connectionsCount,
   profileViews,
   onShowContactModal,
+  socialPlatforms,
 }) {
   return (
     <div className="w-full space-y-4">
-      <div className="bg-white rounded-lg shadow-md p-6 text-center">
-        {/* Profile image and basic info */}
-        <div className="relative w-28 h-28 mx-auto bg-gray-200 rounded-full overflow-hidden flex items-center justify-center">
+      <div className="bg-white rounded-lg shadow-md p-6 text-center mb-4">
+        <div className="relative flex items-center justify-center mx-auto overflow-hidden bg-gray-200 rounded-full w-28 h-28">
           {profileImage ? (
             <img
               src={apiUrl + "/" + profileImage}
@@ -26,6 +26,7 @@ export default function ProfileSidebar({
                 {user.name
                   .split(" ")
                   .map((n) => n[0])
+                  .slice(0, 2)
                   .join("")}
               </span>
             </div>
@@ -73,7 +74,6 @@ export default function ProfileSidebar({
         </div>
         <button className="text-blue-600 text-base mt-5">Log Out</button>
       </div>
-      {/* Skills & Social Media section bisa juga dipecah */}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { Eye, EyeOff } from "lucide-react";
 import axios from "axios";
 import logo from "../../assets/img/logoB.png";
 import googleIcon from "../../assets/img/google-icon.jpg";
-import Alert from "../../components/Auth/Alert";
+import Alert from "../../components/Auth/alert";
 import "../../assets/css/style.css";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 

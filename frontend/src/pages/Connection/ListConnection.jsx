@@ -6,12 +6,13 @@ import {
   MoreHorizontal,
   ArrowLeft,
 } from "lucide-react";
-import Case from "../components/Case.jsx";
+import Case from "../../components/Case.jsx";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import Profile from "../assets/img/logo-evo-2.png";
-import NetworkManager from "../components/NetworkManager"
-import Alert from "../components/Auth/alert.jsx";
+import Profile from "../../assets/img/logo-evo-2.png";
+import NetworkManager from "../../components/NetworkManager.jsx"
+import Alert from "../../components/Auth/alert.jsx";
+
 
 export default function ConnectionList() {
   const apiUrl =
@@ -26,16 +27,16 @@ export default function ConnectionList() {
   const [showModal, setShowModal] = useState(false);
   const [selectedConnection, setSelectedConnection] = useState(null);
 
-   const [alert, setAlert] = useState({
-      show: false,
-      type: "success",
-      message: "",
-    });
-  
-    const showAlert = (type, message) => {
-      setAlert({ show: true, type, message });
-      setTimeout(() => setAlert({ ...alert, show: false }), 5000);
-    };
+  const [alert, setAlert] = useState({
+    show: false,
+    type: "success",
+    message: "",
+  });
+
+  const showAlert = (type, message) => {
+    setAlert({ show: true, type, message });
+    setTimeout(() => setAlert({ ...alert, show: false }), 5000);
+  };
 
   const handleMessageClick = async (connection) => {
     const token = localStorage.getItem("token");
@@ -184,7 +185,7 @@ export default function ConnectionList() {
         )
       );
       closeModal();
-    showAlert('success', 'Disconnected successfully');
+      showAlert('success', 'Disconnected successfully');
     } catch (err) {
       console.error("Failed to disconnect:", err);
       showAlert('error', 'You are not connected to this user');
@@ -223,7 +224,7 @@ export default function ConnectionList() {
 
   return (
     <Case>
-      <div className="p-4 sm:p-6 bg-gray-100 min-h-screen">
+      <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
         {/* Confirmation Modal */}
         {showModal && selectedConnection && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -254,18 +255,18 @@ export default function ConnectionList() {
         )}
 
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
-          
+
           {/* Left side - People suggestions */}
           <div className="lg:col-span-3 space-y-4 bg-white rounded-xl shadow p-4 sm:p-6">
             {alert.show && (
-                    <div className="fixed top-4 right-4 z-50 w-full max-w-sm">
-                      <Alert 
-                        type={alert.type} 
-                        message={alert.message} 
-                        onClose={() => setAlert({ ...alert, show: false })}
-                      />
-                    </div>
-                  )}
+              <div className="fixed top-4 right-4 z-50 w-full max-w-sm">
+                <Alert
+                  type={alert.type}
+                  message={alert.message}
+                  onClose={() => setAlert({ ...alert, show: false })}
+                />
+              </div>
+            )}
             <div className="flex items-center mb-4">
               <button
                 onClick={() => navigate(-1)}
@@ -303,7 +304,7 @@ export default function ConnectionList() {
                   >
                     <div className="flex items-center space-x-4">
                       <img
-                        src={apiUrl + '/'+connection.image}
+                        src={apiUrl + '/' + connection.image}
                         alt={connection.name}
                         className="w-10 h-10 rounded-full object-cover"
                         onError={(e) => {
@@ -321,16 +322,16 @@ export default function ConnectionList() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
                       <button
                         onClick={() => handleMessageClick(connection)}
-                        className="px-4 py-1.5 rounded-full text-sm font-medium text-blue-600 border border-blue-600 hover:bg-blue-50 transition"
+                        className="px-4 py-1.5 rounded-full text-sm font-medium text-blue-600 border border-blue-600 hover:bg-blue-50 transition w-full sm:w-auto"
                       >
                         Message
                       </button>
                       <button
                         onClick={() => openDisconnectModal(connection)}
-                        className="px-4 py-1.5 rounded-full text-sm font-medium text-white border bg-red-600 hover:bg-red-700 transition"
+                        className="px-4 py-1.5 rounded-full text-sm font-medium text-white border bg-red-600 hover:bg-red-700 transition w-full sm:w-auto"
                       >
                         Disconnect
                       </button>
@@ -362,7 +363,7 @@ export default function ConnectionList() {
           {/* Right side - Manage network */}
           <div className="space-y-4">
             <NetworkManager />
-            
+
 
             <div className="bg-white rounded-xl shadow p-4 text-center">
               <img

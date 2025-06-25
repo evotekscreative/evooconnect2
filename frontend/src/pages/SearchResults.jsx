@@ -11,7 +11,7 @@ import {
   Clock,
 } from "lucide-react";
 import Case from "../components/Case";
-import Alert from "../components/Auth/Alert";
+import Alert from "../components/Auth/alert";
 
 const base_url =
   import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
@@ -63,46 +63,9 @@ const hideAlert = () => {
   const postsRef = useRef(null);
   const blogsRef = useRef(null);
 
-  // Fetch join requests to know which groups have pending requests
-  const fetchJoinRequests = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
-      const response = await axios.get(
-        `${base_url}/api/my-join-requests`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.data && response.data.data) {
-        // Process join requests
-        const requests = response.data.data.filter(req => req.status === "pending");
-
-        // Create maps for pending requests
-        const pendingMap = {};
-        const requestIdsMap = {};
-
-        requests.forEach(request => {
-          pendingMap[request.group_id] = true;
-          requestIdsMap[request.group_id] = request.id;
-        });
-
-        setPendingJoinRequests(pendingMap);
-        setPendingRequestIds(requestIdsMap);
-      }
-    } catch (error) {
-      console.error("Error fetching join requests:", error);
-    }
-  };
-
-  useEffect(() => {
-    // Fetch join requests when component mounts
-    fetchJoinRequests();
-  }, []);
+  // Tambahkan state untuk loading dan requested pada grup
+  const [groupLoading, setGroupLoading] = useState({});
+  const [groupRequested, setGroupRequested] = useState({});
 
   useEffect(() => {
     const fetchSearchResults = async () => {
@@ -150,132 +113,17 @@ const hideAlert = () => {
     }
   };
 
- const handleJoinGroup = async (groupId) => {
-  try {
-    const token = localStorage.getItem("token");
-    const group = results.groups.find(g => g.id === groupId);
-    const isPrivate = group.privacy_level === "private";
-    
-    // Use different endpoints for private and public groups
-    const endpoint = isPrivate
-      ? `${base_url}/api/groups/${groupId}/join-requests`
-      : `${base_url}/api/groups/${groupId}/join`;
-    
-    const response = await axios.post(
-      endpoint,
-      {},
-      {
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-      }
-    );
-
-    // For private groups, store the request ID
-    if (isPrivate && response.data && response.data.data) {
-      setPendingJoinRequests(prev => ({
-        ...prev,
-        [groupId]: true
-      }));
-      
-      setPendingRequestIds(prev => ({
-        ...prev,
-        [groupId]: response.data.data.id
-      }));
-      
-      showAlert("success", "Join request sent! Waiting for admin accepted.");
-    } else {
-      showAlert("success", "Successfully joined the group!");
-    }
-
-    // Update the local state to reflect the change
-    setResults((prev) => ({
-      ...prev,
-      groups: prev.groups.map((group) =>
-        group.id === groupId
-          ? {
-            ...group,
-            is_member: isPrivate ? false : true,
-            join_request_status: isPrivate ? "pending" : null,
-            member_count: isPrivate ? group.member_count : group.member_count + 1,
-          }
-          : group
-      ),
-    })); 
-  } catch (error) {
-    console.error("Error joining group:", error);
-    showAlert("error", error.response?.data?.message || "Failed to join group");
-  }
-};
-
-
-  // Function to open cancel confirmation modal
-const openCancelModal = (groupId) => {
-  const reqId = pendingRequestIds[groupId];
-  if (reqId) {
-    setSelectedRequestId(reqId);
-    setSelectedGroupId(groupId);
-    setShowCancelModal(true);
-  }
-};
-
-// Function to handle cancelling a join request
-const handleCancelRequest = async () => {
-  if (!selectedRequestId) return;
-  
-  try {
-    setIsCancelling(true);
-    const token = localStorage.getItem("token");
-    
-    const response = await axios.delete(
-      `${base_url}/api/join-requests/${selectedRequestId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    
-    if (response.status === 200) {
-      // Update UI to remove pending status
-      if (selectedGroupId) {
-        setPendingJoinRequests(prev => {
-          const updated = { ...prev };
-          delete updated[selectedGroupId];
-          return updated;
-        });
-        
-        setPendingRequestIds(prev => {
-          const updated = { ...prev };
-          delete updated[selectedGroupId];
-          return updated;
-        });
-        
-        // Update the results state to reflect the change
-        setResults(prev => ({
-          ...prev,
-          groups: prev.groups.map(group => 
-            group.id === selectedGroupId 
-              ? { ...group, join_request_status: null }
-              : group
-          )
-        }));
-      }
-      
-      showAlert("success", "Join request cancelled successfully");
-    }
-  } catch (error) {
-    console.error("Error cancelling join request:", error);
-    showAlert("error", error.response?.data?.message || "Failed to cancel join request");
-  } finally {
-    setIsCancelling(false);
-    setShowCancelModal(false);
-    setSelectedRequestId(null);
-    setSelectedGroupId(null);
-  }
-};
-
+  // Update handleJoinGroup to only handle API, not UI state
+  const handleJoinGroup = async (groupId) => {
+    setGroupLoading((prev) => ({ ...prev, [groupId]: true }));
+    // Simulasi loading 2 detik
+    setTimeout(() => {
+      setGroupLoading((prev) => ({ ...prev, [groupId]: false }));
+      setGroupRequested((prev) => ({ ...prev, [groupId]: true }));
+    }, 2000);
+    // Jika ingin request ke API, bisa tambahkan di sini
+    // await axios.post(...);
+  };
 
   const handleConnect = async (userId) => {
     try {
@@ -315,35 +163,6 @@ const handleCancelRequest = async () => {
     <Case>
     
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        
-        {/* Header Section */}
-        <div className="bg-white shadow-sm border-b">
-        
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Search className="w-6 h-6 text-blue-600" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  Search Results
-                </h1>
-                <p className="text-gray-600 mt-1">
-                  Found{" "}
-                  <span className="font-semibold text-blue-600">
-                    {totalResults}
-                  </span>{" "}
-                  results for
-                  <span className="font-semibold text-gray-900">
-                    {" "}
-                    "{query}"
-                  </span>
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Enhanced Navigation Sidebar */}
@@ -529,73 +348,77 @@ const handleCancelRequest = async () => {
               ) : (
                 <>
                   {/* Enhanced Tabs */}
-                  <div className="bg-white rounded-xl shadow-lg p-2 mb-8 overflow-x-auto">
-                    <div className="flex space-x-2 min-w-max">
+                  <div className="flex space-x-6 border-b border-gray-200 mb-8 px-2">
+                    <button
+                      onClick={() => setActiveTab("all")}
+                      className={`pb-3 text-base font-medium transition-colors ${
+                        activeTab === "all"
+                          ? "text-blue-600 border-b-2 border-blue-600"
+                          : "text-gray-500 hover:text-blue-600"
+                      }`}
+                    >
+                      All ({totalResults})
+                    </button>
+                    {results.users.length > 0 && (
                       <button
-                        onClick={() => setActiveTab("all")}
-                        className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${activeTab === "all"
-                          ? "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 text-white"
-                          : "text-gray-700 hover:bg-gray-100"
-                          }`}
+                        onClick={() => setActiveTab("users")}
+                        className={`pb-3 text-base font-medium transition-colors ${
+                          activeTab === "users"
+                            ? "text-blue-600 border-b-2 border-blue-600"
+                            : "text-gray-500 hover:text-blue-600"
+                        }`}
                       >
-                        All ({totalResults})
+                        People ({results.users.length})
                       </button>
-                      {results.users.length > 0 && (
-                        <button
-                          onClick={() => setActiveTab("users")}
-                          className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${activeTab === "users"
-                            ? "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 text-white shadow-lg"
-                            : "text-gray-700 hover:bg-gray-100"
-                            }`}
-                        >
-                          People ({results.users.length})
-                        </button>
-                      )}
-                      {results.groups.length > 0 && (
-                        <button
-                          onClick={() => setActiveTab("groups")}
-                          className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${activeTab === "groups"
-                            ? "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 text-white shadow-lg"
-                            : "text-gray-700 hover:bg-gray-100"
-                            }`}
-                        >
-                          Groups ({results.groups.length})
-                        </button>
-                      )}
-                      {results.jobs.length > 0 && (
-                        <button
-                          onClick={() => setActiveTab("jobs")}
-                          className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${activeTab === "jobs"
-                            ? "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 text-white shadow-lg"
-                            : "text-gray-700 hover:bg-gray-100"
-                            }`}
-                        >
-                          Jobs ({results.jobs.length})
-                        </button>
-                      )}
-                      {results.posts.length > 0 && (
-                        <button
-                          onClick={() => setActiveTab("posts")}
-                          className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${activeTab === "posts"
-                            ? "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 text-white shadow-lg"
-                            : "text-gray-700 hover:bg-gray-100"
-                            }`}
-                        >
-                          Posts ({results.posts.length})
-                        </button>
-                      )}
-                      {results.blogs.length > 0 && (
-                        <button
-                          onClick={() => setActiveTab("blogs")}
-                          className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${activeTab === "blogs"
-                            ? "bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 text-white shadow-lg"
-                            : "text-gray-700 hover:bg-gray-100"
-                            }`}
-                        >
-                          Blogs ({results.blogs.length})
-                        </button>
-                      )}
-                    </div>
+                    )}
+                    {results.groups.length > 0 && (
+                      <button
+                        onClick={() => setActiveTab("groups")}
+                        className={`pb-3 text-base font-medium transition-colors ${
+                          activeTab === "groups"
+                            ? "text-blue-600 border-b-2 border-blue-600"
+                            : "text-gray-500 hover:text-blue-600"
+                        }`}
+                      >
+                        Groups ({results.groups.length})
+                      </button>
+                    )}
+                    {results.jobs.length > 0 && (
+                      <button
+                        onClick={() => setActiveTab("jobs")}
+                        className={`pb-3 text-base font-medium transition-colors ${
+                          activeTab === "jobs"
+                            ? "text-blue-600 border-b-2 border-blue-600"
+                            : "text-gray-500 hover:text-blue-600"
+                        }`}
+                      >
+                        Jobs ({results.jobs.length})
+                      </button>
+                    )}
+                    {results.posts.length > 0 && (
+                      <button
+                        onClick={() => setActiveTab("posts")}
+                        className={`pb-3 text-base font-medium transition-colors ${
+                          activeTab === "posts"
+                            ? "text-blue-600 border-b-2 border-blue-600"
+                            : "text-gray-500 hover:text-blue-600"
+                        }`}
+                      >
+                        Posts ({results.posts.length})
+                      </button>
+                    )}
+                    {results.blogs.length > 0 && (
+                      <button
+                        onClick={() => setActiveTab("blogs")}
+                        className={`pb-3 text-base font-medium transition-colors ${
+                          activeTab === "blogs"
+                            ? "text-blue-600 border-b-2 border-blue-600"
+                            : "text-gray-500 hover:text-blue-600"
+                        }`}
+                      >
+                        Blogs ({results.blogs.length})
+                      </button>
+                    )}
                   </div>
 
                   {/* Results Sections */}
@@ -615,18 +438,18 @@ const handleCancelRequest = async () => {
                               People ({results.users.length})
                             </h2>
                           </div>
-                          <div className="p-6">
-                            <div className="space-y-4">
+                          <div className="p-6 sm:p-3">
+                            <div className="space-y-4 sm:space-y-2">
                               {results.users.map((user) => (
                                 <div
                                   key={user.id}
-                                  className="flex items-center justify-between p-4 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 rounded-xl transition-all duration-200 border-2 border-transparent hover:border-blue-100 group"
+                                  className="flex items-center justify-between p-4 sm:p-2 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 rounded-xl transition-all duration-200 border-2 border-transparent hover:border-blue-100 group"
                                 >
                                   <Link
                                     to={`/user-profile/${user.username}`}
                                     className="flex items-center flex-1"
                                   >
-                                    <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 mr-4 ring-4 ring-white shadow-lg">
+                                    <div className="w-16 h-16 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gray-200 mr-4 ring-4 ring-white shadow-lg">
                                       {user.photo ? (
                                         <img
                                           src={`${base_url}/${user.photo}`}
@@ -635,18 +458,17 @@ const handleCancelRequest = async () => {
                                           onError={(e) => { }}
                                         />
                                       ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-gray-300 text-white text-xl font-bold">
+                                        <div className="w-full h-full flex items-center justify-center bg-gray-300 text-white text-xl sm:text-base font-bold">
                                           {user.name.charAt(0).toUpperCase()}
                                         </div>
                                       )}
                                     </div>
                                     <div className="flex-1">
-                                      <h3 className="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors">
+                                      <h3 className="font-bold text-lg sm:text-base text-gray-900 group-hover:text-blue-600 transition-colors">
                                         {user.name}
                                       </h3>
-                                      <p className="text-gray-600 mt-1">
-                                        {user.headline ||
-                                          "No headline available"}
+                                      <p className="text-gray-600 mt-1 text-sm sm:text-xs">
+                                        {user.headline || "No headline available"}
                                       </p>
                                     </div>
                                   </Link>
@@ -687,88 +509,74 @@ const handleCancelRequest = async () => {
                     {/* Groups Results */}
                     {(activeTab === "all" || activeTab === "groups") &&
                       results.groups.length > 0 && (
-                        <div
-                          ref={groupsRef}
-                          className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden"
-                        >
-                          <div className="bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 px-6 py-4">
-                            <h2 className="text-xl font-bold text-white flex items-center">
-                              <div className="p-2 bg-white bg-opacity-20 rounded-lg mr-3">
-                                <Users className="w-5 h-5 text-white" />
-                              </div>
-                              Groups ({results.groups.length})
-                            </h2>
-                          </div>
-                          <div className="p-6">
-                            <div className="space-y-4">
-                              {results.groups.map((group) => (
-                                <div
-                                  key={group.id}
-                                  className="flex items-center justify-between p-4 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-50 rounded-xl transition-all duration-200 border-2 border-transparent hover:border-blue-100 group"
-                                >
+                        <div ref={groupsRef} className="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
+                          <h2 className="font-bold text-xl px-6 pt-6 pb-2 text-blue-900">Groups</h2>
+                          <hr className="border-t border-gray-200 mx-6 mt-6" />
+                          <div>
+                            {results.groups.map((group, idx) => (
+                              <React.Fragment key={group.id}>
+                                <div className="flex items-center justify-between px-6 py-4">
                                   <Link
                                     to={`/groups/${group.id}`}
-                                    className="flex items-center flex-1"
+                                    className="flex items-center flex-1 min-w-0 group hover:underline"
                                   >
-                                    <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 mr-4 ring-4 ring-white shadow-lg">
+                                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 mr-4 flex items-center justify-center">
                                       {group.image ? (
                                         <img
                                           src={`${base_url}/${group.image}`}
                                           alt={group.name}
                                           className="w-full h-full object-cover"
-                                          onError={(e) => {
-                                            e.target.src = "/default-group.png";
-                                          }}
+                                          onError={e => { e.target.src = "/default-group.png"; }}
                                         />
                                       ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 text-white text-xl font-bold">
-                                          {group.name.charAt(0).toUpperCase()}
-                                        </div>
+                                        <span className="text-xl font-bold text-gray-400">{group.name.charAt(0).toUpperCase()}</span>
                                       )}
                                     </div>
-                                    <div className="flex-1">
-                                      <h3 className="font-bold text-lg text-gray-900 group-hover:text--600 transition-colors">
-                                        {group.name}
-                                      </h3>
-                                      <p className="text-sky-600 font-semibold">
-                                        {group.member_count || 0} members
-                                      </p>
-                                      <p className="text-gray-600 mt-1 line-clamp-2">
-                                        {group.description}
-                                      </p>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="font-bold text-lg sm:text-base text-blue-900">{group.name}</div>
+                                      <div className="text-gray-500 text-sm flex gap-2">
+                                        <span>{group.member_count || 0} members</span>
+                                        <span>•</span>
+                                        <span className="truncate">{group.description}</span>
+                                      </div>
                                     </div>
                                   </Link>
-
-                                  {group.is_member ? (
-  <button className="ml-4 px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg font-semibold border-2 border-gray-200">
-    Joined
-  </button>
-) : pendingJoinRequests[group.id] || group.join_request_status === "pending" ? (
-  <button 
-    onClick={(e) => {
-      e.preventDefault();
-      openCancelModal(group.id);
-    }}
-    className="ml-4 px-6 py-2 bg-yellow-100 text-yellow-600 rounded-lg font-semibold border-2 border-yellow-200 flex items-center hover:bg-yellow-200"
-  >
-    <Clock size={14} className="mr-1" /> Pending
-  </button>
-) : (
-  <button
-    className="ml-4 px-6 py-2 bg-gradient-to-r from-blue-500 to-cyan-400 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-cyan-500 transform hover:scale-105 transition-all duration-200 shadow-lg"
-    onClick={(e) => {
-      e.preventDefault();
-      handleJoinGroup(group.id);
-    }}
-  >
-    {group.privacy_level === "private" ? "Request Join" : "Join Group"}
-  </button>
-)}
-
-
+                                  {/* Button logic */}
+                                  {groupRequested[group.id] ? (
+                                    <button
+                                      className="ml-4 px-5 py-2 bg-gray-100 text-gray-500 rounded-lg font-semibold border border-gray-200 cursor-not-allowed"
+                                      disabled
+                                    >
+                                      Requested
+                                    </button>
+                                  ) : groupLoading[group.id] ? (
+                                    <button
+                                      className="ml-4 px-5 py-2 bg-gray-100 text-gray-500 rounded-lg font-semibold border border-gray-200 flex items-center gap-2 cursor-wait"
+                                      disabled
+                                    >
+                                      <svg className="animate-spin h-4 w-4 text-gray-400" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                                      </svg>
+                                      Joining...
+                                    </button>
+                                  ) : (
+                                    <button
+                                      className="ml-4 px-5 py-2 text-white rounded-lg font-semibold border bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-gray-400"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        handleJoinGroup(group.id);
+                                      }}
+                                    >
+                                      Join
+                                    </button>
+                                  )}
                                 </div>
-                              ))}
-                            </div>
+                                {idx !== results.groups.length - 1 && (
+                                  <hr className="border-t border-gray-200 mx-6" />
+                                )}
+                              </React.Fragment>
+                            ))}
                           </div>
                         </div>
                       )}
@@ -780,7 +588,7 @@ const handleCancelRequest = async () => {
                           ref={jobsRef}
                           className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden"
                         >
-                          <div className="bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 px-6 py-4">
+                          <div className="font-bold text-xl px-6 pt-6 pb-2 text-blue-900">
                             <h2 className="text-xl font-bold text-white flex items-center">
                               <div className="p-2 bg-white bg-opacity-20 rounded-lg mr-3">
                                 <Briefcase className="w-5 h-5 text-white" />
@@ -788,8 +596,8 @@ const handleCancelRequest = async () => {
                               Jobs ({results.jobs.length})
                             </h2>
                           </div>
-                          <div className="p-6">
-                            <div className="space-y-4">
+                          <div className="p-6 sm:p-3">
+                            <div className="space-y-4 sm:space-y-2">
                               {results.jobs.map((job) => (
                                 <Link
                                   to={`/jobs/${job.id}`}
@@ -839,59 +647,54 @@ const handleCancelRequest = async () => {
                       results.blogs.length > 0 && (
                         <div
                           ref={blogsRef}
-                          className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden"
+                          className="bg-white rounded-xl shadow border border-gray-200 overflow-hidden"
                         >
-                          <div className="bg-gradient-to-r from-blue-500 to-cyan-400 hover:bg-blue-700 px-6 py-4">
-                            <h2 className="text-xl font-bold text-white flex items-center">
-                              <div className="p-2 bg-white bg-opacity-20 rounded-lg mr-3">
-                                <FileText className="w-5 h-5 text-white" />
-                              </div>
-                              Blogs ({results.blogs.length})
-                            </h2>
-                          </div>
-                          <div className="p-6">
-                            <div className="space-y-4">
-                              {results.blogs.map((blog) => (
+                          <h2 className="font-bold text-xl px-6 pt-6 pb-2 text-blue-900">Blogs</h2>
+                          <div>
+                            {results.blogs.map((blog, idx) => (
+                              <React.Fragment key={blog.id}>
                                 <Link
                                   to={`/blog-detail/${blog.slug}`}
-                                  key={blog.id}
-                                  className="block p-4 bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 rounded-xl transition-all duration-200 border-2 border-transparent hover:border-blue-100 group"
+                                  className="flex items-center px-6 py-4 hover:bg-gray-50 transition group"
                                 >
-                                  <div className="flex items-start justify-between">
-                                    <div className="flex-1">
-                                      <h3 className="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors mb-2">
-                                        {blog.title}
-                                      </h3>
-                                      <p className="text-gray-600 line-clamp-3 mb-3 leading-relaxed ">
-                                        {blog.content
-                                          ? blog.content.length > 100
-                                            ? blog.content
-                                              .substring(0, 100)
-                                              .replace(/<[^>]*>/g, "") + "..."
-                                            : blog.content.replace(
-                                              /<[^>]*>/g,
-                                              ""
-                                            )
-                                          : "No content"}
-                                      </p>
-                                      <div className="flex items-center text-sm text-gray-500 space-x-4">
-                                        <span className="flex items-center">
-                                          <User className="w-4 h-4 mr-1" />
-                                          {blog.user?.name || "Unknown"}
-                                        </span>
-                                        <span>•</span>
-                                        <span>
-                                          {new Date(
-                                            blog.created_at
-                                          ).toLocaleDateString()}
-                                        </span>
-                                      </div>
-                                    </div>
-                                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transform group-hover:translate-x-1 transition-all ml-4" />
+                                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 mr-4 flex items-center justify-center flex-shrink-0">
+                                    {blog.image ? (
+                                      <img
+                                        src={`${base_url}/${blog.image}`}
+                                        alt={blog.title}
+                                        className="w-full h-full object-cover"
+                                        onError={e => { e.target.src = "/default-blog.png"; }}
+                                      />
+                                    ) : (
+                                      <FileText className="w-6 h-6 text-gray-300" />
+                                    )}
                                   </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-bold text-lg sm:text-base text-gray-600">
+                                      {blog.title}
+                                    </div>
+                                    <div className="text-gray-500 text-sm truncate">
+                                      {blog.content
+                                        ? blog.content.replace(/<[^>]*>/g, "").substring(0, 80) + (blog.content.length > 80 ? "..." : "")
+                                        : "No content"}
+                                    </div>
+                                    <div className="flex items-center text-xs text-gray-400 mt-1 gap-2">
+                                      <span>
+                                        {blog.user?.name || "Unknown"}
+                                      </span>
+                                      <span>•</span>
+                                      <span>
+                                        {new Date(blog.created_at).toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transform group-hover:translate-x-1 transition-all" />
                                 </Link>
-                              ))}
-                            </div>
+                                {idx !== results.blogs.length - 1 && (
+                                  <hr className="border-t border-gray-200 mx-6" />
+                                )}
+                              </React.Fragment>
+                            ))}
                           </div>
                         </div>
                       )}
@@ -911,13 +714,13 @@ const handleCancelRequest = async () => {
                               Posts ({results.posts.length})
                             </h2>
                           </div>
-                          <div className="p-6">
-                            <div className="space-y-4">
+                          <div className="p-6 sm:p-3">
+                            <div className="space-y-4 sm:space-y-2">
                               {results.posts.map((post) => (
                                 <Link
                                   to={`/post/${post.id}`}
                                   key={post.id}
-                                  className="block p-4 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 rounded-xl transition-all duration-200 border-2 border-transparent hover:border-sky-100 group"
+                                  className="block p-4 bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 rounded-xl transition-all duration-200 border-2 border-transparent hover:border-blue-100 group"
                                 >
                                   <div className="flex items-start justify-between">
                                     <div className="flex-1">

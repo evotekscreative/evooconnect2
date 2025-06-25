@@ -3,13 +3,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import logo from '../../assets/img/logoB.png';
 import googleIcon from '../../assets/img/google-icon.jpg';
-import Alert from '../../components/Auth/Alert';
+import Alert from '../../components/Auth/alert';
 import '../../assets/css/style.css';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import Cookies from 'js-cookie';
 
 function Register() {
-        const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+  const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
   const navigate = useNavigate();
   const [formData, setFormData] = useState({

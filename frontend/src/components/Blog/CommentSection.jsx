@@ -10,7 +10,7 @@ import {
   X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import Alert from "../Auth/Alert";
+import Alert from "../Auth/alert";
 
 const CommentSection = ({ slug, blogId }) => {
   const apiUrl =

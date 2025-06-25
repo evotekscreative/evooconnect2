@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import Case from "../components/Case";
+import Case from "../../components/Case";
 import { Link, useNavigate } from "react-router-dom";
-import Profile from "../assets/img/logo-evo-2.png";
+import Profile from "../../assets/img/logo-evo-2.png";
 import axios from "axios";
-import NetworkManager from "../components/NetworkManager";
+import NetworkManager from "../../components/NetworkManager";
+
 import {
   Briefcase,
   MapPin,
@@ -14,8 +15,9 @@ import {
   ArrowLeft,
   UserCheck,
   AlertCircle,
+  
 } from "lucide-react";
-import Alert from "../components/Auth/Alert";
+import Alert from "../../components/Auth/alert";
 
 // Komponen Avatar: Menampilkan foto jika ada, jika tidak tampilkan inisial
 function Avatar({ src, name, size = 64 }) {
@@ -425,7 +427,7 @@ const handleAccept = async (id, invitationId) => {
   if (loading) {
     return (
       <Case>
-        <div className="p-4 sm:p-6 bg-gray-100 min-h-screen flex items-center justify-center">
+        <div className="p-4 sm:p-6 bg-gray-50 min-h-screen flex items-center justify-center">
           <div className="text-center">Loading...</div>
         </div>
       </Case>
@@ -434,7 +436,7 @@ const handleAccept = async (id, invitationId) => {
 
   return (
     <Case>
-      <div className="p-4 sm:p-6 bg-gray-100 min-h-screen">
+      <div className="p-4 pb-16 sm:p-6 bg-gray-100 min-h-screen">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
           <div className="fixed top-5 right-5 z-50">
             <Alert
@@ -483,7 +485,7 @@ const handleAccept = async (id, invitationId) => {
 >
   Invitations
   {invitationCount > 0 && (
-    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+    <span className="absolute top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
       {invitationCount > 99 ? "99+" : invitationCount}
     </span>
   )}
@@ -635,7 +637,7 @@ const handleAccept = async (id, invitationId) => {
                           </p>
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1 mt-2">
                         <button
                           onClick={() => handleAccept(invitation.id)}
                           className="flex items-center gap-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded text-sm transition disabled:opacity-50"
