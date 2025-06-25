@@ -5,7 +5,7 @@ type CreateReportRequest struct {
 	TargetType   string `json:"target_type"`  // diisi dari path
 	TargetID     string `json:"target_id"`    // diisi dari path
 	Reason       string `json:"reason"`       // pilihan alasan
-	OtherReason  string `json:"other_reason"` // isi kalau Reason == "lainnya"
+	Description  string `json:"description"`  // Ganti dari OtherReason ke Description
 }
 
 type ReportResponse struct {

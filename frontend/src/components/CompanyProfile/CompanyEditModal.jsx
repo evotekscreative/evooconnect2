@@ -4,15 +4,15 @@ import { toast } from "react-toastify";
 
 const CompanyPreview = ({ form, logoPreview }) => (
   <div className="w-full">
-    <div className="bg-white p-4 rounded-xl shadow border">
+    <div className="p-4 bg-white border shadow rounded-xl">
       <div className="mb-4">
-        <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+        <h3 className="flex items-center gap-1 text-sm font-semibold text-gray-700">
           Page preview
-          <span className="text-gray-400 cursor-help text-xs">?</span>
+          <span className="text-xs text-gray-400 cursor-help">?</span>
         </h3>
       </div>
-      <div className="bg-gray-50 p-4 rounded-lg border">
-        <div className="w-full h-40 bg-gray-200 rounded mb-4 flex items-center justify-center">
+      <div className="p-4 border rounded-lg bg-gray-50">
+        <div className="flex items-center justify-center w-full h-40 mb-4 bg-gray-200 rounded">
           {logoPreview ? (
             <img
               src={logoPreview}
@@ -28,20 +28,20 @@ const CompanyPreview = ({ form, logoPreview }) => (
               className="object-contain h-full"
             />
           ) : (
-            <span className="text-gray-400 text-sm">Logo preview</span>
+            <span className="text-sm text-gray-400">Logo preview</span>
           )}
         </div>
-        <h4 className="font-bold text-gray-900 text-lg">
+        <h4 className="text-lg font-bold text-gray-900">
           {form.name || "Company name"}
         </h4>
-        <p className="text-gray-500 text-base">{form.tagline || "Tagline"}</p>
-        <p className="text-gray-400 text-sm">{form.industry || "Industry"}</p>
-        <p className="text-gray-400 text-sm mt-1">
+        <p className="text-base text-gray-500">{form.tagline || "Tagline"}</p>
+        <p className="text-sm text-gray-400">{form.industry || "Industry"}</p>
+        <p className="mt-1 text-sm text-gray-400">
           {form.size || "Company size"}
         </p>
         <button
           type="button"
-          className="mt-4 bg-blue-600 text-white text-base font-semibold px-4 py-2 rounded hover:bg-blue-700"
+          className="px-4 py-2 mt-4 text-base font-semibold text-white bg-blue-600 rounded hover:bg-blue-700"
         >
           + Follow
         </button>
@@ -72,6 +72,7 @@ const CompanyEditModal = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [showResubmitForm, setShowResubmitForm] = useState(false);
+  const [noChanges, setNoChanges] = useState(false);
 
   useEffect(() => {
     if (isOpen && companyData) {
@@ -119,7 +120,42 @@ const CompanyEditModal = ({
     setIsSubmitting(true);
 
     try {
-      // Ambil data awal dari companyData
+      // Siapkan payload lengkap dengan semua field - gabungkan existing data dengan form data
+      const payload = {
+        name: formData.name || companyData.name || "",
+        tagline: formData.tagline || companyData.tagline || "",
+        industry: formData.industry || companyData.industry || "",
+        website: formData.website || companyData.website || "",
+        size: formData.size || companyData.size || "",
+        type: formData.type || companyData.type || "",
+        linkedin_url: formData.linkedin_url || companyData.linkedin_url || "",
+      };
+
+      // Validate required fields dari payload final
+      const requiredFields = {
+        name: "Company Name",
+        industry: "Industry",
+        website: "Website",
+        size: "Company Size",
+        type: "Company Type",
+      };
+
+      const missingFields = [];
+      Object.keys(requiredFields).forEach((field) => {
+        if (!payload[field] || payload[field].trim() === "") {
+          missingFields.push(requiredFields[field]);
+        }
+      });
+
+      if (missingFields.length > 0) {
+        toast.error(
+          `Please fill in required fields: ${missingFields.join(", ")}`
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Deteksi perubahan untuk validasi
       const initialData = {
         name: companyData.name || "",
         tagline: companyData.tagline || "",
@@ -130,35 +166,60 @@ const CompanyEditModal = ({
         linkedin_url: companyData.linkedin_url || "",
       };
 
-      // Bandingkan dengan formData, hanya kirim field yang berubah
-      const changes = {};
-      Object.keys(formData).forEach((key) => {
-        if (formData[key] !== initialData[key]) {
-          changes[key] = formData[key];
-        }
+      const hasFormChanges = Object.keys(payload).some((key) => {
+        return payload[key] !== initialData[key];
       });
 
-      // Jika ada perubahan logo (file)
-      if (logoPreview && logoPreview.startsWith("data:")) {
-        changes.logo = logoPreview;
-      }
+      const hasLogoChange = logoPreview && logoPreview.startsWith("data:");
 
-      if (Object.keys(changes).length === 0) {
-        toast.warning("Tidak ada perubahan yang dideteksi.");
+      if (!hasFormChanges && !hasLogoChange) {
+        toast.warning("No changes detected. Please make at least one change.");
         setIsSubmitting(false);
         return;
       }
 
-      // Kirim hanya field yang berubah ke parent handler
-      await onSubmitEditRequest(changes);
+      // Tambahkan logo jika ada perubahan
+      if (hasLogoChange) {
+        payload.logo = logoPreview;
+      }
+
+      console.log("Submitting complete payload:", payload);
+
+      // Kirim payload lengkap ke parent handler
+      await onSubmitEditRequest(payload);
 
       setSubmitSuccess(true);
-      toast.success("Permintaan edit berhasil dikirim!");
+      toast.success("Edit request submitted successfully!");
     } catch (error) {
-      toast.error("Gagal mengirim permintaan edit: " + error.message);
+      console.error("Submit error:", error);
+      toast.error("Failed to submit edit request: " + error.message);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Function to check if submit should be disabled
+  const isSubmitDisabled = () => {
+    if (isSubmitting) return true;
+
+    // Check if any changes were made
+    const initialData = {
+      name: companyData?.name || "",
+      tagline: companyData?.tagline || "",
+      industry: companyData?.industry || "",
+      website: companyData?.website || "",
+      size: companyData?.size || "",
+      type: companyData?.type || "",
+      linkedin_url: companyData?.linkedin_url || "",
+    };
+
+    const hasFormChanges = Object.keys(formData).some((key) => {
+      return formData[key] !== initialData[key];
+    });
+
+    const hasLogoChange = logoPreview && logoPreview.startsWith("data:");
+
+    return !hasFormChanges && !hasLogoChange;
   };
 
   const handleResubmit = () => {
@@ -175,10 +236,10 @@ const CompanyEditModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
       <div className="bg-white rounded-lg w-full max-w-5xl max-h-[90vh] overflow-y-auto">
         <div className="p-6">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold">Edit Company Profile</h2>
             <button
               onClick={handleClose}
@@ -190,7 +251,7 @@ const CompanyEditModal = ({
           </div>
 
           {previousRequest && !showResubmitForm && (
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
+            <div className="p-4 mb-6 border rounded-lg bg-gray-50">
               <div className="flex items-start mb-4">
                 <div
                   className={`flex-shrink-0 p-2 rounded-full ${
@@ -216,7 +277,7 @@ const CompanyEditModal = ({
                   </p>
                   {previousRequest.status === "rejected" &&
                     previousRequest.rejection_reason && (
-                      <div className="mt-2 p-3 bg-red-50 rounded-md">
+                      <div className="p-3 mt-2 rounded-md bg-red-50">
                         <p className="text-sm font-medium text-red-700">
                           <span className="font-semibold">Reason:</span>{" "}
                           {previousRequest.rejection_reason}
@@ -227,7 +288,7 @@ const CompanyEditModal = ({
               </div>
               <button
                 onClick={() => setShowResubmitForm(true)}
-                className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+                className="px-4 py-2 mt-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
               >
                 Submit New Edit Request
               </button>
@@ -235,8 +296,8 @@ const CompanyEditModal = ({
           )}
 
           {submitSuccess ? (
-            <div className="text-center py-8">
-              <div className="text-green-500 mb-4">
+            <div className="py-8 text-center">
+              <div className="mb-4 text-green-500">
                 <svg
                   className="w-16 h-16 mx-auto"
                   fill="none"
@@ -252,39 +313,39 @@ const CompanyEditModal = ({
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold mb-2">
+              <h3 className="mb-2 text-xl font-semibold">
                 Edit Request Submitted!
               </h3>
               <p className="text-gray-600">
                 Your changes have been submitted for admin review.
               </p>
-              <p className="text-gray-500 text-sm mt-2">
+              <p className="mt-2 text-sm text-gray-500">
                 You'll be notified once approved.
               </p>
               <button
                 onClick={handleClose}
-                className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                className="px-4 py-2 mt-6 text-white bg-blue-600 rounded-md hover:bg-blue-700"
               >
                 Close
               </button>
             </div>
           ) : (
             (showResubmitForm || !previousRequest) && (
-              <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex flex-col gap-6 md:flex-row">
                 <div className="w-full md:w-1/2">
                   <form onSubmit={handleSubmit}>
-                    <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                      <h3 className="text-blue-800 font-medium mb-2">Note:</h3>
-                      <p className="text-blue-700 text-sm">
+                    <div className="p-4 mb-4 border border-blue-100 rounded-lg bg-blue-50">
+                      <h3 className="mb-2 font-medium text-blue-800">Note:</h3>
+                      <p className="text-sm text-blue-700">
                         All changes require admin approval before they go live.
                         Your current profile will remain visible until changes
                         are approved.
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="grid grid-cols-1 gap-4 mb-4 md:grid-cols-2">
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block mb-1 text-sm font-medium text-gray-700">
                           Company Name*
                         </label>
                         <input
@@ -297,7 +358,7 @@ const CompanyEditModal = ({
                         />
                       </div>
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block mb-1 text-sm font-medium text-gray-700">
                           Tagline
                         </label>
                         <input
@@ -309,7 +370,7 @@ const CompanyEditModal = ({
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block mb-1 text-sm font-medium text-gray-700">
                           Industry*
                         </label>
                         <input
@@ -322,7 +383,7 @@ const CompanyEditModal = ({
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block mb-1 text-sm font-medium text-gray-700">
                           Company Size
                         </label>
                         <select
@@ -354,7 +415,7 @@ const CompanyEditModal = ({
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block mb-1 text-sm font-medium text-gray-700">
                           Company Type
                         </label>
                         <select
@@ -376,7 +437,7 @@ const CompanyEditModal = ({
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block mb-1 text-sm font-medium text-gray-700">
                           Website*
                         </label>
                         <input
@@ -389,7 +450,7 @@ const CompanyEditModal = ({
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block mb-1 text-sm font-medium text-gray-700">
                           LinkedIn Profile
                         </label>
                         <input
@@ -401,7 +462,7 @@ const CompanyEditModal = ({
                         />
                       </div>
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block mb-1 text-sm font-medium text-gray-700">
                           Logo
                         </label>
                         <input
@@ -420,23 +481,27 @@ const CompanyEditModal = ({
                       <button
                         type="button"
                         onClick={handleClose}
-                        className="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-50"
+                        className="px-4 py-2 text-gray-700 border rounded-md hover:bg-gray-50"
                         disabled={isSubmitting}
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
-                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center"
-                        disabled={isSubmitting}
+                        className={`flex items-center justify-center px-4 py-2 text-white rounded-md ${
+                          isSubmitDisabled()
+                            ? "bg-gray-400 cursor-not-allowed"
+                            : "bg-blue-600 hover:bg-blue-700"
+                        }`}
+                        disabled={isSubmitDisabled()}
                       >
                         {isSubmitting ? (
                           <>
-                            <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                             Submitting...
                           </>
                         ) : (
-                          "Submit"
+                          "Submit Changes"
                         )}
                       </button>
                     </div>

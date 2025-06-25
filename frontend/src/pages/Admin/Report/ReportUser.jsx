@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Search,
   Import,
@@ -9,22 +9,49 @@ import {
 } from "lucide-react";
 import Sidebar from "../../../components/Admin/Sidebar/Sidebar";
 
+const BASE_URL =
+  import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000"; // Replace with your actual API base URL
+
 const actions = ["Takedown", "Suspend", "Permanently Banned"];
 
 const ReportUser = () => {
   const [openDropdown, setOpenDropdown] = useState(null);
   const [selectedActions, setSelectedActions] = useState({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  // const [totalPages, setTotalPages] = useState(1);
 
-  const dummyData = Array.from({ length: 20 }, (_, i) => ({
-    id: i + 1,
-    name: "Yasir wal asri",
-    username: "sirgobang_gosir",
-    phone: "0867564357897",
-    email: "sir@gmail.com",
-    reportType: "Harassment",
-    photo: "https://via.placeholder.com/50",
-  }));
+  const fetchReports = async (page = 1) => {
+    try {
+      setLoading(true);
+      const adminToken = localStorage.getItem("adminToken");
+      const response = await fetch(
+        `${BASE_URL}/api/admin/reports?page=${page}&limit=10&target_type=user`,
+        {
+          headers: {
+            Authorization: `Bearer ${adminToken}`,
+          },
+        }
+      );
+      const data = await response.json();
+
+      if (data.code === 200) {
+        setReports(data.data.reports);
+        setCurrentPage(data.data.current_page);
+        // setTotalPages(data.data.total_pages);
+      }
+    } catch (error) {
+      console.error("Error fetching reports:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReports();
+  }, []);
 
   const handleDropdown = (id) => {
     setOpenDropdown(openDropdown === id ? null : id);
@@ -41,12 +68,12 @@ const ReportUser = () => {
   return (
     <div className="flex min-h-screen">
       {/* Sidebar (hidden on mobile) */}
-      <div className="hidden lg:block w-64">
+      <div className="hidden w-64 lg:block">
         <Sidebar />
       </div>
 
       {/* Sidebar Toggle for Mobile */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
+      <div className="fixed z-50 lg:hidden top-4 left-4">
         <button
           className="p-2 bg-white rounded shadow"
           onClick={() => setSidebarOpen(true)}
@@ -70,99 +97,117 @@ const ReportUser = () => {
 
       {/* Main Content */}
       <div className="flex-1 p-4 sm:p-6">
-        <h1 className="text-2xl font-bold mb-4">Report User</h1>
+        <h1 className="mb-4 text-2xl font-bold">Report User</h1>
 
         {/* Top Filters */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
           <input
             type="date"
-            className="border px-3 py-1 rounded-md"
+            className="px-3 py-1 border rounded-md"
             defaultValue="2025-01-01"
           />
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center border rounded-md px-2">
+            <div className="flex items-center px-2 border rounded-md">
               <Search className="w-4 h-4 mr-2" />
               <input
                 type="text"
                 placeholder="search"
-                className="outline-none py-1"
+                className="py-1 outline-none"
               />
             </div>
-            <button className="flex items-center gap-1 border px-3 py-1 rounded-md">
+            <button className="flex items-center gap-1 px-3 py-1 border rounded-md">
               <Import className="w-4 h-4" /> Import
             </button>
-            <button className="flex items-center gap-1 border px-3 py-1 rounded-md">
+            <button className="flex items-center gap-1 px-3 py-1 border rounded-md">
               <Download className="w-4 h-4" /> Export
             </button>
-            <button className="flex items-center gap-1 border px-3 py-1 rounded-md">
+            <button className="flex items-center gap-1 px-3 py-1 border rounded-md">
               <Filter className="w-4 h-4" /> Filter
             </button>
           </div>
         </div>
 
         {/* Table */}
-        <div className="border rounded-lg overflow-x-auto">
+        <div className="overflow-x-auto border rounded-lg">
           <table className="min-w-full text-sm">
             <thead className="bg-gray-100">
               <tr>
-                <th className="border px-4 py-2">NO</th>
-                <th className="border px-4 py-2">Photo</th>
-                <th className="border px-4 py-2">Name</th>
-                <th className="border px-4 py-2">Username</th>
-                <th className="border px-4 py-2">Phone</th>
-                <th className="border px-4 py-2">Email</th>
-                <th className="border px-4 py-2">Type of Report</th>
-                <th className="border px-4 py-2">Select Option</th>
+                <th className="px-4 py-2 border">NO</th>
+                <th className="px-4 py-2 border">Photo</th>
+                <th className="px-4 py-2 border">Name</th>
+                <th className="px-4 py-2 border">Username</th>
+                <th className="px-4 py-2 border">Phone</th>
+                <th className="px-4 py-2 border">Email</th>
+                <th className="px-4 py-2 border">Type of Report</th>
+                <th className="px-4 py-2 border">Select Option</th>
               </tr>
             </thead>
             <tbody>
-              {dummyData.map((user) => (
-                <tr key={user.id}>
-                  <td className="border px-4 py-2 text-center">{user.id}</td>
-                  <td className="border px-4 py-2 text-center">
-                    <img
-                      src={user.photo}
-                      alt="user"
-                      className="w-12 h-12 object-cover rounded-full mx-auto"
-                    />
-                  </td>
-                  <td className="border px-4 py-2">{user.name}</td>
-                  <td className="border px-4 py-2">{user.username}</td>
-                  <td className="border px-4 py-2">{user.phone}</td>
-                  <td className="border px-4 py-2">{user.email}</td>
-                  <td className="border px-4 py-2">
-                    <span className="bg-gray-200 text-xs px-2 py-1 rounded-md">
-                      {user.reportType}
-                    </span>
-                  </td>
-                  <td className="border px-4 py-2">
-                    <div className="relative inline-block text-left">
-                      <button
-                        className="inline-flex items-center justify-center w-full rounded-md border border-gray-300 px-3 py-1 text-sm font-medium bg-white hover:bg-gray-50"
-                        onClick={() => handleDropdown(user.id)}
-                      >
-                        {selectedActions[user.id] || "Select Option"}{" "}
-                        <ChevronDown className="w-4 h-4 ml-1" />
-                      </button>
-                      {openDropdown === user.id && (
-                        <div className="absolute right-0 mt-2 w-40 origin-top-right rounded-md bg-white border shadow-lg z-10">
-                          <div className="py-1">
-                            {actions.map((action) => (
-                              <div
-                                key={action}
-                                className="block px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer"
-                                onClick={() => handleSelectAction(user.id, action)}
-                              >
-                                {action}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+              {loading ? (
+                <tr>
+                  <td colSpan="8" className="px-4 py-8 text-center border">
+                    Loading...
                   </td>
                 </tr>
-              ))}
+              ) : reports.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="px-4 py-8 text-center border">
+                    No reports found
+                  </td>
+                </tr>
+              ) : (
+                reports.map((report, index) => (
+                  <tr key={report.id}>
+                    <td className="px-4 py-2 text-center border">
+                      {(currentPage - 1) * 10 + index + 1}
+                    </td>
+                    <td className="px-4 py-2 text-center border">
+                      <img
+                        src="https://via.placeholder.com/50"
+                        alt="user"
+                        className="object-cover w-12 h-12 mx-auto rounded-full"
+                      />
+                    </td>
+                    <td className="px-4 py-2 border">-</td>
+                    <td className="px-4 py-2 border">-</td>
+                    <td className="px-4 py-2 border">-</td>
+                    <td className="px-4 py-2 border">-</td>
+                    <td className="px-4 py-2 border">
+                      <span className="px-2 py-1 text-xs bg-gray-200 rounded-md">
+                        {report.reason}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 border">
+                      <div className="relative inline-block text-left">
+                        <button
+                          className="inline-flex items-center justify-center w-full px-3 py-1 text-sm font-medium bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                          onClick={() => handleDropdown(report.id)}
+                        >
+                          {selectedActions[report.id] || "Select Option"}{" "}
+                          <ChevronDown className="w-4 h-4 ml-1" />
+                        </button>
+                        {openDropdown === report.id && (
+                          <div className="absolute right-0 z-10 w-40 mt-2 origin-top-right bg-white border rounded-md shadow-lg">
+                            <div className="py-1">
+                              {actions.map((action) => (
+                                <div
+                                  key={action}
+                                  className="block px-4 py-2 text-sm cursor-pointer hover:bg-gray-100"
+                                  onClick={() =>
+                                    handleSelectAction(report.id, action)
+                                  }
+                                >
+                                  {action}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

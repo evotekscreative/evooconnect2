@@ -30,33 +30,32 @@ const NetworkManager = () => {
   const [contactsLoading, setContactsLoading] = useState(false);
   const [connectionsLoading, setConnectionsLoading] = useState(false);
 
-  const fetchGroups = async () => {
-    setGroupsLoading(true);
-    const token = localStorage.getItem("token");
-    try {
-      const [adminResponse, allGroupsResponse] = await Promise.all([
-        axios.get(`${apiUrl}/api/my-groups`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${apiUrl}/api/groups`, { headers: { Authorization: `Bearer ${token}` } })
-      ]);
+ const fetchGroups = async () => {
+  setGroupsLoading(true);
+  const token = localStorage.getItem("token");
+  try {
+    const [adminResponse, joinedResponse] = await Promise.all([
+      axios.get(`${apiUrl}/api/my-groups`, { headers: { Authorization: `Bearer ${token}` } }),
+      axios.get(`${apiUrl}/api/my-joined-groups`, { headers: { Authorization: `Bearer ${token}` } })
+    ]);
 
-      const adminGroupsData = Array.isArray(adminResponse.data.data)
-        ? adminResponse.data.data
-        : [];
+    const adminGroupsData = Array.isArray(adminResponse.data.data)
+      ? adminResponse.data.data
+      : [];
 
-      const adminGroupIds = adminGroupsData.map(group => group.id);
-      const joinedGroupsData = Array.isArray(allGroupsResponse.data.data)
-        ? allGroupsResponse.data.data
-          .filter(group => group.joined_at && !adminGroupIds.includes(group.id))
-        : [];
+    const adminGroupIds = adminGroupsData.map(group => group.id);
+    const joinedGroupsData = Array.isArray(joinedResponse.data.data)
+      ? joinedResponse.data.data.filter(group => !adminGroupIds.includes(group.id))
+      : [];
 
-      setAdminGroups(adminGroupsData);
-      setJoinedGroups(joinedGroupsData);
-    } catch (error) {
-      console.error("Failed to fetch groups:", error);
-    } finally {
-      setGroupsLoading(false);
-    }
-  };
+    setAdminGroups(adminGroupsData);
+    setJoinedGroups(joinedGroupsData);
+  } catch (error) {
+    console.error("Failed to fetch groups:", error);
+  } finally {
+    setGroupsLoading(false);
+  }
+};
 
   const fetchContacts = async () => {
     setContactsLoading(true);

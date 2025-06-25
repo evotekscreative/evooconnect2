@@ -2,6 +2,7 @@ import React from "react";
 import { useState, useEffect } from "react";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
+import dayjs from "dayjs";
 import {
   MessageCircle,
   Share2,
@@ -118,6 +119,40 @@ const PostPage = () => {
   const [alerts, setAlerts] = useState([]);
   const [similarJobs, setSimilarJobs] = useState([]);
   const [loadingJobs, setLoadingJobs] = useState(false);
+
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [selectedPostForImage, setSelectedPostForImage] = useState(null);
+
+  // Fungsi untuk membuka modal gambar
+  const openImageModal = (post, index) => {
+    // Pastikan semua gambar memiliki URL lengkap
+    const images = post.images.map((img) =>
+      img.startsWith("http") ? img : `${apiUrl}/${img}`
+    );
+    setSelectedPostForImage({ ...post, images });
+    setSelectedImageIndex(index);
+    setShowImageModal(true);
+  };
+
+  const closeImageModal = () => {
+    setShowImageModal(false);
+    setSelectedPostForImage(null);
+    setSelectedImageIndex(0);
+  };
+
+  const navigateImage = (direction) => {
+    if (!selectedPostForImage) return;
+    if (direction === "prev") {
+      setSelectedImageIndex((prev) =>
+        prev === 0 ? selectedPostForImage.images.length - 1 : prev - 1
+      );
+    } else {
+      setSelectedImageIndex((prev) =>
+        prev === selectedPostForImage.images.length - 1 ? 0 : prev + 1
+      );
+    }
+  };
 
   const addAlert = (type, message) => {
     const id = Date.now();
@@ -402,40 +437,29 @@ const PostPage = () => {
     }
   };
 
-  const formatPostTime = (timestamp) => {
-    if (!timestamp) return "Just now";
+  const formatPostTime = (dateString) => {
+    if (!dateString) return "";
 
-    let postTime;
     try {
-      postTime = dayjs(timestamp);
-      if (!postTime.isValid()) {
-        postTime = dayjs(new Date(timestamp));
+      const utcDate = dayjs.utc(dateString);
+
+      if (!utcDate.isValid()) {
+        console.warn("Invalid date:", dateString);
+        return "";
       }
-    } catch (e) {
-      console.error("Error parsing timestamp:", timestamp, e);
-      return "Just now";
+
+      const now = dayjs.utc();
+      const diffInHours = now.diff(utcDate, "hour");
+
+      if (diffInHours < 24) {
+        return utcDate.format("h:mm A"); // hasil: 2:49 AM
+      } else {
+        return utcDate.format("MMM D [at] h:mm A"); // Misal: Jun 5 at 02:49
+      }
+    } catch (error) {
+      console.error("Time formatting error:", error);
+      return "";
     }
-
-    if (!postTime.isValid()) {
-      return "Just now";
-    }
-
-    const now = dayjs();
-    const diffInSeconds = now.diff(postTime, "second");
-    const diffInMinutes = now.diff(postTime, "minute");
-    const diffInHours = now.diff(postTime, "hour");
-    const diffInDays = now.diff(postTime, "day");
-
-    // Handle future dates or timezone issues by showing "Just now" instead of negative values
-    if (diffInSeconds < 0) return "Just now";
-
-    if (diffInSeconds < 60) return `${diffInSeconds}s ago`;
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    if (diffInDays < 7) return `${diffInDays}d ago`;
-
-    // For older dates, return formatted date (e.g. "MMM D, YYYY")
-    return postTime.format("MMM D, YYYY");
   };
   useEffect(() => {
     fetchProfile();
@@ -1392,8 +1416,8 @@ const PostPage = () => {
           showReportModal ? "block" : "hidden"
         }`}
       >
-        <div className="bg-white rounded-lg w-full max-w-md mx-4 p-5">
-          <h3 className="text-lg font-semibold mb-4">Report this content</h3>
+        <div className="w-full max-w-md p-5 mx-4 bg-white rounded-lg">
+          <h3 className="mb-4 text-lg font-semibold">Report this content</h3>
           <p className="mb-3 text-sm text-gray-600">
             Please select a reason for reporting
           </p>
@@ -1403,17 +1427,17 @@ const PostPage = () => {
               "Harassment",
               "Fraud",
               "Spam",
-              "Misinformation",
-              "Hate speech",
+              "Missinformation",
+              "Hate Speech",
               "Threats or violence",
-              "Self-harm",
-              "Graphic content",
-              "Extremist organizations",
-              "Sexual content",
-              "Fake account",
-              "Child exploitation",
-              "Illegal products",
-              "Violation",
+              "self-harm",
+              "Graphic or violent content",
+              "Dangerous or extremist organizations",
+              "Sexual Content",
+              "Fake Account",
+              "Child Exploitation",
+              "Illegal products and services",
+              "Infringement",
               "Other",
             ].map((reason) => (
               <button
@@ -1432,7 +1456,7 @@ const PostPage = () => {
 
           {selectedReason === "Other" && (
             <textarea
-              className="w-full p-2 border rounded mb-3 text-sm"
+              className="w-full p-2 mb-3 text-sm border rounded"
               rows={3}
               placeholder="Please describe the reason for your report"
               value={customReason}
@@ -1530,29 +1554,35 @@ const PostPage = () => {
     }
   };
 
-  const renderPhotoGrid = (images) => {
-    if (images.length === 1) {
+  const renderPhotoGrid = (images, post) => {
+    if (!images || images.length === 0) return null;
+    const validImages = images.map((img) =>
+      img.startsWith("http") ? img : `${apiUrl}/${img}`
+    );
+    if (validImages.length === 1) {
       return (
-        <div className="mb-3 rounded-lg overflow-hidden border">
+        <div className="mb-3 overflow-hidden border rounded-lg">
           <img
-            src={apiUrl + "/" + images[0]}
-            className="w-full h-48 md:h-64 lg:h-96 object-cover cursor-pointer"
+            src={validImages[0]}
+            className="object-cover w-full h-48 cursor-pointer md:h-64 lg:h-96"
             alt="Post"
-            onClick={() => openImageModal({ images }, 0)}
+            onClick={() => openImageModal({ ...post, images: validImages }, 0)}
           />
         </div>
       );
-    } else if (images.length === 2) {
+    } else if (validImages.length === 2) {
       return (
-        <div className="mb-3 rounded-lg overflow-hidden border">
+        <div className="mb-3 overflow-hidden border rounded-lg">
           <div className="grid grid-cols-2 gap-1">
-            {images.map((photo, index) => (
+            {validImages.map((photo, index) => (
               <div key={index} className="relative aspect-square">
                 <img
-                  src={apiUrl + "/" + photo}
-                  className="w-full h-full object-cover cursor-pointer"
+                  src={photo}
+                  className="object-cover w-full h-full cursor-pointer"
                   alt={`Post ${index + 1}`}
-                  onClick={() => openImageModal({ images }, index)}
+                  onClick={() =>
+                    openImageModal({ ...post, images: validImages }, index)
+                  }
                 />
               </div>
             ))}
@@ -1561,12 +1591,12 @@ const PostPage = () => {
       );
     } else if (images.length === 3) {
       return (
-        <div className="mb-3 rounded-lg overflow-hidden border">
+        <div className="mb-3 overflow-hidden border rounded-lg">
           <div className="grid grid-cols-2 gap-1">
-            <div className="relative aspect-square row-span-2">
+            <div className="relative row-span-2 aspect-square">
               <img
                 src={apiUrl + "/" + images[0]}
-                className="w-full h-full object-cover cursor-pointer"
+                className="object-cover w-full h-full cursor-pointer"
                 alt="Post 1"
                 onClick={() => openImageModal({ images }, 0)}
               />
@@ -1574,7 +1604,7 @@ const PostPage = () => {
             <div className="relative aspect-square">
               <img
                 src={apiUrl + "/" + images[1]}
-                className="w-full h-full object-cover cursor-pointer"
+                className="object-cover w-full h-full cursor-pointer"
                 alt="Post 2"
                 onClick={() => openImageModal({ images }, 1)}
               />
@@ -1582,7 +1612,7 @@ const PostPage = () => {
             <div className="relative aspect-square">
               <img
                 src={apiUrl + "/" + images[2]}
-                className="w-full h-full object-cover cursor-pointer"
+                className="object-cover w-full h-full cursor-pointer"
                 alt="Post 3"
                 onClick={() => openImageModal({ images }, 2)}
               />
@@ -1592,19 +1622,19 @@ const PostPage = () => {
       );
     } else if (images.length >= 4) {
       return (
-        <div className="mb-3 rounded-lg overflow-hidden border">
+        <div className="mb-3 overflow-hidden border rounded-lg">
           <div className="grid grid-cols-2 gap-1">
             {images.slice(0, 4).map((photo, index) => (
               <div key={index} className="relative aspect-square">
                 <img
                   src={apiUrl + "/" + photo}
-                  className="w-full h-full object-cover cursor-pointer"
+                  className="object-cover w-full h-full cursor-pointer"
                   alt={`Post ${index + 1}`}
                   onClick={() => openImageModal({ images }, index)}
                 />
                 {index === 3 && images.length > 4 && (
                   <div
-                    className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center text-white font-bold text-lg cursor-pointer"
+                    className="absolute inset-0 flex items-center justify-center text-lg font-bold text-white bg-black bg-opacity-50 cursor-pointer"
                     onClick={() => openImageModal({ images }, 3)}
                   >
                     +{images.length - 4}
@@ -1621,7 +1651,7 @@ const PostPage = () => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="flex items-center justify-center h-screen">
         Loading...
       </div>
     );
@@ -1633,9 +1663,9 @@ const PostPage = () => {
       <Case />
 
       {/* Content */}
-      <div className="w-full mx-auto py-6 px-4 sm:px-6">
+      <div className="w-full px-4 py-6 mx-auto sm:px-6">
         {/* Alerts container */}
-        <div className="fixed top-4 right-4 z-50 space-y-2 w-80">
+        <div className="fixed z-50 space-y-2 top-4 right-4 w-80">
           {alerts.map((alert) => (
             <Alert
               key={alert.id}
@@ -1645,12 +1675,12 @@ const PostPage = () => {
             />
           ))}
         </div>
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-6">
+        <div className="flex flex-col gap-6 mx-auto max-w-7xl md:flex-row">
           {/* Left Sidebar - Narrower */}
-          <div className="w-full md:w-1/4 lg:w-1/5 space-y-4">
-            <div className="bg-white rounded-lg shadow-md p-4 text-center">
+          <div className="w-full space-y-4 md:w-1/4 lg:w-1/5">
+            <div className="p-4 text-center bg-white rounded-lg shadow-md">
               {/* Di komponen gambar profil */}
-              <div className="relative w-28 h-28 mx-auto bg-gray-200 rounded-full overflow-hidden flex items-center justify-center">
+              <div className="relative flex items-center justify-center mx-auto overflow-hidden bg-gray-200 rounded-full w-28 h-28">
                 {user.photo ? (
                   <img
                     src={
@@ -1659,7 +1689,7 @@ const PostPage = () => {
                         : `${apiUrl}/${user.photo}`
                     }
                     alt="Profile"
-                    className="w-full h-full object-cover"
+                    className="object-cover w-full h-full"
                     onError={(e) => {
                       e.target.onerror = null;
                       e.target.src = "";
@@ -1667,7 +1697,7 @@ const PostPage = () => {
                     }}
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-300">
+                  <div className="flex items-center justify-center w-full h-full bg-gray-300">
                     <span className="text-lg font-bold text-gray-600">
                       {user.name
                         .split(" ")
@@ -1677,7 +1707,7 @@ const PostPage = () => {
                   </div>
                 )}
               </div>
-              <h2 className="font-bold text-xl mt-4">{user.name}</h2>
+              <h2 className="mt-4 text-xl font-bold">{user.name}</h2>
               <p className="text-base text-gray-500">
                 {user.headline || "No headline yet"}
               </p>
@@ -1685,57 +1715,57 @@ const PostPage = () => {
               <div className="mt-5 space-y-2 text-left">
                 <Link
                   to="/list-connection"
-                  className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md"
+                  className="flex items-center justify-between p-2 rounded-md hover:bg-gray-50"
                 >
                   <span className="flex items-center gap-2 text-base">
                     <Users size={18} /> Connections
                   </span>
-                  <span className="font-bold text-lg">{connectionsCount}</span>
+                  <span className="text-lg font-bold">{connectionsCount}</span>
                 </Link>
-                <div className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md">
+                <div className="flex items-center justify-between p-2 rounded-md hover:bg-gray-50">
                   <span className="flex items-center gap-2 text-base">
                     <Eye size={18} /> Views
                   </span>
-                  <span className="font-bold text-lg">
+                  <span className="text-lg font-bold">
                     {profileViews.thisWeek}
                   </span>
                 </div>
                 <Link
                   to="/job-saved"
-                  className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md"
+                  className="flex items-center justify-between p-2 rounded-md hover:bg-gray-50"
                 >
                   <span className="flex items-center gap-2 text-sm">
                     <Bookmark size={18} /> Job Saved
                   </span>
-                  <span className="font-bold text-base">120</span>
+                  <span className="text-base font-bold">120</span>
                 </Link>
               </div>
 
-              <button className="text-blue-600 text-sm mt-5">Log Out</button>
+              <button className="mt-5 text-sm text-blue-600">Log Out</button>
             </div>
 
-            <div className="bg-white rounded-lg shadow-md p-4">
-              <h3 className="font-semibold text-base">Skills</h3>
+            <div className="p-4 bg-white rounded-lg shadow-md">
+              <h3 className="text-base font-semibold">Skills</h3>
               {user.skills && user.skills.length > 0 ? (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {user.skills.map((skill, index) => (
                     <span
                       key={index}
-                      className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm"
+                      className="px-2 py-1 text-sm text-blue-700 bg-blue-100 rounded-full"
                     >
                       {skill}
                     </span>
                   ))}
                 </div>
               ) : (
-                <p className="text-base text-gray-500 mt-1">
+                <p className="mt-1 text-base text-gray-500">
                   No skills added yet
                 </p>
               )}
             </div>
 
-            <div className="bg-white rounded-lg shadow-md p-4">
-              <h3 className="font-semibold text-base mb-2">Social Media</h3>
+            <div className="p-4 bg-white rounded-lg shadow-md">
+              <h3 className="mb-2 text-base font-semibold">Social Media</h3>
               {Object.keys(user.socials).length > 0 ? (
                 <div className="space-y-2">
                   {Object.entries(user.socials).map(([platform, username]) => {
@@ -1745,7 +1775,7 @@ const PostPage = () => {
                     return (
                       <div
                         key={platform}
-                        className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-md"
+                        className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-50"
                       >
                         {platformInfo && (
                           <div
@@ -1769,24 +1799,24 @@ const PostPage = () => {
 
           {/* Main Post Content - Wider */}
           <div className="w-full md:w-2/4 lg:w-3/5">
-            <div className="bg-white border rounded-lg shadow-sm p-4 mb-4">
+            <div className="p-4 mb-4 bg-white border rounded-lg shadow-sm">
               {/* Sample Post */}
               {userPosts.length > 0 ? (
                 userPosts.map((post) => (
                   <div
                     key={post.id}
-                    className="bg-white rounded-lg shadow-md mb-6 p-4 space-y-4"
+                    className="p-4 mb-6 space-y-4 bg-white rounded-lg shadow-md"
                   >
                     {/* Header */}
-                    <div className="border-b border-gray-200 pb-3 mb-3 relative">
+                    <div className="relative pb-3 mb-3 border-b border-gray-200">
                       {/* Group info - as background element */}
                       {post.group && (
                         <Link to={`/groups/${post.group.id}`}>
                           {/* Group photo */}
-                          <div className="absolute left-0 top-0 bottom-2 z-0">
+                          <div className="absolute top-0 left-0 z-0 bottom-2">
                             {post.group.image ? (
                               <img
-                                className="rounded-lg object-cover w-12 h-12 border-2 border-gray-300 shadow-md"
+                                className="object-cover w-12 h-12 border-2 border-gray-300 rounded-lg shadow-md"
                                 src={
                                   post.group.image.startsWith("http")
                                     ? post.group.image
@@ -1799,7 +1829,7 @@ const PostPage = () => {
                                 }}
                               />
                             ) : (
-                              <div className="rounded-lg border-2 border-white w-12 h-12 bg-gray-300 flex items-center justify-center shadow-md">
+                              <div className="flex items-center justify-center w-12 h-12 bg-gray-300 border-2 border-white rounded-lg shadow-md">
                                 <span className="text-xs font-bold text-gray-600">
                                   {getInitials(post.group?.name)}
                                 </span>
@@ -1809,7 +1839,7 @@ const PostPage = () => {
                         </Link>
                       )}
 
-                      <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-start justify-between mb-2">
                         <div className="flex items-start">
                           {/* User photo */}
                           <div
@@ -1822,7 +1852,7 @@ const PostPage = () => {
                             {post.user?.photo ? (
                               <Link to={`/user-profile/${post.user.username}`}>
                                 <img
-                                  className="rounded-full border-2 border-gray-300 w-10 h-10 object-cover"
+                                  className="object-cover w-10 h-10 border-2 border-gray-300 rounded-full"
                                   src={
                                     post.user.photo.startsWith("http")
                                       ? post.user.photo
@@ -1839,7 +1869,7 @@ const PostPage = () => {
                                 />
                               </Link>
                             ) : (
-                              <div className="w-9 h-9 bg-gray-200 text-xs rounded-full flex items-center justify-center font-semibold text-gray-600">
+                              <div className="flex items-center justify-center text-xs font-semibold text-gray-600 bg-gray-200 rounded-full w-9 h-9">
                                 <span className="text-xs font-bold text-gray-600">
                                   {getInitials(post.user?.name)}
                                 </span>
@@ -1851,7 +1881,7 @@ const PostPage = () => {
                             className={`${post?.group ? "ml-3 mt-2" : "ml-2"}`}
                           >
                             <h6
-                              className="font-bold mb-0 text-sm cursor-pointer hover:underline"
+                              className="mb-0 text-sm font-bold cursor-pointer hover:underline"
                               onClick={() =>
                                 fetchUserProfile(
                                   post.user.username,
@@ -1862,20 +1892,20 @@ const PostPage = () => {
                               {post.user?.name || "Unknown User"}
                             </h6>
                             <div className="flex items-center">
-                              <small className="text-gray-500 text-xs">
+                              <small className="text-xs text-gray-500">
                                 {formatPostTime(
                                   post.created_at || new Date().toISOString()
                                 )}
                               </small>
-                              <span className="text-gray-400 mx-1 text-xs">
+                              <span className="mx-1 text-xs text-gray-400">
                                 •
                               </span>
                               {post.group && (
-                                <small className="text-gray-500 text-xs">
+                                <small className="text-xs text-gray-500">
                                   <div className="flex items-center text-xs text-gray-500">
                                     <a
                                       href="#"
-                                      className="hover:underline text-blue-500"
+                                      className="text-blue-500 hover:underline"
                                       onClick={(e) => {
                                         e.preventDefault();
                                         navigate(`/groups/${post.group.id}`);
@@ -1889,14 +1919,14 @@ const PostPage = () => {
                             </div>
                           </div>
                         </div>
-                        <div className="ml-auto relative group">
+                        <div className="relative ml-auto group">
                           <button
-                            className="bg-gray-100 hover:bg-gray-200 rounded-full p-1 mr-2"
+                            className="p-1 mr-2 bg-gray-100 rounded-full hover:bg-gray-200"
                             onClick={() => handleOpenPostOptions(post.id)}
                           >
                             <Ellipsis size={14} />
                           </button>
-                          <button className="bg-gray-100 hover:bg-gray-200 rounded-full p-1">
+                          <button className="p-1 bg-gray-100 rounded-full hover:bg-gray-200">
                             {post.visibility === "public" && (
                               <Globe size={14} />
                             )}
@@ -1914,18 +1944,18 @@ const PostPage = () => {
                     {/* Body */}
                     <div className="mt-3 mb-3 text-sm">
                       <div
-                        className="prose max-w-none text-gray-700 ck-content custom-post-content"
+                        className="prose text-gray-700 max-w-none ck-content custom-post-content"
                         dangerouslySetInnerHTML={{ __html: post.content }}
                       />
-                      {post.images && renderPhotoGrid(post.images)}
+                      {post.images && renderPhotoGrid(post.images, post)}
                     </div>
 
                     {/* Footer */}
                     <div>
                       {/* Likes & Comments Info */}
-                      <div className="flex items-center space-x-4 px-4 py-1 text-xs text-gray-500 justify-between">
-                        <div className="flex items-center space-x-1 pt-1">
-                          <span className="text-black flex">
+                      <div className="flex items-center justify-between px-4 py-1 space-x-4 text-xs text-gray-500">
+                        <div className="flex items-center pt-1 space-x-1">
+                          <span className="flex text-black">
                             <ThumbsUp size={14} className="mr-1" />{" "}
                             {post.likes_count || 0}
                           </span>
@@ -1941,7 +1971,7 @@ const PostPage = () => {
                       </div>
 
                       {/* Post Actions */}
-                      <div className="border-t border-gray-200 px-4 py-2 flex justify-between">
+                      <div className="flex justify-between px-4 py-2 border-t border-gray-200">
                         <button
                           className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${
                             post.isLiked
@@ -1955,7 +1985,7 @@ const PostPage = () => {
                         </button>
 
                         <button
-                          className="flex items-center justify-center w-1/3 py-2 rounded-lg text-black hover:bg-gray-100"
+                          className="flex items-center justify-center w-1/3 py-2 text-black rounded-lg hover:bg-gray-100"
                           onClick={() => openCommentModal(post.id)}
                         >
                           <MessageCircle size={14} className="mr-2" />
@@ -1963,7 +1993,7 @@ const PostPage = () => {
                         </button>
 
                         <button
-                          className="flex items-center justify-center w-1/3 py-2 rounded-lg text-black hover:bg-gray-100"
+                          className="flex items-center justify-center w-1/3 py-2 text-black rounded-lg hover:bg-gray-100"
                           onClick={() => handleOpenShareModal(post.id)}
                         >
                           <Share2 size={14} className="mr-2" />
@@ -1974,7 +2004,7 @@ const PostPage = () => {
                   </div>
                 ))
               ) : (
-                <div className="bg-white border rounded-lg shadow-sm p-4 mb-4 text-center">
+                <div className="p-4 mb-4 text-center bg-white border rounded-lg shadow-sm">
                   <p className="text-gray-500">No posts yet</p>
                 </div>
               )}
@@ -1982,19 +2012,19 @@ const PostPage = () => {
           </div>
 
           {/* Right Sidebar - Narrower */}
-          <div className="w-full md:w-1/4 lg:w-1/5 space-y-4">
+          <div className="w-full space-y-4 md:w-1/4 lg:w-1/5">
             {/* People You Might Know */}
-            <div className="bg-white rounded-xl shadow-sm border p-4 mb-6 transition-all duration-300">
+            <div className="p-4 mb-6 transition-all duration-300 bg-white border shadow-sm rounded-xl">
               {/* Header */}
-              <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-100">
-                <h3 className="font-semibold text-gray-800 text-base flex items-center gap-2">
+              <div className="flex items-center justify-between pb-3 mb-4 border-b border-gray-100">
+                <h3 className="flex items-center gap-2 text-base font-semibold text-gray-800">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                   People you might know
                 </h3>
                 <button
                   onClick={fetchSuggestedConnections}
                   disabled={loadingSuggested}
-                  className="flex items-center gap-1 text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors duration-200 disabled:opacity-50"
+                  className="flex items-center gap-1 text-sm font-medium text-blue-600 transition-colors duration-200 hover:text-blue-700 disabled:opacity-50"
                 >
                   <RefreshCw
                     className={`w-4 h-4 ${
@@ -2008,19 +2038,19 @@ const PostPage = () => {
               {loadingSuggested ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="flex items-center gap-2 text-gray-500">
-                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-4 h-4 border-2 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
                     <span className="text-sm">Finding suggestions...</span>
                   </div>
                 </div>
               ) : suggestedConnections.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <div className="py-8 text-center">
+                  <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full">
                     <UserPlus className="w-6 h-6 text-gray-400" />
                   </div>
-                  <p className="text-gray-500 text-sm">
+                  <p className="text-sm text-gray-500">
                     No suggestions available at the moment
                   </p>
-                  <p className="text-gray-400 text-xs mt-1">
+                  <p className="mt-1 text-xs text-gray-400">
                     Check back later for new connections
                   </p>
                 </div>
@@ -2029,15 +2059,15 @@ const PostPage = () => {
                   {suggestedConnections.map((person, index) => (
                     <div
                       key={person.id}
-                      className="group flex items-center p-3 rounded-lg hover:bg-gray-50 transition-all duration-200 border border-transparent hover:border-gray-200"
+                      className="flex items-center p-3 transition-all duration-200 border border-transparent rounded-lg group hover:bg-gray-50 hover:border-gray-200"
                       style={{
                         animationDelay: `${index * 100}ms`,
                         animation: "fadeInUp 0.5s ease-out forwards",
                       }}
                     >
                       {/* Profile Picture */}
-                      <div className="relative mr-3 flex-shrink-0">
-                        <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden ring-2 ring-white shadow-md">
+                      <div className="relative flex-shrink-0 mr-3">
+                        <div className="w-12 h-12 overflow-hidden bg-gray-200 rounded-full shadow-md ring-2 ring-white">
                           {person.photo ? (
                             <img
                               src={
@@ -2046,14 +2076,14 @@ const PostPage = () => {
                                   : `${apiUrl}/${person.photo}`
                               }
                               alt="Profile"
-                              className="w-full h-full object-cover"
+                              className="object-cover w-full h-full"
                               onError={(e) => {
                                 e.target.onerror = null;
                                 e.target.src = "";
                               }}
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center">
+                            <div className="flex items-center justify-center w-full h-full">
                               <span className="text-sm font-semibold text-gray-500">
                                 {person.initials}
                               </span>
@@ -2065,7 +2095,7 @@ const PostPage = () => {
                       {/* User Info */}
                       <div className="flex-1 min-w-0">
                         <Link to={`/user-profile/${person.username}`}>
-                          <h4 className="font-semibold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors duration-200">
+                          <h4 className="text-sm font-semibold text-gray-900 truncate transition-colors duration-200 group-hover:text-blue-600">
                             {person.name}
                           </h4>
                         </Link>
@@ -2076,7 +2106,7 @@ const PostPage = () => {
 
                       {/* Connect Button */}
                       <button
-                        className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 hover:scale-110 transition-all duration-200 group-hover:shadow-md"
+                        className="flex items-center justify-center w-8 h-8 text-blue-600 transition-all duration-200 rounded-full bg-blue-50 hover:bg-blue-100 hover:scale-110 group-hover:shadow-md"
                         onClick={() => handleConnectWithUser(person.id)}
                         disabled={
                           connections.some((conn) => conn.id === person.id) ||
@@ -2097,14 +2127,14 @@ const PostPage = () => {
             </div>
 
             {/* Premium Banner */}
-            <div className="bg-white rounded-lg shadow p-4">
+            <div className="p-4 bg-white rounded-lg shadow">
               <div className="mb-2">
                 <img src="/" alt="Premium" className="w-full rounded" />
               </div>
-              <h3 className="font-bold text-sm text-yellow-500 text-center mb-1">
+              <h3 className="mb-1 text-sm font-bold text-center text-yellow-500">
                 EVOConnect Premium
               </h3>
-              <p className="text-gray-600 text-xs text-center mb-3">
+              <p className="mb-3 text-xs text-center text-gray-600">
                 Grow & nurture your network
               </p>
               <button className="w-full border border-yellow-500 text-yellow-500 py-1.5 rounded-lg font-medium text-xs">
@@ -2113,13 +2143,13 @@ const PostPage = () => {
             </div>
 
             {/* Jobs */}
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="font-medium text-sm">Similar Jobs</h3>
+            <div className="p-4 bg-white rounded-lg shadow">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-medium">Similar Jobs</h3>
                 <button
                   onClick={fetchSimilarJobs}
                   disabled={loadingJobs}
-                  className="text-blue-600 text-xs hover:text-blue-700 transition-colors duration-200 disabled:opacity-50"
+                  className="text-xs text-blue-600 transition-colors duration-200 hover:text-blue-700 disabled:opacity-50"
                 >
                   <RefreshCw
                     className={`w-3 h-3 ${loadingJobs ? "animate-spin" : ""}`}
@@ -2129,24 +2159,24 @@ const PostPage = () => {
 
               {loadingJobs ? (
                 <div className="flex items-center justify-center py-4">
-                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 border-2 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
                 </div>
               ) : similarJobs.length === 0 ? (
-                <div className="text-center py-4">
-                  <p className="text-gray-500 text-xs">No jobs available</p>
+                <div className="py-4 text-center">
+                  <p className="text-xs text-gray-500">No jobs available</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {similarJobs.map((job, index) => (
                     <div
                       key={job.id || index}
-                      className="bg-gray-100 p-3 rounded-lg"
+                      className="p-3 bg-gray-100 rounded-lg"
                     >
                       <div className="flex justify-between mb-1">
-                        <h4 className="font-semibold text-sm truncate">
+                        <h4 className="text-sm font-semibold truncate">
                           {job.title || "Job Title"}
                         </h4>
-                        <div className="bg-white rounded-full p-1 w-8 h-8 flex items-center justify-center flex-shrink-0">
+                        <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 p-1 bg-white rounded-full">
                           {job.company?.logo ? (
                             <img
                               src={
@@ -2155,7 +2185,7 @@ const PostPage = () => {
                                   : `${apiUrl}/${job.company.logo}`
                               }
                               alt="Company Logo"
-                              className="w-full h-full object-cover rounded-full"
+                              className="object-cover w-full h-full rounded-full"
                               onError={(e) => {
                                 e.target.onerror = null;
                                 e.target.src = "";
@@ -2163,7 +2193,7 @@ const PostPage = () => {
                               }}
                             />
                           ) : (
-                            <div className="w-full h-full bg-gray-300 rounded-full flex items-center justify-center">
+                            <div className="flex items-center justify-center w-full h-full bg-gray-300 rounded-full">
                               <span className="text-xs font-bold text-gray-600">
                                 {job.company?.name
                                   ? job.company.name.charAt(0).toUpperCase()
@@ -2173,17 +2203,17 @@ const PostPage = () => {
                           )}
                         </div>
                       </div>
-                      <p className="text-blue-500 text-sm truncate">
+                      <p className="text-sm text-blue-500 truncate">
                         {job.company?.name || "Company Name"}
                       </p>
-                      <div className="flex items-center text-gray-600 text-xs">
+                      <div className="flex items-center text-xs text-gray-600">
                         <MapPin size={12} className="mr-1" />
                         <span className="truncate">
                           {job.location || "Location not specified"}
                         </span>
                       </div>
                       {(job.min_salary || job.max_salary) && (
-                        <div className="mt-1 text-green-600 text-xs font-medium">
+                        <div className="mt-1 text-xs font-medium text-green-600">
                           {job.min_salary && job.max_salary
                             ? `$${job.min_salary} - $${job.max_salary}`
                             : job.min_salary
@@ -2200,34 +2230,34 @@ const PostPage = () => {
         </div>
       </div>
       {showCommentModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           {/* Main Comment Modal */}
           <div
             className="bg-white rounded-lg w-full max-w-md mx-4 max-h-[90vh] flex flex-col shadow-xl"
             style={{ zIndex: showReportModal ? 40 : 50 }}
           >
             {/* Modal Header */}
-            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-800">Comments</h3>
               <button
                 onClick={closeCommentModal}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-gray-500 transition-colors hover:text-gray-700"
               >
                 <X size={20} />
               </button>
             </div>
 
             {/* Comments Content */}
-            <div className="p-4 overflow-y-auto flex-1 space-y-4">
+            <div className="flex-1 p-4 space-y-4 overflow-y-auto">
               {loadingComments[currentPostId] ? (
-                <div className="flex justify-center items-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-8 h-8 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
                 </div>
               ) : !Array.isArray(comments[currentPostId]) ||
                 comments[currentPostId].length === 0 ? (
-                <div className="text-center py-8">
+                <div className="py-8 text-center">
                   <p className="text-gray-500">No comments yet.</p>
-                  <p className="text-gray-400 text-sm mt-1">
+                  <p className="mt-1 text-sm text-gray-400">
                     Be the first to comment!
                   </p>
                 </div>
@@ -2252,7 +2282,7 @@ const PostPage = () => {
                           {commentUser.profile_photo ? (
                             <Link to={`/user-profile/${commentUser.username}`}>
                               <img
-                                className="rounded-full w-10 h-10 object-cover border-2 border-white hover:border-blue-200 transition-colors"
+                                className="object-cover w-10 h-10 transition-colors border-2 border-white rounded-full hover:border-blue-200"
                                 src={
                                   commentUser.profile_photo.startsWith("http")
                                     ? commentUser.profile_photo
@@ -2269,7 +2299,7 @@ const PostPage = () => {
                               />
                             </Link>
                           ) : (
-                            <div className="w-10 h-10 flex items-center justify-center bg-gray-200 rounded-full border-2 border-white">
+                            <div className="flex items-center justify-center w-10 h-10 bg-gray-200 border-2 border-white rounded-full">
                               <span className="text-sm font-medium text-gray-600">
                                 {getInitials(commentUser.name)}
                               </span>
@@ -2279,7 +2309,7 @@ const PostPage = () => {
 
                         {/* Comment Content */}
                         <div className="flex-1 min-w-0">
-                          <div className="bg-gray-50 rounded-lg p-3">
+                          <div className="p-3 rounded-lg bg-gray-50">
                             {/* User Info */}
                             <div className="flex items-center justify-between">
                               <Link
@@ -2290,7 +2320,7 @@ const PostPage = () => {
                               </Link>
 
                               {/* Comment Actions */}
-                              <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="flex items-center space-x-2 transition-opacity opacity-0 group-hover:opacity-100">
                                 {comment.user?.id === user.id && (
                                   <button
                                     className="text-gray-500 hover:text-gray-700"
@@ -2326,10 +2356,10 @@ const PostPage = () => {
 
                             {/* Comment Text */}
                             {editingCommentId === comment.id ? (
-                              <div className="mt-2 flex gap-2">
+                              <div className="flex gap-2 mt-2">
                                 <input
                                   type="text"
-                                  className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                  className="flex-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
                                   value={commentText}
                                   onChange={(e) =>
                                     setCommentText(e.target.value)
@@ -2337,7 +2367,7 @@ const PostPage = () => {
                                   autoFocus
                                 />
                                 <button
-                                  className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-colors"
+                                  className="px-3 py-1 text-sm text-white transition-colors bg-blue-500 rounded-lg hover:bg-blue-600"
                                   onClick={() =>
                                     handleUpdateComment(comment.id)
                                   }
@@ -2345,7 +2375,7 @@ const PostPage = () => {
                                   Update
                                 </button>
                                 <button
-                                  className="bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm hover:bg-gray-300 transition-colors"
+                                  className="px-3 py-1 text-sm text-gray-700 transition-colors bg-gray-200 rounded-lg hover:bg-gray-300"
                                   onClick={() => {
                                     setEditingCommentId(null);
                                     setCommentText("");
@@ -2355,21 +2385,21 @@ const PostPage = () => {
                                 </button>
                               </div>
                             ) : (
-                              <p className="text-sm text-gray-700 mt-1">
+                              <p className="mt-1 text-sm text-gray-700">
                                 {comment.content}
                               </p>
                             )}
                           </div>
 
                           {/* Comment Meta */}
-                          <div className="flex items-center justify-between mt-2 px-1">
+                          <div className="flex items-center justify-between px-1 mt-2">
                             <span className="text-xs text-gray-500">
                               {formatPostTime(comment.created_at)}
                             </span>
 
                             <div className="flex items-center space-x-4">
                               <button
-                                className="text-xs text-blue-500 hover:text-blue-700 font-medium"
+                                className="text-xs font-medium text-blue-500 hover:text-blue-700"
                                 onClick={() => {
                                   setReplyingTo(comment.id);
                                   setReplyToUser(comment.user);
@@ -2394,10 +2424,10 @@ const PostPage = () => {
 
                           {/* Reply Input */}
                           {replyingTo === comment.id && (
-                            <div className="mt-3 flex gap-2">
+                            <div className="flex gap-2 mt-3">
                               <input
                                 type="text"
-                                className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                className="flex-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
                                 placeholder={`Reply to ${
                                   replyToUser?.name || comment.user.name
                                 }...`}
@@ -2406,7 +2436,7 @@ const PostPage = () => {
                                 autoFocus
                               />
                               <button
-                                className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-colors"
+                                className="px-3 py-1 text-sm text-white transition-colors bg-blue-500 rounded-lg hover:bg-blue-600"
                                 onClick={() =>
                                   handleReply(
                                     comment.id,
@@ -2421,10 +2451,10 @@ const PostPage = () => {
 
                           {/* Replies Section */}
                           {expandedReplies[comment.id] && (
-                            <div className="mt-3 ml-4 pl-4 border-l-2 border-gray-200 space-y-3">
+                            <div className="pl-4 mt-3 ml-4 space-y-3 border-l-2 border-gray-200">
                               {loadingComments[comment.id] ? (
                                 <div className="flex justify-center py-2">
-                                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500"></div>
+                                  <div className="w-5 h-5 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
                                 </div>
                               ) : (
                                 (allReplies[comment.id] || []).map((reply) => (
@@ -2437,7 +2467,7 @@ const PostPage = () => {
                                             to={`/user-profile/${reply.user.username}`}
                                           >
                                             <img
-                                              className="rounded-full w-8 h-8 object-cover border-2 border-white hover:border-blue-200 transition-colors"
+                                              className="object-cover w-8 h-8 transition-colors border-2 border-white rounded-full hover:border-blue-200"
                                               src={
                                                 reply.user.profile_photo.startsWith(
                                                   "http"
@@ -2456,7 +2486,7 @@ const PostPage = () => {
                                             />
                                           </Link>
                                         ) : (
-                                          <div className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-full border-2 border-white">
+                                          <div className="flex items-center justify-center w-8 h-8 bg-gray-200 border-2 border-white rounded-full">
                                             <span className="text-xs font-medium text-gray-600">
                                               {getInitials(reply.user?.name)}
                                             </span>
@@ -2466,7 +2496,7 @@ const PostPage = () => {
 
                                       {/* Reply Content */}
                                       <div className="flex-1 min-w-0">
-                                        <div className="bg-gray-50 rounded-lg p-2">
+                                        <div className="p-2 rounded-lg bg-gray-50">
                                           {/* Reply User Info */}
                                           <div className="flex items-center justify-between">
                                             <div className="flex items-center">
@@ -2481,7 +2511,7 @@ const PostPage = () => {
                                                 reply.parent_id !==
                                                   reply.reply_to
                                                     .reply_to_id && (
-                                                  <span className="text-xs text-gray-500 ml-1 flex items-center">
+                                                  <span className="flex items-center ml-1 text-xs text-gray-500">
                                                     <svg
                                                       xmlns="http://www.w3.org/2000/svg"
                                                       width="10"
@@ -2503,7 +2533,7 @@ const PostPage = () => {
                                             </div>
 
                                             {/* Reply Actions */}
-                                            <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="flex items-center space-x-2 transition-opacity opacity-0 group-hover:opacity-100">
                                               {reply.user?.id === user.id && (
                                                 <button
                                                   className="text-gray-500 hover:text-gray-700"
@@ -2539,10 +2569,10 @@ const PostPage = () => {
 
                                           {/* Reply Text */}
                                           {editingReplyId === reply.id ? (
-                                            <div className="mt-1 flex gap-2">
+                                            <div className="flex gap-2 mt-1">
                                               <input
                                                 type="text"
-                                                className="flex-1 border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                className="flex-1 px-2 py-1 text-xs border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
                                                 value={replyText}
                                                 onChange={(e) =>
                                                   setReplyText(e.target.value)
@@ -2550,7 +2580,7 @@ const PostPage = () => {
                                                 autoFocus
                                               />
                                               <button
-                                                className="bg-blue-500 text-white px-2 py-1 rounded-lg text-xs hover:bg-blue-600 transition-colors"
+                                                className="px-2 py-1 text-xs text-white transition-colors bg-blue-500 rounded-lg hover:bg-blue-600"
                                                 onClick={() =>
                                                   handleUpdateReply(reply.id)
                                                 }
@@ -2558,7 +2588,7 @@ const PostPage = () => {
                                                 Update
                                               </button>
                                               <button
-                                                className="bg-gray-200 text-gray-700 px-2 py-1 rounded-lg text-xs hover:bg-gray-300 transition-colors"
+                                                className="px-2 py-1 text-xs text-gray-700 transition-colors bg-gray-200 rounded-lg hover:bg-gray-300"
                                                 onClick={() => {
                                                   setEditingReplyId(null);
                                                   setReplyText("");
@@ -2568,14 +2598,14 @@ const PostPage = () => {
                                               </button>
                                             </div>
                                           ) : (
-                                            <p className="text-xs text-gray-700 mt-1">
+                                            <p className="mt-1 text-xs text-gray-700">
                                               {reply.content}
                                             </p>
                                           )}
                                         </div>
 
                                         {/* Reply Meta */}
-                                        <div className="flex items-center justify-between mt-1 px-1">
+                                        <div className="flex items-center justify-between px-1 mt-1">
                                           <span className="text-xs text-gray-500">
                                             {formatPostTime(reply.created_at)}
                                           </span>
@@ -2593,10 +2623,10 @@ const PostPage = () => {
                                           </div>
                                         </div>
                                         {replyingTo === reply.id && (
-                                          <div className="mt-3 flex gap-2">
+                                          <div className="flex gap-2 mt-3">
                                             <input
                                               type="text"
-                                              className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                              className="flex-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
                                               placeholder={`Reply to ${
                                                 replyToUser?.name ||
                                                 reply.user.name
@@ -2608,7 +2638,7 @@ const PostPage = () => {
                                               autoFocus
                                             />
                                             <button
-                                              className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-colors"
+                                              className="px-3 py-1 text-sm text-white transition-colors bg-blue-500 rounded-lg hover:bg-blue-600"
                                               onClick={() =>
                                                 handleReply(
                                                   reply.id,
@@ -2641,7 +2671,7 @@ const PostPage = () => {
                 <div className="flex-shrink-0">
                   {user.photo ? (
                     <img
-                      className="w-8 h-8 rounded-full object-cover"
+                      className="object-cover w-8 h-8 rounded-full"
                       src={
                         user.photo.startsWith("http")
                           ? user.photo
@@ -2655,7 +2685,7 @@ const PostPage = () => {
                       }}
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
+                    <div className="flex items-center justify-center w-8 h-8 bg-gray-300 rounded-full">
                       <span className="text-xs font-bold text-gray-600">
                         {getInitials(user.name)}
                       </span>
@@ -2666,19 +2696,19 @@ const PostPage = () => {
                 <div className="flex-1">
                   <input
                     type="text"
-                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
                     placeholder="Write a comment..."
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
                     onKeyPress={(e) => e.key === "Enter" && handleAddComment()}
                   />
                   {commentError && (
-                    <p className="text-red-500 text-xs mt-1">{commentError}</p>
+                    <p className="mt-1 text-xs text-red-500">{commentError}</p>
                   )}
                 </div>
 
                 <button
-                  className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors"
+                  className="px-4 py-2 text-sm text-white transition-colors bg-blue-500 rounded-lg hover:bg-blue-600"
                   onClick={handleAddComment}
                 >
                   Post
@@ -2690,15 +2720,15 @@ const PostPage = () => {
       )}
 
       {showCommentOptions && selectedComment && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-xs mx-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-xs mx-4 bg-white rounded-lg">
             <div className="p-4">
-              <h3 className="font-medium text-lg mb-3">Comment Options</h3>
+              <h3 className="mb-3 text-lg font-medium">Comment Options</h3>
 
               {selectedComment.user?.id === user.id ? (
                 <>
                   <button
-                    className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
+                    className="flex items-center w-full px-3 py-2 text-left rounded-md hover:bg-gray-100"
                     onClick={() => {
                       setEditingCommentId(selectedComment.id);
                       setCommentText(selectedComment.content);
@@ -2709,7 +2739,7 @@ const PostPage = () => {
                     Edit Comment
                   </button>
                   <button
-                    className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
+                    className="flex items-center w-full px-3 py-2 text-left text-red-500 rounded-md hover:bg-gray-100"
                     onClick={() => handleDeleteComment(selectedComment.id)}
                   >
                     <X size={16} className="mr-2" />
@@ -2718,7 +2748,7 @@ const PostPage = () => {
                 </>
               ) : (
                 <button
-                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
+                  className="flex items-center w-full px-3 py-2 text-left text-red-500 rounded-md hover:bg-gray-100"
                   onClick={() => {
                     if (selectedComment.user?.id) {
                       // Handle report comment
@@ -2728,7 +2758,7 @@ const PostPage = () => {
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 mr-2"
+                    className="w-4 h-4 mr-2"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -2745,7 +2775,7 @@ const PostPage = () => {
               )}
             </div>
 
-            <div className="border-t p-3">
+            <div className="p-3 border-t">
               <button
                 className="w-full py-2 text-gray-500 hover:text-gray-700"
                 onClick={() => setShowCommentOptions(false)}
@@ -2758,15 +2788,15 @@ const PostPage = () => {
       )}
 
       {showReplyOptions && selectedReply && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-xs mx-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-xs mx-4 bg-white rounded-lg">
             <div className="p-4">
-              <h3 className="font-medium text-lg mb-3">Reply Options</h3>
+              <h3 className="mb-3 text-lg font-medium">Reply Options</h3>
 
               {selectedReply.user?.id === user.id ? (
                 <>
                   <button
-                    className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
+                    className="flex items-center w-full px-3 py-2 text-left rounded-md hover:bg-gray-100"
                     onClick={() => {
                       setEditingReplyId(selectedReply.id);
                       setReplyText(selectedReply.content);
@@ -2777,7 +2807,7 @@ const PostPage = () => {
                     Edit Reply
                   </button>
                   <button
-                    className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
+                    className="flex items-center w-full px-3 py-2 text-left text-red-500 rounded-md hover:bg-gray-100"
                     onClick={() => handleDeleteReply(selectedReply.id)}
                   >
                     <X size={16} className="mr-2" />
@@ -2786,7 +2816,7 @@ const PostPage = () => {
                 </>
               ) : (
                 <button
-                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
+                  className="flex items-center w-full px-3 py-2 text-left text-red-500 rounded-md hover:bg-gray-100"
                   onClick={() => {
                     if (selectedReply.user?.id) {
                       // Handle report reply
@@ -2800,7 +2830,7 @@ const PostPage = () => {
               )}
             </div>
 
-            <div className="border-t p-3">
+            <div className="p-3 border-t">
               <button
                 className="w-full py-2 text-gray-500 hover:text-gray-700"
                 onClick={() => setShowReplyOptions(false)}
@@ -2813,9 +2843,9 @@ const PostPage = () => {
       )}
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-md p-6 bg-white rounded-lg">
+            <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium">Share this post</h3>
               <button
                 onClick={handleCloseShareModal}
@@ -2826,13 +2856,13 @@ const PostPage = () => {
             </div>
 
             <div className="mb-6">
-              <p className="text-sm text-gray-500 mb-2">Copy link</p>
-              <div className="flex items-center border rounded-lg p-2">
+              <p className="mb-2 text-sm text-gray-500">Copy link</p>
+              <div className="flex items-center p-2 border rounded-lg">
                 <input
                   type="text"
                   value={`${clientUrl}/post/${sharePostId}`}
                   readOnly
-                  className="flex-grow text-sm text-gray-700 mr-2 outline-none"
+                  className="flex-grow mr-2 text-sm text-gray-700 outline-none"
                 />
                 <button
                   onClick={copyToClipboard}
@@ -2842,20 +2872,20 @@ const PostPage = () => {
                 </button>
               </div>
               {copied && (
-                <p className="text-xs text-green-600 mt-1">
+                <p className="mt-1 text-xs text-green-600">
                   Link copied to clipboard!
                 </p>
               )}
             </div>
 
             <div>
-              <p className="text-sm text-gray-500 mb-3">Share to</p>
+              <p className="mb-3 text-sm text-gray-500">Share to</p>
               <div className="flex justify-around">
                 <button
                   onClick={shareToWhatsApp}
                   className="flex flex-col items-center"
                 >
-                  <div className="bg-green-100 p-3 rounded-full mb-1">
+                  <div className="p-3 mb-1 bg-green-100 rounded-full">
                     <MessageCircle size={24} className="text-green-600" />
                   </div>
                   <span className="text-xs">WhatsApp</span>
@@ -2867,7 +2897,7 @@ const PostPage = () => {
                   }
                   className="flex flex-col items-center"
                 >
-                  <div className="bg-pink-100 p-3 rounded-full mb-1">
+                  <div className="p-3 mb-1 bg-pink-100 rounded-full">
                     <Instagram size={24} className="text-pink-600" />
                   </div>
                   <span className="text-xs">Instagram</span>
@@ -2877,7 +2907,7 @@ const PostPage = () => {
                   onClick={shareToTwitter}
                   className="flex flex-col items-center"
                 >
-                  <div className="bg-blue-100 p-3 rounded-full mb-1">
+                  <div className="p-3 mb-1 bg-blue-100 rounded-full">
                     <Twitter size={24} className="text-blue-600" />
                   </div>
                   <span className="text-xs">Twitter</span>
@@ -2890,16 +2920,16 @@ const PostPage = () => {
 
       {/* Modal Opsi Post */}
       {isPostOptionsOpen && selectedPost && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-xs mx-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-xs mx-4 bg-white rounded-lg">
             <div className="p-4">
-              <h3 className="font-medium text-lg mb-3">Post Options</h3>
+              <h3 className="mb-3 text-lg font-medium">Post Options</h3>
 
               {/* Options for user's own post */}
               {selectedPost.user_id === user.id ? (
                 <>
                   <button
-                    className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
+                    className="flex items-center w-full px-3 py-2 text-left rounded-md hover:bg-gray-100"
                     onClick={() => {
                       handleEditPost(selectedPost);
                       handleClosePostOptions();
@@ -2909,7 +2939,7 @@ const PostPage = () => {
                     Edit Post
                   </button>
                   <button
-                    className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
+                    className="flex items-center w-full px-3 py-2 text-left text-red-500 rounded-md hover:bg-gray-100"
                     onClick={() => {
                       handleDeletePost(selectedPost.id);
                       handleClosePostOptions();
@@ -2923,7 +2953,7 @@ const PostPage = () => {
                 <>
                   {/* Options for other user's post */}
                   <button
-                    className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
+                    className="flex items-center w-full px-3 py-2 text-left rounded-md hover:bg-gray-100"
                     onClick={() => {
                       // handleReportPost(selectedPost.id);
                       handleClosePostOptions();
@@ -2931,7 +2961,7 @@ const PostPage = () => {
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 mr-2"
+                      className="w-4 h-4 mr-2"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -2949,7 +2979,7 @@ const PostPage = () => {
                     (conn) => conn.id === selectedPost.user_id
                   ) && (
                     <button
-                      className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-blue-500"
+                      className="flex items-center w-full px-3 py-2 text-left text-blue-500 rounded-md hover:bg-gray-100"
                       onClick={() => {
                         handleConnectWithUser(selectedPost.user_id);
                         handleClosePostOptions();
@@ -2962,7 +2992,7 @@ const PostPage = () => {
                 </>
               )}
             </div>
-            <div className="border-t p-3">
+            <div className="p-3 border-t">
               <button
                 className="w-full py-2 text-gray-500 hover:text-gray-700"
                 onClick={handleClosePostOptions}
@@ -2975,12 +3005,12 @@ const PostPage = () => {
       )}
 
       {showEditModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-2xl p-6">
-            <h3 className="text-lg font-medium mb-4">Edit Post</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl p-6 bg-white rounded-lg">
+            <h3 className="mb-4 text-lg font-medium">Edit Post</h3>
 
             {/* Tabs for edit modal */}
-            <div className="flex border-b pb-2 space-x-1 mb-4">
+            <div className="flex pb-2 mb-4 space-x-1 border-b">
               <button
                 className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${
                   editActiveTab === "update"
@@ -3008,13 +3038,13 @@ const PostPage = () => {
             {/* Editor content based on active tab */}
             {editActiveTab === "update" ? (
               <textarea
-                className="w-full border rounded-lg p-2 mb-4"
+                className="w-full p-2 mb-4 border rounded-lg"
                 rows="4"
                 value={editPostContent.replace(/<[^>]+>/g, "")}
                 onChange={(e) => setEditPostContent(e.target.value)}
               />
             ) : (
-              <div className="border rounded-md overflow-hidden text-black ck-editor-mode mb-4">
+              <div className="mb-4 overflow-hidden text-black border rounded-md ck-editor-mode">
                 <CKEditor
                   editor={ClassicEditor}
                   data={editArticleContent}
@@ -3069,7 +3099,7 @@ const PostPage = () => {
             {/* Existing Images */}
             {editPostImages.length > 0 && (
               <div className="mb-4">
-                <h4 className="text-sm font-medium mb-2">Current Images</h4>
+                <h4 className="mb-2 text-sm font-medium">Current Images</h4>
                 <div className="grid grid-cols-3 gap-2">
                   {editPostImages.map((img, index) => (
                     <div key={`existing-${index}`} className="relative">
@@ -3081,7 +3111,7 @@ const PostPage = () => {
                               : `${apiUrl}/${img}`
                             : img.preview
                         }
-                        className="w-full h-24 object-cover rounded-md border"
+                        className="object-cover w-full h-24 border rounded-md"
                         alt={`Current image ${index + 1}`}
                         onError={(e) => {
                           e.target.onerror = null;
@@ -3089,7 +3119,7 @@ const PostPage = () => {
                         }}
                       />
                       <button
-                        className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1"
+                        className="absolute p-1 text-white rounded-full top-1 right-1 bg-black/50"
                         onClick={() => handleRemoveExistingImage(index)}
                       >
                         <X size={12} />
@@ -3103,13 +3133,13 @@ const PostPage = () => {
             {/* New Images */}
             {newEditImages.length > 0 && (
               <div className="mb-4">
-                <h4 className="text-sm font-medium mb-2">New Images</h4>
+                <h4 className="mb-2 text-sm font-medium">New Images</h4>
                 <div className="grid grid-cols-3 gap-2">
                   {newEditImages.map((img, index) => (
                     <div key={`new-${index}`} className="relative">
                       <img
                         src={img.preview}
-                        className="w-full h-24 object-cover rounded-md border"
+                        className="object-cover w-full h-24 border rounded-md"
                         alt={`New image ${index + 1}`}
                         onError={(e) => {
                           e.target.onerror = null;
@@ -3117,7 +3147,7 @@ const PostPage = () => {
                         }}
                       />
                       <button
-                        className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1"
+                        className="absolute p-1 text-white rounded-full top-1 right-1 bg-black/50"
                         onClick={() => handleRemoveNewImage(index)}
                       >
                         <X size={12} />
@@ -3140,7 +3170,7 @@ const PostPage = () => {
               />
               <label
                 htmlFor="edit-post-images"
-                className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
+                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm cursor-pointer hover:bg-gray-50"
               >
                 <ImageIcon size={14} className="mr-2" />
                 Add Images
@@ -3149,7 +3179,7 @@ const PostPage = () => {
 
             {/* Visibility Options */}
             <div className="mb-4">
-              <h4 className="text-sm font-medium mb-2">Visibility</h4>
+              <h4 className="mb-2 text-sm font-medium">Visibility</h4>
               <div className="flex space-x-2">
                 {[
                   ["public", <Globe size={14} />, "Public"],
@@ -3181,13 +3211,13 @@ const PostPage = () => {
                 Cancel
               </button>
               <button
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg flex items-center"
+                className="flex items-center px-4 py-2 text-white bg-blue-500 rounded-lg"
                 onClick={handleUpdatePost}
                 disabled={isLoading}
               >
                 {isLoading ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    <div className="w-4 h-4 mr-2 border-2 border-white rounded-full border-t-transparent animate-spin" />
                     Saving...
                   </>
                 ) : (
@@ -3196,6 +3226,81 @@ const PostPage = () => {
               </button>
             </div>
           </div>
+
+          {showImageModal && selectedPostForImage && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
+              <div className="relative w-full max-w-4xl mx-4">
+                <button
+                  className="absolute z-10 p-1 text-white bg-black bg-opacity-50 rounded-full top-2 md:top-4 right-2 md:right-4 md:p-2"
+                  onClick={closeImageModal}
+                >
+                  <X size={20} />
+                </button>
+                <div className="relative">
+                  <img
+                    src={selectedPostForImage.images[selectedImageIndex]}
+                    className="w-full max-h-[80vh] object-contain"
+                    alt={`Post ${selectedImageIndex + 1}`}
+                  />
+                  {selectedPostForImage.images.length > 1 && (
+                    <>
+                      <button
+                        className="absolute p-1 text-white transform -translate-y-1/2 bg-black bg-opacity-50 rounded-full left-2 md:left-4 top-1/2 md:p-2"
+                        onClick={() => navigateImage("prev")}
+                      >
+                        <svg
+                          className="w-4 h-4 md:w-6 md:h-6"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M15 19l-7-7 7-7"
+                          ></path>
+                        </svg>
+                      </button>
+                      <button
+                        className="absolute p-1 text-white transform -translate-y-1/2 bg-black bg-opacity-50 rounded-full right-2 md:right-4 top-1/2 md:p-2"
+                        onClick={() => navigateImage("next")}
+                      >
+                        <svg
+                          className="w-4 h-4 md:w-6 md:h-6"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M9 5l7 7-7 7"
+                          ></path>
+                        </svg>
+                      </button>
+                    </>
+                  )}
+                </div>
+                <div className="absolute left-0 right-0 flex justify-center bottom-2 md:bottom-4">
+                  <div className="flex space-x-1 md:space-x-2">
+                    {selectedPostForImage.images.map((_, index) => (
+                      <button
+                        key={index}
+                        className={`w-2 h-2 md:w-3 md:h-3 rounded-full ${
+                          selectedImageIndex === index
+                            ? "bg-white"
+                            : "bg-gray-500"
+                        }`}
+                        onClick={() => setSelectedImageIndex(index)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -10,10 +10,22 @@ const ReportModal = ({
   if (!show) return null;
 
   const reasons = [
-    "Harassment", "Fraud", "Spam", "Missinformation", "Hate Speech",
-    "Threats or violence", "self-harm", "Graphic or violent content",
-    "Dangerous or extremist organizations", "Sexual Content", "Fake Account",
-    "Child Exploitation", "Illegal products and services", "Infringement", "Other"
+    "Harassment",
+           "Harassment",
+    "Fraud",
+    "Spam",
+    "Missinformation",
+    "Hate Speech",
+    "Threats or violence",
+    "self-harm",
+    "Graphic or violent content",
+    "Dangerous or extremist organizations",
+    "Sexual Content",
+    "Fake Account",
+    "Child Exploitation",
+    "Illegal products and services",
+    "Infringement",
+    "Other",
   ];
 
   return (

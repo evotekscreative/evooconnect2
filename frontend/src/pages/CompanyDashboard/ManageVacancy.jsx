@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import Sidebar from "../../components/CompanyDashboard/Sidebar/Sidebar";
 import AdminNavbar from "../../components/Admin/Navbars/AdminNavbar.jsx";
-import HeaderStats from "../../components/Admin/Headers/HeaderStats.jsx";
+import HeaderStats from "../../components/CompanyDashboard/Navbar/HeaderStats.jsx";
 import Alert from "../../components/Auth/alert.jsx";
 import axios from "axios";
 
@@ -78,7 +78,7 @@ export default function ManageVacancy() {
     try {
       const userToken = localStorage.getItem("token");
       const response = await axios.get(
-        `${apiUrl}/api/companies/${company_id}/jobs?limit=10&offset=0&status=active`,
+        `${apiUrl}/api/companies/${company_id}/jobs?limit=10&offset=0`,
         {
           headers: { Authorization: `Bearer ${userToken}` },
         }
@@ -412,31 +412,31 @@ export default function ManageVacancy() {
 
   const DeleteConfirmationModal = ({ onConfirm, onCancel }) => {
     return (
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-white shadow-xl w-full max-w-md">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="w-full max-w-md bg-white shadow-xl">
           <div className="p-6">
             <div className="flex items-center justify-center mb-4">
-              <div className="bg-red-100 p-3 rounded-full">
+              <div className="p-3 bg-red-100 rounded-full">
                 <AlertTriangle className="text-red-600" size={24} />
               </div>
             </div>
-            <h3 className="text-xl font-bold text-center mb-2">
+            <h3 className="mb-2 text-xl font-bold text-center">
               Delete Job Vacancy
             </h3>
-            <p className="text-gray-600 text-center mb-6">
+            <p className="mb-6 text-center text-gray-600">
               Are you sure you want to delete this job vacancy? This action
               cannot be undone.
             </p>
             <div className="flex justify-center gap-4">
               <button
                 onClick={onCancel}
-                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                className="px-6 py-2 text-gray-700 transition border border-gray-300 rounded-lg hover:bg-gray-50"
               >
                 Cancel
               </button>
               <button
                 onClick={onConfirm}
-                className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                className="px-6 py-2 text-white transition bg-red-600 rounded-lg hover:bg-red-700"
               >
                 Delete
               </button>
@@ -461,13 +461,13 @@ export default function ManageVacancy() {
     };
 
     return (
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden">
           <div className="relative p-6 border-b">
             <h3 className="text-2xl font-bold">Job Details</h3>
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 text-gray-500 hover:text-black rounded-full p-2"
+              className="absolute p-2 text-gray-500 rounded-full top-4 right-4 hover:text-black"
             >
               <X size={20} />
             </button>
@@ -475,8 +475,8 @@ export default function ManageVacancy() {
 
           <div className="overflow-y-auto max-h-[calc(90vh-200px)]">
             <div className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="rounded-xl p-4 border">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="p-4 border rounded-xl">
                   <div className="flex items-center mb-2">
                     <Briefcase size={18} className="mr-2" />
                     <h4 className="font-semibold">Job Title</h4>
@@ -484,7 +484,7 @@ export default function ManageVacancy() {
                   <p className="font-medium">{job.title}</p>
                 </div>
 
-                <div className="rounded-xl p-4 border">
+                <div className="p-4 border rounded-xl">
                   <div className="flex items-center mb-2">
                     <MapPin size={18} className="mr-2" />
                     <h4 className="font-semibold">Location</h4>
@@ -493,10 +493,10 @@ export default function ManageVacancy() {
                 </div>
               </div>
 
-              <div className="border rounded-xl p-4">
+              <div className="p-4 border rounded-xl">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="text-sm font-semibold mb-1">Salary Range</h4>
+                    <h4 className="mb-1 text-sm font-semibold">Salary Range</h4>
                     <p className="text-2xl font-bold">
                       {formatSalary(
                         job.min_salary,
@@ -505,14 +505,14 @@ export default function ManageVacancy() {
                       )}
                     </p>
                   </div>
-                  <div className="rounded-full p-3 border">
+                  <div className="p-3 border rounded-full">
                     <DollarSign size={24} />
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="rounded-xl p-4 border">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="p-4 border rounded-xl">
                   <div className="flex items-center mb-2">
                     <Briefcase size={18} className="mr-2" />
                     <h4 className="font-semibold">Experience Level</h4>
@@ -520,7 +520,7 @@ export default function ManageVacancy() {
                   <p className="font-medium">{job.experience_level}</p>
                 </div>
 
-                <div className="rounded-xl p-4 border">
+                <div className="p-4 border rounded-xl">
                   <div className="flex items-center mb-2">
                     <Clock size={18} className="mr-2" />
                     <h4 className="font-semibold">Job Type</h4>
@@ -529,8 +529,8 @@ export default function ManageVacancy() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="rounded-xl p-4 border">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="p-4 border rounded-xl">
                   <div className="flex items-center mb-2">
                     <Home size={18} className="mr-2" />
                     <h4 className="font-semibold">Work Type</h4>
@@ -540,7 +540,7 @@ export default function ManageVacancy() {
                   </p>
                 </div>
 
-                <div className="rounded-xl p-4 border">
+                <div className="p-4 border rounded-xl">
                   <div className="flex items-center mb-2">
                     <Calendar size={18} className="mr-2" />
                     <h4 className="font-semibold">Application Deadline</h4>
@@ -551,8 +551,8 @@ export default function ManageVacancy() {
                 </div>
               </div>
 
-              <div className="border rounded-xl p-5">
-                <h4 className="text-lg font-semibold mb-3 flex items-center">
+              <div className="p-5 border rounded-xl">
+                <h4 className="flex items-center mb-3 text-lg font-semibold">
                   <FileText size={20} className="mr-2" />
                   Job Description
                 </h4>
@@ -561,8 +561,8 @@ export default function ManageVacancy() {
                 </p>
               </div>
 
-              <div className="border rounded-xl p-5">
-                <h4 className="text-lg font-semibold mb-3 flex items-center">
+              <div className="p-5 border rounded-xl">
+                <h4 className="flex items-center mb-3 text-lg font-semibold">
                   <CheckSquare size={20} className="mr-2" />
                   Requirements
                 </h4>
@@ -572,8 +572,8 @@ export default function ManageVacancy() {
               </div>
 
               {job.skills && job.skills.length > 0 && (
-                <div className="border rounded-xl p-5">
-                  <h4 className="text-lg font-semibold mb-3 flex items-center">
+                <div className="p-5 border rounded-xl">
+                  <h4 className="flex items-center mb-3 text-lg font-semibold">
                     <Code size={20} className="mr-2" />
                     Skills
                   </h4>
@@ -581,7 +581,7 @@ export default function ManageVacancy() {
                     {job.skills.map((skill, index) => (
                       <span
                         key={index}
-                        className="border px-3 py-1 rounded-full text-sm font-medium"
+                        className="px-3 py-1 text-sm font-medium border rounded-full"
                       >
                         {skill}
                       </span>
@@ -591,8 +591,8 @@ export default function ManageVacancy() {
               )}
 
               {job.benefits && (
-                <div className="border rounded-xl p-5">
-                  <h4 className="text-lg font-semibold mb-3 flex items-center">
+                <div className="p-5 border rounded-xl">
+                  <h4 className="flex items-center mb-3 text-lg font-semibold">
                     <Gift size={20} className="mr-2" />
                     Benefits
                   </h4>
@@ -612,9 +612,9 @@ export default function ManageVacancy() {
     if (!showModal) return null;
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
         <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-          <div className="flex justify-between items-center p-4 border-b">
+          <div className="flex items-center justify-between p-4 border-b">
             <h3 className="text-lg font-semibold">Post New Job</h3>
             <button
               onClick={() => setShowModal(false)}
@@ -625,7 +625,7 @@ export default function ManageVacancy() {
           </div>
 
           <form onSubmit={handleSubmit} className="p-6">
-            <div className="mb-6 bg-gray-50 p-4 rounded-lg">
+            <div className="p-4 mb-6 rounded-lg bg-gray-50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <span
@@ -664,7 +664,7 @@ export default function ManageVacancy() {
 
               {applyMethod === "external" && (
                 <div className="mt-4">
-                  <label className="text-gray-700 text-sm font-bold mb-2 flex items-center">
+                  <label className="flex items-center mb-2 text-sm font-bold text-gray-700">
                     <ExternalLink className="mr-2" size={16} />
                     Application URL
                   </label>
@@ -677,7 +677,7 @@ export default function ManageVacancy() {
                     placeholder="https://example.com/apply"
                     required={applyMethod === "external"}
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="mt-1 text-xs text-gray-500">
                     Candidates will be directed to this URL to apply
                   </p>
                 </div>
@@ -700,9 +700,9 @@ export default function ManageVacancy() {
             </div>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                  <label className="block mb-2 text-sm font-bold text-gray-700">
                     Job Title*
                   </label>
                   <input
@@ -716,7 +716,7 @@ export default function ManageVacancy() {
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                  <label className="block mb-2 text-sm font-bold text-gray-700">
                     Location*
                   </label>
                   <input
@@ -731,7 +731,7 @@ export default function ManageVacancy() {
               </div>
 
               <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2">
+                <label className="block mb-2 text-sm font-bold text-gray-700">
                   Job Description*
                 </label>
                 <textarea
@@ -745,7 +745,7 @@ export default function ManageVacancy() {
               </div>
 
               <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2">
+                <label className="block mb-2 text-sm font-bold text-gray-700">
                   Requirements*
                 </label>
                 <textarea
@@ -758,9 +758,9 @@ export default function ManageVacancy() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                  <label className="block mb-2 text-sm font-bold text-gray-700">
                     Job Type*
                   </label>
                   <select
@@ -780,7 +780,7 @@ export default function ManageVacancy() {
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                  <label className="block mb-2 text-sm font-bold text-gray-700">
                     Experience Level*
                   </label>
                   <select
@@ -800,13 +800,13 @@ export default function ManageVacancy() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div>
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                  <label className="block mb-2 text-sm font-bold text-gray-700">
                     Min Salary
                   </label>
                   <div className="flex">
-                    <span className="inline-flex items-center px-3 py-2 border border-r-0 rounded-l-lg bg-gray-50 text-gray-500">
+                    <span className="inline-flex items-center px-3 py-2 text-gray-500 border border-r-0 rounded-l-lg bg-gray-50">
                       {formData.currency}
                     </span>
                     <input
@@ -824,11 +824,11 @@ export default function ManageVacancy() {
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                  <label className="block mb-2 text-sm font-bold text-gray-700">
                     Max Salary
                   </label>
                   <div className="flex">
-                    <span className="inline-flex items-center px-3 py-2 border border-r-0 rounded-l-lg bg-gray-50 text-gray-500">
+                    <span className="inline-flex items-center px-3 py-2 text-gray-500 border border-r-0 rounded-l-lg bg-gray-50">
                       {formData.currency}
                     </span>
                     <input
@@ -846,7 +846,7 @@ export default function ManageVacancy() {
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                  <label className="block mb-2 text-sm font-bold text-gray-700">
                     Currency
                   </label>
                   <select
@@ -864,7 +864,7 @@ export default function ManageVacancy() {
               </div>
 
               <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2">
+                <label className="block mb-2 text-sm font-bold text-gray-700">
                   Skills (comma separated)
                 </label>
                 <input
@@ -878,7 +878,7 @@ export default function ManageVacancy() {
               </div>
 
               <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2">
+                <label className="block mb-2 text-sm font-bold text-gray-700">
                   Benefits
                 </label>
                 <textarea
@@ -891,9 +891,9 @@ export default function ManageVacancy() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                  <label className="block mb-2 text-sm font-bold text-gray-700">
                     Work Type
                   </label>
                   <select
@@ -910,7 +910,7 @@ export default function ManageVacancy() {
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                  <label className="block mb-2 text-sm font-bold text-gray-700">
                     Application Deadline
                   </label>
                   <input
@@ -928,14 +928,14 @@ export default function ManageVacancy() {
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition"
+                className="px-4 py-2 text-gray-700 transition border border-gray-300 rounded-lg hover:bg-gray-100"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                className="px-6 py-2 font-medium text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
               >
                 {loading ? "Posting..." : "Post Job"}
               </button>
@@ -968,7 +968,7 @@ export default function ManageVacancy() {
         <HeaderStats />
         <Sidebar />
         {alert.show && (
-          <div className="fixed top-4 right-4 z-50 w-full max-w-sm">
+          <div className="fixed z-50 w-full max-w-sm top-4 right-4">
             <Alert
               type={alert.type}
               message={alert.message}
@@ -976,9 +976,9 @@ export default function ManageVacancy() {
             />
           </div>
         )}
-        <div className="px-4 md:px-10 mx-auto w-full pt-20 -m-44">
+        <div className="w-full px-4 pt-20 mx-auto -m-32 md:px-10">
           <div className="flex flex-wrap mt-4">
-            <div className="w-full mb-12 px-4">
+            <div className="w-full px-4 mb-12">
               <div
                 className={`relative flex flex-col w-full mb-6 shadow-lg rounded`}
               >
@@ -992,16 +992,16 @@ export default function ManageVacancy() {
                   />
                 )}
 
-                <div className="rounded-t mb-0 px-4 py-3 border-b border-sky-700 bg-sky-800">
+                <div className="px-4 py-3 mb-0 border-b rounded-t border-sky-700 bg-sky-800">
                   <div className="flex flex-wrap items-center">
-                    <div className="w-full px-4 max-w-full flex-grow flex-1">
-                      <h3 className="font-semibold text-lg text-white">
+                    <div className="flex-1 flex-grow w-full max-w-full px-4">
+                      <h3 className="text-lg font-semibold text-white">
                         Job Vacancies
                       </h3>
                     </div>
                     <button
                       onClick={() => setShowModal(true)}
-                      className="bg-white text-sky-800 font-semibold px-4 py-2 rounded-lg shadow hover:bg-sky-100 transition duration-200"
+                      className="px-4 py-2 font-semibold transition duration-200 bg-white rounded-lg shadow text-sky-800 hover:bg-sky-100"
                     >
                       Post Vacancy
                     </button>
@@ -1010,7 +1010,7 @@ export default function ManageVacancy() {
 
                 <div className="block w-full overflow-x-auto">
                   {loading ? (
-                    <div className="text-center py-4">
+                    <div className="py-4 text-center">
                       Loading job vacancies...
                     </div>
                   ) : (
@@ -1041,7 +1041,7 @@ export default function ManageVacancy() {
                           jobs.map((job) => (
                             <tr
                               key={job.id}
-                              className="bg-white hover:bg-gray-50 transition duration-200"
+                              className="transition duration-200 bg-white hover:bg-gray-50"
                             >
                               <td
                                 className={`border-t ${borderColor} align-top`}
@@ -1049,17 +1049,17 @@ export default function ManageVacancy() {
                                 <div className="flex items-start px-6 py-4">
                                   <img
                                     src={`${apiUrl}/${job.company?.logo}`}
-                                    className="h-12 w-12 bg-white rounded-full border object-cover flex-shrink-0"
+                                    className="flex-shrink-0 object-cover w-12 h-12 bg-white border rounded-full"
                                     alt={job.company?.name || job.title}
                                     onError={(e) => {}}
                                   />
-                                  <div className="ml-3 min-w-0">
+                                  <div className="min-w-0 ml-3">
                                     <p
                                       className={`font-bold ${textColor} truncate`}
                                     >
                                       {job.title}
                                     </p>
-                                    <p className="text-gray-500 text-xs truncate">
+                                    <p className="text-xs text-gray-500 truncate">
                                       {job.location}
                                     </p>
                                   </div>
@@ -1077,7 +1077,7 @@ export default function ManageVacancy() {
                               <td
                                 className={`border-t ${borderColor} px-6 py-4 align-top text-xs`}
                               >
-                                <div className="flex items-center relative">
+                                <div className="relative flex items-center">
                                   <span
                                     className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${
                                       badgeColors[job.status]
@@ -1090,7 +1090,7 @@ export default function ManageVacancy() {
                                       e.stopPropagation();
                                       toggleStatusDropdown(job.id);
                                     }}
-                                    className="ml-2 p-1 rounded hover:bg-gray-100 flex-shrink-0"
+                                    className="flex-shrink-0 p-1 ml-2 rounded hover:bg-gray-100"
                                   >
                                     <Edit size={14} />
                                   </button>
@@ -1104,7 +1104,7 @@ export default function ManageVacancy() {
                                           e.stopPropagation();
                                           handleStatusChange(job.id, "active");
                                         }}
-                                        className="block w-full px-3 py-2 text-left hover:bg-gray-100 text-xs"
+                                        className="block w-full px-3 py-2 text-xs text-left hover:bg-gray-100"
                                       >
                                         Active
                                       </button>
@@ -1113,7 +1113,7 @@ export default function ManageVacancy() {
                                           e.stopPropagation();
                                           handleStatusChange(job.id, "closed");
                                         }}
-                                        className="block w-full px-3 py-2 text-left hover:bg-gray-100 text-xs"
+                                        className="block w-full px-3 py-2 text-xs text-left hover:bg-gray-100"
                                       >
                                         Closed
                                       </button>
@@ -1140,7 +1140,7 @@ export default function ManageVacancy() {
                                   </button>
                                   <button
                                     onClick={() => handleDeleteClick(job.id)}
-                                    className="p-1 rounded hover:bg-gray-100 text-red-600"
+                                    className="p-1 text-red-600 rounded hover:bg-gray-100"
                                   >
                                     <Trash2 size={18} />
                                   </button>
@@ -1151,7 +1151,7 @@ export default function ManageVacancy() {
                               >
                                 <Link
                                   to={`/company-dashboard/list-applicants/${job.id}`}
-                                  className="px-3 py-2 rounded hover:bg-gray-100 text-blue-600 font-medium text-sm"
+                                  className="px-3 py-2 text-sm font-medium text-blue-600 rounded hover:bg-gray-100"
                                 >
                                   View applicants
                                 </Link>
@@ -1162,7 +1162,7 @@ export default function ManageVacancy() {
                           <tr>
                             <td
                               colSpan="6"
-                              className="text-center py-4 border-t"
+                              className="py-4 text-center border-t"
                             >
                               No job vacancies found. Click "Post Vacancy" to
                               create one.

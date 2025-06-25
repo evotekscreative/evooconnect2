@@ -123,10 +123,12 @@ export default function Sidebar() {
     <>
       <div className="md:left-0 md:block md:fixed md:top-0 md:bottom-0 md:overflow-y-auto md:flex-row md:flex-nowrap md:overflow-visible shadow-xl bg-white flex flex-wrap items-center justify-between relative md:w-64 z-10 py-4 px-6">
         <div className="flex justify-center mb-6">
+          <Link to="/">
           <div className="flex items-center gap-2 mr-4">
             <img src={Logo} alt="Logo" className="h-10" />
             <span className="font-bold text-xl text-blue-700">EVOConnect</span>
           </div>
+          </Link>
         </div>
         {/* Tombol Add Company */}
         <button

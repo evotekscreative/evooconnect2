@@ -64,21 +64,28 @@ const socialPlatforms = [
 ];
 
 export default function UserProfile() {
-  const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+  const apiUrl =
+    import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
   const { username } = useParams();
   const [profileImage, setProfileImage] = useState(null);
   const [connectionsCount, setConnectionsCount] = useState(0);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [loadingConnection, setLoadingConnection] = useState(false);
-  const [alert, setAlert] = useState({ show: false, type: "success", message: "" });
+  const [alert, setAlert] = useState({
+    show: false,
+    type: "success",
+    message: "",
+  });
   const [showContactModal, setShowContactModal] = useState(false);
   // Experience, Education, Posts
   const [experiences, setExperiences] = useState([]);
   const [educations, setEducations] = useState([]);
   const [userPosts, setUserPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+  const [disconnectLoading, setDisconnectLoading] = useState(false);
+  const [showDisconnectModal, setShowDisconnectModal] = useState(false);
+
   // State
   const [user, setUser] = useState({
     id: "",
@@ -156,9 +163,12 @@ export default function UserProfile() {
     if (!user.id) return;
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get(`${apiUrl}/api/users/${user.id}/connections`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await axios.get(
+        `${apiUrl}/api/users/${user.id}/connections`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       setConnectionsCount(res.data.data.total || 0);
       setConnectionStatus(res.data.data.connection_status);
     } catch {
@@ -196,9 +206,13 @@ export default function UserProfile() {
   }, [user.id, fetchConnections, apiUrl]);
 
   // Connect handler
+  // ...existing code...
+  // ...existing code...
   const handleConnectWithUser = async () => {
     if (!user.id) return;
     setLoadingConnection(true);
+    // Optimistic update: langsung set pending agar tombol berubah
+    setConnectionStatus("pending");
     try {
       const token = localStorage.getItem("token");
       const res = await axios.post(
@@ -206,15 +220,17 @@ export default function UserProfile() {
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      const newStatus = res.data.data?.status || "connected";
+      // Ambil status dari response, fallback ke "pending" jika tidak ada
+      const newStatus = res.data.data?.status || "pending";
       setConnectionStatus(newStatus);
+      if (newStatus === "connected") {
+        showAlert("success", "Connected successfully!");
+      } else if (newStatus === "pending") {
+        showAlert("success", "Connection request sent!");
+      } else {
+        showAlert("success", "Request sent!");
+      }
       await fetchConnections();
-      showAlert(
-        "success",
-        newStatus === "connected"
-          ? "Connected successfully!"
-          : "Connection request sent!"
-      );
     } catch (error) {
       setIsConnected(false);
       setConnectionStatus(null);
@@ -226,19 +242,58 @@ export default function UserProfile() {
       setLoadingConnection(false);
     }
   };
+  // ...existing code...
+  // ...existing code...
 
+  const handleDisconnect = async () => {
+    console.log("Tombol Disconnect diklik untuk user:", user.id, user.name);
+    setDisconnectLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${apiUrl}/api/users/${user.id}/connect`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        let errorData = {};
+        // Hanya parse JSON jika ada body
+        const text = await res.text();
+        if (text) {
+          try {
+            errorData = JSON.parse(text);
+          } catch {}
+        }
+        showAlert("error", errorData.message || "Failed to disconnect");
+        console.error("Disconnect error:", errorData);
+        return;
+      }
+
+      setShowDisconnectModal(false);
+      showAlert("success", "Disconnected successfully!");
+    } catch (err) {
+      showAlert("error", "Failed to disconnect");
+      console.error("Disconnect error:", err);
+    } finally {
+      setDisconnectLoading(false);
+    }
+  };
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">Loading...</div>
+      <div className="flex items-center justify-center h-screen">
+        Loading...
+      </div>
     );
   }
 
   return (
     <div className="bg-[#EDF3F7] min-h-screen pb-10">
-    <Case />
-    <div className="w-full px-4 py-6 mx-auto sm:px-6">
-      <div className="flex flex-col justify-center max-w-6xl gap-6 mx-auto md:flex-row">
-        <div className="fixed top-4 right-4 z-50">
+      <Case />
+      <div className="w-full px-4 py-6 mx-auto sm:px-6">
+        <div className="flex flex-col justify-center max-w-6xl gap-6 mx-auto md:flex-row">
+          <div className="fixed top-4 right-4 z-50">
             <Alert
               type={alert.type}
               message={alert.message}
@@ -258,6 +313,10 @@ export default function UserProfile() {
             loadingConnection={loadingConnection}
             handleConnectWithUser={handleConnectWithUser}
             setShowContactModal={setShowContactModal}
+            handleDisconnect={handleDisconnect}
+            disconnectLoading={disconnectLoading}
+            setShowDisconnectModal={setShowDisconnectModal}
+            showDisconnectModal={showDisconnectModal}
           />
           {/* Main Content */}
           <div className="w-full space-y-4 md:w-2/3">

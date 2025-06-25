@@ -134,40 +134,30 @@ const PostPage = () => {
     }
   }, []);
 
-  const formatPostTime = (timestamp) => {
-    if (!timestamp) return "Just now";
+  const formatPostTime = (dateString) => {
+    if (!dateString) return "";
 
-    let postTime;
     try {
-      postTime = dayjs(timestamp);
-      if (!postTime.isValid()) {
-        postTime = dayjs(new Date(timestamp));
+      const utcDate = dayjs.utc(dateString);
+
+      if (!utcDate.isValid()) {
+        console.warn("Invalid date:", dateString);
+        return "";
       }
-    } catch (e) {
-      console.error("Error parsing timestamp:", timestamp, e);
-      return "Just now";
+
+      const now = dayjs.utc();
+      const diffInHours = now.diff(utcDate, "hour");
+
+      if (diffInHours < 24) {
+        return utcDate.format("h:mm A"); // hasil: 2:49 AM
+      } else {
+        return utcDate.format("MMM D [at] h:mm A"); // Misal: Jun 5 at 02:49
+      }
+    } catch (error) {
+      console.error("Time formatting error:", error);
+      return "";
     }
-
-    if (!postTime.isValid()) {
-      return "Just now";
-    }
-
-    const now = dayjs();
-    const diffInSeconds = now.diff(postTime, "second");
-    const diffInMinutes = now.diff(postTime, "minute");
-    const diffInHours = now.diff(postTime, "hour");
-    const diffInDays = now.diff(postTime, "day");
-
-    if (diffInSeconds < 0) return "Just now";
-
-    if (diffInSeconds < 60) return `${diffInSeconds}s ago`;
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    if (diffInDays < 7) return `${diffInDays}d ago`;
-
-    return postTime.format("MMM D, YYYY");
   };
-
   const fetchSuggestedConnections = async () => {
     try {
       setLoadingSuggested(true);
@@ -484,17 +474,17 @@ const PostPage = () => {
               "Harassment",
               "Fraud",
               "Spam",
-              "Misinformation",
-              "Hate speech",
+              "Missinformation",
+              "Hate Speech",
               "Threats or violence",
-              "Self-harm",
-              "Graphic content",
-              "Extremist organizations",
-              "Sexual content",
-              "Fake account",
-              "Child exploitation",
-              "Illegal products",
-              "Violation",
+              "self-harm",
+              "Graphic or violent content",
+              "Dangerous or extremist organizations",
+              "Sexual Content",
+              "Fake Account",
+              "Child Exploitation",
+              "Illegal products and services",
+              "Infringement",
               "Other",
             ].map((reason) => (
               <button

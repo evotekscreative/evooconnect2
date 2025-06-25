@@ -45,6 +45,8 @@ import ProtectedAdminRoute from "./components/Auth/ProtectedAdminRoute.jsx";
 import ListCompany from "./pages/Admin/Admin1/ListCompany.jsx";
 import ReportPage from "./pages/Admin/Admin1/Index.jsx";
 import ReportUser from "./pages/Admin/Report/ReportUser.jsx";
+import ReportBlogPage from "./pages/Admin/Report/ReportBlogPage.jsx";
+import ReportCommentPage from "./pages/Admin/Report/ReportCommentPage.jsx";
 
 import CreateCompanyStatus from "./pages/CreateCompanyStatus.jsx";
 import CompanyDetail from "./pages/CompanyCard/CompanyDetail.jsx";
@@ -258,7 +260,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/post-page/:username",
+    path: "/post-page-profile/:username",
     element: (
       <ProtectedRoute>
         <PostPage />
@@ -357,6 +359,14 @@ const router = createBrowserRouter([
       {
         path: "report-user",
         element: <ReportUser />,
+      },
+      {
+        path: "report-blog",
+        element: <ReportBlogPage />,
+      },
+      {
+        path: "report-comment",
+        element: <ReportCommentPage />,
       },
       {
         path: "list-company",

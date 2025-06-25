@@ -1421,21 +1421,21 @@ export default function SocialNetworkFeed() {
 
           <div className="grid grid-cols-2 gap-2 mb-4">
             {[
-              "Harassment",
-              "Fraud",
-              "Spam",
-              "Misinformation",
-              "Hate speech",
-              "Threats or violence",
-              "Self-harm",
-              "Graphic content",
-              "Extremist organizations",
-              "Sexual content",
-              "Fake account",
-              "Child exploitation",
-              "Illegal products",
-              "Violation",
-              "Other",
+             "Harassment",
+    "Fraud",
+    "Spam",
+    "Missinformation",
+    "Hate Speech",
+    "Threats or violence",
+    "self-harm",
+    "Graphic or violent content",
+    "Dangerous or extremist organizations",
+    "Sexual Content",
+    "Fake Account",
+    "Child Exploitation",
+    "Illegal products and services",
+    "Infringement",
+    "Other",
             ].map((reason) => (
               <button
                 key={reason}

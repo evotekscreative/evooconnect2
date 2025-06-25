@@ -165,7 +165,8 @@ export default function Groups() {
         ? joinedResponse.data.data.map((g) => g.id)
         : [];
 
-      const filteredSuggestions = allGroupsResponse.data.data.filter(
+      // Tambahkan pengecekan null di sini
+      const filteredSuggestions = (allGroupsResponse.data.data || []).filter(
         (group) =>
           group.privacy_level === "public" &&
           !adminGroupIds.includes(group.id) &&
@@ -403,10 +404,10 @@ export default function Groups() {
 
   return (
     <Case>
-      <div className="p-4 sm:p-6 bg-gray-50 min-h-screen mb-10">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 mb-10">
+      <div className="min-h-screen p-4 sm:p-6 bg-gray-50">
+        <div className="grid max-w-6xl grid-cols-1 gap-4 mx-auto mb-10 lg:grid-cols-4 sm:gap-6">
           {alert.show && (
-            <div className="fixed top-4 right-4 z-50 w-full max-w-sm">
+            <div className="fixed z-50 w-full max-w-sm top-4 right-4">
               <Alert
                 type={alert.type}
                 message={alert.message}
@@ -415,7 +416,7 @@ export default function Groups() {
             </div>
           )}
           {/* Main Content */}
-          <div className="lg:col-span-3 space-y-4 bg-white rounded-xl shadow p-4 sm:p-6">
+          <div className="p-4 space-y-4 bg-white shadow lg:col-span-3 rounded-xl sm:p-6">
             <GroupsHeader navigate={navigate} setShowModal={setShowModal} />
 
             <GroupsTabs activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -434,8 +435,6 @@ export default function Groups() {
               loadingAllGroups={loadingAllGroups}
               pagination={pagination}
               fetchAllGroups={fetchAllGroups}
-              navigate={navigate}
-              setShowModal={setShowModal}
             />
           </div>
 

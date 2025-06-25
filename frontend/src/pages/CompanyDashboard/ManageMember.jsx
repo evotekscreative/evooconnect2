@@ -14,7 +14,7 @@ import {
 import Sidebar from "../../components/CompanyDashboard/Sidebar/Sidebar";
 import Navbar from "../../components/CompanyDashboard/Navbar/Navbar";
 import AdminNavbar from "../../components/Admin/Navbars/AdminNavbar";
-import HeaderStats from "../../components/Admin/Headers/HeaderStats";
+import HeaderStats from "../../components/CompanyDashboard/Navbar/HeaderStats.jsx";
 import { toast } from "react-toastify";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Case from "../../components/Case";
@@ -546,7 +546,7 @@ const ManageMember = ({ currentUserRole }) => {
             },
           ]}
         />
-        <div className="w-full px-4 mx-auto -m-32 md:px-10">
+        <div className="w-full px-4 mx-auto -m-20 md:px-10">
           {alert.show && (
             <div className="fixed z-50 w-full max-w-sm top-4 right-4">
               <Alert

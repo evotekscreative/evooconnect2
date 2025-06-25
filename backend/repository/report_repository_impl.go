@@ -25,7 +25,7 @@ func (r *reportRepositoryImpl) HasReported(ctx context.Context, reporterID, targ
 
 func (r *reportRepositoryImpl) Create(ctx context.Context, report domain.Report) (domain.Report, error) {
 	query := `
-		INSERT INTO reports (id, reporter_id, target_type, target_id, reason, other_reason, status, created_at)
+		INSERT INTO reports (id, reporter_id, target_type, target_id, reason, description, status, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 	_, err := r.db.ExecContext(ctx, query,
@@ -34,19 +34,18 @@ func (r *reportRepositoryImpl) Create(ctx context.Context, report domain.Report)
 		report.TargetType,
 		report.TargetID,
 		report.Reason,
-		report.OtherReason,
+		report.Description, // Ganti dari other_reason ke description
 		report.Status,
 		report.CreatedAt,
 	)
 	return report, err
 }
 
-
 func (r *reportRepositoryImpl) FindAll(ctx context.Context, page, limit int, targetType string) ([]domain.Report, int, error) {
 	offset := (page - 1) * limit
 	
-	// Query dasar
-	baseQuery := "SELECT id, reporter_id, target_type, target_id, reason, other_reason, status, created_at FROM reports"
+	// Query dasar - ganti other_reason ke description
+	baseQuery := "SELECT id, reporter_id, target_type, target_id, reason, description, status, created_at FROM reports"
 	countQuery := "SELECT COUNT(*) FROM reports"
 	
 	// Tambahkan filter jika targetType tidak kosong
@@ -86,7 +85,7 @@ func (r *reportRepositoryImpl) FindAll(ctx context.Context, page, limit int, tar
 			&report.TargetType,
 			&report.TargetID,
 			&report.Reason,
-			&report.OtherReason,
+			&report.Description, // Ganti dari OtherReason ke Description
 			&report.Status,
 			&report.CreatedAt,
 		)
@@ -101,7 +100,7 @@ func (r *reportRepositoryImpl) FindAll(ctx context.Context, page, limit int, tar
 
 func (r *reportRepositoryImpl) FindById(ctx context.Context, id string) (domain.Report, error) {
 	query := `
-		SELECT id, reporter_id, target_type, target_id, reason, other_reason, status, created_at
+		SELECT id, reporter_id, target_type, target_id, reason, description, status, created_at
 		FROM reports
 		WHERE id = $1
 	`
@@ -113,7 +112,7 @@ func (r *reportRepositoryImpl) FindById(ctx context.Context, id string) (domain.
 		&report.TargetType,
 		&report.TargetID,
 		&report.Reason,
-		&report.OtherReason,
+		&report.Description, // Ganti dari OtherReason ke Description
 		&report.Status,
 		&report.CreatedAt,
 	)
@@ -130,7 +129,7 @@ func (r *reportRepositoryImpl) UpdateStatus(ctx context.Context, id string, stat
 		UPDATE reports
 		SET status = $1
 		WHERE id = $2
-		RETURNING id, reporter_id, target_type, target_id, reason, other_reason, status, created_at
+		RETURNING id, reporter_id, target_type, target_id, reason, description, status, created_at
 	`
 	
 	var report domain.Report
@@ -140,7 +139,7 @@ func (r *reportRepositoryImpl) UpdateStatus(ctx context.Context, id string, stat
 		&report.TargetType,
 		&report.TargetID,
 		&report.Reason,
-		&report.OtherReason,
+		&report.Description, // Ganti dari OtherReason ke Description
 		&report.Status,
 		&report.CreatedAt,
 	)

@@ -20,15 +20,16 @@ const base_url =
 
 export default function GroupsContent({
   activeTab,
-  adminGroups = [],
-  joinedGroups = [],
-  invitations = [],
-  loadingInvitations = false,
-  handleDeleteGroup = () => {},
-  handleLeaveGroup = () => {},
-  handleAcceptInvitation = () => {},
-  handleRejectInvitation = () => {},
-  allGroups = [],
+  adminGroups,
+  joinedGroups,
+  invitations,
+  loadingInvitations,
+  handleDeleteGroup,
+  handleLeaveGroup,
+  handleAcceptInvitation,
+  handleRejectInvitation,
+  allGroups,
+  fetchAllGroups,
 }) {
   const [showAllAdminGroups, setShowAllAdminGroups] = useState(false);
   const [showAllJoinedGroups, setShowAllJoinedGroups] = useState(false);
@@ -62,14 +63,6 @@ export default function GroupsContent({
     setTimeout(() => {
       setAlert({ show: false, type: "success", message: "" });
     }, 5000);
-  };
-
-  const fetchAllGroups = (limit, offset) => {
-    setLoadingAllGroups(true);
-    setTimeout(() => {
-      setPagination((prev) => ({ ...prev, limit, offset }));
-      setLoadingAllGroups(false);
-    }, 500);
   };
 
   // Function to fetch join requests
@@ -187,6 +180,7 @@ export default function GroupsContent({
   };
 
   // Function to handle cancelling a join request
+  // Function to handle cancelling a join request
   const handleCancelRequest = async (requestId) => {
     const reqId = requestId || selectedRequestId;
     if (!reqId) return;
@@ -282,14 +276,14 @@ export default function GroupsContent({
     fetchJoinRequests();
   }, []);
 
-  const pendingInvitations = (invitations || []).filter(
+  const pendingInvitations = invitations.filter(
     (inv) => inv.status === "pending"
   );
 
   return (
     <>
       {alert.show && (
-        <div className="fixed top-4 right-4 z-50 w-full max-w-sm">
+        <div className="fixed z-50 w-full max-w-sm top-4 right-4">
           <Alert
             type={alert.type}
             message={alert.message}
@@ -303,12 +297,12 @@ export default function GroupsContent({
           {/* Groups You Created */}
           {adminGroups.length > 0 && (
             <div className="mb-8">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+              <div className="flex flex-col items-start justify-between gap-2 mb-4 sm:flex-row sm:items-center">
                 <h3 className="text-lg font-medium">Groups You Created</h3>
                 {adminGroups.length > 3 && (
                   <button
                     onClick={() => setShowAllAdminGroups(!showAllAdminGroups)}
-                    className="text-blue-600 text-sm flex items-center"
+                    className="flex items-center text-sm text-blue-600"
                   >
                     {showAllAdminGroups ? (
                       <>
@@ -323,7 +317,7 @@ export default function GroupsContent({
                   </button>
                 )}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
                 {(showAllAdminGroups
                   ? adminGroups
                   : adminGroups.slice(0, 3)
@@ -343,12 +337,12 @@ export default function GroupsContent({
           {/* Groups You've Joined */}
           {joinedGroups.length > 0 && (
             <div>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+              <div className="flex flex-col items-start justify-between gap-2 mb-4 sm:flex-row sm:items-center">
                 <h3 className="text-lg font-medium">Groups You've Joined</h3>
                 {joinedGroups.length > 3 && (
                   <button
                     onClick={() => setShowAllJoinedGroups(!showAllJoinedGroups)}
-                    className="text-blue-600 text-sm flex items-center"
+                    className="flex items-center text-sm text-blue-600"
                   >
                     {showAllJoinedGroups ? (
                       <>
@@ -363,7 +357,7 @@ export default function GroupsContent({
                   </button>
                 )}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
                 {(showAllJoinedGroups
                   ? joinedGroups
                   : joinedGroups.slice(0, 3)
@@ -382,7 +376,7 @@ export default function GroupsContent({
 
           {/* Empty State */}
           {adminGroups.length === 0 && joinedGroups.length === 0 && (
-            <div className="col-span-full text-center py-8">
+            <div className="py-8 text-center col-span-full">
               <p className="text-gray-500">
                 You haven't joined any groups yet.
               </p>
@@ -397,27 +391,17 @@ export default function GroupsContent({
         </>
       ) : activeTab === "allGroups" ? (
         <div>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+          <div className="flex flex-col items-start justify-between gap-2 mb-4 sm:flex-row sm:items-center">
             <h3 className="text-lg font-medium">All Groups</h3>
-            {allGroups.length > 0 && (
-              <span className="text-sm text-gray-500">
-                Showing {Math.min(pagination.offset + 1, pagination.total)}-
-                {Math.min(
-                  pagination.offset + pagination.limit,
-                  pagination.total
-                )}{" "}
-                of {pagination.total}
-              </span>
-            )}
           </div>
 
           {loadingAllGroups ? (
             <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              <div className="w-8 h-8 border-b-2 border-blue-500 rounded-full animate-spin"></div>
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
                 {allGroups.map((group) => {
                   const isAdmin = adminGroups.some((g) => g.id === group.id);
                   const hasJoined =
@@ -428,11 +412,11 @@ export default function GroupsContent({
                   return (
                     <div
                       key={`all-${group.id}`}
-                      className="bg-white rounded-xl shadow p-3 sm:p-4 flex flex-col justify-between h-auto border border-gray-200 hover:border-blue-300 transition-colors"
+                      className="flex flex-col justify-between h-auto p-3 transition-colors bg-white border border-gray-200 shadow rounded-xl sm:p-4 hover:border-blue-300"
                     >
-                      <div className="flex items-center space-x-2 sm:space-x-3 border-b pb-3">
+                      <div className="flex items-center pb-3 space-x-2 border-b sm:space-x-3">
                         <img
-                          className="w-10 h-10 object-cover rounded-full"
+                          className="object-cover w-10 h-10 rounded-full"
                           src={
                             group.image
                               ? `${base_url}/${group.image}`
@@ -462,7 +446,7 @@ export default function GroupsContent({
                             </Link>
                           )}
                           <div className="flex items-center gap-2">
-                            <div className="text-gray-500 text-xs sm:text-sm">
+                            <div className="text-xs text-gray-500 sm:text-sm">
                               {group.members_count || 0} Members
                             </div>
                             <span
@@ -478,15 +462,15 @@ export default function GroupsContent({
                         </div>
                       </div>
 
-                      <div className="flex justify-between items-center mt-3">
+                      <div className="flex items-center justify-between mt-3">
                         {isPrivate && !hasJoined && !hasPendingRequest ? (
-                          <span className="text-xs sm:text-sm text-gray-500">
+                          <span className="text-xs text-gray-500 sm:text-sm">
                             Private Group
                           </span>
                         ) : (
                           <Link
                             to={`/groups/${group.id}`}
-                            className="text-xs sm:text-sm text-blue-600 hover:underline"
+                            className="text-xs text-blue-600 sm:text-sm hover:underline"
                           >
                             View Group
                           </Link>
@@ -519,7 +503,7 @@ export default function GroupsContent({
                         ) : hasPendingRequest ? (
                           <button
                             onClick={() => openCancelModal(group.id)}
-                            className="flex items-center justify-center bg-yellow-100 border border-yellow-200 text-gray-700 px-3 py-1 rounded-md text-xs sm:text-sm hover:bg-yellow-200"
+                            className="flex items-center justify-center px-3 py-1 text-xs text-gray-700 bg-yellow-100 border border-yellow-200 rounded-md sm:text-sm hover:bg-yellow-200"
                           >
                             <Clock size={14} className="mr-1" />
                             Pending
@@ -538,7 +522,7 @@ export default function GroupsContent({
                           >
                             {isRequestingJoin ? (
                               <>
-                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                                <div className="w-3 h-3 border-b-2 border-current rounded-full animate-spin"></div>
                                 <span className="ml-1">Processing</span>
                               </>
                             ) : (
@@ -556,13 +540,13 @@ export default function GroupsContent({
               </div>
 
               {allGroups.length === 0 && (
-                <div className="col-span-full text-center py-8">
+                <div className="py-8 text-center col-span-full">
                   <p className="text-gray-500">No groups available yet.</p>
                 </div>
               )}
 
               {pagination.total > pagination.limit && (
-                <div className="flex justify-between items-center mt-6">
+                <div className="flex items-center justify-between mt-6">
                   <button
                     onClick={() =>
                       fetchAllGroups(
@@ -612,20 +596,20 @@ export default function GroupsContent({
 
           {loadingJoinRequests ? (
             <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              <div className="w-8 h-8 border-b-2 border-blue-500 rounded-full animate-spin"></div>
             </div>
           ) : joinRequests.length > 0 ? (
             <div className="space-y-4">
               {joinRequests.map((request) => (
                 <div
                   key={request.id}
-                  className="bg-white rounded-lg shadow p-4 border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+                  className="flex flex-col items-start justify-between gap-4 p-4 bg-white border border-gray-200 rounded-lg shadow sm:flex-row sm:items-center"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                    <div className="flex items-center justify-center w-10 h-10 bg-gray-200 rounded-full">
                       {request.group?.image ? (
                         <img
-                          className="w-full h-full object-cover rounded-full"
+                          className="object-cover w-full h-full rounded-full"
                           src={`${base_url}/${request.group.image}`}
                           alt={request.group?.name || "Group"}
                           onError={(e) => {
@@ -645,12 +629,12 @@ export default function GroupsContent({
                       <p className="text-sm text-gray-500">
                         Requested on {formatDate(request.created_at)}
                       </p>
-                      <span className="inline-block mt-1 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+                      <span className="inline-block px-2 py-1 mt-1 text-xs text-yellow-800 bg-yellow-100 rounded-full">
                         Pending Request
                       </span>
                     </div>
                   </div>
-                  <div className="flex gap-2 w-full sm:w-auto">
+                  <div className="flex w-full gap-2 sm:w-auto">
                     <button
                       onClick={() =>
                         openCancelModal(request.group_id, request.id)
@@ -681,7 +665,7 @@ export default function GroupsContent({
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-8">
+            <p className="py-8 text-center text-gray-500">
               You have no pending join requests.
             </p>
           )}
@@ -693,7 +677,7 @@ export default function GroupsContent({
 
             {loadingInvitations ? (
               <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                <div className="w-8 h-8 border-b-2 border-blue-500 rounded-full animate-spin"></div>
               </div>
             ) : pendingInvitations.length > 0 ? (
               pendingInvitations.map((invitation) => (
@@ -705,7 +689,7 @@ export default function GroupsContent({
                 />
               ))
             ) : (
-              <p className="text-gray-500 text-center py-8">
+              <p className="py-8 text-center text-gray-500">
                 You have no pending invitations.
               </p>
             )}
@@ -715,28 +699,28 @@ export default function GroupsContent({
 
       {/* Cancel Request Confirmation Modal */}
       {showCancelModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-sm w-full">
-            <h3 className="text-lg font-medium mb-4">Cancel Join Request</h3>
-            <p className="text-gray-600 mb-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-sm p-6 bg-white rounded-lg">
+            <h3 className="mb-4 text-lg font-medium">Cancel Join Request</h3>
+            <p className="mb-6 text-gray-600">
               Are you sure you want to cancel your request to join this group?
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowCancelModal(false)}
-                className="px-2 py-1 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                className="px-2 py-1 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
                 disabled={isCancelling}
               >
                 No, Keep Request
               </button>
               <button
                 onClick={() => handleCancelRequest()}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center"
+                className="flex items-center px-4 py-2 text-white bg-red-600 rounded-md hover:bg-red-700"
                 disabled={isCancelling}
               >
                 {isCancelling ? (
                   <>
-                    <div className="animate-spin rounded-full h-2 w-4 border-b-2 border-white mr-2"></div>
+                    <div className="w-4 h-2 mr-2 border-b-2 border-white rounded-full animate-spin"></div>
                     Cancelling...
                   </>
                 ) : (

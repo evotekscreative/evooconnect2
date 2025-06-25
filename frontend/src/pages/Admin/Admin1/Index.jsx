@@ -1,20 +1,26 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import {
-  FaUserAlt, FaCommentDots, FaFileAlt, FaBriefcase,
-  FaBars, FaRegCommentDots, FaStickyNote,
-  FaChevronLeft, FaChevronRight
-} from 'react-icons/fa';
+  FaUserAlt,
+  FaCommentDots,
+  FaFileAlt,
+  FaBriefcase,
+  FaBars,
+  FaRegCommentDots,
+  FaStickyNote,
+  FaChevronLeft,
+  FaChevronRight,
+} from "react-icons/fa";
 import Sidebar from "../../../components/Admin/Sidebar/Sidebar.jsx";
 
 const data = [
-  { name: 'Report Blog', value: 2000 },
-  { name: 'Report Comment', value: 1200 },
-  { name: 'Report User', value: 900 }
+  { name: "Report Blog", value: 2000 },
+  { name: "Report Comment", value: 1200 },
+  { name: "Report User", value: 900 },
 ];
 
-const COLORS = ['#A78B71', '#9A9B7C', '#3B3C36'];
+const COLORS = ["#A78B71", "#9A9B7C", "#3B3C36"];
 
 const ReportPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -23,8 +29,8 @@ const ReportPage = () => {
   const scroll = (direction) => {
     if (scrollRef.current) {
       scrollRef.current.scrollBy({
-        left: direction === 'left' ? -300 : 300,
-        behavior: 'smooth',
+        left: direction === "left" ? -300 : 300,
+        behavior: "smooth",
       });
     }
   };
@@ -52,21 +58,46 @@ const ReportPage = () => {
 
         {/* Scroll Buttons and Cards */}
         <div className="relative mb-8">
-
           {/* Cards */}
-          <div
-            ref={scrollRef}
-          >
+          <div ref={scrollRef}>
             <div className="flex gap-4 sm:gap-6 w-max min-w-full px-8">
               <Link to="/admin/report-user">
-                <ReportCard icon={<FaUserAlt />} title="Report User" count="20.000" />
+                <ReportCard
+                  icon={<FaUserAlt />}
+                  title="Report User"
+                  count="20.000"
+                />
               </Link>
-              <ReportCard icon={<FaCommentDots />} title="Report Comment" count="12.000" />
-              <ReportCard icon={<FaFileAlt />} title="Report Blog" count="8.000" />
-              <ReportCard icon={<FaBriefcase />} title="Report Job" count="7.000" />
-              <ReportCard icon={<FaRegCommentDots />} title="Report Comment Blog" count="6.000" />
+              <Link to="/admin/report-comment">
+                <ReportCard
+                  icon={<FaCommentDots />}
+                  title="Report Comment"
+                  count="12.000"
+                />
+              </Link>
+              <Link to="/admin/report-blog">
+                <ReportCard
+                  icon={<FaFileAlt />}
+                  title="Report Blog"
+                  count="8.000"
+                />
+              </Link>
+              <ReportCard
+                icon={<FaBriefcase />}
+                title="Report Job"
+                count="7.000"
+              />
+              <ReportCard
+                icon={<FaRegCommentDots />}
+                title="Report Comment Blog"
+                count="6.000"
+              />
               <Link to="/admin/report-post">
-              <ReportCard icon={<FaStickyNote />} title="Report Post" count="10.000" />
+                <ReportCard
+                  icon={<FaStickyNote />}
+                  title="Report Post"
+                  count="10.000"
+                />
               </Link>
             </div>
           </div>
@@ -74,7 +105,9 @@ const ReportPage = () => {
 
         {/* Chart Section */}
         <div className="bg-black rounded-xl p-4 sm:p-6 w-full max-w-full lg:max-w-xl mx-auto">
-          <h2 className="text-white text-lg font-semibold mb-4">Report Overview</h2>
+          <h2 className="text-white text-lg font-semibold mb-4">
+            Report Overview
+          </h2>
           <div className="w-full h-[200px] sm:h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -91,7 +124,10 @@ const ReportPage = () => {
                   label={({ name, value }) => `${name} (${value})`}
                 >
                   {data.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
                   ))}
                 </Pie>
               </PieChart>
@@ -100,7 +136,10 @@ const ReportPage = () => {
           <div className="text-white mt-4 space-y-1">
             {data.map((item, idx) => (
               <p key={idx} className="text-sm">
-                <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: COLORS[idx] }}></span>
+                <span
+                  className="inline-block w-3 h-3 rounded-full mr-2"
+                  style={{ backgroundColor: COLORS[idx] }}
+                ></span>
                 {item.name}: <strong>{item.value}</strong>
               </p>
             ))}

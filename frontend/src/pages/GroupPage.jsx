@@ -80,6 +80,8 @@ export default function GroupPage() {
     useState(false);
   const [editingReplyId, setEditingReplyId] = useState(null);
   const [showReplyOptions, setShowReplyOptions] = useState(false);
+  const [expandedPosts, setExpandedPosts] = useState({});
+  const [selectedReply, setSelectedReply] = useState(null);
 
   const [user, setUser] = useState({
     name: "",
@@ -545,6 +547,75 @@ export default function GroupPage() {
     }
   };
 
+  // ...existing code...
+
+  const handleDeleteReply = async (replyId) => {
+    try {
+      const userToken = localStorage.getItem("token");
+      if (!userToken) {
+        throw new Error("No authentication token found");
+      }
+
+      // Cari parent commentId dari replyId
+      let parentCommentId = null;
+      Object.keys(allReplies).forEach((commentId) => {
+        if (allReplies[commentId]?.some((reply) => reply.id === replyId)) {
+          parentCommentId = commentId;
+        }
+      });
+
+      if (!parentCommentId) {
+        showAlert("error", "Parent comment not found");
+        return;
+      }
+
+      // Optimistic update: hapus reply dari state
+      setAllReplies((prev) => ({
+        ...prev,
+        [parentCommentId]: prev[parentCommentId].filter(
+          (reply) => reply.id !== replyId
+        ),
+      }));
+
+      // Update repliesCount pada comment
+      setComments((prev) => {
+        const updated = { ...prev };
+        if (updated[currentPostId]) {
+          updated[currentPostId] = updated[currentPostId].map((comment) => {
+            if (comment.id === parentCommentId) {
+              return {
+                ...comment,
+                repliesCount: (comment.repliesCount || 1) - 1,
+              };
+            }
+            return comment;
+          });
+        }
+        return updated;
+      });
+
+      // Request ke backend
+      await axios.delete(`${apiUrl}/api/comments/${replyId}`, {
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+        },
+      });
+
+      setShowReplyOptions(false);
+      setSelectedReply(null);
+      showAlert("success", "Reply deleted successfully!");
+    } catch (error) {
+      console.error("Failed to delete reply:", error);
+      showAlert(
+        "error",
+        error.response?.data?.message ||
+          "Failed to delete reply. Please try again."
+      );
+    }
+  };
+
+  // ...existing code...
+
   // Fetch comments for a post
   const fetchComments = async (postId) => {
     try {
@@ -837,6 +908,40 @@ export default function GroupPage() {
       ...prev,
       [commentId]: !prev[commentId],
     }));
+  };
+
+  const handleUpdateReply = async (replyId) => {
+    if (!replyId || !replyText.trim()) return;
+
+    try {
+      const userToken = localStorage.getItem("token");
+      await axios.put(
+        `${apiUrl}/api/comments/${replyId}`,
+        { content: replyText },
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        }
+      );
+
+      setAllReplies((prev) => {
+        const updated = { ...prev };
+        Object.keys(updated).forEach((commentId) => {
+          updated[commentId] = updated[commentId].map((reply) =>
+            reply.id === replyId ? { ...reply, content: replyText } : reply
+          );
+        });
+        return updated;
+      });
+
+      setEditingReplyId(null);
+      setReplyText("");
+      showAlert("success", "Reply updated successfully");
+    } catch (error) {
+      console.error("Failed to update reply:", error);
+      showAlert("error", "Failed to update reply. Please try again.");
+    }
   };
 
   // Add comment handler
@@ -1360,7 +1465,7 @@ export default function GroupPage() {
           <MoreHorizontal size={16} />
         </button>
       </div>
-      <p className="mb-3 text-sm sm:text-base">{post.content}</p>
+      <p className="mb-3">{renderPostContent(post)}</p>
 
       {post.images && <>{renderPhotoGrid(post.images)}</>}
 
@@ -2114,6 +2219,57 @@ export default function GroupPage() {
     }
   };
 
+  const renderPostContent = (post) => {
+    if (!post.content) return null;
+
+    const isExpanded = expandedPosts[post.id];
+    const textContent = post.content.replace(/<[^>]+>/g, "");
+    const shouldTruncate = textContent.length > 150;
+
+    const toggleExpanded = () => {
+      setExpandedPosts((prev) => ({
+        ...prev,
+        [post.id]: !prev[post.id],
+      }));
+    };
+
+    if (!shouldTruncate || isExpanded) {
+      return (
+        <div>
+          <div
+            className="prose text-gray-700 max-w-none ck-content custom-post-content"
+            dangerouslySetInnerHTML={{ __html: post.content }}
+          />
+          {shouldTruncate && (
+            <button
+              onClick={toggleExpanded}
+              className="mt-2 text-sm text-blue-500 hover:underline"
+            >
+              Lihat Lebih Sedikit
+            </button>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        <div
+          className="prose text-gray-700 max-w-none ck-content custom-post-content"
+          dangerouslySetInnerHTML={{
+            __html: post.content.substring(0, 150) + "...",
+          }}
+        />
+        <button
+          onClick={toggleExpanded}
+          className="mt-2 text-sm text-blue-500 hover:underline"
+        >
+          Lihat Selengkapnya
+        </button>
+      </div>
+    );
+  };
+
   const handleRejectPost = async (postId) => {
     try {
       const token = localStorage.getItem("token");
@@ -2481,17 +2637,17 @@ export default function GroupPage() {
               "Harassment",
               "Fraud",
               "Spam",
-              "Misinformation",
-              "Hate speech",
+              "Missinformation",
+              "Hate Speech",
               "Threats or violence",
-              "Self-harm",
-              "Graphic content",
-              "Extremist organizations",
-              "Sexual content",
-              "Fake account",
-              "Child exploitation",
-              "Illegal products",
-              "Violation",
+              "self-harm",
+              "Graphic or violent content",
+              "Dangerous or extremist organizations",
+              "Sexual Content",
+              "Fake Account",
+              "Child Exploitation",
+              "Illegal products and services",
+              "Infringement",
               "Other",
             ].map((reason) => (
               <button
@@ -2572,7 +2728,6 @@ export default function GroupPage() {
         <div className="w-full max-w-xs mx-4 bg-white rounded-lg">
           <div className="p-4">
             <h3 className="mb-3 text-lg font-medium">Reply Options</h3>
-
             {isCurrentUserReply ? (
               <>
                 <button
@@ -2613,7 +2768,6 @@ export default function GroupPage() {
               </button>
             )}
           </div>
-
           <div className="p-3 border-t">
             <button
               className="w-full py-2 text-gray-500 hover:text-gray-700"
@@ -2626,6 +2780,7 @@ export default function GroupPage() {
       </div>
     );
   };
+  // ...existing code...
 
   if (isLoading) {
     return (
@@ -2661,7 +2816,7 @@ export default function GroupPage() {
 
   return (
     <Case>
-      <div className="min-h-screen p-4 sm:p-6 bg-gray-50">
+      <div className="flex flex-col px-4 py-2 md:flex-row bg-gray-50 md:px-6 lg:px-12 xl:px-32 md:py-4">
         <div className="fixed z-50 top-5 right-5">
           {alertInfo.show && (
             <Alert
@@ -2675,49 +2830,325 @@ export default function GroupPage() {
         {/* Main Content Area */}
         <div className="container px-2 mx-auto sm:px-4">
           <div className="flex flex-col gap-4 mt-4 lg:flex-row">
-            {/* Left Sidebar - hanya desktop */}
-            <aside className="hidden lg:block lg:w-1/4">
-              {group.creator && (
-                <div className="mb-6 bg-white border shadow rounded-xl">
-                  <div className="p-3 border-b">
-                    <h6 className="font-medium">Admin Group</h6>
-                  </div>
-                  <div className="p-4 text-center">
-                    {group.creator.photo ? (
+            {/* Left Sidebar */}
+            <aside className="lg:block lg:w-1/4">
+              <div className="bg-white border rounded-lg shadow-sm">
+                <div className="p-4 text-center">
+                  <div className="profile-photo-container">
+                    {group.image ? (
                       <img
-                        src={apiUrl + "/" + group.creator.photo}
-                        className="object-cover w-20 h-20 mx-auto mb-2 rounded-full"
-                        alt={group.creator.name}
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = "";
-                          e.target.parentElement.classList.add("bg-gray-200");
-                        }}
+                        src={`${apiUrl}/${group.image}`}
+                        alt="avatar"
+                        className="object-cover w-20 h-20 mx-auto rounded-full"
                       />
                     ) : (
-                      <div className="flex items-center justify-center w-20 h-20 mx-auto mb-2 bg-gray-200 rounded-full">
-                        <span className="text-lg font-bold text-gray-600">
-                          {group.creator.name
-                            ? group.creator.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")
-                                .toUpperCase()
-                                .slice(0, 2)
-                            : "?"}
+                      <div className="flex items-center justify-center w-full h-full bg-gray-300">
+                        <span className="text-sm font-bold text-gray-600">
+                          {group.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
                         </span>
                       </div>
                     )}
-                    <h5 className="font-bold text-gray-800">
-                      {group.creator.name}
+                    <h5 className="mt-3 font-bold text-gray-800">
+                      {group.name}
                     </h5>
-                    <p className="mt-1 text-sm text-gray-500">
-                      {group.creator.headline || "No headline available"}
-                    </p>
-                    {group.creator.about && (
-                      <p className="mt-2 text-sm text-gray-600 line-clamp-3">
-                        {group.creator.about}
+                  </div>
+
+                  <div className="p-2 mt-4">
+                    <div className="flex items-center justify-between py-2">
+                      <p className="text-gray-500">Members</p>
+                      <p className="font-bold text-gray-800">
+                        {group.members_count || 0}
                       </p>
+                    </div>
+                  </div>
+
+                  {/* Tambahkan bagian Rules di sini */}
+                  {group.rule && (
+                    <div className="p-2 mt-4 border-t">
+                      <h6 className="mb-2 font-semibold text-left">
+                        Group Rules
+                      </h6>
+                      <div className="text-sm text-left text-gray-600 whitespace-pre-line">
+                        {group.rule}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Join button */}
+                  {!isGroupMember && (
+                    <button
+                      className="w-full px-4 py-2 mt-3 text-white bg-blue-500 rounded hover:bg-blue-600"
+                      onClick={handleJoinGroup}
+                    >
+                      Join Group
+                    </button>
+                  )}
+
+                  {isGroupMember && !isCurrentUserAdmin && (
+                    <button
+                      className="w-full px-4 py-2 mt-3 text-white bg-red-500 rounded hover:bg-red-600"
+                      onClick={handleLeaveGroup}
+                    >
+                      Leave Group
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {isGroupMember && !isCurrentUserAdmin && (
+                <div className="mt-4 mb-4 bg-white border rounded-lg shadow-sm">
+                  <div className="p-3 border-b">
+                    <h6 className="font-medium">Your Pending Posts</h6>
+                  </div>
+                  <div>
+                    {isLoadingMemberPendingPosts ? (
+                      <div className="p-4 text-center">
+                        <div className="w-6 h-6 mx-auto border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+                      </div>
+                    ) : memberPendingPosts.length > 0 ? (
+                      memberPendingPosts.slice(0, 3).map((post) => {
+                        const isPostOpen = openPostId === post.id;
+
+                        return (
+                          <div key={post.id} className="p-3 border-b">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center">
+                                {post.user?.photo ? (
+                                  <img
+                                    className="object-cover w-8 h-8 mr-2 rounded-full"
+                                    src={
+                                      post.user.photo.startsWith("http")
+                                        ? post.user.photo
+                                        : `${apiUrl}/${post.user.photo}`
+                                    }
+                                    alt={post.user.name}
+                                  />
+                                ) : (
+                                  <div className="flex items-center justify-center w-8 h-8 mr-2 bg-gray-300 rounded-full">
+                                    <span className="text-xs font-bold text-gray-600">
+                                      {post.user?.name?.charAt(0) || "U"}
+                                    </span>
+                                  </div>
+                                )}
+                                <span className="font-medium">
+                                  {post.user?.name || "Unknown User"}
+                                </span>
+                              </div>
+                              <button
+                                className="text-sm text-blue-500"
+                                onClick={() =>
+                                  setOpenPostId((prevId) =>
+                                    prevId === post.id ? null : post.id
+                                  )
+                                }
+                              >
+                                {isPostOpen ? (
+                                  <ChevronUp size={16} />
+                                ) : (
+                                  <ChevronDown size={16} />
+                                )}
+                              </button>
+                            </div>
+
+                            {isPostOpen && (
+                              <>
+                                <p className="mb-2 text-sm">{post.content}</p>
+                                {post.images && post.images.length > 0 && (
+                                  <div className="mb-2">
+                                    {renderPhotoGrid(post.images)}
+                                  </div>
+                                )}
+                                <div className="text-xs text-yellow-600">
+                                  Pending for admin approval
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="p-4 text-center text-gray-500">
+                        No posts pending approval
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {isCurrentUserAdmin && (
+                <div className="mt-4 mb-4 bg-white border rounded-lg shadow-sm">
+                  <div className="flex items-center justify-between p-3 border-b">
+                    <h6 className="font-medium">Posts Pending Approval</h6>
+                    <Link
+                      to={`/groups/${groupId}/approve-posts`}
+                      className="text-sm text-blue-500"
+                    >
+                      View All
+                    </Link>
+                  </div>
+                  <div>
+                    {isLoadingPendingPosts ? (
+                      <div className="p-4 text-center">
+                        <div className="w-6 h-6 mx-auto border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+                      </div>
+                    ) : pendingPosts.length > 0 ? (
+                      pendingPosts.slice(0, 3).map((post) => {
+                        const isPostOpen = openPostId === post.id;
+
+                        return (
+                          <div key={post.id} className="p-3 border-b">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center">
+                                {post.user?.photo ? (
+                                  <img
+                                    className="object-cover w-8 h-8 mr-2 rounded-full"
+                                    src={
+                                      post.user.photo.startsWith("http")
+                                        ? post.user.photo
+                                        : `${apiUrl}/${post.user.photo}`
+                                    }
+                                    alt={post.user.name}
+                                  />
+                                ) : (
+                                  <div className="flex items-center justify-center w-8 h-8 mr-2 bg-gray-300 rounded-full">
+                                    <span className="text-xs font-bold text-gray-600">
+                                      {post.user?.name?.charAt(0) || "U"}
+                                    </span>
+                                  </div>
+                                )}
+                                <span className="font-medium">
+                                  {post.user?.name || "Unknown User"}
+                                </span>
+                              </div>
+                              <button
+                                className="text-sm text-blue-500"
+                                onClick={() =>
+                                  setOpenPostId((prevId) =>
+                                    prevId === post.id ? null : post.id
+                                  )
+                                }
+                              >
+                                {isPostOpen ? (
+                                  <ChevronUp size={16} />
+                                ) : (
+                                  <ChevronDown size={16} />
+                                )}
+                              </button>
+                            </div>
+
+                            {isPostOpen && (
+                              <>
+                                <p className="mb-2 text-sm">{post.content}</p>
+                                {post.images && post.images.length > 0 && (
+                                  <div className="mb-2">
+                                    {renderPhotoGrid(post.images)}
+                                  </div>
+                                )}
+                                <div className="flex justify-start gap-2">
+                                  <button
+                                    onClick={() => handleApprovePost(post.id)}
+                                    className="px-3 py-2 text-xs text-white rounded bg-gradient-to-r from-blue-500 to-cyan-400"
+                                  >
+                                    Approve
+                                  </button>
+                                  <button
+                                    onClick={() => handleRejectPost(post.id)}
+                                    className="px-3 py-1 text-xs text-white rounded bg-gradient-to-r from-red-500 to-red-400 hover:from-red-600 hover:to-red-500"
+                                  >
+                                    Reject
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="p-4 text-center text-gray-500">
+                        No posts pending approval
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {isCurrentUserAdmin && (
+                <div className="mt-4 mb-4 bg-white border rounded-lg shadow-sm">
+                  <div className="flex items-center justify-between p-3 border-b">
+                    <h6 className="font-medium">Join Requests</h6>
+                    {joinRequests.length > 3 && (
+                      <Link
+                        to={`/groups/${groupId}/join-requests`}
+                        className="text-sm text-blue-500"
+                      >
+                        View All
+                      </Link>
+                    )}
+                  </div>
+                  <div>
+                    {isLoadingJoinRequests ? (
+                      <div className="p-4 text-center">
+                        <div className="w-6 h-6 mx-auto border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+                      </div>
+                    ) : joinRequests.length > 0 ? (
+                      joinRequests.slice(0, 3).map((request) => (
+                        <div key={request.id} className="p-3 border-b">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center">
+                              {request.user?.photo ? (
+                                <img
+                                  className="object-cover w-8 h-8 mr-2 rounded-full"
+                                  src={
+                                    request.user.photo.startsWith("http")
+                                      ? request.user.photo
+                                      : `${apiUrl}/${request.user.photo}`
+                                  }
+                                  alt={request.user.name}
+                                />
+                              ) : (
+                                <div className="flex items-center justify-center w-8 h-8 mr-2 bg-gray-300 rounded-full">
+                                  <span className="text-xs font-bold text-gray-600">
+                                    {request.user?.name?.charAt(0) || "U"}
+                                  </span>
+                                </div>
+                              )}
+                              <div>
+                                <span className="block font-medium">
+                                  {request.user?.name || "Unknown User"}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  {formatPostTime(request.created_at)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex justify-start gap-2 mt-2">
+                            <button
+                              onClick={() =>
+                                handleApproveJoinRequest(request.id)
+                              }
+                              className="px-3 py-2 text-xs text-white rounded bg-gradient-to-r from-blue-500 to-cyan-400"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleRejectJoinRequest(request.id)
+                              }
+                              className="px-3 py-1 text-xs text-white rounded bg-gradient-to-r from-red-500 to-red-400 hover:from-red-600 hover:to-red-500"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-4 text-center text-gray-500">
+                        No pending join requests
+                      </div>
                     )}
                   </div>
                 </div>
@@ -2727,145 +3158,46 @@ export default function GroupPage() {
             {/* Main Content */}
             <main className="w-full lg:w-2/4">
               {/* Group Info */}
-              <div className="relative mb-4 overflow-hidden bg-white border rounded-lg shadow-sm">
-                {/* Cover */}
-                <div className="relative w-full h-24 bg-gray-300 sm:h-36">
+              <div className="relative mb-4 bg-white border rounded-lg shadow-sm">
+                <div className="relative w-full bg-gray-300 h-14 sm:h-24">
                   <img
                     className="object-cover w-full h-full"
                     src={GroupCover}
                     alt="Cover"
                   />
-                  {/* Group Image */}
-                  <div className="absolute -bottom-10 left-6">
-                    <img
-                      className="object-cover w-20 h-20 bg-white border-4 border-white rounded-xl"
-                      src={
-                        group.image
-                          ? `${apiUrl}/${group.image}`
-                          : "/default-group.png"
-                      }
-                      alt={group.name}
-                    />
+                  <div className="absolute -bottom-8 left-4">
+                    <div className="relative">
+                      <img
+                        className="object-cover w-16 h-16 border-4 border-white rounded-lg"
+                        src={
+                          group.image
+                            ? `${apiUrl}/${group.image}`
+                            : "/default-group.png"
+                        }
+                        alt={group.name}
+                      />
+                    </div>
                   </div>
                 </div>
-                {/* Group Info */}
-                <div className="flex flex-col items-start gap-2 px-6 pb-6 pt-14">
-                  <div className="flex flex-col w-full sm:flex-row sm:items-center">
-                    <div className="flex-1">
-                      <h5 className="text-lg font-bold text-gray-800">
-                        {group.name}
-                      </h5>
-                      <p className="mt-1 text-sm text-gray-500">
-                        {group.description}
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span
-                          className="block text-sm font-medium text-gray-500 cursor-pointer lg:hidden"
-                          onClick={() =>
-                            (window.location.href = `/groups/${groupId}/members`)
-                          }
-                        >
-                          {group.members_count || 0} Member
-                          {(group.members_count || 0) > 1 ? "s" : ""}
-                        </span>
-                        <span className="hidden text-xs text-gray-500 lg:block">
-                          {group.members_count || 0} Member
-                          {(group.members_count || 0) > 1 ? "s" : ""}
-                        </span>
-                      </div>
-                    </div>
-                    {isCurrentUserAdmin && (
+                <div className="flex items-start justify-between px-4 pt-10 pb-4">
+                  <div className="ml-4">
+                    <h5 className="font-bold text-gray-800">{group.name}</h5>
+                    <p className="text-sm text-gray-500">{group.description}</p>
+                    <p className="text-sm text-gray-500">
+                      {group.members_count || 0} Members
+                    </p>
+                  </div>
+                  {isCurrentUserAdmin && (
+                    <div className="top-2 right-2">
                       <button
-                        className="mt-2 ml-auto text-gray-500 transition sm:mt-0 hover:text-gray-700"
+                        className="text-gray-500 hover:text-gray-700"
                         onClick={handleOpenEditModal}
-                        title="Edit Group"
                       >
                         <Pencil size={20} />
                       </button>
-                    )}
-                  </div>
-                  {/* Divider */}
-                  <div className="w-full my-4 border-t border-gray-200"></div>
-                  {/* Group Rules */}
-                  {group.rule && (
-                    <div className="w-full">
-                      <h6 className="mb-1 font-semibold text-left text-gray-700">
-                        Group Rules
-                      </h6>
-                      <div className="text-sm text-left text-gray-600 whitespace-pre-line">
-                        {group.rule}
-                      </div>
                     </div>
                   )}
-                  {/* Join/Leave Button */}
-                  <div className="w-full mt-4">
-                    {!isGroupMember && (
-                      <button
-                        className="w-full px-4 py-2 text-base font-semibold text-white transition bg-blue-500 rounded-lg shadow hover:bg-blue-600"
-                        onClick={handleJoinGroup}
-                      >
-                        Join Group
-                      </button>
-                    )}
-                    {isGroupMember && !isCurrentUserAdmin && (
-                      <button
-                        className="w-full px-4 py-2 text-base font-semibold text-white transition bg-red-500 rounded-lg shadow hover:bg-red-600"
-                        onClick={handleLeaveGroup}
-                      >
-                        Leave Group
-                      </button>
-                    )}
-                  </div>
                 </div>
-              </div>
-
-              {/* Card Admin Group - tampil di bawah join group saat mobile/tablet */}
-              <div className="block mb-4 lg:hidden">
-                {group.creator && (
-                  <div className="bg-white border rounded-lg shadow-sm">
-                    <div className="p-3 border-b">
-                      <h6 className="font-medium">Admin Group</h6>
-                    </div>
-                    <div className="p-4 text-center">
-                      {group.creator.photo ? (
-                        <img
-                          src={apiUrl + "/" + group.creator.photo}
-                          className="object-cover w-20 h-20 mx-auto mb-2 rounded-full"
-                          alt={group.creator.name}
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = "";
-                            e.target.parentElement.classList.add("bg-gray-200");
-                          }}
-                        />
-                      ) : (
-                        <div className="flex items-center justify-center w-20 h-20 mx-auto mb-2 bg-gray-200 rounded-full">
-                          <span className="text-lg font-bold text-gray-600">
-                            {group.creator.name
-                              ? group.creator.name
-                                  .split(" ")
-                                  .map((n) => n[0])
-                                  .join("")
-                                  .toUpperCase()
-                                  .slice(0, 2)
-                              : "?"}
-                          </span>
-                        </div>
-                      )}
-                      <h5 className="font-bold text-gray-800">
-                        {group.creator.name}
-                      </h5>
-                      <p className="mt-1 text-sm text-gray-500">
-                        {group.creator.headline || "No headline available"}
-                      </p>
-                      {group.creator.about && (
-                        <p className="mt-2 text-sm text-gray-600 line-clamp-3">
-                          {group.creator.about}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Create Post Box */}
@@ -2912,9 +3244,9 @@ export default function GroupPage() {
                         <div className="flex w-full gap-3 sm:w-auto">
                           <label
                             htmlFor="post-image"
-                            className="flex items-center text-sm text-blue-500 cursor-pointer"
+                            className="flex items-center text-sm cursor-pointer text-sky-500"
                           >
-                            <Image size={16} className="mr-1" /> Add Photo
+                            <Image size={16} className="mr-1" /> Photo
                             <input
                               type="file"
                               id="post-image"
@@ -2928,7 +3260,7 @@ export default function GroupPage() {
 
                         <button
                           type="submit"
-                          className="w-full px-4 py-2 text-white rounded bg-sky-500 sm:w-auto"
+                          className="w-full px-4 py-2 text-white rounded bg-gradient-to-r from-sky-500 to-cyan-400 hover:from-sky-600 hover:to-cyan-500 sm:w-auto"
                           disabled={
                             !postContent.trim() && imageFiles.length === 0
                           }
@@ -2944,24 +3276,71 @@ export default function GroupPage() {
               {pinnedPosts.length > 0 && (
                 <div className="mb-4 bg-white border rounded-lg shadow-sm">
                   <div className="p-3 border-b">
-                    <h6 className="flex items-center font-medium">
-                      <Pin size={16} className="mr-1" /> Pinned Posts
-                    </h6>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <div className="flex p-3 space-x-2">
-                      {pinnedPosts.map((post) => (
-                        <div
-                          key={post.id}
-                          className="flex-none border rounded-lg w-100"
-                        >
-                          {renderPost(post)}
-                        </div>
-                      ))}
+                    <div className="flex items-center mb-2">
+                      <Pin size={16} className="mr-2 text-blue-500" />
+                      <span className="font-semibold text-blue-600">
+                        Pinned Post
+                      </span>
                     </div>
+                    {pinnedPosts.map((post) => (
+                      <div key={post.id} className="mb-4">
+                        <div className="flex items-center mb-3">
+                          <Link
+                            to={`/user-profile/${
+                              post.user?.username || "unknown"
+                            }`}
+                            className="relative w-10 h-10 overflow-hidden rounded-full"
+                          >
+                            {post.user?.photo ? (
+                              <img
+                                className="object-cover w-full h-full"
+                                src={
+                                  post.user.photo.startsWith("http")
+                                    ? post.user.photo
+                                    : `${apiUrl}/${post.user.photo}`
+                                }
+                                alt={post.user?.name || "Unknown user"}
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.src = "";
+                                  e.target.parentElement.classList.add(
+                                    "bg-gray-300"
+                                  );
+                                }}
+                              />
+                            ) : (
+                              <div className="flex items-center justify-center w-full h-full bg-gray-300">
+                                <span className="text-sm font-bold text-gray-600">
+                                  {getInitials(post.user?.name || "Unknown")}
+                                </span>
+                              </div>
+                            )}
+                          </Link>
+                          <div className="ml-3">
+                            <h6 className="font-bold">
+                              {post.user?.name || "Unknown user"}
+                            </h6>
+                            <small className="text-gray-500">
+                              {formatPostTime(post.created_at)}
+                            </small>
+                          </div>
+                          <button
+                            className="ml-auto text-gray-500 hover:text-gray-700"
+                            onClick={() => handleOpenPostOptions(post.id)}
+                          >
+                            <MoreHorizontal size={16} />
+                          </button>
+                        </div>
+                        <p className="mb-3">{renderPostContent(post)}</p>
+                        {/* GUNAKAN renderPhotoGrid AGAR RESPONSIF */}
+                        {post.images && <>{renderPhotoGrid(post.images)}</>}
+                        {renderPostActions(post)}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
+
               <div className="bg-white border rounded-lg shadow-sm">
                 <div className="p-3 border-b">
                   <h6 className="font-medium">Recent Posts</h6>
@@ -3067,7 +3446,7 @@ export default function GroupPage() {
                                       </Link>
                                     ) : (
                                       <div className="flex items-center justify-center w-10 h-10 bg-gray-200 border-2 border-white rounded-full">
-                                        <span className="text-sm font-bold text-gray-600">
+                                        <span className="text-sm font-medium text-gray-600">
                                           {getInitials(commentUser.name)}
                                         </span>
                                       </div>
@@ -3268,7 +3647,7 @@ export default function GroupPage() {
                                                         />
                                                       </Link>
                                                     ) : (
-                                                      <div className="flex items-center justify-center w-8 h-8 bg-gray-200 rounded-full">
+                                                      <div className="flex items-center justify-center w-8 h-8 bg-gray-200 border-2 border-white rounded-full">
                                                         <span className="text-xs font-medium text-gray-600">
                                                           {getInitials(
                                                             reply.user?.name
@@ -3321,9 +3700,10 @@ export default function GroupPage() {
                                                         </div>
 
                                                         {/* Reply Actions */}
+
                                                         <div className="flex items-center space-x-2 transition-opacity opacity-0 group-hover:opacity-100">
                                                           {reply.user?.id ===
-                                                            user.id && (
+                                                          currentUserId ? (
                                                             <button
                                                               className="text-gray-500 hover:text-gray-700"
                                                               onClick={(e) => {
@@ -3340,10 +3720,7 @@ export default function GroupPage() {
                                                                 size={14}
                                                               />
                                                             </button>
-                                                          )}
-
-                                                          {reply.user?.id !==
-                                                            user.id && (
+                                                          ) : (
                                                             <button
                                                               className="text-gray-500 hover:text-red-500"
                                                               onClick={(e) => {
@@ -3485,8 +3862,9 @@ export default function GroupPage() {
                     </div>
 
                     {/* Comment Options Modal */}
-                    {renderReplyOptionsModal()}
+
                     {renderCommentOptionsModal()}
+                    {renderReplyOptionsModal()}
 
                     {/* Add Comment Section */}
                     <div className="p-4 border-t border-gray-200">
@@ -3538,7 +3916,7 @@ export default function GroupPage() {
 
                         <button
                           className="px-4 py-2 text-sm text-white transition-colors bg-blue-500 rounded-lg hover:bg-blue-600"
-                          onClick={handleAddComment}
+                          onClick={() => handleAddComment(currentPostId)}
                         >
                           Post
                         </button>
@@ -3851,7 +4229,7 @@ export default function GroupPage() {
                           setShowRemoveModal(false);
                           setMemberToRemove(null);
                         }}
-                        className="text-gray-400 transition hover:text-gray-600"
+                        className="text-gray-500 hover:text-gray-700"
                       >
                         <X size={20} />
                       </button>
@@ -3896,7 +4274,7 @@ export default function GroupPage() {
             </main>
 
             {/* Right Sidebar */}
-            <aside className="hidden lg:block lg:w-1/4">
+            <aside className="lg:block lg:w-1/4">
               {/* Members Box */}
               <div className="mb-6 bg-white border shadow rounded-xl">
                 <div className="flex items-center justify-between p-4 border-b">
@@ -4050,6 +4428,52 @@ export default function GroupPage() {
                   </div>
                 </div>
               )}
+
+              {group.creator && (
+                <div className="mb-4 bg-white border rounded-lg shadow-sm">
+                  <div className="p-3 border-b">
+                    <h6 className="font-medium">Group Admin</h6>
+                  </div>
+                  <div className="p-4 text-center">
+                    {group.creator.photo ? (
+                      <img
+                        src={apiUrl + "/" + group.creator.photo}
+                        className="object-cover w-20 h-20 mx-auto mb-2 rounded-full"
+                        alt={group.creator.name}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "";
+                          e.target.parentElement.classList.add("bg-gray-200");
+                        }}
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center w-20 h-20 mx-auto mb-2 bg-gray-200 rounded-full">
+                        <span className="text-lg font-bold text-gray-600">
+                          {group.creator.name
+                            ? group.creator.name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")
+                                .toUpperCase()
+                                .slice(0, 2)
+                            : "?"}
+                        </span>
+                      </div>
+                    )}
+                    <h5 className="font-bold text-gray-800">
+                      {group.creator.name}
+                    </h5>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {group.creator.headline || "No headline available"}
+                    </p>
+                    {group.creator.about && (
+                      <p className="mt-2 text-sm text-gray-600 line-clamp-3">
+                        {group.creator.about}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </aside>
           </div>
         </div>
@@ -4134,8 +4558,8 @@ export default function GroupPage() {
 
       {showEditModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-xl w-full max-w-lg border shadow-xl shadow-blue-500/10 backdrop-blur-xl max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center border-b border-blue-200/50 p-4 bg-sky-500 rounded-t-xl sticky top-0 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-lg border border-blue-200/50 shadow-2xl shadow-blue-500/10 backdrop-blur-xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 flex items-center justify-between p-4 border-b border-blue-200/50 bg-gradient-to-r from-sky-500 to-cyan-400 rounded-t-2xl backdrop-blur-sm">
               <h3 className="text-lg font-bold text-transparent bg-white bg-clip-text">
                 Edit Group
               </h3>
@@ -4212,7 +4636,7 @@ export default function GroupPage() {
                       }
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                     <span className="ml-3 text-sm font-medium text-gray-900">
                       {editFormData.post_approval ? "Enabled" : "Disabled"}
                     </span>
@@ -4262,7 +4686,7 @@ export default function GroupPage() {
                     type="file"
                     accept="image/*"
                     onChange={handleEditImageChange}
-                    className="text-sm text-gray-600 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-sky-500 file:text-white hover: file:cursor-pointer"
+                    className="text-sm text-gray-600 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-gradient-to-r file:from-sky-500 file:to-cyan-400 file:text-white hover: file:cursor-pointer"
                   />
                 </div>
               </div>
@@ -4271,13 +4695,13 @@ export default function GroupPage() {
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="px-4 py-2 text-gray-700 transition-all duration-300 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200"
+                  className="px-4 py-2 font-medium text-gray-700 transition-all duration-300 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 font-medium text-white rounded-lg bg-sky-500 "
+                  className="px-4 py-2 font-medium text-white rounded-lg bg-gradient-to-r from-sky-500 to-cyan-400 hover:bg-gradient-to-r hover:from-sky-600 hover:to-cyan-500 "
                 >
                   Save Changes
                 </button>
@@ -4287,6 +4711,7 @@ export default function GroupPage() {
         </div>
       )}
 
+      {/* Edit Post Modal */}
       {/* Edit Post Modal */}
       {showEditPostModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -4438,19 +4863,18 @@ export default function GroupPage() {
                 onClick={() => {
                   const reasonText =
                     selectedReason === "Other" ? customReason : selectedReason;
-                  const contentType = selectedComment ? "comment" : "post";
-                  const contentId = selectedComment
-                    ? selectedComment.id
-                    : selectedPostId;
-
-                  if (reportTargetUserId && contentId && reasonText) {
-                    handleReportSubmit(
-                      reportTargetUserId,
-                      contentType,
-                      contentId,
-                      reasonText
-                    );
-                  }
+                  console.log("Report button clicked with params:", {
+                    reportTargetUserId,
+                    targetType: "post",
+                    selectedPostId,
+                    reasonText,
+                  });
+                  handleSubmitReport(
+                    reportTargetUserId,
+                    "post",
+                    selectedPostId,
+                    reasonText
+                  );
                 }}
               >
                 Report

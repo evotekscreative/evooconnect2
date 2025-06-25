@@ -51,14 +51,18 @@ export default function ProfileMainSection({
         onEditEducation={handleEditEducation}
         onAddEducation={() => setShowEducationModal(true)}
       />
-      <ProfilePosts
-        userPosts={userPosts}
-        user={user}
-        profileImage={profileImage}
-        apiUrl={apiUrl}
-        scrollLeft={scrollLeft}
-        scrollRight={scrollRight}
-      />
+     
+        <ProfilePosts
+          userPosts={userPosts}
+          user={user}
+          profileImage={profileImage}
+          apiUrl={apiUrl}
+          scrollLeft={scrollLeft}
+          scrollRight={scrollRight}
+          username={user.username}
+          name={user.name}
+        />
+   
     </div>
   );
 }

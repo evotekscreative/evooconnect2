@@ -183,7 +183,7 @@ export default function ProfilePosts({ userPosts, apiUrl, user, profileImage, us
 
       <div className="flex justify-center mt-4">
         <Link
-          to={`/post-page/${username}`}
+          to={`/post-page-profile/${username}`}
           className="text-[#00AEEF] font-semibold hover:underline"
         >
           See All Posts
