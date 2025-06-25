@@ -17,8 +17,19 @@ export default function CompanyHeader({ company, currentUser }) {
   const [joinStatus, setJoinStatus] = useState(
     company.is_member_of_company ? 'joined' : (company.is_pending_join_request ? 'pending' : 'not_joined')
   );
+  const [showUnfollowModal, setShowUnfollowModal] = useState(false);
 
   const handleFollow = async () => {
+    // Jika sudah follow, tampilkan modal konfirmasi untuk unfollow
+    if (company.is_following) {
+      setShowUnfollowModal(true);
+      return;
+    }
+
+    await performFollowAction();
+  };
+
+  const performFollowAction = async () => {
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem('token');
@@ -47,6 +58,11 @@ export default function CompanyHeader({ company, currentUser }) {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleConfirmUnfollow = async () => {
+    setShowUnfollowModal(false);
+    await performFollowAction();
   };
 
   const handleJoinRequest = async () => {
@@ -98,7 +114,7 @@ export default function CompanyHeader({ company, currentUser }) {
 
           setCompanyState(prev => ({
             ...prev,
-            pending_join_request_id: result.data?.id
+            join_request_id: result.data?.id
           }));
         }
 
@@ -127,7 +143,17 @@ export default function CompanyHeader({ company, currentUser }) {
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem('token');
-      const requestId = company.pending_join_request_id;
+      const requestId = companyState.join_request_id || company.pending_join_request_id;
+      
+      console.log('Cancel request - requestId:', requestId);
+      console.log('company.join_request_id:', company.join_request_id);
+      console.log('companyState.pending_join_request_id:', companyState.pending_join_request_id);
+      
+      if (!requestId) {
+        toast.error('No pending join request found');
+        return;
+      }
+      
       const res = await fetch(
         `${import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:3000'}/api/company-join-requests/${requestId}`,
         {
@@ -137,6 +163,9 @@ export default function CompanyHeader({ company, currentUser }) {
       );
       if (res.ok) {
         toast.success('Join request cancelled');
+        setJoinStatus('not_joined');
+      } else if (res.status === 404) {
+        toast.error('Join request not found or already processed');
         setJoinStatus('not_joined');
       } else {
         toast.error('Failed to cancel join request');
@@ -277,12 +306,36 @@ export default function CompanyHeader({ company, currentUser }) {
         </div>
       )}
 
+      {showUnfollowModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full">
+            <h3 className="text-lg font-medium mb-4">Unfollow Company</h3>
+            <p className="mb-6">Are you sure you want to unfollow {company.name}?</p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowUnfollowModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmUnfollow}
+                disabled={isSubmitting}
+                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-50"
+              >
+                {isSubmitting ? 'Unfollowing...' : 'Unfollow'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <img src={companyProfile} alt="Company Header" className="w-full h-60 object-cover" />
       <div className="max-w-screen-xl mx-auto flex flex-col md:flex-row items-center justify-between py-4 px-4 bg-white rounded-md shadow -mt-8 relative z-10">
         <div className="text-center md:text-left">
           <h1 className="text-2xl font-bold">{company.name}</h1>
           <p className="text-gray-500">
-            {company.industry} | {company.location} |
+            {company.industry} | Jakarta |
             <button onClick={handleShowFollowers} className="hover:underline ml-1">
               {company.followers_count} followers
             </button>
@@ -305,7 +358,15 @@ export default function CompanyHeader({ company, currentUser }) {
             )
           )}
 
-          <button className="flex items-center gap-2 bg-blue-100 text-blue-600 px-4 py-2 rounded-md hover:bg-blue-200 text-sm">
+          <button 
+            onClick={() => company.website && window.open(company.website, '_blank')}
+            disabled={!company.website}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm ${
+              company.website 
+                ? 'bg-blue-100 text-blue-600 hover:bg-blue-200 cursor-pointer' 
+                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            }`}
+          >
             Visit Website
           </button>
 
@@ -314,7 +375,7 @@ export default function CompanyHeader({ company, currentUser }) {
               <button
                 onClick={handleFollow}
                 disabled={isSubmitting}
-                className={`px-4 py-2 rounded-md text-white text-sm transition-colors ${company.is_following ? "bg-green-500 hover:bg-green-600" : "bg-blue-500 hover:bg-blue-600"
+                className={`px-4 py-2 rounded bg-blue-600 text-white ${company.is_following ? "bg-green-500 hover:bg-green-600" : "bg-blue-500 hover:bg-blue-600"
                   }`}
               >
                 {isSubmitting ? 'Processing...' : company.is_following ? 'Followed' : '+ Follow'}

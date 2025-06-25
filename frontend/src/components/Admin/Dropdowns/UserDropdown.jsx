@@ -30,7 +30,7 @@ const UserDropdown = () => {
           dropdownPopoverShow ? closeDropdownPopover() : openDropdownPopover();
         }}
       >
-        <div className="items-center flex">
+        {/* <div className="items-center flex">
           <span className="w-12 h-12 text-sm text-white bg-gray-300 inline-flex items-center justify-center rounded-full">
             <img
               alt="..."
@@ -38,7 +38,7 @@ const UserDropdown = () => {
               src={team1}
             />
           </span>
-        </div>
+        </div> */}
       </a>
       <div
         ref={popoverDropdownRef}

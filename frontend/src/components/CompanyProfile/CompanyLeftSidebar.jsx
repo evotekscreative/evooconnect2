@@ -89,7 +89,7 @@ export default function CompanyLeftSidebar({ company }) {
     toast.success("Job posted successfully!");
   };
   return (
-    <div className="lg:col-span-3 space-y-6">
+    <div className="lg:col-span-3 space-y-6 mt-1">
 
       <PostJobModal
         showModal={showPostAJobModal}
@@ -100,7 +100,7 @@ export default function CompanyLeftSidebar({ company }) {
         handleJobSubmit={handleJobSubmit}
       />
 
-      <div className="flex flex-col items-center bg-white p-6 rounded-md shadow">
+      <div className="flex flex-col items-center bg-white p-6 !m-0 rounded-md shadow">
         <img src={apiUrl+'/' + company.logo}
         alt="Company Logo" 
         className="w-40 h-40" />
@@ -118,27 +118,6 @@ export default function CompanyLeftSidebar({ company }) {
           </div>
         </div>
       </div>
-
-
-      {/* Post Job Button */}
-
-      <Card className="shadow-md rounded-xl bg-white">
-        <CardContent className="p-4 text-center">
-          <img
-            src={job1}
-            alt="EVOCONNECT"
-            className="rounded-xl w-full object-cover mb-4"
-          />
-          <h2 className="font-bold text-md mb-1">EVOConnect Solutions</h2>
-          <p className="text-sm text-gray-600 mb-4">Looking for talent?</p>
-          <Button
-            className="bg-[#0A66C2] hover:bg-blue-700 text-white px-4 py-1 text-sm rounded"
-            onClick={() => setShowPostAJobModal(true)}
-          >
-            Post a Job
-          </Button>
-        </CardContent>
-      </Card>
     </div>
   );
 }

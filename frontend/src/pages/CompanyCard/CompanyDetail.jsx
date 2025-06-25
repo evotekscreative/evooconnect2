@@ -39,6 +39,40 @@ export default function CompanyDetail() {
   });
   const [logoPreview, setLogoPreview] = useState(null);
 
+  const fetchCompanyJobs = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
+      const response = await fetch(`${apiUrl}/api/companies/${company_id}/jobs?limit=10&offset=0&status=active`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.code === 200) {
+          const mappedJobs = (data.data.jobs || []).map(job => ({
+            id: job.id,
+            title: job.title,
+            company: company?.name || "Company",
+            location: job.location,
+            employmentType: job.job_type,
+            description: job.description,
+            salary: job.min_salary && job.max_salary ? `${job.currency} ${job.min_salary?.toLocaleString()} - ${job.max_salary?.toLocaleString()}` : '',
+            skills: job.skills || [],
+            experience_level: job.experience_level,
+            work_type: job.work_type
+          }));
+          setJobs(mappedJobs);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching company jobs:", error);
+    }
+  };
+
   useEffect(() => {
     const fetchCompanyDetail = async () => {
       try {
@@ -78,7 +112,6 @@ export default function CompanyDetail() {
             logo: c.logo || null,
             tagline: c.tagline || ""
           });
-          setJobs(c.jobs || []);
         } else {
           setCompany(null);
         }
@@ -93,6 +126,12 @@ export default function CompanyDetail() {
 
     fetchCompanyDetail();
   }, [company_id]);
+
+  useEffect(() => {
+    if (activeTab === "Jobs") {
+      fetchCompanyJobs();
+    }
+  }, [activeTab, company_id]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Users, UserMinus, UserPlus, Search, X, Check } from "lucide-react";
+import { Users, UserMinus, UserPlus, Search, X, Check, Edit, Trash2, FileText, Eye } from "lucide-react";
 import Sidebar from "../../components/CompanyDashboard/Sidebar/sidebar";
+import Navbar from "../../components/CompanyDashboard/Navbar/navbar";
+import AdminNavbar from "../../components/Admin/Navbars/AdminNavbar";
+import HeaderStats from "../../components/Admin/Headers/HeaderStats";
 import { toast } from "react-toastify";
-import { useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Case from "../../components/Case";
+import Alert from "../../components/Auth/alert";
 
 const ManageMember = ({ currentUserRole }) => {
   const { company_id } = useParams();
@@ -31,6 +34,12 @@ const ManageMember = ({ currentUserRole }) => {
   const [roleFilter, setRoleFilter] = useState("all");
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState(null);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [alert, setAlert] = useState({
+    show: false,
+    type: "success",
+    message: "",
+  });
 
   const fetchCompanies = async () => {
     try {
@@ -228,23 +237,39 @@ const ManageMember = ({ currentUserRole }) => {
       });
 
       if (response.ok) {
-        toast.success("Request approved");
-        setShowPendingModal(false); // Tutup modal setelah approve
+        setAlert({
+          show: true,
+          type: "success",
+          message: "Request approved successfully",
+        });
+        setShowPendingModal(false);
         fetchPendingRequests();
         fetchMyJoinRequests();
         fetchMembers();
       } else {
         const errorData = await response.json();
-        toast.error(errorData.message || "Failed to approve request");
+        setAlert({
+          show: true,
+          type: "error",
+          message: errorData.message || "Failed to approve request",
+        });
       }
     } catch (error) {
-      toast.error("Failed to approve request");
+      setAlert({
+        show: true,
+        type: "error",
+        message: "Failed to approve request",
+      });
     }
   };
 
   const handleRejectPending = async (requestId) => {
     if (!pendingRejectReason) {
-      toast.error("Please provide a rejection reason");
+      setAlert({
+        show: true,
+        type: "error",
+        message: "Please provide a rejection reason",
+      });
       return;
     }
     try {
@@ -264,18 +289,30 @@ const ManageMember = ({ currentUserRole }) => {
         }),
       });
       if (response.ok) {
-        toast.success("Request rejected");
+        setAlert({
+          show: true,
+          type: "success",
+          message: "Request rejected successfully",
+        });
         setPendingRejectingId(null);
         setPendingRejectReason("");
-        setShowPendingModal(false); // Tutup modal setelah reject
+        setShowPendingModal(false);
         fetchPendingRequests();
         fetchMyJoinRequests();
       } else {
         const errorData = await response.json();
-        toast.error(errorData.message || "Failed to reject request");
+        setAlert({
+          show: true,
+          type: "error",
+          message: errorData.message || "Failed to reject request",
+        });
       }
     } catch (error) {
-      toast.error("Failed to reject request");
+      setAlert({
+        show: true,
+        type: "error",
+        message: "Failed to reject request",
+      });
     }
   };
 
@@ -302,15 +339,27 @@ const ManageMember = ({ currentUserRole }) => {
       );
 
       if (response.ok) {
-        toast.success("Member removed successfully");
+        setAlert({
+          show: true,
+          type: "success",
+          message: "Member removed successfully",
+        });
         fetchMembers();
       } else {
         const errorData = await response.json();
-        toast.error(errorData.message || "Failed to remove member");
+        setAlert({
+          show: true,
+          type: "error",
+          message: errorData.message || "Failed to remove member",
+        });
       }
     } catch (error) {
       console.error("Error removing member:", error);
-      toast.error("Failed to remove member");
+      setAlert({
+        show: true,
+        type: "error",
+        message: "Failed to remove member",
+      });
     }
     setShowRemoveModal(false);
     setMemberToRemove(null);
@@ -336,28 +385,35 @@ const ManageMember = ({ currentUserRole }) => {
       );
 
       if (response.ok) {
-        toast.success(
-          `Role updated to ${
+        setAlert({
+          show: true,
+          type: "success",
+          message: `Role updated to ${
             newRole.charAt(0).toUpperCase() + newRole.slice(1)
-          } successfully`
-        );
+          } successfully`,
+        });
         setShowRoleModal(false);
 
-        // Update state members secara lokal
         setMembers((prev) =>
           prev.map((m) =>
             m.id === selectedMember.id ? { ...m, role: newRole } : m
           )
         );
-
-        // fetchMembers(); // Boleh tetap dipanggil jika ingin sync dengan backend
       } else {
         const errorData = await response.json();
-        toast.error(errorData.message || "Failed to update role");
+        setAlert({
+          show: true,
+          type: "error",
+          message: errorData.message || "Failed to update role",
+        });
       }
     } catch (error) {
       console.error("Error updating role:", error);
-      toast.error("Failed to update role");
+      setAlert({
+        show: true,
+        type: "error",
+        message: "Failed to update role",
+      });
     }
   };
 
@@ -376,17 +432,29 @@ const ManageMember = ({ currentUserRole }) => {
         body: JSON.stringify({ message: joinMessage }),
       });
       if (response.ok) {
-        toast.success("Join request sent!");
+        setAlert({
+          show: true,
+          type: "success",
+          message: "Join request sent successfully",
+        });
         setShowJoinModal(false);
         setJoinMessage("");
         navigate(location.pathname, { replace: true });
         fetchMyJoinRequests();
       } else {
         const data = await response.json();
-        toast.error(data.message || "Failed to send join request");
+        setAlert({
+          show: true,
+          type: "error",
+          message: data.message || "Failed to send join request",
+        });
       }
     } catch (error) {
-      toast.error("Failed to send join request");
+      setAlert({
+        show: true,
+        type: "error",
+        message: "Failed to send join request",
+      });
     }
   };
 
@@ -407,490 +475,520 @@ const ManageMember = ({ currentUserRole }) => {
       )
     : [];
 
+  const fetchPendingCount = async () => {
+    if (!company_id) return;
+    try {
+      const token = localStorage.getItem("token");
+      const url = `${
+        import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000"
+      }/api/companies/${company_id}/join-requests/pending-count`;
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setPendingCount(data.data?.pending_count || 0);
+      } else {
+        setPendingCount(0);
+      }
+    } catch {
+      setPendingCount(0);
+    }
+  };
+
+  useEffect(() => {
+    fetchPendingCount();
+  }, [company_id]);
+
+  useEffect(() => {
+    if (alert.show) {
+      const timer = setTimeout(() => {
+        setAlert({ ...alert, show: false });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [alert]);
+
+  const color = "light";
+  const isLight = color === "light";
+  const headerClass =
+    "px-6 py-3 text-xs uppercase font-semibold text-left border-b";
+  const lightHeader = "bg-gray-100 text-gray-500 border-gray-200";
+  const darkHeader = "bg-sky-800 text-sky-200 border-sky-700";
+  const textColor = isLight ? "text-gray-800" : "text-gray-800";
+  const borderColor = isLight ? "border-gray-200" : "border-sky-700";
+
   return (
     <>
-                <Sidebar />
-                <div className="relative md:ml-64 bg-blueGray-100">
-      <Case />
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Users className="w-6 h-6" />
-            Manage Members
-            {company && (
-              <span className="ml-4 text-lg font-semibold text-gray-600">
-                ({company.name})
-              </span>
-            )}
-          </h2>
-          <button
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            onClick={() => {
-              setShowPendingModal(true);
-              fetchPendingRequests();
-            }}
-          >
-            Pending Join Users
-          </button>
-        </div>
-
-        <div className="flex items-center gap-4 mb-4">
-          <div className="relative flex-1">
-            <input
-              type="text"
-              placeholder="Search members..."
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded w-full focus:outline-none focus:ring focus:border-blue-300 text-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
-          </div>
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="border border-gray-300 rounded px-3 py-2 text-sm"
-          >
-            <option value="all">All Roles</option>
-            <option value="super_admin">Super Admin</option>
-            <option value="admin">Admin</option>
-            <option value="hrd">HRD</option>
-            <option value="member">Member</option>
-          </select>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border rounded">
-            <thead>
-              <tr className="text-left border-b bg-gray-50">
-                <th className="px-4 py-3 text-sm text-gray-600 font-medium">
-                  Name
-                </th>
-                <th className="px-4 py-3 text-sm text-gray-600 font-medium">
-                  Email
-                </th>
-                <th className="px-4 py-3 text-sm text-gray-600 font-medium">
-                  Role
-                </th>{" "}
-                {/* Tambahkan ini */}
-                <th className="px-4 py-3 text-sm text-gray-600 font-medium">
-                  Status
-                </th>
-                <th className="px-4 py-3 text-sm text-gray-600 font-medium text-right">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td
-                    colSpan="5"
-                    className="px-4 py-6 text-center text-gray-500"
-                  >
-                    Loading members...
-                  </td>
-                </tr>
-              ) : filteredMembers.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan="5"
-                    className="px-4 py-6 text-center text-gray-500"
-                  >
-                    {roleFilter === "all"
-                      ? "No members found"
-                      : "No members found for this role."}
-                  </td>
-                </tr>
-              ) : (
-                filteredMembers.map((member) => (
-                  <tr key={member.id} className="border-b hover:bg-gray-50">
-                    <td className="px-4 py-3 flex items-center gap-3">
-                      <img
-                        src={
-                          member.user?.avatar ||
-                          `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                            member.user?.name || ""
-                          )}`
-                        }
-                        alt={member.user?.name}
-                        className="w-8 h-8 rounded-full"
-                      />
-                      <span className="font-medium text-gray-800">
-                        {member.user?.name}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {member.user?.email}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 capitalize">
-                      <span
-                        className={`text-xs px-2 py-1 rounded 
-              ${member.role === "admin" ? "bg-blue-200 text-blue-700" : ""}
-              ${
-                member.role === "super_admin"
-                  ? "bg-purple-200 text-purple-700"
-                  : ""
-              }
-              ${member.role === "hrd" ? "bg-yellow-200 text-yellow-700" : ""}
-              ${member.role === "member" ? "bg-gray-200 text-gray-700" : ""}
-            `}
-                      >
-                        {member.role
-                          .replace("_", " ")
-                          .replace(/\b\w/g, (l) => l.toUpperCase())}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 capitalize">
-                      <span
-                        className={`text-xs px-2 py-1 rounded 
-                            ${
-                              member.status === "pending"
-                                ? "bg-gray-200 text-gray-700"
-                                : ""
-                            }
-                            ${
-                              member.status === "approved"
-                                ? "bg-green-200 text-green-700"
-                                : ""
-                            }
-                            ${
-                              member.status === "rejected"
-                                ? "bg-red-200 text-red-700"
-                                : ""
-                            }
-                          `}
-                      >
-                        {member.status.charAt(0).toUpperCase() +
-                          member.status.slice(1)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {member.status === "active" &&
-                        member.role !== "super_admin" && (
-                          <div className="flex gap-2 justify-end items-center">
-                            <button
-                              onClick={() => handleRemoveMember(member.id)}
-                              className="text-sm bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded flex items-center"
-                            >
-                              <UserMinus className="w-4 h-4 mr-1" /> Remove
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedMember(member);
-                                setNewRole(
-                                  member.role === "admin" ? "member" : "admin"
-                                );
-                                setShowRoleModal(true);
-                              }}
-                              className={`text-sm ${
-                                member.role === "admin"
-                                  ? "bg-gray-500 hover:bg-gray-600"
-                                  : "bg-blue-500 hover:bg-blue-600"
-                              } text-white px-3 py-1 rounded flex items-center`}
-                            >
-                              {member.role === "admin"
-                                ? "Change Role"
-                                : "Change Role"}
-                            </button>
-                          </div>
+      <Navbar />
+      <AdminNavbar />
+      <Sidebar />
+      <div className="relative md:ml-64 bg-blueGray-100">
+        <Case className="py-6" />
+        <HeaderStats
+          stats={[
+            {
+              label: "Pending Join Requests",
+              value: pendingCount,
+              icon: <UserPlus className="w-6 h-6 text-blue-500" />,
+              color: "bg-blue-100 text-blue-700",
+            },
+          ]}
+        />
+        <div className="px-4 md:px-10 mx-auto w-full -m-32">
+          {alert.show && (
+            <div className="fixed top-4 right-4 z-50 w-full max-w-sm">
+              <Alert
+                type={alert.type}
+                message={alert.message}
+                onClose={() => setAlert({ ...alert, show: false })}
+              />
+            </div>
+          )}
+          <div className="flex flex-wrap mt-11">
+            <div className="w-full mb-12 px-4">
+              <div
+                className={`relative flex flex-col w-full mb-6 shadow-lg rounded`}
+              >
+                <div className="rounded-t mb-0 px-4 py-3 border-b border-sky-700 bg-sky-800">
+                  <div className="flex flex-wrap items-center">
+                    <div className="w-full px-4 max-w-full flex-grow flex-1">
+                      <h3 className="font-semibold text-lg text-white">
+                        Manage Members
+                        {company && (
+                          <span className="ml-2 text-sm font-normal">
+                            ({company.name})
+                          </span>
                         )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                      </h3>
+                    </div>
+                    <button
+                      className="bg-white text-sky-800 font-semibold px-4 py-2 rounded-lg shadow hover:bg-sky-100 transition duration-200"
+                      onClick={() => {
+                        setShowPendingModal(true);
+                        fetchPendingRequests();
+                      }}
+                    >
+                      Pending Requests
+                    </button>
+                  </div>
+                </div>
+                <div className="flex flex-col block w-full overflow-x-auto">
+                  <div className="bg-white flex flex-col md:flex-row items-center gap-1 p-4">
+                    <div className="relative flex-1 w-full">
+                      <input
+                        type="text"
+                        placeholder="Search members..."
+                        className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-200 text-sm bg-[#F7F8FA]"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                      <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
+                    </div>
+                    <select
+                      value={roleFilter}
+                      onChange={(e) => setRoleFilter(e.target.value)}
+                      className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-[#F7F8FA]"
+                    >
+                      <option value="all">All Roles</option>
+                      <option value="super_admin">Super Admin</option>
+                      <option value="admin">Admin</option>
+                      <option value="hrd">HRD</option>
+                      <option value="member">Member</option>
+                    </select>
+                  </div>
+
+                  {loading ? (
+                    <div className="text-center py-8 text-gray-400">
+                      Loading members...
+                    </div>
+                  ) : (
+                    <table className="items-center w-full bg-transparent border-collapse">
+                      <thead>
+                        <tr>
+                          {["Name", "Email", "Role", "Status", "Actions"].map(
+                            (title, idx) => (
+                              <th
+                                key={idx}
+                                className={`${headerClass} ${
+                                  isLight ? lightHeader : darkHeader
+                                }`}
+                              >
+                                {title}
+                              </th>
+                            )
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredMembers.length === 0 ? (
+                          <tr>
+                            <td
+                              colSpan="5"
+                              className="text-center py-8 border-t"
+                            >
+                              {roleFilter === "all"
+                                ? "No members found"
+                                : "No members found for this role"}
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredMembers.map((member) => (
+                            <tr
+                              key={member.id}
+                              className="bg-white hover:bg-gray-50 transition duration-200"
+                            >
+                              <td
+                                className={`border-t ${borderColor} align-top`}
+                              >
+                                <div className="flex items-center px-6 py-4">
+                                  <img
+                                    src={
+                                      member.user?.avatar ||
+                                      `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                        member.user?.name || ""
+                                      )}`
+                                    }
+                                    alt={member.user?.name}
+                                    className="h-10 w-10 rounded-full border object-cover flex-shrink-0"
+                                  />
+                                  <div className="ml-3 min-w-0">
+                                    <p
+                                      className={`font-bold ${textColor} truncate`}
+                                    >
+                                      {member.user?.name}
+                                    </p>
+                                  </div>
+                                </div>
+                              </td>
+                              <td
+                                className={`border-t ${borderColor} px-6 py-4 align-top text-xs`}
+                              >
+                                {member.user?.email}
+                              </td>
+                              <td
+                                className={`border-t ${borderColor} px-6 py-4 align-top text-xs`}
+                              >
+                                <span
+                                  className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${
+                                    member.role === "admin"
+                                      ? "bg-blue-100 text-blue-700"
+                                      : member.role === "super_admin"
+                                      ? "bg-purple-100 text-purple-700"
+                                      : member.role === "hrd"
+                                      ? "bg-yellow-100 text-yellow-700"
+                                      : "bg-gray-100 text-gray-700"
+                                  }`}
+                                >
+                                  {member.role
+                                    .replace("_", " ")
+                                    .replace(/\b\w/g, (l) => l.toUpperCase())}
+                                </span>
+                              </td>
+                              <td
+                                className={`border-t ${borderColor} px-6 py-4 align-top text-xs`}
+                              >
+                                <span
+                                  className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${
+                                    member.status === "pending"
+                                      ? "bg-gray-100 text-gray-600"
+                                      : member.status === "approved" ||
+                                        member.status === "active"
+                                      ? "bg-green-100 text-green-700"
+                                      : "bg-red-100 text-red-700"
+                                  }`}
+                                >
+                                  {member.status.charAt(0).toUpperCase() +
+                                    member.status.slice(1)}
+                                </span>
+                              </td>
+                              <td
+                                className={`border-t ${borderColor} px-6 py-4 align-top text-xs whitespace-nowrap`}
+                              >
+                                {member.status === "active" &&
+                                  member.role !== "super_admin" && (
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        onClick={() =>
+                                          handleRemoveMember(member.id)
+                                        }
+                                        className="p-1 rounded hover:bg-gray-100 text-red-600"
+                                      >
+                                        <Trash2 size={18} />
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setSelectedMember(member);
+                                          setNewRole(
+                                            member.role === "admin"
+                                              ? "member"
+                                              : "admin"
+                                          );
+                                          setShowRoleModal(true);
+                                        }}
+                                        className="p-1 rounded hover:bg-gray-100 text-primary"
+                                      >
+                                        <Edit size={18} />
+                                      </button>
+                                    </div>
+                                  )}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      {/* Modal Pending Users */}
+
+      {/* Pending Requests Modal */}
       {showPendingModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-lg w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold">Pending Join Requests</h3>
-              <button
-                onClick={() => {
-                  setShowPendingModal(false);
-                  setPendingRequests([]);
-                  setPendingRejectingId(null);
-                  setPendingRejectReason("");
-                }}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                &times;
-              </button>
-            </div>
-            {pendingLoading ? (
-              <div className="text-center py-8 text-gray-500">Loading...</div>
-            ) : pendingError ? (
-              <div className="text-center py-8 text-red-500">
-                {pendingError}
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold">Pending Join Requests</h3>
+                <button
+                  onClick={() => {
+                    setShowPendingModal(false);
+                    setPendingRequests([]);
+                    setPendingRejectingId(null);
+                    setPendingRejectReason("");
+                  }}
+                  className="text-gray-500 hover:text-black rounded-full p-2"
+                >
+                  <X size={20} />
+                </button>
               </div>
-            ) : pendingRequests.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                No pending requests.
-              </div>
-            ) : (
-              <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-                {pendingRequests.map((req) => (
-                  <div
-                    key={req.id}
-                    className="border-b pb-3 flex flex-col gap-1"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="font-medium">
-                        {req.user?.name || "-"}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        {req.user?.email || "-"}
-                      </span>
-                    </div>
-                    <div className="text-sm text-gray-600 mb-1">
-                      {req.message || (
-                        <span className="italic text-gray-400">No message</span>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
-                        onClick={() => handleApprovePending(req.id)}
-                      >
-                        Approve
-                      </button>
-                      <button
-                        className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
-                        onClick={() => setPendingRejectingId(req.id)}
-                      >
-                        Reject
-                      </button>
-                    </div>
-                    {pendingRejectingId === req.id && (
-                      <div className="mt-2 flex flex-col gap-2">
-                        <textarea
-                          className="w-full p-2 border border-gray-300 rounded"
-                          rows={2}
-                          placeholder="Enter rejection reason..."
-                          value={pendingRejectReason}
-                          onChange={(e) =>
-                            setPendingRejectReason(e.target.value)
-                          }
-                        />
+              {pendingLoading ? (
+                <div className="text-center py-8 text-gray-400">Loading...</div>
+              ) : pendingError ? (
+                <div className="text-center py-8 text-red-500">
+                  {pendingError}
+                </div>
+              ) : pendingRequests.length === 0 ? (
+                <div className="text-center py-8 text-gray-400">
+                  No pending requests.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {pendingRequests.map((req) => (
+                    <div
+                      key={req.id}
+                      className="border-b pb-4 last:border-b-0"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium text-gray-800">
+                            {req.user?.name || "-"}
+                          </h4>
+                          <p className="text-sm text-gray-500">
+                            {req.user?.email || "-"}
+                          </p>
+                        </div>
                         <div className="flex gap-2">
                           <button
-                            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm"
-                            onClick={() => {
-                              setPendingRejectingId(null);
-                              setPendingRejectReason("");
-                            }}
+                            className="px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 text-xs shadow"
+                            onClick={() => handleApprovePending(req.id)}
                           >
-                            Cancel
+                            Approve
                           </button>
                           <button
-                            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
-                            onClick={() => handleRejectPending(req.id)}
-                            disabled={!pendingRejectReason}
+                            className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 text-xs shadow"
+                            onClick={() => setPendingRejectingId(req.id)}
                           >
-                            Submit Rejection
+                            Reject
                           </button>
                         </div>
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Member Details Modal */}
-      {showMemberModal && selectedMember && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full">
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-xl font-bold">Member Details</h3>
-              <button
-                onClick={() => setShowMemberModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                &times;
-              </button>
-            </div>
-            <div className="flex flex-col items-center mb-4">
-              <img
-                src={
-                  selectedMember.user?.avatar ||
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                    selectedMember.user?.name || ""
-                  )}`
-                }
-                alt={selectedMember.user?.name}
-                className="w-16 h-16 rounded-full mb-3"
-              />
-              <h4 className="text-lg font-medium">
-                {selectedMember.user?.name}
-              </h4>
-              <p className="text-gray-600">{selectedMember.user?.email}</p>
-              <p className="mt-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm capitalize">
-                {selectedMember.role}
-              </p>
-            </div>
-            <div className="border-t pt-4">
-              <h4 className="font-medium mb-2">Additional Information</h4>
-              <p className="text-sm text-gray-600">
-                Joined on:{" "}
-                {new Date(selectedMember.created_at).toLocaleDateString()}
-              </p>
-              <p className="text-sm text-gray-600">
-                Status: {selectedMember.status}
-              </p>
+                      {req.message && (
+                        <p className="mt-2 text-sm text-gray-600">
+                          {req.message}
+                        </p>
+                      )}
+                      {pendingRejectingId === req.id && (
+                        <div className="mt-3">
+                          <textarea
+                            className="w-full p-2 border border-gray-300 rounded-lg text-sm"
+                            rows={2}
+                            placeholder="Enter rejection reason..."
+                            value={pendingRejectReason}
+                            onChange={(e) =>
+                              setPendingRejectReason(e.target.value)
+                            }
+                          />
+                          <div className="flex justify-end gap-2 mt-2">
+                            <button
+                              className="px-3 py-1 bg-gray-200 rounded-lg hover:bg-gray-300 text-xs"
+                              onClick={() => {
+                                setPendingRejectingId(null);
+                                setPendingRejectReason("");
+                              }}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 text-xs shadow"
+                              onClick={() => handleRejectPending(req.id)}
+                              disabled={!pendingRejectReason}
+                            >
+                              Submit Rejection
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* Change Role Modal */}
+      {/* Role Update Modal */}
       {showRoleModal && selectedMember && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full">
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-xl font-bold">Change Member Role</h3>
-              <button
-                onClick={() => setShowRoleModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                &times;
-              </button>
-            </div>
-            <div className="mb-4">
-              <p className="mb-2">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center justify-center mb-4">
+                <div className="bg-blue-100 p-3 rounded-full">
+                  <Edit className="text-blue-600" size={24} />
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-center mb-2">
+                Change Member Role
+              </h3>
+              <p className="text-gray-600 text-center mb-6">
                 Change role for{" "}
-                <span className="font-medium">{selectedMember.user?.name}</span>{" "}
-                to:
+                <span className="font-semibold">{selectedMember.user?.name}</span>
               </p>
-              <select
-                value={newRole}
-                onChange={(e) => setNewRole(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded"
-              >
-                <option value="admin">Admin</option>
-                <option value="hrd">HRD</option>
-                <option value="member">Member</option>
-              </select>
-            </div>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowRoleModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleUpdateRole}
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-              >
-                Update Role
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Join Request */}
-      {showJoinModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full">
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-xl font-bold">Join Company</h3>
-              <button
-                onClick={() => {
-                  setShowJoinModal(false);
-                  navigate(location.pathname, { replace: true });
-                }}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                &times;
-              </button>
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Message (optional):
-              </label>
-              <textarea
-                value={joinMessage}
-                onChange={(e) => setJoinMessage(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded"
-                rows={3}
-                placeholder="Why do you want to join?"
-              />
-            </div>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => {
-                  setShowJoinModal(false);
-                  navigate(location.pathname, { replace: true });
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmitJoinRequest}
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-              >
-                Send Join Request
-              </button>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  New Role
+                </label>
+                <select
+                  value={newRole}
+                  onChange={(e) => setNewRole(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-lg"
+                >
+                  <option value="admin">Admin</option>
+                  <option value="hrd">HRD</option>
+                  <option value="member">Member</option>
+                </select>
+              </div>
+              <div className="flex justify-center gap-4">
+                <button
+                  onClick={() => setShowRoleModal(false)}
+                  className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUpdateRole}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                >
+                  Update Role
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal Remove Member */}
+      {/* Remove Member Modal */}
       {showRemoveModal && memberToRemove && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full">
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-xl font-bold">Remove Member</h3>
-              <button
-                onClick={() => {
-                  setShowRemoveModal(false);
-                  setMemberToRemove(null);
-                }}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                &times;
-              </button>
-            </div>
-            <div className="mb-4">
-              <p>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center justify-center mb-4">
+                <div className="bg-red-100 p-3 rounded-full">
+                  <UserMinus className="text-red-600" size={24} />
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-center mb-2">
+                Remove Member
+              </h3>
+              <p className="text-gray-600 text-center mb-6">
                 Are you sure you want to remove{" "}
                 <span className="font-semibold">
                   {memberToRemove.user?.name}
                 </span>{" "}
                 from this company?
               </p>
-            </div>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => {
-                  setShowRemoveModal(false);
-                  setMemberToRemove(null);
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmRemoveMember}
-                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
-              >
-                Remove
-              </button>
+              <div className="flex justify-center gap-4">
+                <button
+                  onClick={() => {
+                    setShowRemoveModal(false);
+                    setMemberToRemove(null);
+                  }}
+                  className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmRemoveMember}
+                  className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                >
+                  Remove
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
-    </div>
+
+      {/* Join Request Modal */}
+      {showJoinModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center justify-center mb-4">
+                <div className="bg-blue-100 p-3 rounded-full">
+                  <UserPlus className="text-blue-600" size={24} />
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-center mb-2">
+                Join Company
+              </h3>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Message (optional)
+                </label>
+                <textarea
+                  value={joinMessage}
+                  onChange={(e) => setJoinMessage(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-lg"
+                  rows={3}
+                  placeholder="Why do you want to join?"
+                />
+              </div>
+              <div className="flex justify-center gap-4">
+                <button
+                  onClick={() => {
+                    setShowJoinModal(false);
+                    navigate(location.pathname, { replace: true });
+                  }}
+                  className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmitJoinRequest}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                >
+                  Send Request
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

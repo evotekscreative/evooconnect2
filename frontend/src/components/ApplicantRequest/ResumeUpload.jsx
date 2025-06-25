@@ -46,7 +46,7 @@ const ResumeUpload = ({ userData, onBack, onNext, onResumeChange, isSubmitting, 
 
     return (
         <div className="fixed inset-0 bg-opacity-50 flex items-start justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl mt-10 max-h-[90vh] flex flex-col animate-slide-down">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl mt-10 max-h-[90vh] flex flex-col animate-slide-down overflow-y-auto max-h-[80vh]">
                 <div className="p-6">
                     <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center">

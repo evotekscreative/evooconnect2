@@ -9,6 +9,7 @@ import AdminNavbar from "../../../components/Admin/Navbars/AdminNavbar.jsx";
 import Sidebar from "../../../components/Admin/Sidebar/Sidebar.jsx";
 import HeaderStats from "../../../components/Admin/Headers/HeaderStats.jsx";
 import FooterAdmin from "../../../components/Admin/Footers/FooterAdmin.jsx";
+import Case from "../../../components/Case.jsx";
 
 export default function Dashboard() {
   return (

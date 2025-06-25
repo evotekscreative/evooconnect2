@@ -10,6 +10,7 @@ const JobDashboard = () => {
   const [activeTab, setActiveTab] = useState('In Progress');
   const [savedJobs, setSavedJobs] = useState([]);
   const [appliedJobs, setAppliedJobs] = useState([]);
+  const [reviewedJobs, setReviewedJobs] = useState([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -21,7 +22,7 @@ const JobDashboard = () => {
   const fetchMyApplications = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${BASE_URL}/api/my-applications?status=submitted&limit=10&offset=0`, {
+      const response = await fetch(`${BASE_URL}/api/my-applications?limit=50&offset=0`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
@@ -31,7 +32,12 @@ const JobDashboard = () => {
       const data = await response.json();
       
       if (data.code === 200) {
-        setAppliedJobs(data.data.applications || []);
+        const applications = data.data.applications || [];
+        const inProgress = applications.filter(app => app.status === 'submitted');
+        const reviewed = applications.filter(app => ['under_review', 'shortlisted', 'interview_scheduled', 'accepted', 'rejected'].includes(app.status));
+        
+        setAppliedJobs(inProgress);
+        setReviewedJobs(reviewed);
       }
     } catch (error) {
       console.error('Error fetching applications:', error);
@@ -58,10 +64,22 @@ const JobDashboard = () => {
     }
   };
 
-  const handleRemoveJob = (jobId) => {
-    const updatedSavedJobs = savedJobs.filter(job => job.id !== jobId);
-    setSavedJobs(updatedSavedJobs);
-    localStorage.setItem('savedJobs', JSON.stringify(updatedSavedJobs));
+  const handleRemoveJob = async (jobVacancyId) => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/saved-jobs/${jobVacancyId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        setSavedJobs(prev => prev.filter(job => job.job_vacancy.id !== jobVacancyId));
+      }
+    } catch (error) {
+      console.error('Error removing saved job:', error);
+    }
   };
 
   const tabs = [
@@ -94,7 +112,7 @@ const JobDashboard = () => {
               <Briefcase size={18} className="text-blue-600 mr-3" />
               <span className="text-blue-700 font-medium">My Jobs</span>
               <span className="ml-auto bg-blue-100 text-blue-600 text-xs font-medium px-2 py-0.5 rounded-full">
-                {savedJobs.length + appliedJobs.length + appliedJobs.length}
+                {savedJobs.length + appliedJobs.length + reviewedJobs.length}
               </span>
             </div>
           </div>
@@ -127,6 +145,11 @@ const JobDashboard = () => {
                 {tab.name === 'In Progress' && appliedJobs.length > 0 && (
                   <span className="bg-blue-100 text-blue-600 text-xs font-medium px-2 py-0.5 rounded-full">
                     {appliedJobs.length}
+                  </span>
+                )}
+                {tab.name === 'Applied' && reviewedJobs.length > 0 && (
+                  <span className="bg-blue-100 text-blue-600 text-xs font-medium px-2 py-0.5 rounded-full">
+                    {reviewedJobs.length}
                   </span>
                 )}
 
@@ -162,7 +185,7 @@ const JobDashboard = () => {
                       </div>
                     </div>
                     <button
-                      onClick={() => handleRemoveJob(savedJob.id)}
+                      onClick={() => handleRemoveJob(savedJob.job_vacancy.id)}
                       className="text-gray-400 hover:text-red-500 p-1"
                       title="Remove job"
                     >
@@ -246,16 +269,63 @@ const JobDashboard = () => {
             <div className="flex justify-center items-center mt-16">
               <div className="text-gray-500">Loading applications...</div>
             </div>
+          ) : activeTab === 'Applied' && reviewedJobs.length > 0 ? (
+            <div className="space-y-4">
+              {reviewedJobs.map((application) => (
+                <div key={application.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-semibold text-lg hover:text-blue-600 cursor-pointer" onClick={() => navigate(`/jobs/${application.job_vacancy.id}`)}>
+                        {application.job_vacancy.title}
+                      </h3>
+                      <p className="text-blue-600 text-sm">
+                        {application.job_vacancy.company.name}
+                      </p>
+                      <div className="flex items-center text-gray-500 text-xs mt-2 space-x-4">
+                        <span className="flex items-center">
+                          <MapPin size={14} className="mr-1" />
+                          {application.job_vacancy.location}
+                        </span>
+                        <span className="flex items-center">
+                          <DollarSign size={14} className="mr-1" />
+                          {application.expected_salary?.toLocaleString()}
+                        </span>
+                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          {application.job_vacancy.job_type}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center">
+                      <span className={`text-xs px-2 py-1 rounded-full capitalize ${
+                        application.status === 'under_review' ? 'bg-yellow-100 text-yellow-800' :
+                        application.status === 'shortlisted' ? 'bg-purple-100 text-purple-800' :
+                        application.status === 'interview_scheduled' ? 'bg-indigo-100 text-indigo-800' :
+                        application.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                        application.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {application.status.replace('_', ' ')}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex justify-between items-center">
+                    <span className="text-xs text-gray-500">
+                      Applied on {new Date(application.submitted_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : activeTab === 'Applied' ? (
             <div className="flex flex-col items-center text-center mt-16 max-w-md mx-auto">
               <div className="bg-blue-50 p-6 rounded-full mb-6">
                 <CheckCircle size={48} className="text-blue-500" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800 mb-3">
-                No applied jobs yet
+                No reviewed applications yet
               </h3>
               <p className="text-base text-gray-500 mb-6">
-                Track your job applications here once you've applied to jobs.
+                Applications that have been reviewed by companies will appear here.
               </p>
               <button
                 onClick={() => navigate('/jobs')}

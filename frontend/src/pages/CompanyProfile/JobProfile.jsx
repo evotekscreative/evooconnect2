@@ -4,7 +4,6 @@ import { useParams } from "react-router-dom";
 import JobHeader from "../../components/JobProfile/JobHeader.jsx";
 import JobLeftSidebar from "../../components/JobProfile/JobLeftSidebar.jsx";
 import JobMainContent from "../../components/JobProfile/JobMainContent.jsx";
-import JobRightSidebar from "../../components/JobProfile/JobRightSidebar.jsx";
 
 const BASE_URL = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
@@ -17,6 +16,7 @@ export default function JobProfile() {
     const [clickedApply, setClickedApply] = useState(false);
     const [savedJobs, setSavedJobs] = useState([]);
     const [appliedJobs, setAppliedJobs] = useState([]);
+    const [selectedJob, setSelectedJob] = useState(null);
 
     useEffect(() => {
         async function fetchJob() {
@@ -34,6 +34,7 @@ export default function JobProfile() {
                 const data = await res.json();
                 if (data.code === 200) {
                     setJob(data.data);
+                    setSelectedJob(data.data); // set default selected job
                 }
             } catch (err) {
                 console.error('Error fetching job:', err);
@@ -70,10 +71,10 @@ export default function JobProfile() {
     const handleSaveClick = () => {
         let updatedSavedJobs;
         if (!clickedSave) {
-            updatedSavedJobs = [...savedJobs, job];
+            updatedSavedJobs = [...savedJobs, selectedJob];
             setClickedSave(true);
         } else {
-            updatedSavedJobs = savedJobs.filter(j => j.id !== job.id);
+            updatedSavedJobs = savedJobs.filter(j => j.id !== selectedJob.id);
             setClickedSave(false);
         }
         setSavedJobs(updatedSavedJobs);
@@ -82,13 +83,13 @@ export default function JobProfile() {
 
     const handleApplyClick = () => {
         if (!clickedApply) {
-            const updatedAppliedJobs = [...appliedJobs, job];
+            const updatedAppliedJobs = [...appliedJobs, selectedJob];
             setAppliedJobs(updatedAppliedJobs);
             setClickedApply(true);
             localStorage.setItem('appliedJobs', JSON.stringify(updatedAppliedJobs));
             
             if (!clickedSave) {
-                const updatedSavedJobs = [...savedJobs, job];
+                const updatedSavedJobs = [...savedJobs, selectedJob];
                 setSavedJobs(updatedSavedJobs);
                 setClickedSave(true);
                 localStorage.setItem('savedJobs', JSON.stringify(updatedSavedJobs));
@@ -122,19 +123,23 @@ export default function JobProfile() {
         <>
             <Navbar />
             <div className="bg-gray-100 min-h-screen py-8">
-                <div className="container mx-auto px-4 md:px-6 lg:px-24 xl:px-40">
-                    <JobHeader 
-                        job={job} 
-                        clickedSave={clickedSave} 
-                        clickedApply={clickedApply} 
-                        handleSaveClick={handleSaveClick} 
-                        handleApplyClick={handleApplyClick} 
-                    />
-                    
-                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                        <JobLeftSidebar job={job} />
-                        <JobMainContent job={job} />
-                        <JobRightSidebar />
+                <div className="container mx-auto px-4 md:px-6 lg:px-24 xl:px-38">
+                    <div className="grid grid-cols-1 lg:grid-cols-6 gap-5">
+                        {/* Sidebar kiri diperbesar */}
+                        <div className="lg:col-span-2 hidden lg:block">
+                            <JobLeftSidebar
+                                onSelectJob={setSelectedJob}
+                                selectedJobId={selectedJob?.id}
+                            />
+                        </div>
+                        {/* Main content diperkecil */}
+                        <div className="lg:col-span-4">
+                            <JobMainContent
+                                job={selectedJob}
+                                clickedSave={clickedSave}
+                                handleSaveClick={handleSaveClick}
+                            />
+                        </div>
                     </div>
                 </div>
             </div>

@@ -230,26 +230,8 @@ export default function Jobs() {
         <>
             <Toaster position="top-right" richColors />
             <Navbar />
-            <div className="bg-[#eef3f8] min-h-screen px-4 lg:px-32 py-6 grid grid-cols-12 gap-6">
-                <div className="col-span-12 lg:col-span-3 space-y-6">
-                    <Card className="shadow-md rounded-xl bg-white">
-                        <CardContent className="p-4 text-center">
-                            <img
-                                src={job1}
-                                alt="EVOCONNECT"
-                                className="rounded-xl w-full object-cover mb-4"
-                            />
-                            <h2 className="font-bold text-md mb-1">EVOConnect Solutions</h2>
-                            <p className="text-sm text-gray-600 mb-4">Looking for talent?</p>
-                            <Button
-                                className="bg-[#0A66C2] hover:bg-blue-700 text-white px-4 py-1 text-sm rounded"
-                                onClick={() => setShowPostAJobModal(true)}
-                            >
-                                Post a Job
-                            </Button>
-                        </CardContent>
-                    </Card>
-
+            <div className="bg-[#eef3f8] min-h-screen px-4 lg:px-32 py-6 grid grid-cols-12 gap-2">
+                <div className="col-span-12 lg:col-span-3 space-y-2 ">
                     <Card className="shadow-md rounded-xl bg-white">
                         <CardContent className="p-4 text-center">
                             <h2 className="font-bold text-md mb-1">Grow Your Business with EVOConnect</h2>
@@ -286,20 +268,6 @@ export default function Jobs() {
                             >
                                 Company
                             </button>
-                        </div>
-
-                        <div className="mt-4 flex flex-wrap gap-2 text-sm">
-                            {"All,Engineering,Marketing,Design".split(",").map((label, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => setActiveFilter(label)}
-                                    className={`px-3 py-1 border rounded-full ${activeFilter === label
-                                        ? "bg-gray-200 text-gray-800 border-gray-400"
-                                        : "border-[#0A66C2] text-[#0A66C2] hover:bg-[#e6f0fa]"}`}
-                                >
-                                    {label}
-                                </button>
-                            ))}
                         </div>
 
                         {activeTab === "job" ? (
