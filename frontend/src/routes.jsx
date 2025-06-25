@@ -8,7 +8,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy.jsx";
 import TermsCondition from "./pages/TermsCondition.jsx";
 import Jobs from "./pages/Jobs/index.jsx";
 import JobProfile from "./pages/CompanyProfile/JobProfile.jsx";
-import Faq from "./pages/Faq/index.jsx";
+import Faq from "./pages/Faq/faq.jsx";
 import CompanyProfile from "./pages/CompanyProfile/CompanyProfile.jsx";
 import Groups from "./pages/Groups.jsx";
 import CreateBlog from "./pages/Blog/CreateBlog.jsx";
@@ -267,7 +267,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/user-post-page/:username",
-    element:(
+    element: (
       <ProtectedRoute>
         <UserPostPage />
       </ProtectedRoute>
@@ -432,19 +432,15 @@ const router = createBrowserRouter([
     path: "/company-dashboard/:company_id/manage-member/",
     element: <ManageMember />,
   },
-  
-{
-  path: "/404",
-  element: (
-      <Page404 />
-  ),
-},
-{
-  path: "/500",
-  element: (
-      <Page500 />
-  ),
-},
+
+  {
+    path: "/404",
+    element: <Page404 />,
+  },
+  {
+    path: "/500",
+    element: <Page500 />,
+  },
 ]);
 
 export default router;

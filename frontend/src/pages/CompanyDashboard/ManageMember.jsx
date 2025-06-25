@@ -1,7 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { Users, UserMinus, UserPlus, Search, X, Check, Edit, Trash2, FileText, Eye } from "lucide-react";
-import Sidebar from "../../components/CompanyDashboard/Sidebar/sidebar";
-import Navbar from "../../components/CompanyDashboard/Navbar/navbar";
+import {
+  Users,
+  UserMinus,
+  UserPlus,
+  Search,
+  X,
+  Check,
+  Edit,
+  Trash2,
+  FileText,
+  Eye,
+} from "lucide-react";
+import Sidebar from "../../components/CompanyDashboard/Sidebar/Sidebar";
+import Navbar from "../../components/CompanyDashboard/Navbar/Navbar";
 import AdminNavbar from "../../components/Admin/Navbars/AdminNavbar";
 import HeaderStats from "../../components/Admin/Headers/HeaderStats";
 import { toast } from "react-toastify";
@@ -535,9 +546,9 @@ const ManageMember = ({ currentUserRole }) => {
             },
           ]}
         />
-        <div className="px-4 md:px-10 mx-auto w-full -m-32">
+        <div className="w-full px-4 mx-auto -m-32 md:px-10">
           {alert.show && (
-            <div className="fixed top-4 right-4 z-50 w-full max-w-sm">
+            <div className="fixed z-50 w-full max-w-sm top-4 right-4">
               <Alert
                 type={alert.type}
                 message={alert.message}
@@ -546,14 +557,14 @@ const ManageMember = ({ currentUserRole }) => {
             </div>
           )}
           <div className="flex flex-wrap mt-11">
-            <div className="w-full mb-12 px-4">
+            <div className="w-full px-4 mb-12">
               <div
                 className={`relative flex flex-col w-full mb-6 shadow-lg rounded`}
               >
-                <div className="rounded-t mb-0 px-4 py-3 border-b border-sky-700 bg-sky-800">
+                <div className="px-4 py-3 mb-0 border-b rounded-t border-sky-700 bg-sky-800">
                   <div className="flex flex-wrap items-center">
-                    <div className="w-full px-4 max-w-full flex-grow flex-1">
-                      <h3 className="font-semibold text-lg text-white">
+                    <div className="flex-1 flex-grow w-full max-w-full px-4">
+                      <h3 className="text-lg font-semibold text-white">
                         Manage Members
                         {company && (
                           <span className="ml-2 text-sm font-normal">
@@ -563,7 +574,7 @@ const ManageMember = ({ currentUserRole }) => {
                       </h3>
                     </div>
                     <button
-                      className="bg-white text-sky-800 font-semibold px-4 py-2 rounded-lg shadow hover:bg-sky-100 transition duration-200"
+                      className="px-4 py-2 font-semibold transition duration-200 bg-white rounded-lg shadow text-sky-800 hover:bg-sky-100"
                       onClick={() => {
                         setShowPendingModal(true);
                         fetchPendingRequests();
@@ -574,7 +585,7 @@ const ManageMember = ({ currentUserRole }) => {
                   </div>
                 </div>
                 <div className="flex flex-col block w-full overflow-x-auto">
-                  <div className="bg-white flex flex-col md:flex-row items-center gap-1 p-4">
+                  <div className="flex flex-col items-center gap-1 p-4 bg-white md:flex-row">
                     <div className="relative flex-1 w-full">
                       <input
                         type="text"
@@ -599,7 +610,7 @@ const ManageMember = ({ currentUserRole }) => {
                   </div>
 
                   {loading ? (
-                    <div className="text-center py-8 text-gray-400">
+                    <div className="py-8 text-center text-gray-400">
                       Loading members...
                     </div>
                   ) : (
@@ -625,7 +636,7 @@ const ManageMember = ({ currentUserRole }) => {
                           <tr>
                             <td
                               colSpan="5"
-                              className="text-center py-8 border-t"
+                              className="py-8 text-center border-t"
                             >
                               {roleFilter === "all"
                                 ? "No members found"
@@ -636,7 +647,7 @@ const ManageMember = ({ currentUserRole }) => {
                           filteredMembers.map((member) => (
                             <tr
                               key={member.id}
-                              className="bg-white hover:bg-gray-50 transition duration-200"
+                              className="transition duration-200 bg-white hover:bg-gray-50"
                             >
                               <td
                                 className={`border-t ${borderColor} align-top`}
@@ -650,9 +661,9 @@ const ManageMember = ({ currentUserRole }) => {
                                       )}`
                                     }
                                     alt={member.user?.name}
-                                    className="h-10 w-10 rounded-full border object-cover flex-shrink-0"
+                                    className="flex-shrink-0 object-cover w-10 h-10 border rounded-full"
                                   />
-                                  <div className="ml-3 min-w-0">
+                                  <div className="min-w-0 ml-3">
                                     <p
                                       className={`font-bold ${textColor} truncate`}
                                     >
@@ -712,7 +723,7 @@ const ManageMember = ({ currentUserRole }) => {
                                         onClick={() =>
                                           handleRemoveMember(member.id)
                                         }
-                                        className="p-1 rounded hover:bg-gray-100 text-red-600"
+                                        className="p-1 text-red-600 rounded hover:bg-gray-100"
                                       >
                                         <Trash2 size={18} />
                                       </button>
@@ -748,10 +759,10 @@ const ManageMember = ({ currentUserRole }) => {
 
       {/* Pending Requests Modal */}
       {showPendingModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-white shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-bold">Pending Join Requests</h3>
                 <button
                   onClick={() => {
@@ -760,28 +771,25 @@ const ManageMember = ({ currentUserRole }) => {
                     setPendingRejectingId(null);
                     setPendingRejectReason("");
                   }}
-                  className="text-gray-500 hover:text-black rounded-full p-2"
+                  className="p-2 text-gray-500 rounded-full hover:text-black"
                 >
                   <X size={20} />
                 </button>
               </div>
               {pendingLoading ? (
-                <div className="text-center py-8 text-gray-400">Loading...</div>
+                <div className="py-8 text-center text-gray-400">Loading...</div>
               ) : pendingError ? (
-                <div className="text-center py-8 text-red-500">
+                <div className="py-8 text-center text-red-500">
                   {pendingError}
                 </div>
               ) : pendingRequests.length === 0 ? (
-                <div className="text-center py-8 text-gray-400">
+                <div className="py-8 text-center text-gray-400">
                   No pending requests.
                 </div>
               ) : (
                 <div className="space-y-4">
                   {pendingRequests.map((req) => (
-                    <div
-                      key={req.id}
-                      className="border-b pb-4 last:border-b-0"
-                    >
+                    <div key={req.id} className="pb-4 border-b last:border-b-0">
                       <div className="flex items-center justify-between">
                         <div>
                           <h4 className="font-medium text-gray-800">
@@ -793,13 +801,13 @@ const ManageMember = ({ currentUserRole }) => {
                         </div>
                         <div className="flex gap-2">
                           <button
-                            className="px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 text-xs shadow"
+                            className="px-3 py-1 text-xs text-white bg-green-500 rounded-lg shadow hover:bg-green-600"
                             onClick={() => handleApprovePending(req.id)}
                           >
                             Approve
                           </button>
                           <button
-                            className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 text-xs shadow"
+                            className="px-3 py-1 text-xs text-white bg-red-500 rounded-lg shadow hover:bg-red-600"
                             onClick={() => setPendingRejectingId(req.id)}
                           >
                             Reject
@@ -814,7 +822,7 @@ const ManageMember = ({ currentUserRole }) => {
                       {pendingRejectingId === req.id && (
                         <div className="mt-3">
                           <textarea
-                            className="w-full p-2 border border-gray-300 rounded-lg text-sm"
+                            className="w-full p-2 text-sm border border-gray-300 rounded-lg"
                             rows={2}
                             placeholder="Enter rejection reason..."
                             value={pendingRejectReason}
@@ -824,7 +832,7 @@ const ManageMember = ({ currentUserRole }) => {
                           />
                           <div className="flex justify-end gap-2 mt-2">
                             <button
-                              className="px-3 py-1 bg-gray-200 rounded-lg hover:bg-gray-300 text-xs"
+                              className="px-3 py-1 text-xs bg-gray-200 rounded-lg hover:bg-gray-300"
                               onClick={() => {
                                 setPendingRejectingId(null);
                                 setPendingRejectReason("");
@@ -833,7 +841,7 @@ const ManageMember = ({ currentUserRole }) => {
                               Cancel
                             </button>
                             <button
-                              className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 text-xs shadow"
+                              className="px-3 py-1 text-xs text-white bg-red-500 rounded-lg shadow hover:bg-red-600"
                               onClick={() => handleRejectPending(req.id)}
                               disabled={!pendingRejectReason}
                             >
@@ -853,23 +861,25 @@ const ManageMember = ({ currentUserRole }) => {
 
       {/* Role Update Modal */}
       {showRoleModal && selectedMember && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white shadow-xl w-full max-w-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-white shadow-xl">
             <div className="p-6">
               <div className="flex items-center justify-center mb-4">
-                <div className="bg-blue-100 p-3 rounded-full">
+                <div className="p-3 bg-blue-100 rounded-full">
                   <Edit className="text-blue-600" size={24} />
                 </div>
               </div>
-              <h3 className="text-xl font-bold text-center mb-2">
+              <h3 className="mb-2 text-xl font-bold text-center">
                 Change Member Role
               </h3>
-              <p className="text-gray-600 text-center mb-6">
+              <p className="mb-6 text-center text-gray-600">
                 Change role for{" "}
-                <span className="font-semibold">{selectedMember.user?.name}</span>
+                <span className="font-semibold">
+                  {selectedMember.user?.name}
+                </span>
               </p>
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block mb-2 text-sm font-medium text-gray-700">
                   New Role
                 </label>
                 <select
@@ -885,13 +895,13 @@ const ManageMember = ({ currentUserRole }) => {
               <div className="flex justify-center gap-4">
                 <button
                   onClick={() => setShowRoleModal(false)}
-                  className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                  className="px-6 py-2 text-gray-700 transition border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleUpdateRole}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  className="px-6 py-2 text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
                 >
                   Update Role
                 </button>
@@ -903,18 +913,18 @@ const ManageMember = ({ currentUserRole }) => {
 
       {/* Remove Member Modal */}
       {showRemoveModal && memberToRemove && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white shadow-xl w-full max-w-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-white shadow-xl">
             <div className="p-6">
               <div className="flex items-center justify-center mb-4">
-                <div className="bg-red-100 p-3 rounded-full">
+                <div className="p-3 bg-red-100 rounded-full">
                   <UserMinus className="text-red-600" size={24} />
                 </div>
               </div>
-              <h3 className="text-xl font-bold text-center mb-2">
+              <h3 className="mb-2 text-xl font-bold text-center">
                 Remove Member
               </h3>
-              <p className="text-gray-600 text-center mb-6">
+              <p className="mb-6 text-center text-gray-600">
                 Are you sure you want to remove{" "}
                 <span className="font-semibold">
                   {memberToRemove.user?.name}
@@ -927,13 +937,13 @@ const ManageMember = ({ currentUserRole }) => {
                     setShowRemoveModal(false);
                     setMemberToRemove(null);
                   }}
-                  className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                  className="px-6 py-2 text-gray-700 transition border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmRemoveMember}
-                  className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                  className="px-6 py-2 text-white transition bg-red-600 rounded-lg hover:bg-red-700"
                 >
                   Remove
                 </button>
@@ -945,19 +955,19 @@ const ManageMember = ({ currentUserRole }) => {
 
       {/* Join Request Modal */}
       {showJoinModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white shadow-xl w-full max-w-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-white shadow-xl">
             <div className="p-6">
               <div className="flex items-center justify-center mb-4">
-                <div className="bg-blue-100 p-3 rounded-full">
+                <div className="p-3 bg-blue-100 rounded-full">
                   <UserPlus className="text-blue-600" size={24} />
                 </div>
               </div>
-              <h3 className="text-xl font-bold text-center mb-2">
+              <h3 className="mb-2 text-xl font-bold text-center">
                 Join Company
               </h3>
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block mb-2 text-sm font-medium text-gray-700">
                   Message (optional)
                 </label>
                 <textarea
@@ -974,13 +984,13 @@ const ManageMember = ({ currentUserRole }) => {
                     setShowJoinModal(false);
                     navigate(location.pathname, { replace: true });
                   }}
-                  className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                  className="px-6 py-2 text-gray-700 transition border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSubmitJoinRequest}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  className="px-6 py-2 text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
                 >
                   Send Request
                 </button>

@@ -22,7 +22,7 @@ import {
   AlertTriangle,
   ExternalLink,
 } from "lucide-react";
-import Sidebar from "../../components/CompanyDashboard/Sidebar/Sidebar.jsx";
+import Sidebar from "../../components/CompanyDashboard/Sidebar/Sidebar";
 import AdminNavbar from "../../components/Admin/Navbars/AdminNavbar.jsx";
 import HeaderStats from "../../components/Admin/Headers/HeaderStats.jsx";
 import Alert from "../../components/Auth/alert.jsx";
@@ -233,10 +233,10 @@ export default function ManageVacancy() {
     const handleClickOutside = () => {
       setStatusDropdown({});
     };
-    
-    document.addEventListener('click', handleClickOutside);
+
+    document.addEventListener("click", handleClickOutside);
     return () => {
-      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener("click", handleClickOutside);
     };
   }, []);
 
@@ -963,12 +963,10 @@ export default function ManageVacancy() {
 
   return (
     <>
-        
-
-        <div className="relative md:ml-64 bg-blueGray-100">
-          <Case className="py-6" />
-          <HeaderStats />
-          <Sidebar />
+      <div className="relative md:ml-64 bg-blueGray-100">
+        <Case className="py-6" />
+        <HeaderStats />
+        <Sidebar />
         {alert.show && (
           <div className="fixed top-4 right-4 z-50 w-full max-w-sm">
             <Alert
@@ -978,219 +976,217 @@ export default function ManageVacancy() {
             />
           </div>
         )}
-          <div className="px-4 md:px-10 mx-auto w-full pt-20 -m-44">
-            <div className="flex flex-wrap mt-4">
-              <div className="w-full mb-12 px-4">
-                <div
-                  className={`relative flex flex-col w-full mb-6 shadow-lg rounded`}
-                >
-                  {showDeleteModal && (
-                    <DeleteConfirmationModal
-                      onConfirm={handleDeleteJob}
-                      onCancel={() => {
-                        setShowDeleteModal(false);
-                        setJobToDelete(null);
-                      }}
-                    />
-                  )}
-
-                  <div className="rounded-t mb-0 px-4 py-3 border-b border-sky-700 bg-sky-800">
-                    <div className="flex flex-wrap items-center">
-                      <div className="w-full px-4 max-w-full flex-grow flex-1">
-                        <h3 className="font-semibold text-lg text-white">
-                          Job Vacancies
-                        </h3>
-                      </div>
-                      <button
-                        onClick={() => setShowModal(true)}
-                        className="bg-white text-sky-800 font-semibold px-4 py-2 rounded-lg shadow hover:bg-sky-100 transition duration-200"
-                      >
-                        Post Vacancy
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="block w-full overflow-x-auto">
-                    {loading ? (
-                      <div className="text-center py-4">
-                        Loading job vacancies...
-                      </div>
-                    ) : (
-                      <table className="items-center w-full bg-transparent border-collapse">
-                        <thead>
-                          <tr>
-                            {[
-                              "Job Title",
-                              "Salary",
-                              "Status",
-                              "Type Apply",
-                              "Action",
-                              "",
-                            ].map((title, idx) => (
-                              <th
-                                key={idx}
-                                className={`${headerClass} ${
-                                  isLight ? lightHeader : darkHeader
-                                }`}
-                              >
-                                {title}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {jobs.length > 0 ? (
-                            jobs.map((job) => (
-                              <tr
-                                key={job.id}
-                                className="bg-white hover:bg-gray-50 transition duration-200"
-                              >
-                                <td
-                                  className={`border-t ${borderColor} align-top`}
-                                >
-                                  <div className="flex items-start px-6 py-4">
-                                    <img
-                                      src={`${apiUrl}/${job.company?.logo}`}
-                                      className="h-12 w-12 bg-white rounded-full border object-cover flex-shrink-0"
-                                      alt={job.company?.name || job.title}
-                                      onError={(e) => {}}
-                                    />
-                                    <div className="ml-3 min-w-0">
-                                      <p
-                                        className={`font-bold ${textColor} truncate`}
-                                      >
-                                        {job.title}
-                                      </p>
-                                      <p className="text-gray-500 text-xs truncate">
-                                        {job.location}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td
-                                  className={`border-t ${borderColor} px-6 py-4 align-top text-xs whitespace-nowrap`}
-                                >
-                                  {formatSalary(
-                                    job.min_salary,
-                                    job.max_salary,
-                                    job.currency
-                                  )}
-                                </td>
-                                <td
-                                  className={`border-t ${borderColor} px-6 py-4 align-top text-xs`}
-                                >
-                                  <div className="flex items-center relative">
-                                    <span
-                                      className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${
-                                        badgeColors[job.status]
-                                      }`}
-                                    >
-                                      {job.status}
-                                    </span>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        toggleStatusDropdown(job.id);
-                                      }}
-                                      className="ml-2 p-1 rounded hover:bg-gray-100 flex-shrink-0"
-                                    >
-                                      <Edit size={14} />
-                                    </button>
-                                    {statusDropdown[job.id] && (
-                                      <div 
-                                        className="absolute top-full left-0 mt-1 bg-white border rounded shadow-lg z-50 min-w-[120px]"
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleStatusChange(job.id, "active");
-                                          }}
-                                          className="block w-full px-3 py-2 text-left hover:bg-gray-100 text-xs"
-                                        >
-                                          Active
-                                        </button>
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleStatusChange(job.id, "closed");
-                                          }}
-                                          className="block w-full px-3 py-2 text-left hover:bg-gray-100 text-xs"
-                                        >
-                                          Closed
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                </td>
-                                <td
-                                  className={`border-t ${borderColor} px-6 py-4 align-top text-xs`}
-                                >
-                                  <span className="capitalize">
-                                    {job.type_apply || "simple"}
-                                  </span>
-                                </td>
-                                <td
-                                  className={`border-t ${borderColor} px-6 py-4 align-top text-xs whitespace-nowrap`}
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <button
-                                      onClick={() =>
-                                        handleViewJobDetails(job.id)
-                                      }
-                                      className="p-1 rounded hover:bg-gray-100 text-primary"
-                                    >
-                                      <FileText size={18} />
-                                    </button>
-                                    <button
-                                      onClick={() => handleDeleteClick(job.id)}
-                                      className="p-1 rounded hover:bg-gray-100 text-red-600"
-                                    >
-                                      <Trash2 size={18} />
-                                    </button>
-                                  </div>
-                                </td>
-                                <td
-                                  className={`border-t ${borderColor} px-6 py-4 align-top text-xs whitespace-nowrap`}
-                                >
-                                  <Link
-                                    to={`/company-dashboard/list-applicants/${job.id}`}
-                                    className="px-3 py-2 rounded hover:bg-gray-100 text-blue-600 font-medium text-sm"
-                                  >
-                                    View applicants
-                                  </Link>
-                                </td>
-                              </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td
-                                colSpan="6"
-                                className="text-center py-4 border-t"
-                              >
-                                No job vacancies found. Click "Post Vacancy" to
-                                create one.
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
-                </div>
-
-                {showJobDetailsModal && (
-                  <JobDetailsModal
-                    job={selectedJob}
-                    onClose={() => setShowJobDetailsModal(false)}
+        <div className="px-4 md:px-10 mx-auto w-full pt-20 -m-44">
+          <div className="flex flex-wrap mt-4">
+            <div className="w-full mb-12 px-4">
+              <div
+                className={`relative flex flex-col w-full mb-6 shadow-lg rounded`}
+              >
+                {showDeleteModal && (
+                  <DeleteConfirmationModal
+                    onConfirm={handleDeleteJob}
+                    onCancel={() => {
+                      setShowDeleteModal(false);
+                      setJobToDelete(null);
+                    }}
                   />
                 )}
 
-                {renderModal()}
+                <div className="rounded-t mb-0 px-4 py-3 border-b border-sky-700 bg-sky-800">
+                  <div className="flex flex-wrap items-center">
+                    <div className="w-full px-4 max-w-full flex-grow flex-1">
+                      <h3 className="font-semibold text-lg text-white">
+                        Job Vacancies
+                      </h3>
+                    </div>
+                    <button
+                      onClick={() => setShowModal(true)}
+                      className="bg-white text-sky-800 font-semibold px-4 py-2 rounded-lg shadow hover:bg-sky-100 transition duration-200"
+                    >
+                      Post Vacancy
+                    </button>
+                  </div>
+                </div>
+
+                <div className="block w-full overflow-x-auto">
+                  {loading ? (
+                    <div className="text-center py-4">
+                      Loading job vacancies...
+                    </div>
+                  ) : (
+                    <table className="items-center w-full bg-transparent border-collapse">
+                      <thead>
+                        <tr>
+                          {[
+                            "Job Title",
+                            "Salary",
+                            "Status",
+                            "Type Apply",
+                            "Action",
+                            "",
+                          ].map((title, idx) => (
+                            <th
+                              key={idx}
+                              className={`${headerClass} ${
+                                isLight ? lightHeader : darkHeader
+                              }`}
+                            >
+                              {title}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {jobs.length > 0 ? (
+                          jobs.map((job) => (
+                            <tr
+                              key={job.id}
+                              className="bg-white hover:bg-gray-50 transition duration-200"
+                            >
+                              <td
+                                className={`border-t ${borderColor} align-top`}
+                              >
+                                <div className="flex items-start px-6 py-4">
+                                  <img
+                                    src={`${apiUrl}/${job.company?.logo}`}
+                                    className="h-12 w-12 bg-white rounded-full border object-cover flex-shrink-0"
+                                    alt={job.company?.name || job.title}
+                                    onError={(e) => {}}
+                                  />
+                                  <div className="ml-3 min-w-0">
+                                    <p
+                                      className={`font-bold ${textColor} truncate`}
+                                    >
+                                      {job.title}
+                                    </p>
+                                    <p className="text-gray-500 text-xs truncate">
+                                      {job.location}
+                                    </p>
+                                  </div>
+                                </div>
+                              </td>
+                              <td
+                                className={`border-t ${borderColor} px-6 py-4 align-top text-xs whitespace-nowrap`}
+                              >
+                                {formatSalary(
+                                  job.min_salary,
+                                  job.max_salary,
+                                  job.currency
+                                )}
+                              </td>
+                              <td
+                                className={`border-t ${borderColor} px-6 py-4 align-top text-xs`}
+                              >
+                                <div className="flex items-center relative">
+                                  <span
+                                    className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${
+                                      badgeColors[job.status]
+                                    }`}
+                                  >
+                                    {job.status}
+                                  </span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleStatusDropdown(job.id);
+                                    }}
+                                    className="ml-2 p-1 rounded hover:bg-gray-100 flex-shrink-0"
+                                  >
+                                    <Edit size={14} />
+                                  </button>
+                                  {statusDropdown[job.id] && (
+                                    <div
+                                      className="absolute top-full left-0 mt-1 bg-white border rounded shadow-lg z-50 min-w-[120px]"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleStatusChange(job.id, "active");
+                                        }}
+                                        className="block w-full px-3 py-2 text-left hover:bg-gray-100 text-xs"
+                                      >
+                                        Active
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleStatusChange(job.id, "closed");
+                                        }}
+                                        className="block w-full px-3 py-2 text-left hover:bg-gray-100 text-xs"
+                                      >
+                                        Closed
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                              <td
+                                className={`border-t ${borderColor} px-6 py-4 align-top text-xs`}
+                              >
+                                <span className="capitalize">
+                                  {job.type_apply || "simple"}
+                                </span>
+                              </td>
+                              <td
+                                className={`border-t ${borderColor} px-6 py-4 align-top text-xs whitespace-nowrap`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => handleViewJobDetails(job.id)}
+                                    className="p-1 rounded hover:bg-gray-100 text-primary"
+                                  >
+                                    <FileText size={18} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteClick(job.id)}
+                                    className="p-1 rounded hover:bg-gray-100 text-red-600"
+                                  >
+                                    <Trash2 size={18} />
+                                  </button>
+                                </div>
+                              </td>
+                              <td
+                                className={`border-t ${borderColor} px-6 py-4 align-top text-xs whitespace-nowrap`}
+                              >
+                                <Link
+                                  to={`/company-dashboard/list-applicants/${job.id}`}
+                                  className="px-3 py-2 rounded hover:bg-gray-100 text-blue-600 font-medium text-sm"
+                                >
+                                  View applicants
+                                </Link>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td
+                              colSpan="6"
+                              className="text-center py-4 border-t"
+                            >
+                              No job vacancies found. Click "Post Vacancy" to
+                              create one.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
               </div>
+
+              {showJobDetailsModal && (
+                <JobDetailsModal
+                  job={selectedJob}
+                  onClose={() => setShowJobDetailsModal(false)}
+                />
+              )}
+
+              {renderModal()}
             </div>
           </div>
         </div>
+      </div>
     </>
   );
 }
