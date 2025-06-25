@@ -1,6 +1,10 @@
 package web
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type CompanySubmissionRequest struct {
 	Name        string `json:"name" validate:"required,max=100"`
@@ -33,8 +37,9 @@ type CompanyManagementResponse struct {
 	EditRequests   []CompanyEditRequestResponse `json:"edit_requests,omitempty"`
 
 	// info for user
-	IsPendingJoinRequest bool `json:"is_pending_join_request,omitempty"`
-	IsMemberOfCompany    bool `json:"is_member_of_company"`
+	IsPendingJoinRequest bool       `json:"is_pending_join_request,omitempty"`
+	JoinRequestId        *uuid.UUID `json:"join_request_id,omitempty"`
+	IsMemberOfCompany    bool       `json:"is_member_of_company"`
 
 	// New follow information
 	IsFollowing    bool `json:"is_following,omitempty"`
@@ -64,9 +69,10 @@ type CompanyPublicResponse struct {
 	FollowersCount int  `json:"followers_count,omitempty"`
 	FollowingCount int  `json:"following_count,omitempty"`
 	// Membership information
-	IsPendingJoinRequest bool   `json:"is_pending_join_request,omitempty"`
-	IsMemberOfCompany    bool   `json:"is_member_of_company,omitempty"`
-	UserRole             string `json:"user_role,omitempty"`
+	IsPendingJoinRequest bool       `json:"is_pending_join_request,omitempty"`
+	JoinRequestId        *uuid.UUID `json:"join_request_id,omitempty"`
+	IsMemberOfCompany    bool       `json:"is_member_of_company,omitempty"`
+	UserRole             string     `json:"user_role,omitempty"`
 	// Edit information
 	HasPendingEdit bool   `json:"has_pending_edit,omitempty"`
 	PendingEditId  string `json:"pending_edit_id,omitempty"`
@@ -102,9 +108,10 @@ type CompanyDetailResponse struct {
 	FollowersCount int  `json:"followers_count"`
 
 	// Membership information
-	IsPendingJoinRequest bool   `json:"is_pending_join_request"`
-	IsMemberOfCompany    bool   `json:"is_member_of_company"`
-	UserRole             string `json:"user_role,omitempty"`
+	IsPendingJoinRequest bool       `json:"is_pending_join_request"`
+	JoinRequestId        *uuid.UUID `json:"join_request_id,omitempty"`
+	IsMemberOfCompany    bool       `json:"is_member_of_company"`
+	UserRole             string     `json:"user_role,omitempty"`
 
 	// Edit information
 	HasPendingEdit bool   `json:"has_pending_edit"`

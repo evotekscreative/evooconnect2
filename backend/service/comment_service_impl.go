@@ -213,7 +213,6 @@ func (service *CommentServiceImpl) Delete(ctx context.Context, commentId uuid.UU
 }
 
 // Tambahkan implementasi Reply sesuai interface
-// Tambahkan implementasi Reply sesuai interface
 func (service *CommentServiceImpl) Reply(ctx context.Context, commentId uuid.UUID, userId uuid.UUID, request web.CreateCommentRequest) web.CommentResponse {
 	tx, err := service.DB.Begin()
 	helper.PanicIfError(err)

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"evoconnect/backend/helper"
 	"evoconnect/backend/model/domain"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -117,6 +118,8 @@ func (repository *CompanyJoinRequestRepositoryImpl) FindByUserIdAndCompanyId(ctx
 		if responsedAt.Year() > 1970 {
 			request.ResponsedAt = &responsedAt
 		}
+
+		fmt.Printf("Found join request: %+v\n", request)
 
 		return request, nil
 	} else {
