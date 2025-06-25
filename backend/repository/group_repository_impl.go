@@ -63,11 +63,10 @@ func (repository *GroupRepositoryImpl) Create(ctx context.Context, tx *sql.Tx, g
 	return group
 }
 
-
 func (repository *GroupRepositoryImpl) Update(ctx context.Context, tx *sql.Tx, group domain.Group) domain.Group {
-    group.UpdatedAt = time.Now()
+	group.UpdatedAt = time.Now()
 
-    SQL := `UPDATE groups SET 
+	SQL := `UPDATE groups SET 
             name = $1, 
             description = $2, 
             rule = $3, 
@@ -78,20 +77,20 @@ func (repository *GroupRepositoryImpl) Update(ctx context.Context, tx *sql.Tx, g
             updated_at = $8
             WHERE id = $9`
 
-    _, err := tx.ExecContext(ctx, SQL,
-        group.Name,
-        group.Description,
-        group.Rule,
-        group.Image,
-        group.PrivacyLevel,
-        group.InvitePolicy,
-        group.PostApproval, // Tambahkan parameter post_approval
-        group.UpdatedAt,
-        group.Id,
-    )
-    helper.PanicIfError(err)
+	_, err := tx.ExecContext(ctx, SQL,
+		group.Name,
+		group.Description,
+		group.Rule,
+		group.Image,
+		group.PrivacyLevel,
+		group.InvitePolicy,
+		group.PostApproval, // Tambahkan parameter post_approval
+		group.UpdatedAt,
+		group.Id,
+	)
+	helper.PanicIfError(err)
 
-    return group
+	return group
 }
 
 func (repository *GroupRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx, groupId uuid.UUID) {
@@ -137,33 +136,49 @@ func (repository *GroupRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx,
 }
 
 func (repository *GroupRepositoryImpl) FindAll(ctx context.Context, tx *sql.Tx, limit, offset int) []domain.Group {
-	SQL := `SELECT id, name, description, rule, creator_id, image, privacy_level, invite_policy, created_at, updated_at 
-			FROM groups 
-			ORDER BY created_at DESC
-			LIMIT $1 OFFSET $2`
+	SQL := `SELECT id, name, description, rule, creator_id, privacy_level, invite_policy, 
+                   COALESCE(image, '') as image, created_at, updated_at
+            FROM groups 
+            ORDER BY created_at DESC 
+            LIMIT $1 OFFSET $2`
 
 	rows, err := tx.QueryContext(ctx, SQL, limit, offset)
-	helper.PanicIfError(err)
+	if err != nil {
+		fmt.Printf("ERROR: Failed to query groups: %v\n", err)
+		panic(fmt.Sprintf("Failed to query groups: %v", err))
+	}
 	defer rows.Close()
 
 	var groups []domain.Group
 	for rows.Next() {
 		group := domain.Group{}
+		var image sql.NullString
+
 		err := rows.Scan(
 			&group.Id,
 			&group.Name,
 			&group.Description,
 			&group.Rule,
 			&group.CreatorId,
-			&group.Image,
 			&group.PrivacyLevel,
 			&group.InvitePolicy,
+			&image,
 			&group.CreatedAt,
 			&group.UpdatedAt,
 		)
-		helper.PanicIfError(err)
+
+		if err != nil {
+			fmt.Printf("ERROR: Failed to scan group: %v\n", err)
+			continue // Skip this row instead of panicking
+		}
+
+		if image.Valid {
+			group.Image = &image.String
+		}
+
 		groups = append(groups, group)
 	}
+
 	return groups
 }
 
@@ -444,7 +459,6 @@ func (repository *GroupRepositoryImpl) Search(ctx context.Context, tx *sql.Tx, q
 
 	return groups
 }
-
 
 // Fungsi baru yang menerima parameter currentUserId
 func (repository *GroupRepositoryImpl) SearchWithPrivacy(ctx context.Context, tx *sql.Tx, query string, limit int, offset int, currentUserId uuid.UUID) []domain.Group {

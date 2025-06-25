@@ -796,15 +796,18 @@ func (service *CompanyManagementServiceImpl) GetCompanyStats(ctx context.Context
 	}
 
 	// Get total posts
+	fmt.Println("Fetching total posts for company:", companyId)
 	var totalPosts int
 	err = tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM company_posts WHERE company_id = $1 AND status != 'taken_down'", companyId).Scan(&totalPosts)
 	helper.PanicIfError(err)
 
+	fmt.Println("Total posts fetched:", totalPosts)
 	// Get total job vacancies
 	var totalJobVacancies int
-	err = tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM job_vacancies WHERE company_id = $1 AND taken_down_at IS NULL", companyId).Scan(&totalJobVacancies)
+	err = tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM job_vacancies WHERE company_id = $1", companyId).Scan(&totalJobVacancies)
 	helper.PanicIfError(err)
 
+	fmt.Println("Total job vacancies fetched:", totalJobVacancies)
 	// Get total members
 	var totalMembers int
 	err = tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM member_company WHERE company_id = $1 AND status = 'active'", companyId).Scan(&totalMembers)
@@ -826,4 +829,84 @@ func (service *CompanyManagementServiceImpl) GetCompanyStats(ctx context.Context
 		TotalMembers:      totalMembers,
 		TotalApplicants:   totalApplicants,
 	}
+}
+
+func (service *CompanyManagementServiceImpl) GetEditRequestById(ctx context.Context, editRequestId uuid.UUID, userId uuid.UUID) web.CompanyEditRequestResponse {
+	tx, err := service.DB.Begin()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	// Find the edit request by ID
+	editRequest, err := service.CompanyEditRequestRepository.FindById(ctx, tx, editRequestId)
+	if err != nil {
+		panic(exception.NewNotFoundError("Edit request not found"))
+	}
+
+	// Verify that the requesting user has permission to view this edit request
+	// Only the requester or company owner/admin can view
+	company, err := service.CompanyRepository.FindById(ctx, tx, editRequest.CompanyId)
+	if err != nil {
+		panic(exception.NewNotFoundError("Company not found"))
+	}
+
+	// Check if the requesting user is the edit request owner or company owner
+	if editRequest.UserId != userId && company.OwnerId != userId {
+		panic(exception.NewForbiddenError("You don't have permission to view this edit request"))
+	}
+
+	// Parse the requested changes and current data
+	var requestedChanges web.CompanyEditData
+	err = json.Unmarshal([]byte(editRequest.RequestedChanges), &requestedChanges)
+	helper.PanicIfError(err)
+
+	var currentData web.CompanyEditData
+	err = json.Unmarshal([]byte(editRequest.CurrentData), &currentData)
+	helper.PanicIfError(err)
+
+	// Get requester information
+	requester, err := service.UserRepository.FindById(ctx, tx, editRequest.UserId)
+	if err != nil {
+		requester = domain.User{} // Empty user if not found
+	}
+
+	// Build the response
+	response := web.CompanyEditRequestResponse{
+		Id:               editRequest.Id.String(),
+		CompanyId:        editRequest.CompanyId.String(),
+		UserId:           editRequest.UserId.String(),
+		RequestedChanges: requestedChanges,
+		CurrentData:      currentData,
+		Status:           string(editRequest.Status),
+		RejectionReason:  editRequest.RejectionReason,
+		CreatedAt:        editRequest.CreatedAt,
+		UpdatedAt:        editRequest.UpdatedAt,
+	}
+
+	// Set reviewed by and reviewed at if available
+	if editRequest.ReviewedBy != nil {
+		response.ReviewedBy = editRequest.ReviewedBy.String()
+	}
+	if editRequest.ReviewedAt != nil {
+		response.ReviewedAt = editRequest.ReviewedAt
+	}
+
+	// Set requester info if available
+	if requester.Id != uuid.Nil {
+		response.User = &web.UserBriefResponse{
+			Id:       requester.Id,
+			Name:     requester.Name,
+			Username: requester.Username,
+			Photo:    requester.Photo,
+		}
+	}
+
+	// Set company info
+	response.Company = &web.CompanyResponse{
+		ID:      company.Id,
+		Name:    company.Name,
+		Logo:    company.Logo,
+		Tagline: company.Tagline,
+	}
+
+	return response
 }

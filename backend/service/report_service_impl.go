@@ -74,7 +74,7 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 		return web.ReportResponse{}, errors.New("invalid report reason")
 	}
 
-	if strings.ToLower(request.Reason) == "Other" && strings.TrimSpace(request.OtherReason) == "" {
+	if strings.ToLower(request.Reason) == "Other" && strings.TrimSpace(request.Description) == "" {
 		return web.ReportResponse{}, errors.New("other reason must be filled")
 	}
 	ctx := context.Background()
@@ -135,7 +135,7 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 		TargetType:  request.TargetType,
 		TargetID:    request.TargetID,
 		Reason:      request.Reason,
-		OtherReason: request.OtherReason,
+		Description: request.Description,
 		Status:      "pending",
 		CreatedAt:   time.Now(),
 	}
@@ -155,7 +155,7 @@ func (s *reportServiceImpl) Create(request web.CreateReportRequest) (web.ReportR
 		Reason:     result.Reason,
 		Description: func() string {
 			if strings.EqualFold(result.Reason, "Other") {
-				return result.OtherReason
+				return result.Description
 			}
 			return ""
 		}(),
@@ -205,7 +205,7 @@ func (s *reportServiceImpl) FindAll(ctx context.Context, page, limit int, target
 				Reason:     report.Reason,
 				Description: func() string {
 					if strings.EqualFold(report.Reason, "Other") {
-						return report.OtherReason
+						return report.Description
 					}
 					return ""
 				}(),
@@ -247,7 +247,7 @@ func (s *reportServiceImpl) enrichReportResponse(ctx context.Context, report dom
 		Reason:       report.Reason,
 		Description: func() string {
 			if strings.EqualFold(report.Reason, "Other") {
-				return report.OtherReason
+				return report.Description
 			}
 			return ""
 		}(),
@@ -647,7 +647,7 @@ func (s *reportServiceImpl) FindById(ctx context.Context, id string) (web.Detail
 	}
 
 	// Buat response
-	description := report.OtherReason
+	description := report.Description
 	if strings.ToLower(report.Reason) != "other" {
 		description = ""
 	}
