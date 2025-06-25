@@ -116,6 +116,8 @@ const PostPage = () => {
     socials: {},
   });
   const [alerts, setAlerts] = useState([]);
+  const [similarJobs, setSimilarJobs] = useState([]);
+  const [loadingJobs, setLoadingJobs] = useState(false);
 
   const addAlert = (type, message) => {
     const id = Date.now();
@@ -283,6 +285,45 @@ const PostPage = () => {
     }
   };
 
+  const fetchSimilarJobs = async () => {
+    try {
+      setLoadingJobs(true);
+      const userToken = localStorage.getItem("token");
+      const response = await axios.get(apiUrl + "/api/jobs/random", {
+        headers: { Authorization: `Bearer ${userToken}` },
+      });
+
+      if (response.data?.data?.jobs) {
+        setSimilarJobs(response.data.data.jobs.slice(0, 3));
+      }
+    } catch (error) {
+      console.error("Failed to fetch similar jobs:", error);
+    } finally {
+      setLoadingJobs(false);
+    }
+  };
+
+  const handleConnectWithUser = async (userId) => {
+    try {
+      const userToken = localStorage.getItem("token");
+      await axios.post(
+        `${apiUrl}/api/connections/${userId}`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${userToken}` },
+        }
+      );
+
+      fetchConnections();
+      fetchSuggestedConnections();
+
+      addAlert("success", "Connection request sent!");
+    } catch (error) {
+      console.error("Failed to connect with user:", error);
+      addAlert("error", "Failed to send connection request");
+    }
+  };
+
   const fetchUserPosts = async () => {
     const token = localStorage.getItem("token");
     setIsLoading(true);
@@ -406,6 +447,7 @@ const PostPage = () => {
       fetchConnections();
       fetchSuggestedConnections();
       fetchUserPosts();
+      fetchSimilarJobs();
     }
   }, [user.id]); // Add user.id as dependency
 
@@ -1603,7 +1645,7 @@ const PostPage = () => {
             />
           ))}
         </div>
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-6 mb-10">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-6">
           {/* Left Sidebar - Narrower */}
           <div className="w-full md:w-1/4 lg:w-1/5 space-y-4">
             <div className="bg-white rounded-lg shadow-md p-4 text-center">
@@ -1679,7 +1721,7 @@ const PostPage = () => {
                   {user.skills.map((skill, index) => (
                     <span
                       key={index}
-                      className="px-4 py-1 rounded-full border border-blue-200 text-blue-600 text-sm font-medium bg-white shadow-md"
+                      className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm"
                     >
                       {skill}
                     </span>
@@ -2072,36 +2114,87 @@ const PostPage = () => {
 
             {/* Jobs */}
             <div className="bg-white rounded-lg shadow p-4">
-              <h3 className="font-medium text-sm mb-3">Jobs</h3>
-              <div className="mb-4">
-                <div className="bg-gray-100 p-3 rounded-lg">
-                  <div className="flex justify-between mb-1">
-                    <h3 className="font-semibold text-sm">Product Director</h3>
-                    <div className="bg-white rounded-full p-1 w-8 h-8 flex items-center justify-center">
-                      <img
-                        src="/api/placeholder/24/24"
-                        alt="Company Logo"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </div>
-                  <p className="text-blue-500 text-sm">Spotify Inc.</p>
-                  <div className="flex items-center text-gray-600 text-xs">
-                    <MapPin size={12} className="mr-1" />
-                    <span>India, Punjab</span>
-                  </div>
-                  <div className="mt-2 flex items-center">
-                    <div className="flex -space-x-2">
-                      <div className="w-5 h-5 rounded-full bg-gray-300 border-2 border-white"></div>
-                      <div className="w-5 h-5 rounded-full bg-gray-400 border-2 border-white"></div>
-                      <div className="w-5 h-5 rounded-full bg-gray-500 border-2 border-white"></div>
-                    </div>
-                    <span className="text-gray-600 text-xs ml-2">
-                      18 connections
-                    </span>
-                  </div>
-                </div>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-medium text-sm">Similar Jobs</h3>
+                <button
+                  onClick={fetchSimilarJobs}
+                  disabled={loadingJobs}
+                  className="text-blue-600 text-xs hover:text-blue-700 transition-colors duration-200 disabled:opacity-50"
+                >
+                  <RefreshCw
+                    className={`w-3 h-3 ${loadingJobs ? "animate-spin" : ""}`}
+                  />
+                </button>
               </div>
+
+              {loadingJobs ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              ) : similarJobs.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-gray-500 text-xs">No jobs available</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {similarJobs.map((job, index) => (
+                    <div
+                      key={job.id || index}
+                      className="bg-gray-100 p-3 rounded-lg"
+                    >
+                      <div className="flex justify-between mb-1">
+                        <h4 className="font-semibold text-sm truncate">
+                          {job.title || "Job Title"}
+                        </h4>
+                        <div className="bg-white rounded-full p-1 w-8 h-8 flex items-center justify-center flex-shrink-0">
+                          {job.company?.logo ? (
+                            <img
+                              src={
+                                job.company.logo.startsWith("http")
+                                  ? job.company.logo
+                                  : `${apiUrl}/${job.company.logo}`
+                              }
+                              alt="Company Logo"
+                              className="w-full h-full object-cover rounded-full"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = "";
+                                e.target.style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-300 rounded-full flex items-center justify-center">
+                              <span className="text-xs font-bold text-gray-600">
+                                {job.company?.name
+                                  ? job.company.name.charAt(0).toUpperCase()
+                                  : "C"}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-blue-500 text-sm truncate">
+                        {job.company?.name || "Company Name"}
+                      </p>
+                      <div className="flex items-center text-gray-600 text-xs">
+                        <MapPin size={12} className="mr-1" />
+                        <span className="truncate">
+                          {job.location || "Location not specified"}
+                        </span>
+                      </div>
+                      {(job.min_salary || job.max_salary) && (
+                        <div className="mt-1 text-green-600 text-xs font-medium">
+                          {job.min_salary && job.max_salary
+                            ? `$${job.min_salary} - $${job.max_salary}`
+                            : job.min_salary
+                            ? `From $${job.min_salary}`
+                            : `Up to $${job.max_salary}`}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

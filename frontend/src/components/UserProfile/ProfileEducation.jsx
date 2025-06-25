@@ -55,8 +55,7 @@ export default function ProfileEducation({
                     <p className="text-gray-600">{edu.institute_name}</p>
                     <p className="text-gray-500 text-sm">
                       {formatDate(edu.start_month, edu.start_year)} -{" "}
-                      {edu.end_month === "Month" ||
-                      edu.end_year === "Year"
+                      {edu.end_month === "Month" || edu.end_year === "Year"
                         ? "Now"
                         : formatDate(edu.end_month, edu.end_year)}
                     </p>
@@ -65,7 +64,7 @@ export default function ProfileEducation({
                     )}
                     {edu.caption && (
                       <div>
-                        <p className="text-gray-600 mt-2 break-words whitespace-pre-line w-full">
+                        <p className="text-gray-600 mt-2 w-full break-words whitespace-pre-line overflow-hidden text-wrap">
                           {isLong && !isExpanded
                             ? edu.caption.slice(0, 500) + "..."
                             : edu.caption}
@@ -96,13 +95,8 @@ export default function ProfileEducation({
         </div>
       ) : (
         <div className="text-center py-8 bg-gray-50 rounded-md border border-dashed border-gray-300 mt-4">
-          <GraduationCap
-            size={40}
-            className="mx-auto text-gray-300 mb-3"
-          />
-          <p className="text-base text-gray-500">
-            No education added yet.
-          </p>
+          <GraduationCap size={40} className="mx-auto text-gray-300 mb-3" />
+          <p className="text-base text-gray-500">No education added yet.</p>
         </div>
       )}
     </div>

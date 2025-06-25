@@ -10,7 +10,7 @@ import NotificationDropdown from "./Navbar/NotificationDropdown";
 import UserDropdown from "./Navbar/UserDropdown";
 import Other from "./Navbar/Other";
 
-const Navbar = ({ className }) => {
+const Navbar = () => {
   const apiUrl =
     import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -20,16 +20,13 @@ const Navbar = ({ className }) => {
   const [isBellOpen, setIsBellOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const [user, setUser] = useState({
-    name: "",
-    photo: null,
-  });
+  const [user, setUser] = useState({ name: "", photo: null });
   const dropdownRef = useRef(null);
   const mobileMenuRef = useRef(null);
-  const [notifications, setNotifications] = useState([]);
+  const msgRef = useRef(null);
+  const bellRef = useRef(null);
 
   useEffect(() => {
-    // Fetch user data from localStorage
     const fetchUserData = () => {
       const userData = JSON.parse(localStorage.getItem("user"));
       if (userData) {
@@ -53,11 +50,7 @@ const Navbar = ({ className }) => {
     };
 
     const handleScroll = () => {
-      if (window.scrollY > 10) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      setIsScrolled(window.scrollY > 10);
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -75,53 +68,6 @@ const Navbar = ({ className }) => {
     window.location.href = "/login";
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "Unknown date";
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return "Invalid date";
-
-      const now = new Date();
-      const yesterday = new Date(now);
-      yesterday.setDate(now.getDate() - 1);
-
-      if (date.toDateString() === now.toDateString()) {
-        return "Today";
-      } else if (date.toDateString() === yesterday.toDateString()) {
-        return "Yesterday";
-      } else {
-        return date.toLocaleDateString();
-      }
-    } catch (error) {
-      console.error("Date formatting error:", error);
-      return "Date error";
-    }
-  };
-
-  // Format time with error handling
-  const formatTime = (dateString) => {
-    if (!dateString) return "";
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return "";
-      return date.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } catch (error) {
-      console.error("Time formatting error:", error);
-      return "";
-    }
-  };
-
-  useState(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      const user = JSON.parse(localStorage.getItem("user"));
-      setUser(user);
-    }
-  }, []);
-
   return (
     <>
       {/* Desktop Navbar */}
@@ -135,28 +81,33 @@ const Navbar = ({ className }) => {
             <img src={Logo} alt="Logo" className="h-8" />
           </Link>
           <div className="flex">
-          <SearchBar />
+            <SearchBar />
           </div>
         </div>
-   
+
         <div className="flex items-center gap-4">
           <NavLinks />
 
           <div className="flex items-center gap-2 sm:gap-6">
-             <Link
-        to="/messages"
-        className="md:hidden flex items-center justify-center"
-        style={{ marginRight: 8 }}
-      >
-        <svg width={24} height={24} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/>
-        </svg>
-      </Link>
-            {/* Message Dropdown */}  
-            <MessageDropdown/>  
-            {/* Notification Dropdown */}
+            <Link
+              to="/messages"
+              className="md:hidden flex items-center justify-center"
+              style={{ marginRight: 8 }}
+            >
+              <svg
+                width={24}
+                height={24}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" />
+              </svg>
+            </Link>
+            <MessageDropdown />
             <NotificationDropdown />
-            {/* User Dropdown */}
             <div ref={dropdownRef} className="relative">
               <div
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -186,7 +137,7 @@ const Navbar = ({ className }) => {
         </div>
       </nav>
 
-      {/* Mobile Bottom Navbar ala Twitter */}
+      {/* Mobile Bottom Navbar */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex justify-around items-center py-2 md:hidden">
         <Link
           to="/"
@@ -199,7 +150,9 @@ const Navbar = ({ className }) => {
         <Link
           to="/connections"
           className={`flex flex-col items-center ${
-            location.pathname.startsWith("/connections") ? "text-sky-500" : "text-gray-500"
+            location.pathname.startsWith("/connections")
+              ? "text-sky-500"
+              : "text-gray-500"
           } hover:text-sky-700`}
         >
           <Users size={24} />
@@ -207,7 +160,9 @@ const Navbar = ({ className }) => {
         <Link
           to="/jobs"
           className={`flex flex-col items-center ${
-            location.pathname.startsWith("/jobs") ? "text-sky-500" : "text-gray-500"
+            location.pathname.startsWith("/jobs")
+              ? "text-sky-500"
+              : "text-gray-500"
           } hover:text-sky-700`}
         >
           <Briefcase size={24} />
@@ -215,7 +170,9 @@ const Navbar = ({ className }) => {
         <Link
           to="/blog"
           className={`flex flex-col items-center ${
-            location.pathname.startsWith("/blog") ? "text-sky-500" : "text-gray-500"
+            location.pathname.startsWith("/blog")
+              ? "text-sky-500"
+              : "text-gray-500"
           } hover:text-sky-700`}
         >
           <Pen size={24} />
@@ -223,7 +180,9 @@ const Navbar = ({ className }) => {
         <Link
           to="/notification"
           className={`flex flex-col items-center ${
-            location.pathname.startsWith("/notification") ? "text-sky-500" : "text-gray-500"
+            location.pathname.startsWith("/notification")
+              ? "text-sky-500"
+              : "text-gray-500"
           } hover:text-sky-700 relative`}
         >
           <Bell size={24} />

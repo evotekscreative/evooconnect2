@@ -25,7 +25,7 @@ export default function CreateCompany() {
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
   const [readyToRenderForm, setReadyToRenderForm] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  
+
   // Alert state
   const [alert, setAlert] = useState({
     show: false,
@@ -33,7 +33,8 @@ export default function CreateCompany() {
     message: "",
   });
 
-  const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+  const apiUrl =
+    import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
   const showAlert = (type, message, duration = 5000) => {
     setAlert({
@@ -52,7 +53,7 @@ export default function CreateCompany() {
   };
 
   const hideAlert = () => {
-    setAlert(prev => ({ ...prev, show: false }));
+    setAlert((prev) => ({ ...prev, show: false }));
     if (window.alertTimeout) clearTimeout(window.alertTimeout);
   };
 
@@ -60,12 +61,6 @@ export default function CreateCompany() {
   useEffect(() => {
     const fetchSubmission = async () => {
       const adminToken = localStorage.getItem("adminToken");
-
-      if (!adminToken) {
-        showAlert("error", "Admin token not found.");
-        setIsLoadingStatus(false);
-        return;
-      }
 
       try {
         const statuses = ["pending", "approved", "rejected"];
@@ -103,7 +98,7 @@ export default function CreateCompany() {
   useEffect(() => {
     if (isSuccess) {
       const timer = setTimeout(() => {
-        navigate('/company-management/company-pending');
+        navigate("/company-management/company-pending");
       }, 3000);
       return () => clearTimeout(timer);
     }
@@ -224,11 +219,14 @@ export default function CreateCompany() {
     return (
       <Case>
         <div className="flex flex-col items-center justify-center h-[75vh] px-4 text-center space-y-6">
-          <h2 className="text-2xl font-bold text-gray-800">Company Submitted Successfully!</h2>
-          <p className="text-gray-600 max-w-xl text-base leading-relaxed">
-            Your company submission has been received. You'll be redirected to your pending submissions shortly.
+          <h2 className="text-2xl font-bold text-gray-800">
+            Company Submitted Successfully!
+          </h2>
+          <p className="max-w-xl text-base leading-relaxed text-gray-600">
+            Your company submission has been received. You'll be redirected to
+            your pending submissions shortly.
           </p>
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <div className="w-12 h-12 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
         </div>
       </Case>
     );
@@ -249,7 +247,7 @@ export default function CreateCompany() {
   return (
     <Case>
       {/* Floating Alert */}
-      <div className="fixed top-4 right-4 z-50">
+      <div className="fixed z-50 top-4 right-4">
         <Alert
           type={alert.type}
           message={alert.message}
@@ -257,9 +255,12 @@ export default function CreateCompany() {
           isVisible={alert.show}
         />
       </div>
-      
-      <form onSubmit={handleSubmit} className="bg-gray-100 p-6 rounded-lg shadow-inner">
-        <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-8">
+
+      <form
+        onSubmit={handleSubmit}
+        className="p-6 bg-gray-100 rounded-lg shadow-inner"
+      >
+        <div className="flex flex-col max-w-6xl gap-8 mx-auto lg:flex-row">
           <CompanyForm
             form={form}
             logoPreview={logoPreview}

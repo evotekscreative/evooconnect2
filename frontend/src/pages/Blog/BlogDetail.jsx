@@ -227,7 +227,10 @@ const BlogDetail = () => {
           if (window.innerWidth >= 768) {
             // Hide on desktop
             setShowBackBtn(false);
-          } else if (currentScrollY < lastScrollY.current || currentScrollY < 50) {
+          } else if (
+            currentScrollY < lastScrollY.current ||
+            currentScrollY < 50
+          ) {
             setShowBackBtn(true);
           } else {
             setShowBackBtn(false);
@@ -272,16 +275,19 @@ const BlogDetail = () => {
         <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-6 relative">
-              
               {/* Blog Content */}
               <div className="bg-white shadow-md rounded-lg relative">
                 {/* Blog Image */}
-                <div className="relative aspect-[4/3] w-full bg-gray-200 overflow-hidden">
+                <div className="relative aspect-[4/3] w-full bg-gray-200 overflow-hidden rounded-t-xl">
                   {/* Back button absolute di atas gambar */}
                   <Link
                     to="/blog"
                     className={`absolute top-2 left-2 md:hidden bg-sky-400 text-white font-bold w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:bg-sky-500 transition-all duration-300
-                      ${showBackBtn ? "z-50 opacity-100" : "z-0 opacity-0 pointer-events-none"}`}
+                      ${
+                        showBackBtn
+                          ? "z-50 opacity-100"
+                          : "z-0 opacity-0 pointer-events-none"
+                      }`}
                     style={{ transition: "z-index 0.3s, opacity 0.3s" }}
                   >
                     <CircleArrowLeft />
@@ -326,7 +332,7 @@ const BlogDetail = () => {
                   </h2>
 
                   <div
-                    className="prose max-w-none text-gray-700"
+                    className="prose max-w-none text-gray-700 whitespace-pre-wrap break-words"
                     dangerouslySetInnerHTML={{ __html: article.content }}
                   />
 
@@ -351,10 +357,10 @@ const BlogDetail = () => {
                           <span className="text-gray-500 text-sm">
                             {article.user?.name
                               ? article.user.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")
-                                .toUpperCase()
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")
+                                  .toUpperCase()
                               : "U"}
                           </span>
                         </div>
@@ -426,7 +432,7 @@ const BlogDetail = () => {
           setCustomReason={setCustomReason}
         />
 
-        {toast && <Toast message={toast.message} type={toast.type} />}
+        {/* {toast && <Toast message={toast.message} type={toast.type} />} */}
       </div>
     </Case>
   );

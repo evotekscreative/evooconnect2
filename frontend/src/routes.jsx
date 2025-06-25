@@ -6,7 +6,7 @@ import App from "./App";
 import Connections from "./pages/Connection/Connections.jsx";
 import PrivacyPolicy from "./pages/PrivacyPolicy.jsx";
 import TermsCondition from "./pages/TermsCondition.jsx";
-import Jobs from "./pages/Jobs/index.jsx";
+import Jobs from "./pages/Jobs/jobs.jsx";
 import JobProfile from "./pages/CompanyProfile/JobProfile.jsx";
 import Faq from "./pages/Faq/faq.jsx";
 import CompanyProfile from "./pages/CompanyProfile/CompanyProfile.jsx";

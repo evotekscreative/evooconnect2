@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 
-
 const VerifyEmail = () => {
-        const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+  const apiUrl =
+    import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
 
   const [code, setCode] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -15,30 +15,31 @@ const VerifyEmail = () => {
   const [resendLoading, setResendLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // Get email from location state or localStorage as fallback
-  const [email, setEmail] = useState(""); 
 
-  axios.get(apiUrl + "/api/user/profile", {
-    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-  })
-  .then((response) => {
-    const user = response.data.data;
-    if (user && user.email) {
-      setEmail(user.email); // Set email from user profile
-    } else {
-      const storedEmail = localStorage.getItem('verify_email');
-      if (storedEmail) {
-        setEmail(storedEmail); // Fallback to localStorage
+  // Get email from location state or localStorage as fallback
+  const [email, setEmail] = useState("");
+
+  axios
+    .get(apiUrl + "/api/user/profile", {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    })
+    .then((response) => {
+      const user = response.data.data;
+      if (user && user.email) {
+        setEmail(user.email); // Set email from user profile
       } else {
-        setEmail(location.state?.email || ""); // Fallback to location state
+        const storedEmail = localStorage.getItem("verify_email");
+        if (storedEmail) {
+          setEmail(storedEmail); // Fallback to localStorage
+        } else {
+          setEmail(location.state?.email || ""); // Fallback to location state
+        }
       }
-    }
-  })
+    });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate email and code
     if (!email) {
       setMessage("Email is required for verification");
@@ -46,7 +47,7 @@ const VerifyEmail = () => {
       setSubmitted(true);
       return;
     }
-    
+
     if (!code) {
       setMessage("Verification code is required");
       setMessageColor("text-red-600");
@@ -63,22 +64,22 @@ const VerifyEmail = () => {
         apiUrl + "/api/auth/verify",
         {
           token: code,
-          email // Make sure email is included
+          email, // Make sure email is included
         },
         {
-          headers: { 
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-            "Content-Type": "application/json"
-          }
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
         }
       );
 
       setMessage("Your email has been verified successfully!");
       setMessageColor("text-green-600");
-      localStorage.removeItem('verify_email'); // Clean up
+      localStorage.removeItem("verify_email"); // Clean up
 
       setTimeout(() => {
-        navigate('/'); // Redirect to home after verification
+        navigate("/"); // Redirect to home after verification
       }, 2000);
     } catch (error) {
       if (error.response) {
@@ -104,14 +105,16 @@ const VerifyEmail = () => {
     setResendMessage("");
     setMessage("");
 
-    try { 
+    try {
       const response = await axios.post(apiUrl + "/api/auth/verify/send", {
-        email
+        email,
       });
       setResendMessage("Verification code has been resent to your email.");
       setMessageColor("text-green-600");
     } catch (error) {
-      setResendMessage("Failed to resend verification code. Please try again later.");
+      setResendMessage(
+        "Failed to resend verification code. Please try again later."
+      );
       setMessageColor("text-red-600");
     }
 
@@ -124,9 +127,10 @@ const VerifyEmail = () => {
         <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
           Verify Your Email
         </h2>
-        
+
         <p className="text-center text-gray-600 mb-6">
-          We've sent a verification code to <span className="font-semibold">{email}</span>
+          We've sent a verification code to{" "}
+          <span className="font-semibold">{email}</span>
         </p>
 
         {(submitted || resendMessage) && (
@@ -196,7 +200,7 @@ const VerifyEmail = () => {
             type="button"
             onClick={handleResend}
             disabled={resendLoading}
-            className={`w-full font-semibold py-2 rounded-lg transition border mt-2 ${
+            className={`w-full font-semibold py-2 rounded-lg transition border mt-1 ${
               resendLoading
                 ? "bg-gray-300 text-gray-600 cursor-not-allowed"
                 : "bg-white text-blue-600 border-blue-500 hover:bg-blue-50"

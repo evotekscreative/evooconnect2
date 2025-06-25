@@ -3785,7 +3785,7 @@ export default function SocialNetworkFeed() {
 
       {/* Comment Modal */}
       {showCommentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
           {renderShowcase()}
 
           {/* Main Comment Modal */}
@@ -3794,27 +3794,27 @@ export default function SocialNetworkFeed() {
             style={{ zIndex: showReportModal ? 40 : 50 }}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-800">Comments</h3>
               <button
                 onClick={closeCommentModal}
-                className="text-gray-500 transition-colors hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 transition-colors"
               >
                 <X size={20} />
               </button>
             </div>
 
             {/* Comments Content */}
-            <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+            <div className="p-4 overflow-y-auto flex-1 space-y-4">
               {loadingComments[currentPostId] ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="w-8 h-8 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
                 </div>
               ) : !Array.isArray(comments[currentPostId]) ||
                 comments[currentPostId].length === 0 ? (
-                <div className="py-8 text-center">
+                <div className="text-center py-8">
                   <p className="text-gray-500">No comments yet.</p>
-                  <p className="mt-1 text-sm text-gray-400">
+                  <p className="text-gray-400 text-sm mt-1">
                     Be the first to comment!
                   </p>
                 </div>
@@ -3839,7 +3839,7 @@ export default function SocialNetworkFeed() {
                           {commentUser.profile_photo ? (
                             <Link to={`/user-profile/${commentUser.username}`}>
                               <img
-                                className="object-cover w-10 h-10 transition-colors border-2 border-white rounded-full hover:border-blue-200"
+                                className="rounded-full w-10 h-10 object-cover border-2 border-white hover:border-blue-200 transition-colors"
                                 src={
                                   commentUser.profile_photo.startsWith("http")
                                     ? commentUser.profile_photo
@@ -3856,8 +3856,8 @@ export default function SocialNetworkFeed() {
                               />
                             </Link>
                           ) : (
-                            <div className="flex items-center justify-center w-10 h-10 bg-gray-300 border-2 border-white rounded-full">
-                              <span className="text-xs font-medium text-gray-600">
+                            <div className="w-10 h-10 flex items-center justify-center bg-gray-200 rounded-full border-2 border-white">
+                              <span className="text-sm font-medium text-gray-600">
                                 {getInitials(commentUser.name)}
                               </span>
                             </div>
@@ -3866,7 +3866,7 @@ export default function SocialNetworkFeed() {
 
                         {/* Comment Content */}
                         <div className="flex-1 min-w-0">
-                          <div className="p-3 rounded-lg bg-gray-50">
+                          <div className="bg-gray-50 rounded-lg p-3">
                             {/* User Info */}
                             <div className="flex items-center justify-between">
                               <Link
@@ -3877,7 +3877,7 @@ export default function SocialNetworkFeed() {
                               </Link>
 
                               {/* Comment Actions */}
-                              <div className="flex items-center space-x-2 transition-opacity opacity-0 group-hover:opacity-100">
+                              <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 {comment.user?.id === currentUserId && (
                                   <button
                                     className="text-gray-500 hover:text-gray-700"
@@ -3913,10 +3913,10 @@ export default function SocialNetworkFeed() {
 
                             {/* Comment Text */}
                             {editingCommentId === comment.id ? (
-                              <div className="flex gap-2 mt-2">
+                              <div className="mt-2 flex gap-2">
                                 <input
                                   type="text"
-                                  className="flex-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                  className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
                                   value={commentText}
                                   onChange={(e) =>
                                     setCommentText(e.target.value)
@@ -3924,7 +3924,7 @@ export default function SocialNetworkFeed() {
                                   autoFocus
                                 />
                                 <button
-                                  className="px-3 py-1 text-sm text-white transition-colors bg-blue-500 rounded-lg hover:bg-blue-600"
+                                  className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-colors"
                                   onClick={() =>
                                     handleUpdateComment(comment.id)
                                   }
@@ -3932,7 +3932,7 @@ export default function SocialNetworkFeed() {
                                   Update
                                 </button>
                                 <button
-                                  className="px-3 py-1 text-sm text-gray-700 transition-colors bg-gray-200 rounded-lg hover:bg-gray-300"
+                                  className="bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm hover:bg-gray-300 transition-colors"
                                   onClick={() => {
                                     setEditingCommentId(null);
                                     setCommentText("");
@@ -3942,21 +3942,21 @@ export default function SocialNetworkFeed() {
                                 </button>
                               </div>
                             ) : (
-                              <p className="mt-1 text-sm text-gray-700">
+                              <p className="text-sm text-gray-700 mt-1">
                                 {comment.content}
                               </p>
                             )}
                           </div>
 
                           {/* Comment Meta */}
-                          <div className="flex items-center justify-between px-1 mt-2">
+                          <div className="flex items-center justify-between mt-2 px-1">
                             <span className="text-xs text-gray-500">
                               {formatPostTime(comment.created_at)}
                             </span>
 
                             <div className="flex items-center space-x-4">
                               <button
-                                className="text-xs font-medium text-blue-500 hover:text-blue-700"
+                                className="text-xs text-blue-500 hover:text-blue-700 font-medium"
                                 onClick={() => {
                                   setReplyingTo(comment.id);
                                   setReplyToUser(comment.user);
@@ -3981,10 +3981,10 @@ export default function SocialNetworkFeed() {
 
                           {/* Reply Input */}
                           {replyingTo === comment.id && (
-                            <div className="flex gap-2 mt-3">
+                            <div className="mt-3 flex gap-2">
                               <input
                                 type="text"
-                                className="flex-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
                                 placeholder={`Reply to ${
                                   replyToUser?.name || comment.user.name
                                 }...`}
@@ -3993,7 +3993,7 @@ export default function SocialNetworkFeed() {
                                 autoFocus
                               />
                               <button
-                                className="px-3 py-1 text-sm text-white transition-colors bg-blue-500 rounded-lg hover:bg-blue-600"
+                                className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-colors"
                                 onClick={() =>
                                   handleReply(
                                     comment.id,
@@ -4008,10 +4008,10 @@ export default function SocialNetworkFeed() {
 
                           {/* Replies Section */}
                           {expandedReplies[comment.id] && (
-                            <div className="pl-4 mt-3 ml-4 space-y-3 border-l-2 border-gray-200">
+                            <div className="mt-3 ml-4 pl-4 border-l-2 border-gray-200 space-y-3">
                               {loadingComments[comment.id] ? (
                                 <div className="flex justify-center py-2">
-                                  <div className="w-5 h-5 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+                                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500"></div>
                                 </div>
                               ) : (
                                 (allReplies[comment.id] || []).map((reply) => (
@@ -4024,7 +4024,7 @@ export default function SocialNetworkFeed() {
                                             to={`/user-profile/${reply.user.username}`}
                                           >
                                             <img
-                                              className="object-cover w-8 h-8 transition-colors border-2 border-white rounded-full hover:border-blue-200"
+                                              className="rounded-full w-8 h-8 object-cover border-2 border-white hover:border-blue-200 transition-colors"
                                               src={
                                                 reply.user.profile_photo.startsWith(
                                                   "http"
@@ -4043,7 +4043,7 @@ export default function SocialNetworkFeed() {
                                             />
                                           </Link>
                                         ) : (
-                                          <div className="flex items-center justify-center w-8 h-8 bg-gray-300 border-2 border-white rounded-full">
+                                          <div className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-full border-2 border-white">
                                             <span className="text-xs font-medium text-gray-600">
                                               {getInitials(reply.user?.name)}
                                             </span>
@@ -4053,7 +4053,7 @@ export default function SocialNetworkFeed() {
 
                                       {/* Reply Content */}
                                       <div className="flex-1 min-w-0">
-                                        <div className="p-2 rounded-lg bg-gray-50">
+                                        <div className="bg-gray-50 rounded-lg p-2">
                                           {/* Reply User Info */}
                                           <div className="flex items-center justify-between">
                                             <div className="flex items-center">
@@ -4068,7 +4068,7 @@ export default function SocialNetworkFeed() {
                                                 reply.parent_id !==
                                                   reply.reply_to
                                                     .reply_to_id && (
-                                                  <span className="flex items-center ml-1 text-xs text-gray-500">
+                                                  <span className="text-xs text-gray-500 ml-1 flex items-center">
                                                     <svg
                                                       xmlns="http://www.w3.org/2000/svg"
                                                       width="10"
@@ -4090,8 +4090,9 @@ export default function SocialNetworkFeed() {
                                             </div>
 
                                             {/* Reply Actions */}
-                                            <div className="flex items-center space-x-2 transition-opacity opacity-0 group-hover:opacity-100">
-                                              {reply.user?.id === user.id && (
+                                            <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                              {reply.user?.id ===
+                                                currentUserId && (
                                                 <button
                                                   className="text-gray-500 hover:text-gray-700"
                                                   onClick={(e) => {
@@ -4104,7 +4105,8 @@ export default function SocialNetworkFeed() {
                                                 </button>
                                               )}
 
-                                              {reply.user?.id !== user.id && (
+                                              {reply.user?.id !==
+                                                currentUserId && (
                                                 <button
                                                   className="text-gray-500 hover:text-red-500"
                                                   onClick={(e) => {
@@ -4126,10 +4128,10 @@ export default function SocialNetworkFeed() {
 
                                           {/* Reply Text */}
                                           {editingReplyId === reply.id ? (
-                                            <div className="flex gap-2 mt-1">
+                                            <div className="mt-1 flex gap-2">
                                               <input
                                                 type="text"
-                                                className="flex-1 px-2 py-1 text-xs border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                className="flex-1 border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-200"
                                                 value={replyText}
                                                 onChange={(e) =>
                                                   setReplyText(e.target.value)
@@ -4137,7 +4139,7 @@ export default function SocialNetworkFeed() {
                                                 autoFocus
                                               />
                                               <button
-                                                className="px-2 py-1 text-xs text-white transition-colors bg-blue-500 rounded-lg hover:bg-blue-600"
+                                                className="bg-blue-500 text-white px-2 py-1 rounded-lg text-xs hover:bg-blue-600 transition-colors"
                                                 onClick={() =>
                                                   handleUpdateReply(reply.id)
                                                 }
@@ -4145,7 +4147,7 @@ export default function SocialNetworkFeed() {
                                                 Update
                                               </button>
                                               <button
-                                                className="px-2 py-1 text-xs text-gray-700 transition-colors bg-gray-200 rounded-lg hover:bg-gray-300"
+                                                className="bg-gray-200 text-gray-700 px-2 py-1 rounded-lg text-xs hover:bg-gray-300 transition-colors"
                                                 onClick={() => {
                                                   setEditingReplyId(null);
                                                   setReplyText("");
@@ -4155,14 +4157,14 @@ export default function SocialNetworkFeed() {
                                               </button>
                                             </div>
                                           ) : (
-                                            <p className="mt-1 text-xs text-gray-700">
+                                            <p className="text-xs text-gray-700 mt-1">
                                               {reply.content}
                                             </p>
                                           )}
                                         </div>
 
                                         {/* Reply Meta */}
-                                        <div className="flex items-center justify-between px-1 mt-1">
+                                        <div className="flex items-center justify-between mt-1 px-1">
                                           <span className="text-xs text-gray-500">
                                             {formatPostTime(reply.created_at)}
                                           </span>
@@ -4180,10 +4182,10 @@ export default function SocialNetworkFeed() {
                                           </div>
                                         </div>
                                         {replyingTo === reply.id && (
-                                          <div className="flex gap-2 mt-3">
+                                          <div className="mt-3 flex gap-2">
                                             <input
                                               type="text"
-                                              className="flex-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                              className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
                                               placeholder={`Reply to ${
                                                 replyToUser?.name ||
                                                 reply.user.name
@@ -4195,7 +4197,7 @@ export default function SocialNetworkFeed() {
                                               autoFocus
                                             />
                                             <button
-                                              className="px-3 py-1 text-sm text-white transition-colors bg-blue-500 rounded-lg hover:bg-blue-600"
+                                              className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-colors"
                                               onClick={() =>
                                                 handleReply(
                                                   reply.id,
@@ -4232,7 +4234,7 @@ export default function SocialNetworkFeed() {
                 <div className="flex-shrink-0">
                   {user.photo ? (
                     <img
-                      className="object-cover w-8 h-8 rounded-full"
+                      className="w-8 h-8 rounded-full object-cover"
                       src={
                         user.photo.startsWith("http")
                           ? user.photo
@@ -4246,7 +4248,7 @@ export default function SocialNetworkFeed() {
                       }}
                     />
                   ) : (
-                    <div className="flex items-center justify-center w-8 h-8 bg-gray-300 rounded-full">
+                    <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
                       <span className="text-xs font-bold text-gray-600">
                         {getInitials(user.name)}
                       </span>
@@ -4257,19 +4259,19 @@ export default function SocialNetworkFeed() {
                 <div className="flex-1">
                   <input
                     type="text"
-                    className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
                     placeholder="Write a comment..."
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
                     onKeyPress={(e) => e.key === "Enter" && handleAddComment()}
                   />
                   {commentError && (
-                    <p className="mt-1 text-xs text-red-500">{commentError}</p>
+                    <p className="text-red-500 text-xs mt-1">{commentError}</p>
                   )}
                 </div>
 
                 <button
-                  className="px-4 py-2 text-sm text-white transition-colors bg-blue-500 rounded-lg hover:bg-blue-600"
+                  className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors"
                   onClick={handleAddComment}
                 >
                   Post

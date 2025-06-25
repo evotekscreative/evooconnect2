@@ -52,7 +52,7 @@ const BlogCard = ({ article }) => {
           </h3>
 
           {/* Konten */}
-          <p className="text-xs sm:text-sm text-gray-600 line-clamp-2 flex-grow">
+          <p className="text-xs sm:text-sm text-gray-600 line-clamp-2 break-words overflow-hidden">
             {article.content}
           </p>
 
@@ -69,7 +69,9 @@ const BlogCard = ({ article }) => {
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     e.target.onerror = null;
-                    e.target.src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(article.user?.name || "U");
+                    e.target.src =
+                      "https://ui-avatars.com/api/?name=" +
+                      encodeURIComponent(article.user?.name || "U");
                   }}
                 />
               ) : (
@@ -91,7 +93,9 @@ const BlogCard = ({ article }) => {
               <p className="font-semibold text-gray-900 text-xs sm:text-base">
                 {article.user?.name || "Unknown User"}
               </p>
-              <p className="text-xs sm:text-sm text-gray-500">{formattedDate}</p>
+              <p className="text-xs sm:text-sm text-gray-500">
+                {formattedDate}
+              </p>
             </div>
           </div>
         </div>

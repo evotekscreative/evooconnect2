@@ -141,8 +141,8 @@ export default function ConnectionList() {
         navigate(`/messages/${newConversationId}`);
       }
     } catch (err) {
-     console.error("Error handling message action:", err);
-      showAlert('error', 'Failed to start conversation. Please try again.');
+      console.error("Error handling message action:", err);
+      showAlert("error", "Failed to start conversation. Please try again.");
     }
   };
 
@@ -206,10 +206,13 @@ export default function ConnectionList() {
       );
       // Refresh connections after successful connection
       fetchConnections();
-    showAlert('success', 'Connection request sent successfully');
+      showAlert("success", "Connection request sent successfully");
     } catch (error) {
       console.error("Failed to connect:", error);
-      showAlert('error', 'You have already sent a connection request to this user');
+      showAlert(
+        "error",
+        "You have already sent a connection request to this user"
+      );
     }
   };
 
@@ -310,27 +313,27 @@ export default function ConnectionList() {
       );
 
       // Update connections list by setting is_connected to false for the disconnected user
-      setConnections(prevConnections => 
-        prevConnections.map(conn => 
-          conn.user.id === selectedConnection.id 
-        ? { ...conn, user: { ...conn.user, is_connected: false } } 
-        : conn
+      setConnections((prevConnections) =>
+        prevConnections.map((conn) =>
+          conn.user.id === selectedConnection.id
+            ? { ...conn, user: { ...conn.user, is_connected: false } }
+            : conn
         )
       );
-      
+
       // Also update the filtered connections
-      setFilteredConnections(prevFiltered => 
-        prevFiltered.map(conn => 
-          conn.user.id === selectedConnection.id 
-        ? { ...conn, user: { ...conn.user, is_connected: false } } 
-        : conn
+      setFilteredConnections((prevFiltered) =>
+        prevFiltered.map((conn) =>
+          conn.user.id === selectedConnection.id
+            ? { ...conn, user: { ...conn.user, is_connected: false } }
+            : conn
         )
       );
       closeModal();
-      showAlert('success', 'Disconnected successfully');
+      showAlert("success", "Disconnected successfully");
     } catch (err) {
       console.error("Failed to disconnect:", err);
-      showAlert('error', 'You are not connected to this user');
+      showAlert("error", "You are not connected to this user");
       closeModal();
     }
   };
@@ -359,16 +362,16 @@ export default function ConnectionList() {
 
   return (
     <Case>
-      <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
+      <div className="p-4 sm:p-6 bg-gray-50 min-h-screen mb-10">
         {alert.show && (
-        <div className="fixed top-4 right-4 z-50 w-full max-w-sm">
-          <Alert 
-            type={alert.type} 
-            message={alert.message} 
-            onClose={() => setAlert({ ...alert, show: false })}
-          />
-        </div>
-      )}
+          <div className="fixed top-4 right-4 z-50 w-full max-w-sm">
+            <Alert
+              type={alert.type}
+              message={alert.message}
+              onClose={() => setAlert({ ...alert, show: false })}
+            />
+          </div>
+        )}
         {/* Confirmation Modal */}
         {showModal && selectedConnection && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

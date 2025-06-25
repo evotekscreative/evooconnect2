@@ -92,8 +92,8 @@ export default function ProfilePage() {
   });
   const [alert, setAlert] = useState({
     show: false,
-    type: 'success',
-    message: '',
+    type: "success",
+    message: "",
   });
   const showAlert = (type, message) => {
     setAlert({
@@ -103,12 +103,12 @@ export default function ProfilePage() {
     });
     // Auto-hide after 5 seconds
     setTimeout(() => {
-      setAlert(prev => ({ ...prev, show: false }));
+      setAlert((prev) => ({ ...prev, show: false }));
     }, 5000);
   };
 
   const hideAlert = () => {
-    setAlert(prev => ({ ...prev, show: false }));
+    setAlert((prev) => ({ ...prev, show: false }));
   };
   const [user, setUser] = useState({
     id: "",
@@ -192,7 +192,7 @@ export default function ProfilePage() {
       setConnectionsCount(response.data.data.total || 0);
     } catch (error) {
       console.error("Failed to fetch connections:", error);
-      showAlert('error', "Failed to load connections");
+      showAlert("error", "Failed to load connections");
     } finally {
       setIsLoading(false);
     }
@@ -251,7 +251,7 @@ export default function ProfilePage() {
       });
     } catch (error) {
       console.error("Failed to fetch profile views:", error);
-      showAlert('error', "Failed to load profile views");
+      showAlert("error", "Failed to load profile views");
     }
   };
 
@@ -274,7 +274,7 @@ export default function ProfilePage() {
       setUserPosts(response.data.data);
     } catch (error) {
       console.error("Failed to fetch user posts:", error);
-      showAlert('error', "Failed to load posts");
+      showAlert("error", "Failed to load posts");
     } finally {
       setIsLoading(false);
     }
@@ -335,7 +335,7 @@ export default function ProfilePage() {
         await recordProfileView();
       } catch (error) {
         console.error("Failed to fetch profile:", error);
-        showAlert('error', "Failed to load profile data");
+        showAlert("error", "Failed to load profile data");
       } finally {
         setIsLoading(false);
       }
@@ -378,7 +378,7 @@ export default function ProfilePage() {
       setEducation(response.data.data.educations);
     } catch (error) {
       console.error("Failed to fetch education:", error);
-      showAlert('error', "Failed to load education data");
+      showAlert("error", "Failed to load education data");
     } finally {
       setIsLoading(false);
     }
@@ -405,7 +405,7 @@ export default function ProfilePage() {
       );
     } catch (error) {
       console.error("Failed to fetch experience:", error);
-      showAlert('error', "Failed to load experience data");
+      showAlert("error", "Failed to load experience data");
     } finally {
       setIsLoading(false);
     }
@@ -462,12 +462,16 @@ export default function ProfilePage() {
         showAlert("success", "Experience updated successfully!");
         setEditingExperience(null);
       } else {
-        const response = await axios.post(`${apiUrl}/api/experience`, formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await axios.post(
+          `${apiUrl}/api/experience`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         setExperiences((prev) => [...prev, response.data.data]);
         showAlert("success", "Experience added successfully!");
@@ -490,11 +494,15 @@ export default function ProfilePage() {
       console.error("Failed to add/update experience:", error);
       showAlert(
         "error",
-        `Failed to ${editingExperience ? "update" : "add"} experience. Please try again.`
+        `Failed to ${
+          editingExperience ? "update" : "add"
+        } experience. Please try again.`
       );
       showAlert(
         "error",
-        `Failed to ${editingExperience ? "update" : "add"} experience. Please try again.`
+        `Failed to ${
+          editingExperience ? "update" : "add"
+        } experience. Please try again.`
       );
     } finally {
       setIsLoading(false);
@@ -547,9 +555,9 @@ export default function ProfilePage() {
         );
 
         setEducation((prev) =>
-          prev.map((edu) =>
-            edu.id === editingEducation.id ? response.data.data : edu
-          )
+          Array.isArray(prev)
+            ? prev.filter((edu) => edu.id !== editingEducation.id)
+            : []
         );
         showAlert("success", "Education updated successfully!");
         showAlert("success", "Education updated successfully!");
@@ -562,7 +570,11 @@ export default function ProfilePage() {
           },
         });
 
-        setEducation((prev) => [...prev, response.data.data]);
+        setEducation((prev) =>
+          Array.isArray(prev)
+            ? [...prev, response.data.data]
+            : [response.data.data]
+        );
         showAlert("success", "Education added successfully!");
         showAlert("success", "Education added successfully!");
       }
@@ -583,11 +595,15 @@ export default function ProfilePage() {
       console.error("Failed to add/update education:", error);
       showAlert(
         "error",
-        `Failed to ${editingEducation ? "update" : "add"} education. Please try again.`
+        `Failed to ${
+          editingEducation ? "update" : "add"
+        } education. Please try again.`
       );
       showAlert(
         "error",
-        `Failed to ${editingEducation ? "update" : "add"} education. Please try again.`
+        `Failed to ${
+          editingEducation ? "update" : "add"
+        } education. Please try again.`
       );
     } finally {
       setIsLoading(false);
@@ -624,7 +640,7 @@ export default function ProfilePage() {
       setEducation((prev) =>
         Array.isArray(prev) ? prev.filter((edu) => edu.id !== educationId) : []
       );
-      showAlert('success', "Education deleted successfully!");
+      showAlert("success", "Education deleted successfully!");
     } catch (error) {
       console.error("Failed to delete education:", error);
       showAlert("error", "Failed to delete education. Please try again.");
@@ -714,10 +730,10 @@ export default function ProfilePage() {
         Array.isArray(prev) ? prev.filter((exp) => exp.id !== experienceId) : []
       );
 
-      showAlert('success', "Experience deleted successfully!");
+      showAlert("success", "Experience deleted successfully!");
     } catch (error) {
       console.error("Failed to delete experience:", error);
-      showAlert('error', "Failed to delete experience. Please try again.");
+      showAlert("error", "Failed to delete experience. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -734,7 +750,7 @@ export default function ProfilePage() {
   return (
     <ProfileLayout>
       <Case />
-      <div className="w-full px-4 py-6 mx-auto sm:px-6 pb-10">
+      <div className="w-full px-4 py-6 mx-auto sm:px-6 pb-10 mb-10">
         <div className="flex flex-col justify-center max-w-6xl gap-6 mx-auto md:flex-row">
           <ProfileAlert alert={alert} onClose={hideAlert} />
           {/* Sidebar */}

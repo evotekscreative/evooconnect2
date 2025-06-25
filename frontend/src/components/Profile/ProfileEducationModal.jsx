@@ -92,7 +92,9 @@ export default function ProfileEducationModal({
           />
           <div className="flex gap-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium mb-1">Start Date</label>
+              <label className="block text-sm font-medium mb-1">
+                Start Date
+              </label>
               <div className="flex gap-2">
                 <select
                   name="start_month"
@@ -101,14 +103,27 @@ export default function ProfileEducationModal({
                   className="w-full p-2 border rounded"
                   required
                 >
-                  <option value="Month" disabled>Month</option>
-                  {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map(
-                    (month) => (
-                      <option key={month} value={month}>
-                        {month}
-                      </option>
-                    )
-                  )}
+                  <option value="Month" disabled>
+                    Month
+                  </option>
+                  {[
+                    "January",
+                    "February",
+                    "March",
+                    "April",
+                    "May",
+                    "June",
+                    "July",
+                    "August",
+                    "September",
+                    "October",
+                    "November",
+                    "December",
+                  ].map((month) => (
+                    <option key={month} value={month}>
+                      {month}
+                    </option>
+                  ))}
                 </select>
                 <select
                   name="start_year"
@@ -117,19 +132,27 @@ export default function ProfileEducationModal({
                   className="w-full p-2 border rounded"
                   required
                 >
-                  <option value="Year" disabled>Month</option>
-                  {[...Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i)].map(
-                    (year) => (
-                      <option key={year} value={year}>
-                        {year}
-                      </option>
-                    )
-                  )}
+                  <option value="Year" disabled>
+                    Month
+                  </option>
+                  {[
+                    ...Array.from(
+                      { length: 50 },
+                      (_, i) => new Date().getFullYear() - i
+                    ),
+                  ].map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium mb-1">End Date <span className="text-gray-300 text-xs">(Optional)</span></label>
+              <label className="block text-sm font-medium mb-1">
+                End Date{" "}
+                <span className="text-gray-300 text-xs">(Optional)</span>
+              </label>
               <div className="flex gap-2">
                 <select
                   name="end_month"
@@ -137,13 +160,25 @@ export default function ProfileEducationModal({
                   onChange={handleEducationChange}
                   className="w-full p-2 border rounded"
                 >
-                  {["Month", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map(
-                    (month) => (
-                      <option key={month} value={month}>
-                        {month}
-                      </option>
-                    )
-                  )}
+                  {[
+                    "Month",
+                    "January",
+                    "February",
+                    "March",
+                    "April",
+                    "May",
+                    "June",
+                    "July",
+                    "August",
+                    "September",
+                    "October",
+                    "November",
+                    "December",
+                  ].map((month) => (
+                    <option key={month} value={month}>
+                      {month}
+                    </option>
+                  ))}
                 </select>
                 <select
                   name="end_year"
@@ -151,13 +186,17 @@ export default function ProfileEducationModal({
                   onChange={handleEducationChange}
                   className="w-full p-2 border rounded"
                 >
-                  {["Year", ...Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i)].map(
-                    (year) => (
-                      <option key={year} value={year}>
-                        {year}
-                      </option>
-                    )
-                  )}
+                  {[
+                    "Year",
+                    ...Array.from(
+                      { length: 50 },
+                      (_, i) => new Date().getFullYear() - i
+                    ),
+                  ].map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -168,9 +207,18 @@ export default function ProfileEducationModal({
             onChange={handleEducationChange}
             placeholder="Description"
             className="w-full p-2 border rounded"
+            maxLength={1000}
           />
+          <div className="flex justify-between text-xs text-gray-400 mb-2">
+            <span>{educationForm.caption.length}/1000 characters</span>
+            {educationForm.caption.length > 1000 && (
+              <span className="text-red-500">Maximum 1000 characters</span>
+            )}
+          </div>
           <div>
-            <label className="block mb-1 text-sm font-medium">School Logo</label>
+            <label className="block mb-1 text-sm font-medium">
+              School Logo
+            </label>
             <input
               type="file"
               className="w-full border px-3 py-2 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
@@ -213,10 +261,11 @@ export default function ProfileEducationModal({
             </button>
             <button
               type="submit"
-              className={`px-3 py-1 text-xs sm:px-4 sm:py-2 sm:text-base rounded ${educationForm.caption.length > 1000
+              className={`px-3 py-1 text-xs sm:px-4 sm:py-2 sm:text-base rounded ${
+                educationForm.caption.length > 1000
                   ? "bg-gray-300 text-gray-400 cursor-not-allowed"
                   : "bg-blue-600 text-white hover:bg-blue-700"
-                }`}
+              }`}
               disabled={educationForm.caption.length > 1000}
             >
               Save
