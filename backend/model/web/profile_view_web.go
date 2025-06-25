@@ -10,6 +10,7 @@ type ProfileViewerResponse struct {
 	Name        string    `json:"name"`
 	Username    string    `json:"username"`
 	Photo       string    `json:"photo"`
+	Headline    string    `json:"headline"`
 	IsConnected bool      `json:"is_connected"`
 	ViewedAt    time.Time `json:"viewed_at"`
 }

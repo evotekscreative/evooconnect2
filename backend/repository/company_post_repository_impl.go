@@ -103,7 +103,7 @@ func (repository *companyPostRepositoryImpl) Delete(ctx context.Context, tx *sql
 
 func (repository *companyPostRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, postId uuid.UUID) (domain.CompanyPost, error) {
 	query := `
-        SELECT cp.id, cp.company_id, cp.creator_id, cp.title, cp.content, cp.images, cp.status, cp.visibility, cp.is_announcement, cp.created_at, cp.updated_at, cp.taken_down_at,
+        SELECT cp.id, cp.company_id, cp.creator_id,  cp.content, cp.images, cp.status, cp.visibility, cp.is_announcement, cp.created_at, cp.updated_at, cp.taken_down_at,
                c.id, c.name, COALESCE(c.logo, '') as logo, c.industry, c.is_verified,
                u.id, u.name, u.username, COALESCE(u.photo, '') as photo
         FROM company_posts cp
@@ -119,7 +119,7 @@ func (repository *companyPostRepositoryImpl) FindById(ctx context.Context, tx *s
 	var takenDownAt sql.NullTime
 
 	err := tx.QueryRowContext(ctx, query, postId).Scan(
-		&post.Id, &post.CompanyId, &post.CreatorId, &post.Title, &post.Content, &images, &post.Status, &post.Visibility, &post.IsAnnouncement, &post.CreatedAt, &post.UpdatedAt, &takenDownAt,
+		&post.Id, &post.CompanyId, &post.CreatorId, &post.Content, &images, &post.Status, &post.Visibility, &post.IsAnnouncement, &post.CreatedAt, &post.UpdatedAt, &takenDownAt,
 		&company.Id, &company.Name, &company.Logo, &company.Industry, &company.IsVerified,
 		&user.Id, &user.Name, &user.Username, &user.Photo,
 	)
@@ -145,7 +145,7 @@ func (repository *companyPostRepositoryImpl) FindById(ctx context.Context, tx *s
 
 func (repository *companyPostRepositoryImpl) FindByCompanyId(ctx context.Context, tx *sql.Tx, companyId uuid.UUID, limit, offset int) ([]domain.CompanyPost, int, error) {
 	query := `
-        SELECT cp.id, cp.company_id, cp.creator_id, cp.title, cp.content, cp.images, cp.status, cp.visibility, cp.is_announcement, cp.created_at, cp.updated_at, cp.taken_down_at,
+        SELECT cp.id, cp.company_id, cp.creator_id,  cp.content, cp.images, cp.status, cp.visibility, cp.is_announcement, cp.created_at, cp.updated_at, cp.taken_down_at,
                c.id, c.name, COALESCE(c.logo, '') as logo, c.industry, c.is_verified,
                u.id, u.name, u.username, COALESCE(u.photo, '') as photo
         FROM company_posts cp
@@ -172,7 +172,7 @@ func (repository *companyPostRepositoryImpl) FindByCompanyId(ctx context.Context
 		var takenDownAt sql.NullTime
 
 		err := rows.Scan(
-			&post.Id, &post.CompanyId, &post.CreatorId, &post.Title, &post.Content, &images, &post.Status, &post.Visibility, &post.IsAnnouncement, &post.CreatedAt, &post.UpdatedAt, &takenDownAt,
+			&post.Id, &post.CompanyId, &post.CreatorId, &post.Content, &images, &post.Status, &post.Visibility, &post.IsAnnouncement, &post.CreatedAt, &post.UpdatedAt, &takenDownAt,
 			&company.Id, &company.Name, &company.Logo, &company.Industry, &company.IsVerified,
 			&user.Id, &user.Name, &user.Username, &user.Photo,
 		)
@@ -206,7 +206,7 @@ func (repository *companyPostRepositoryImpl) FindByCompanyId(ctx context.Context
 
 func (repository *companyPostRepositoryImpl) FindByCreatorId(ctx context.Context, tx *sql.Tx, creatorId uuid.UUID, limit, offset int) ([]domain.CompanyPost, int, error) {
 	query := `
-        SELECT cp.id, cp.company_id, cp.creator_id, cp.title, cp.content, cp.images, cp.status, cp.visibility, cp.is_announcement, cp.created_at, cp.updated_at, cp.taken_down_at,
+        SELECT cp.id, cp.company_id, cp.creator_id,  cp.content, cp.images, cp.status, cp.visibility, cp.is_announcement, cp.created_at, cp.updated_at, cp.taken_down_at,
                c.id, c.name, COALESCE(c.logo, '') as logo, c.industry, c.is_verified,
                u.id, u.name, u.username, COALESCE(u.photo, '') as photo
         FROM company_posts cp

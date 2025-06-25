@@ -26,7 +26,7 @@ func (repository *ProfileViewRepositoryImpl) Save(ctx context.Context, tx *sql.T
 
 func (repository *ProfileViewRepositoryImpl) FindByProfileUserId(ctx context.Context, tx *sql.Tx, profileUserId uuid.UUID, fromTime time.Time, toTime time.Time) []domain.ProfileView {
 	SQL := `
-		SELECT v.id, v.profile_user_id, v.viewer_id, v.viewed_at, u.name, COALESCE(u.photo, ''), COALESCE(u.username, ''),
+		SELECT v.id, v.profile_user_id, v.viewer_id, v.viewed_at, u.name, COALESCE(u.photo, ''), COALESCE(u.username, ''), COALESCE(u.headline, ''),
 		(SELECT EXISTS(SELECT 1 FROM connections WHERE 
 			(user_id_1 = v.profile_user_id AND user_id_2 = v.viewer_id) OR 
 			(user_id_1 = v.viewer_id AND user_id_2 = v.profile_user_id)
@@ -52,6 +52,7 @@ func (repository *ProfileViewRepositoryImpl) FindByProfileUserId(ctx context.Con
 			&User.Name,
 			&User.Photo,
 			&User.Username,
+			&User.Headline,
 			&User.IsConnected,
 		)
 		profileView.Viewer = &User

@@ -173,9 +173,11 @@ func setupUserRoutes(
 	// Group invitations
 	router.POST("/api/groups/:groupId/invitations/:userId", userAuth(groupController.CreateInvitation))
 	router.PUT("/api/invitations/:invitationId/accept", userAuth(groupController.AcceptInvitation))
+	router.GET("/api/my-joined-groups", userAuth(groupController.FindMyJoinedGroups))
 	router.PUT("/api/invitations/:invitationId/reject", userAuth(groupController.RejectInvitation))
 	router.GET("/api/my-invitations", userAuth(groupController.FindMyInvitations))
 	router.DELETE("/api/invitations/:invitationId", userAuth(groupController.CancelInvitation))
+	router.GET("/api/count-request-invitation", userAuth(connectionController.CountRequestInvitation))
 
 	router.POST("/api/groups/:groupId/join-requests", userAuth(groupController.CreateJoinRequest))
 	router.GET("/api/groups/:groupId/join-requests", userAuth(groupController.FindJoinRequestsByGroupId))
@@ -236,6 +238,7 @@ func setupUserRoutes(
 	router.GET("/api/companies/:companyId/details", userAuth(companyManagementController.GetCompanyDetail))
 	router.GET("/api/companies/:companyId/member-companies", userAuth(memberCompanyController.GetMembersByCompanyId))
 	router.DELETE("/api/companies/:companyId", userAuth(companyManagementController.DeleteCompany))
+	router.GET("/api/companies-edit-requests/:editRequestId", userAuth(companyManagementController.GetEditRequestById))
 	router.POST("/api/companies/:companyId/request-edit", userAuth(companyManagementController.RequestEdit))
 	router.DELETE("/api/companies/:companyId/request-edit", userAuth(companyManagementController.DeleteCompanyEditRequest))
 	router.GET("/api/companies/:companyId/stats", userAuth(companyManagementController.GetCompanyStats))

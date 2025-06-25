@@ -299,3 +299,35 @@ func (controller *CompanyManagementControllerImpl) GetCompanyStats(writer http.R
 
 	helper.WriteToResponseBody(writer, webResponse)
 }
+
+func (controller *CompanyManagementControllerImpl) GetEditRequestById(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	editRequestIdStr := params.ByName("editRequestId")
+	editRequestId, err := uuid.Parse(editRequestIdStr)
+	if err != nil {
+		helper.WriteJSON(writer, http.StatusBadRequest, web.APIResponse{
+			Code:   http.StatusBadRequest,
+			Status: "BAD_REQUEST",
+			Error:  "Invalid edit request ID",
+		})
+		return
+	}
+
+	userId, err := helper.GetUserIdFromToken(request)
+	helper.PanicIfError(err)
+	if userId == uuid.Nil {
+		helper.WriteJSON(writer, http.StatusUnauthorized, web.APIResponse{
+			Code:   http.StatusUnauthorized,
+			Status: "UNAUTHORIZED",
+			Error:  "Invalid user ID",
+		})
+		return
+	}
+
+	editRequest := controller.CompanyManagementService.GetEditRequestById(request.Context(), editRequestId, userId)
+
+	helper.WriteJSON(writer, http.StatusOK, web.APIResponse{
+		Code:   http.StatusOK,
+		Status: "OK",
+		Data:   editRequest,
+	})
+}

@@ -28,58 +28,57 @@ func NewProfileViewService(db *sql.DB, profileViewRepository repository.ProfileV
 	}
 }
 func (service *ProfileViewServiceImpl) RecordView(ctx context.Context, profileUserId uuid.UUID, viewerId uuid.UUID) error {
-    // Don't record if user views their own profile
-    if profileUserId == viewerId {
-        return nil
-    }
+	// Don't record if user views their own profile
+	if profileUserId == viewerId {
+		return nil
+	}
 
-    tx, err := service.DB.Begin()
-    if err != nil {
-        return err
-    }
-    defer helper.CommitOrRollback(tx)
+	tx, err := service.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer helper.CommitOrRollback(tx)
 
-    // Check if this user has already viewed the profile recently (e.g., in the last 24 hours)
-    hasViewedRecently := service.ProfileViewRepository.HasViewedRecently(ctx, tx, profileUserId, viewerId, 24*time.Hour)
-    if hasViewedRecently {
-        // User already viewed this profile recently, don't create a new notification
-        return nil
-    }
+	// Check if this user has already viewed the profile recently (e.g., in the last 24 hours)
+	hasViewedRecently := service.ProfileViewRepository.HasViewedRecently(ctx, tx, profileUserId, viewerId, 24*time.Hour)
+	if hasViewedRecently {
+		// User already viewed this profile recently, don't create a new notification
+		return nil
+	}
 
-    // Record new view
-    view := domain.ProfileView{
-        Id:            uuid.New(),
-        ProfileUserId: profileUserId,
-        ViewerId:      viewerId,
-        ViewedAt:      time.Now(),
-    }
+	// Record new view
+	view := domain.ProfileView{
+		Id:            uuid.New(),
+		ProfileUserId: profileUserId,
+		ViewerId:      viewerId,
+		ViewedAt:      time.Now(),
+	}
 
-    service.ProfileViewRepository.Save(ctx, tx, view)
-    
-    // Ambil data viewer terlebih dahulu
-    viewer, err := service.UserRepository.FindById(ctx, tx, viewerId)
-    if err == nil && service.NotificationService != nil {
-        // Simpan data yang diperlukan
-        viewerName := viewer.Name
-        
-        // Send notification to profile owner
-        refType := "profile_visit"
-        service.NotificationService.Create(
-            ctx, // Gunakan context yang sama
-            profileUserId,
-            string(domain.NotificationCategoryProfile),
-            string(domain.NotificationTypeProfileVisit),
-            "Profile Visit",
-            fmt.Sprintf("%s viewed your profile", viewerName),
-            nil,
-            &refType,
-            &viewerId,
-        )
-    }
-    
-    return nil
+	service.ProfileViewRepository.Save(ctx, tx, view)
+
+	// Ambil data viewer terlebih dahulu
+	viewer, err := service.UserRepository.FindById(ctx, tx, viewerId)
+	if err == nil && service.NotificationService != nil {
+		// Simpan data yang diperlukan
+		viewerName := viewer.Name
+
+		// Send notification to profile owner
+		refType := "profile_visit"
+		service.NotificationService.Create(
+			ctx, // Gunakan context yang sama
+			profileUserId,
+			string(domain.NotificationCategoryProfile),
+			string(domain.NotificationTypeProfileVisit),
+			"Profile Visit",
+			fmt.Sprintf("%s viewed your profile", viewerName),
+			nil,
+			&refType,
+			&viewerId,
+		)
+	}
+
+	return nil
 }
-
 
 func (service *ProfileViewServiceImpl) GetViewsThisWeek(ctx context.Context, userId uuid.UUID) web.ProfileViewsResponse {
 	tx, err := service.DB.Begin()
@@ -108,6 +107,7 @@ func (service *ProfileViewServiceImpl) GetViewsThisWeek(ctx context.Context, use
 			Name:        view.Viewer.Name,
 			Username:    view.Viewer.Username,
 			Photo:       view.Viewer.Photo,
+			Headline:    view.Viewer.Headline,
 			IsConnected: view.Viewer.IsConnected,
 			ViewedAt:    view.ViewedAt,
 		})
@@ -149,6 +149,7 @@ func (service *ProfileViewServiceImpl) GetViewsLastWeek(ctx context.Context, use
 			Name:        view.Viewer.Name,
 			Username:    view.Viewer.Username,
 			Photo:       view.Viewer.Photo,
+			Headline:    view.Viewer.Headline,
 			IsConnected: view.Viewer.IsConnected,
 			ViewedAt:    view.ViewedAt,
 		})
