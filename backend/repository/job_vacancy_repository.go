@@ -26,4 +26,5 @@ type JobVacancyRepository interface {
 	CountSearchResults(ctx context.Context, tx *sql.Tx, filters map[string]interface{}) int
 	CountByCompanyIdWithStatus(ctx context.Context, tx *sql.Tx, companyId uuid.UUID, status domain.JobVacancyStatus) int
 	UpdateStatus(ctx context.Context, tx *sql.Tx, jobVacancyId uuid.UUID, status domain.JobVacancyStatus) error
+	FindRandomJobs(ctx context.Context, tx *sql.Tx, limit, offset int) ([]domain.JobVacancy, int)
 }

@@ -29,11 +29,6 @@ func (repository *JobVacancyRepositoryImpl) Create(ctx context.Context, tx *sql.
 	jobVacancy.CreatedAt = now
 	jobVacancy.UpdatedAt = now
 
-	// Set default status if not provided
-	if string(jobVacancy.Status) == "" {
-		jobVacancy.Status = domain.JobVacancyStatusDraft
-	}
-
 	// Set default work type if not provided
 	if string(jobVacancy.WorkType) == "" {
 		jobVacancy.WorkType = domain.WorkTypeInOffice
@@ -985,4 +980,102 @@ func (repository *JobVacancyRepositoryImpl) CountByCompanyIdWithStatus(ctx conte
 	helper.PanicIfError(err)
 
 	return count
+}
+
+func (repository *JobVacancyRepositoryImpl) FindRandomJobs(ctx context.Context, tx *sql.Tx, limit, offset int) ([]domain.JobVacancy, int) {
+	query := `
+		SELECT
+			jv.id, jv.company_id, jv.creator_id, jv.title, jv.description,
+			jv.requirements, jv.location, jv.job_type, jv.experience_level,
+			jv.min_salary, jv.max_salary, jv.currency, jv.skills, jv.benefits,
+			jv.work_type, jv.application_deadline, jv.status, jv.type_apply,
+			jv.external_link, jv.created_at, jv.updated_at,
+			c.id, c.name, c.logo, c.industry
+		FROM job_vacancies jv
+		LEFT JOIN companies c ON jv.company_id = c.id
+		WHERE jv.status = 'active'
+		AND (jv.application_deadline IS NULL OR jv.application_deadline > NOW())
+		ORDER BY RANDOM()
+		LIMIT $1 OFFSET $2`
+
+	rows, err := tx.QueryContext(ctx, query, limit, offset)
+	helper.PanicIfError(err)
+	defer rows.Close()
+
+	var jobVacancies []domain.JobVacancy
+	for rows.Next() {
+		var jobVacancy domain.JobVacancy
+		var company domain.Company
+		var minSalary, maxSalary sql.NullFloat64
+		var applicationDeadline sql.NullTime
+		var externalLink sql.NullString
+		var creatorId sql.NullString
+		var companyLogo, companyIndustry sql.NullString
+
+		err := rows.Scan(
+			&jobVacancy.Id,
+			&jobVacancy.CompanyId,
+			&creatorId,
+			&jobVacancy.Title,
+			&jobVacancy.Description,
+			&jobVacancy.Requirements,
+			&jobVacancy.Location,
+			&jobVacancy.JobType,
+			&jobVacancy.ExperienceLevel,
+			&minSalary,
+			&maxSalary,
+			&jobVacancy.Currency,
+			&jobVacancy.Skills,
+			&jobVacancy.Benefits,
+			&jobVacancy.WorkType,
+			&applicationDeadline,
+			&jobVacancy.Status,
+			&jobVacancy.TypeApply,
+			&externalLink,
+			&jobVacancy.CreatedAt,
+			&jobVacancy.UpdatedAt,
+			&company.Id,
+			&company.Name,
+			&companyLogo,
+			&companyIndustry,
+		)
+		helper.PanicIfError(err)
+
+		// Handle nullable fields
+		if creatorId.Valid {
+			creatorUUID, _ := uuid.Parse(creatorId.String)
+			jobVacancy.CreatorId = &creatorUUID
+		}
+		if minSalary.Valid {
+			jobVacancy.MinSalary = &minSalary.Float64
+		}
+		if maxSalary.Valid {
+			jobVacancy.MaxSalary = &maxSalary.Float64
+		}
+		if applicationDeadline.Valid {
+			jobVacancy.ApplicationDeadline = &applicationDeadline.Time
+		}
+		if externalLink.Valid {
+			jobVacancy.ExternalLink = &externalLink.String
+		}
+
+		// Handle nullable company fields
+		if companyLogo.Valid {
+			company.Logo = companyLogo.String
+		}
+		if companyIndustry.Valid {
+			company.Industry = companyIndustry.String
+		}
+
+		jobVacancy.Company = &company
+		jobVacancies = append(jobVacancies, jobVacancy)
+	}
+
+	// Get total count of active jobs
+	countQuery := `SELECT COUNT(*) FROM job_vacancies WHERE status = 'active' AND (application_deadline IS NULL OR application_deadline > NOW())`
+	var totalCount int
+	err = tx.QueryRowContext(ctx, countQuery).Scan(&totalCount)
+	helper.PanicIfError(err)
+
+	return jobVacancies, totalCount
 }

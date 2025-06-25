@@ -18,4 +18,5 @@ type JobVacancyController interface {
 	SearchJobs(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	UpdateStatus(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	GetPublicJobDetail(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+	GetRandomJobs(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 }
