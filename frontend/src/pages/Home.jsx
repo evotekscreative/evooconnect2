@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import axios from "axios";
-import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
-import timezone from 'dayjs/plugin/timezone';
-import relativeTime from 'dayjs/plugin/relativeTime'; // Tambahkan import ini
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import relativeTime from "dayjs/plugin/relativeTime"; // <- Tambahkan ini
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
-dayjs.extend(relativeTime); // Tambahkan baris ini
+dayjs.extend(relativeTime);
 
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 import { Tooltip as ChartTooltip } from "chart.js";
@@ -15,9 +15,8 @@ import { Button } from "../components/Button";
 import Tooltip from "@mui/material/Tooltip";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import Alert from "../components/Auth/Alert";
+import Alert from "../components/Auth/alert";
 import { Line } from "react-chartjs-2";
-import "../assets/css/style.css"; 
 import {
   SquarePen,
   NotebookPen,
@@ -61,6 +60,168 @@ ChartJS.register(
   ChartTooltip,
   Legend
 );
+
+const ReportModal = ({
+  showReportModal,
+  setShowReportModal,
+  selectedReason,
+  setSelectedReason,
+  customReason,
+  setCustomReason,
+  setAlertInfo,
+  reportTarget,
+}) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ...existing code...
+  const handleSubmitReport = async () => {
+    if (!selectedReason) {
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: "Please select a reason for reporting",
+      });
+      return;
+    }
+
+    // Kirim field sesuai kebutuhan backend
+    const payload =
+      selectedReason === "Other"
+        ? { reason: "Other", description: customReason }
+        : { reason: selectedReason };
+
+    try {
+      setIsSubmitting(true);
+      const userToken = localStorage.getItem("token");
+
+      const response = await axios.post(
+        `${
+          import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000"
+        }/api/reports/${reportTarget.userId}/${reportTarget.targetType}/${
+          reportTarget.targetId
+        }`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data?.code === 201) {
+        setAlertInfo({
+          show: true,
+          type: "success",
+          message: "Report submitted successfully!",
+        });
+        setShowReportModal(false);
+        setSelectedReason("");
+        setCustomReason("");
+      } else {
+        throw new Error("Failed to submit report");
+      }
+    } catch (error) {
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message:
+          error.response?.data?.message || "Your report is being processed",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  // ...existing code...
+
+  return (
+    <div
+      className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] ${
+        showReportModal ? "block" : "hidden"
+      }`}
+    >
+      <div className="w-full max-w-md p-5 mx-4 bg-white rounded-lg">
+        <h3 className="mb-4 text-lg font-semibold">Report this content</h3>
+        <p className="mb-3 text-sm text-gray-600">
+          Please select a reason for reporting
+        </p>
+
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          {[
+            "Harassment",
+            "Fraud",
+            "Spam",
+            "Missinformation",
+            "Hate Speech",
+            "Threats or violence",
+            "self-harm",
+            "Graphic or violent content",
+            "Dangerous or extremist organizations",
+            "Sexual Content",
+            "Fake Account",
+            "Child Exploitation",
+            "Illegal products and services",
+            "Infringement",
+            "Other",
+          ].map((reason) => (
+            <button
+              key={reason}
+              className={`py-2 px-3 text-sm border rounded-full ${
+                selectedReason === reason
+                  ? "bg-blue-100 border-blue-500 text-blue-700"
+                  : "bg-white hover:bg-gray-100"
+              }`}
+              onClick={() => setSelectedReason(reason)}
+            >
+              {reason}
+            </button>
+          ))}
+        </div>
+
+        {selectedReason === "Other" && (
+          <textarea
+            className="w-full p-2 mb-3 text-sm border rounded"
+            rows={3}
+            placeholder="Please describe the reason for your report"
+            value={customReason}
+            onChange={(e) => setCustomReason(e.target.value)}
+          />
+        )}
+        <div className="flex justify-end gap-2">
+          <button
+            className="text-gray-500 hover:text-gray-700"
+            onClick={() => {
+              setShowReportModal(false);
+              setSelectedReason("");
+              setCustomReason("");
+            }}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </button>
+          <button
+            className={`px-4 py-2 rounded text-white ${
+              selectedReason
+                ? "bg-blue-600 hover:bg-blue-700"
+                : "bg-gray-300 cursor-not-allowed"
+            }`}
+            disabled={!selectedReason || isSubmitting}
+            onClick={handleSubmitReport}
+          >
+            {isSubmitting ? (
+              <div className="flex items-center justify-center">
+                <div className="w-4 h-4 mr-2 border-2 border-white rounded-full border-t-transparent animate-spin" />
+                Submitting...
+              </div>
+            ) : (
+              "Report"
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function SocialNetworkFeed() {
   const apiUrl =
@@ -130,6 +291,12 @@ export default function SocialNetworkFeed() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const observerRef = useRef(null);
   const loadingRef = useRef(null);
+  const [expandedPosts, setExpandedPosts] = useState({});
+  const [reportTarget, setReportTarget] = useState({
+    userId: null,
+    targetType: null,
+    targetId: null,
+  });
   const [user, setUser] = useState({
     name: "",
     username: "",
@@ -149,11 +316,34 @@ export default function SocialNetworkFeed() {
     dailyViews: [],
   });
   const [connections, setConnections] = useState([]);
-  const [reportTarget, setReportTarget] = useState({
-  userId: null,
-  targetType: null,
-  targetId: null
-});
+
+  const [randomJobs, setRandomJobs] = useState([]);
+  const [loadingJobs, setLoadingJobs] = useState(false);
+
+  const fetchRandomJobs = async () => {
+    try {
+      setLoadingJobs(true);
+      const userToken = localStorage.getItem("token");
+      const response = await axios.get(apiUrl + "/api/jobs/random", {
+        headers: { Authorization: `Bearer ${userToken}` },
+      });
+
+      if (response.data?.data?.jobs) {
+        setRandomJobs(response.data.data.jobs.slice(0, 3)); // Ambil maksimal 3 jobs
+      }
+    } catch (error) {
+      console.error("Failed to fetch random jobs:", error);
+    } finally {
+      setLoadingJobs(false);
+    }
+  };
+  useEffect(() => {
+    // Hanya fetch jika sudah ada token dan userId
+    const userToken = localStorage.getItem("token");
+    if (userToken && currentUserId) {
+      fetchRandomJobs();
+    }
+  }, [currentUserId]);
 
   const fetchSuggestedConnections = async () => {
     try {
@@ -578,37 +768,61 @@ export default function SocialNetworkFeed() {
         if (response.data?.data) {
           // Transformasi data setelah fetch
           const formattedPosts = response.data.data.map((post) => ({
-  id: post.id,
-  content: post.content,
-  images: post.images?.map((img) => 
-    img.startsWith("http") ? img : `${apiUrl}/${img}`
-  ) || [],
-  user: post.user || {
-    id: post.user_id,
-    name: "Unknown User",
-    initials: "UU",
-    username: "unknown",
-  },
-  group: post.group || null,
-  likes_count: post.likes_count || 0,
-  comments_count: post.comments_count || 0,
-  created_at: post.created_at, // Jangan beri fallback
-  visibility: post.visibility || "public",
-  isLiked: post.is_liked || false,
-}));
+            id: post.id,
+            content: post.content,
+            images:
+              post.images?.map((img) =>
+                img.startsWith("http") ? img : `${apiUrl}/${img}`
+              ) || [],
+            user: post.user || {
+              id: post.user_id,
+              name: "Unknown User",
+              initials: "UU",
+              username: "unknown",
+            },
+            group: post.group || null,
+            likes_count: post.likes_count || 0,
+            comments_count: post.comments_count || 0,
+            created_at: post.created_at, // Jangan beri fallback
+            visibility: post.visibility || "public",
+            isLiked: post.is_liked || false,
+          }));
 
           // Update state posts
+          // Update state posts
+          if (append) {
+            setPosts((prevPosts) =>
+              [...prevPosts, ...formattedPosts].sort(
+                (a, b) => new Date(b.created_at) - new Date(a.created_at)
+              )
+            );
+          } else {
+            setPosts(
+              formattedPosts.sort(
+                (a, b) => new Date(b.created_at) - new Date(a.created_at)
+              )
+            );
+          }
+
           if (append) {
             setPosts((prevPosts) => [...prevPosts, ...formattedPosts]);
           } else {
             setPosts(formattedPosts);
           }
 
-          // Periksa apakah masih ada data yang bisa dimuat
-          setHasMore(formattedPosts.length === limit);
+          if (formattedPosts.length < limit) {
+            setHasMore(false); // Tidak ada lagi postingan untuk dimuat
+          } else {
+            setHasMore(true); // Masih ada postingan untuk dimuat
+          }
 
           if (pageNum > 0) {
             setPage(pageNum);
+          }
+        } else {
+          setHasMore(false); // Tidak ada data yang diterima
+          if (!append) {
+            setPosts([]); // Reset posts jika tidak ada data
           }
         }
       } catch (err) {
@@ -702,30 +916,30 @@ export default function SocialNetworkFeed() {
     }
   };
 
- const formatPostTime = (dateString) => {
-  if (!dateString) return "";
+  const formatPostTime = (dateString) => {
+    if (!dateString) return "";
 
-  try {
-    const utcDate = dayjs.utc(dateString);
+    try {
+      const utcDate = dayjs.utc(dateString);
 
-    if (!utcDate.isValid()) {
-      console.warn("Invalid date:", dateString);
+      if (!utcDate.isValid()) {
+        console.warn("Invalid date:", dateString);
+        return "";
+      }
+
+      const now = dayjs.utc();
+      const diffInHours = now.diff(utcDate, "hour");
+
+      if (diffInHours < 24) {
+        return utcDate.format("h:mm A"); // hasil: 2:49 AM
+      } else {
+        return utcDate.format("MMM D [at] h:mm A"); // Misal: Jun 5 at 02:49
+      }
+    } catch (error) {
+      console.error("Time formatting error:", error);
       return "";
     }
-
-    const now = dayjs.utc();
-    const diffInHours = now.diff(utcDate, 'hour');
-
-    if (diffInHours < 24) {
-     return utcDate.format('h:mm A'); // hasil: 2:49 AM // Format 24 jam, misal: 02:49
-    } else {
-      return utcDate.format('MMM D [at] HH:mm'); // Misal: Jun 5 at 02:49
-    }
-  } catch (error) {
-    console.error("Time formatting error:", error);
-    return "";
-  }
-};
+  };
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
@@ -743,92 +957,98 @@ export default function SocialNetworkFeed() {
   };
 
   const handlePostSubmit = async () => {
-  if (selectedPostId) {
-    await handleUpdatePost();
-    return;
-  }
-
-  setIsLoading(true);
-  setError(null);
-
-  try {
-    const content = activeTab === "update" ? postContent : articleContent;
-    const userToken = localStorage.getItem("token");
-
-    const formData = new FormData();
-    formData.append("content", content);
-    formData.append("visibility", postVisibility);
-
-    // Tambahkan semua gambar ke FormData
-    newPostImages.forEach((img) => {
-      if (img.file) {
-        formData.append("images", img.file);
-      }
-    });
-
-    const response = await axios.post(apiUrl + "/api/posts", formData, {
-      headers: {
-        Authorization: `Bearer ${userToken}`,
-        "Content-Type": "multipart/form-data",
-      },
-    });
-
-    if (!response.data || !response.data.data) {
-      throw new Error("Invalid response from server");
+    if (selectedPostId) {
+      await handleUpdatePost();
+      return;
     }
 
-    // Pastikan response.data.data.images adalah array URL gambar
-    const images = response.data.data.images || [];
-    
-    // Gunakan waktu saat ini untuk memastikan waktu postingan langsung muncul
-    const currentTime = new Date().toISOString();
+    setIsLoading(true);
+    setError(null);
 
-    const newPost = {
-      id: response.data.data.id,
-      content: response.data.data.content || content,
-      images: images.map((img) => {
-        // Pastikan URL gambar lengkap jika backend hanya mengembalikan nama file
-        return img.startsWith("http") ? img : `${apiUrl}/${img}`;
-      }),
-      visibility: response.data.data.visibility || postVisibility,
-      likes_count: response.data.data.likes_count || 0,
-      comments_count: response.data.data.comments_count || 0,
-      created_at: response.data.data.created_at || currentTime, // Gunakan created_at bukan createdAt
-      user: response.data.data.user || {
-        id: currentUserId,
-        name: user.name || "Current User",
-        photo: user.photo || "",
-        initials: user.initials || "CU",
-        username: user.username || "user",
-      },
-    };
+    try {
+      const content = activeTab === "update" ? postContent : articleContent;
+      const userToken = localStorage.getItem("token");
 
-    setPosts((prevPosts) => [newPost, ...prevPosts]);
-    setPostContent("");
-    setArticleContent("");
-    setNewPostImages([]); // Reset gambar setelah posting
+      const formData = new FormData();
+      formData.append("content", content);
+      formData.append("visibility", postVisibility);
 
-    setAlertInfo({
-      show: true,
-      type: "success",
-      message: "Successfully created post!",
-    });
-  } catch (error) {
-    setAlertInfo({
-      show: true,
-      type: "error",
-      message: "Field is required",
-    });
-    setError(
-      error.response?.data?.message ||
-        error.message ||
-        "Failed to create post. Please try again."
-    );
-  } finally {
-    setIsLoading(false);
-  }
-};
+      // Tambahkan semua gambar ke FormData
+      newPostImages.forEach((img) => {
+        if (img.file) {
+          formData.append("images", img.file);
+        }
+      });
 
+      const response = await axios.post(apiUrl + "/api/posts", formData, {
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      // Di handlePostSubmit:
+      const serverTime = response.data.data.created_at;
+      if (!serverTime) {
+        throw new Error("Server didn't return creation time");
+      }
+
+      if (!response.data || !response.data.data) {
+        throw new Error("Invalid response from server");
+      }
+
+      // Pastikan response.data.data.images adalah array URL gambar
+      const images = response.data.data.images || [];
+
+      const newPost = {
+        id: response.data.data.id,
+        content: response.data.data.content || content,
+        images: images.map((img) => {
+          // Pastikan URL gambar lengkap jika backend hanya mengembalikan nama file
+          return img.startsWith("http") ? img : `${apiUrl}/${img}`;
+        }),
+        visibility: response.data.data.visibility || postVisibility,
+        likes_count: response.data.data.likes_count || 0,
+        comments_count: response.data.data.comments_count || 0,
+        created_at: serverTime,
+        user: response.data.data.user || {
+          name: "Current User",
+          photo: "",
+          initials: "CU",
+        },
+      };
+
+      setPosts((prevPosts) => [newPost, ...prevPosts]);
+      setPostContent("");
+      setArticleContent("");
+
+      newPostImages.forEach((img) => {
+        if (img.preview) {
+          URL.revokeObjectURL(img.preview);
+        }
+      });
+      setNewPostImages([]);
+
+      setAlertInfo({
+        show: true,
+        type: "success",
+        message: "Successfully created post!",
+      });
+    } catch (error) {
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: "Field is required",
+      });
+      setError(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to create post. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const closeCommentModal = () => {
     setShowCommentModal(false);
@@ -858,7 +1078,7 @@ export default function SocialNetworkFeed() {
             Authorization: `Bearer ${userToken}`,
           },
         }
-      )
+      );
 
       const commentsWithReplies = (response.data?.data?.comments || []).map(
         (comment) => {
@@ -885,12 +1105,6 @@ export default function SocialNetworkFeed() {
         }
       );
 
-      // Simpan ke localStorage
-      // localStorage.setItem(
-      //   `comments_${postId}`,
-      //   JSON.stringify(commentsWithReplies)
-      // );
-
       setComments((prev) => ({
         ...prev,
         [postId]: commentsWithReplies,
@@ -903,7 +1117,7 @@ export default function SocialNetworkFeed() {
     }
   };
 
- const fetchReplies = async (commentId) => {
+  const fetchReplies = async (commentId) => {
     try {
       const userToken = localStorage.getItem("token");
       const response = await axios.get(
@@ -1058,6 +1272,7 @@ export default function SocialNetworkFeed() {
       setLoadingComments((prev) => ({ ...prev, [commentId]: false }));
     }
   };
+
   useEffect(() => {
     // Muat cache replies saat komponen dimount
     const loadCachedReplies = () => {
@@ -1136,89 +1351,130 @@ export default function SocialNetworkFeed() {
     }
   };
 
-const handleReply = async (commentId, replyToUser = null) => {
+  const handleReply = async (commentId, replyToUser = null) => {
     if (!commentId || !replyText.trim()) return;
 
     try {
-      const token = localStorage.getItem("token");
+      const userToken = localStorage.getItem("token");
 
+      // Jika sedang edit reply
       if (editingReplyId) {
         await handleUpdateReply(editingReplyId);
         return;
       }
 
+      // Jika membuat reply baru
       const response = await axios.post(
         `${apiUrl}/api/comments/${commentId}/replies`,
         {
           content: replyText,
-          replyTo: replyingTo, // This should be the comment ID you're replying to
+          reply_to_id: replyingTo, // Include the reply_to_id if this is a reply to another reply
         },
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${userToken}`,
             "Content-Type": "application/json",
           },
         }
       );
 
+      // Create the new reply object with all necessary data
       const newReply = {
         ...response.data.data,
+        id: response.data.data.id || Math.random().toString(36).substr(2, 9),
         user: {
-          ...response.data.data.user,
+          ...(response.data.data.user || {
+            id: currentUserId,
+            name: user.name,
+            username: user.username,
+            initials: getInitials(user.name),
+          }),
           initials: response.data.data.user?.name
-            ? response.data.data.user.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
-            : "CU",
+            ? getInitials(response.data.data.user.name)
+            : "UU",
         },
-        replyTo: replyToUser
+        reply_to: replyToUser
           ? {
               id: replyToUser.id,
               name: replyToUser.name,
               username: replyToUser.username,
-              initials: getInitials(replyToUser.name),
             }
           : null,
+        created_at: new Date().toISOString(),
       };
 
-      setAllReplies((prev) => ({
-        ...prev,
-        [commentId]: [...(prev[commentId] || []), newReply],
-      }));
+      // Update state based on whether this is a reply to a comment or another reply
+      if (replyingTo === commentId) {
+        // This is a direct reply to a comment
+        setAllReplies((prev) => ({
+          ...prev,
+          [commentId]: [...(prev[commentId] || []), newReply],
+        }));
+      } else {
+        // This is a reply to another reply - find and update the parent reply
+        setAllReplies((prev) => {
+          const updatedReplies = { ...prev };
+          const parentCommentId = Object.keys(updatedReplies).find((id) =>
+            updatedReplies[id].some((r) => r.id === replyingTo)
+          );
+
+          if (parentCommentId) {
+            updatedReplies[parentCommentId] = updatedReplies[
+              parentCommentId
+            ].map((reply) => {
+              if (reply.id === replyingTo) {
+                return {
+                  ...reply,
+                  replies: [...(reply.replies || []), newReply],
+                };
+              }
+              return reply;
+            });
+          }
+
+          return updatedReplies;
+        });
+      }
 
       // Update comment replies count
       setComments((prev) => {
         const updated = { ...prev };
         if (updated[currentPostId]) {
-          updated[currentPostId] = updated[currentPostId].map((c) => {
-            if (c.id === commentId) {
+          updated[currentPostId] = updated[currentPostId].map((comment) => {
+            if (comment.id === commentId) {
               return {
-                ...c,
-                repliesCount: (c.repliesCount || 0) + 1,
+                ...comment,
+                repliesCount: (comment.repliesCount || 0) + 1,
               };
             }
-            return c;
+            return comment;
           });
         }
         return updated;
       });
 
+      // Reset form
       setReplyText("");
       setReplyingTo(null);
       setReplyToUser(null);
       setCommentError(null);
+
+      // Ensure replies are expanded
       setExpandedReplies((prev) => ({ ...prev, [commentId]: true }));
-      addAlert("success", "Successfully added reply!");
+      setAlertInfo({
+        show: true,
+        type: "success",
+        message: "Reply posted successfully!",
+      });
     } catch (error) {
-      addAlert("error", "Failed to add reply");
-      setCommentError(
-        error.response?.data?.message ||
-          "Failed to add reply. Please try again."
-      );
+      console.error("Failed to add reply:", error);
+      setAlertInfo({
+        show: true,
+        type: "error",
+        message: error.response?.data?.message || "Failed to add reply",
+      });
     }
   };
-
 
   const toggleReplies = async (commentId) => {
     // Reset editing states when toggling replies
@@ -1416,11 +1672,10 @@ const handleReply = async (commentId, replyToUser = null) => {
 
   const handleRemoveExistingImage = (index) => {
     const removed = editPostImages[index];
-    // Pastikan kita menyimpan path lengkap gambar yang dihapus
+    // Simpan path gambar yang dihapus (gunakan path relatif jika backend butuh)
     const fullImagePath = removed.startsWith("http")
-      ? removed
-      : `${apiUrl}/${removed}`;
-
+      ? removed.replace(`${apiUrl}/`, "")
+      : removed;
     setRemovedImages([...removedImages, fullImagePath]);
     setEditPostImages(editPostImages.filter((_, i) => i !== index));
   };
@@ -1456,16 +1711,16 @@ const handleReply = async (commentId, replyToUser = null) => {
 
     // Cek apakah post ini milik user yang sedang login
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg w-full max-w-xs mx-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="w-full max-w-xs mx-4 bg-white rounded-lg">
           <div className="p-4">
-            <h3 className="font-medium text-lg mb-3">Post Options</h3>
+            <h3 className="mb-3 text-lg font-medium">Post Options</h3>
 
             {/* Opsi untuk post milik user sendiri */}
             {isCurrentUserPost ? (
               <>
                 <button
-                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
+                  className="flex items-center w-full px-3 py-2 text-left rounded-md hover:bg-gray-100"
                   onClick={() => {
                     handleEditPost(post);
                     handleClosePostOptions();
@@ -1475,7 +1730,7 @@ const handleReply = async (commentId, replyToUser = null) => {
                   Edit Post
                 </button>
                 <button
-                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
+                  className="flex items-center w-full px-3 py-2 text-left text-red-500 rounded-md hover:bg-gray-100"
                   onClick={() => handleDeletePost(post.id)}
                 >
                   <X size={16} className="mr-2" />
@@ -1484,31 +1739,23 @@ const handleReply = async (commentId, replyToUser = null) => {
               </>
             ) : (
               <>
-              
-<button
-  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
-  onClick={() => {
-    const post = posts.find((p) => p.id === selectedPostId);
-    if (post && post.user && post.id) {
-      handleReportClick(post.user.id, "post", post.id);
-    } else {
-      console.error("Invalid post data for report:", post);
-      setAlertInfo({
-        show: true,
-        type: "error",
-        message: "Cannot report this post. Missing required information.",
-      });
-    }
-    handleClosePostOptions();
-  }}
->
-  <TriangleAlert size={16} className="mr-2" />
-  Report Post
-</button>
-
+                {/* Opsi untuk post user lain */}
+                <button
+                  className="flex items-center w-full px-3 py-2 text-left rounded-md hover:bg-gray-100"
+                  onClick={() => {
+                    const post = posts.find((p) => p.id === selectedPostId);
+                    if (post && post.user) {
+                      handleReportClick(post.user.id, "post", post.id);
+                    }
+                    handleClosePostOptions();
+                  }}
+                >
+                  <TriangleAlert size={16} className="mr-2" />
+                  Report Post
+                </button>
                 {!isConnected && (
                   <button
-                    className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-blue-500"
+                    className="flex items-center w-full px-3 py-2 text-left text-blue-500 rounded-md hover:bg-gray-100"
                     onClick={() => handleConnectWithUser(post.user?.id)}
                   >
                     <Users size={16} className="mr-2" />
@@ -1518,7 +1765,7 @@ const handleReply = async (commentId, replyToUser = null) => {
               </>
             )}
           </div>
-          <div className="border-t p-3">
+          <div className="p-3 border-t">
             <button
               className="w-full py-2 text-gray-500 hover:text-gray-700"
               onClick={handleClosePostOptions}
@@ -1527,6 +1774,57 @@ const handleReply = async (commentId, replyToUser = null) => {
             </button>
           </div>
         </div>
+      </div>
+    );
+  };
+
+  const renderPostContent = (post) => {
+    if (!post.content) return null;
+
+    const isExpanded = expandedPosts[post.id];
+    const textContent = post.content.replace(/<[^>]+>/g, "");
+    const shouldTruncate = textContent.length > 150;
+
+    const toggleExpanded = () => {
+      setExpandedPosts((prev) => ({
+        ...prev,
+        [post.id]: !prev[post.id],
+      }));
+    };
+
+    if (!shouldTruncate || isExpanded) {
+      return (
+        <div>
+          <div
+            className="prose text-gray-700 max-w-none ck-content custom-post-content"
+            dangerouslySetInnerHTML={{ __html: post.content }}
+          />
+          {shouldTruncate && (
+            <button
+              onClick={toggleExpanded}
+              className="mt-2 text-sm text-blue-500 hover:underline"
+            >
+              Lihat Lebih Sedikit
+            </button>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        <div
+          className="prose text-gray-700 max-w-none ck-content custom-post-content"
+          dangerouslySetInnerHTML={{
+            __html: post.content.substring(0, 150) + "...",
+          }}
+        />
+        <button
+          onClick={toggleExpanded}
+          className="mt-2 text-sm text-blue-500 hover:underline"
+        >
+          Lihat Selengkapnya
+        </button>
       </div>
     );
   };
@@ -1541,10 +1839,10 @@ const handleReply = async (commentId, replyToUser = null) => {
 
     if (validImages.length === 1) {
       return (
-        <div className="mb-3 rounded-lg overflow-hidden border">
+        <div className="mb-3 overflow-hidden border rounded-lg">
           <img
             src={validImages[0]}
-            className="w-full h-48 md:h-64 lg:h-96 object-cover cursor-pointer"
+            className="object-cover w-full h-48 cursor-pointer md:h-64 lg:h-96"
             alt="Post"
             onClick={() => openImageModal({ images: validImages }, 0)}
           />
@@ -1552,13 +1850,13 @@ const handleReply = async (commentId, replyToUser = null) => {
       );
     } else if (validImages.length === 2) {
       return (
-        <div className="mb-3 rounded-lg overflow-hidden border">
+        <div className="mb-3 overflow-hidden border rounded-lg">
           <div className="grid grid-cols-2 gap-1">
             {validImages.map((photo, index) => (
               <div key={index} className="relative aspect-square">
                 <img
                   src={photo}
-                  className="w-full h-full object-cover cursor-pointer"
+                  className="object-cover w-full h-full cursor-pointer"
                   alt={`Post ${index + 1}`}
                   onClick={() => openImageModal({ images: validImages }, index)}
                 />
@@ -1569,30 +1867,33 @@ const handleReply = async (commentId, replyToUser = null) => {
       );
     } else if (validImages.length === 3) {
       return (
-        <div className="mb-3 rounded-lg overflow-hidden border">
-          <div className="grid grid-cols-2 gap-1">
-            <div className="relative aspect-square row-span-2">
+        <div className="mb-3 overflow-hidden border rounded-lg">
+          <div className="grid grid-cols-2 grid-rows-2 gap-1 h-72">
+            {/* Dua gambar di atas, kotak */}
+            <div className="relative col-span-1 row-span-1">
               <img
                 src={validImages[0]}
-                className="w-full h-full object-cover cursor-pointer"
+                className="object-cover w-full h-full cursor-pointer "
                 alt="Post 1"
                 onClick={() => openImageModal({ images: validImages }, 0)}
               />
             </div>
-            <div className="relative aspect-square">
+            <div className="relative col-span-1 row-span-1">
               <img
                 src={validImages[1]}
-                className="w-full h-full object-cover cursor-pointer"
+                className="object-cover w-full h-full cursor-pointer "
                 alt="Post 2"
                 onClick={() => openImageModal({ images: validImages }, 1)}
               />
             </div>
-            <div className="relative aspect-square">
+            {/* Satu gambar memanjang di bawah */}
+            <div className="relative col-span-2 row-span-1">
               <img
                 src={validImages[2]}
-                className="w-full h-full object-cover cursor-pointer"
+                className="object-cover w-full h-full cursor-pointer"
                 alt="Post 3"
                 onClick={() => openImageModal({ images: validImages }, 2)}
+                style={{ height: "100%" }}
               />
             </div>
           </div>
@@ -1600,19 +1901,19 @@ const handleReply = async (commentId, replyToUser = null) => {
       );
     } else if (validImages.length >= 4) {
       return (
-        <div className="mb-3 rounded-lg overflow-hidden border">
+        <div className="mb-3 overflow-hidden border rounded-lg">
           <div className="grid grid-cols-2 gap-1">
             {validImages.slice(0, 4).map((photo, index) => (
               <div key={index} className="relative aspect-square">
                 <img
                   src={photo}
-                  className="w-full h-full object-cover cursor-pointer"
+                  className="object-cover w-full h-full cursor-pointer"
                   alt={`Post ${index + 1}`}
                   onClick={() => openImageModal({ images: validImages }, index)}
                 />
                 {index === 3 && validImages.length > 4 && (
                   <div
-                    className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center text-white font-bold text-lg cursor-pointer"
+                    className="absolute inset-0 flex items-center justify-center text-lg font-bold text-white bg-black bg-opacity-50 cursor-pointer"
                     onClick={() => openImageModal({ images: validImages }, 3)}
                   >
                     +{validImages.length - 4}
@@ -1707,106 +2008,21 @@ const handleReply = async (commentId, replyToUser = null) => {
     setShowMobileMenu(!showMobileMenu);
   };
 
-  // Fix for handleReportComment function
-  const handleReportComment = async (
-    targetUserId,
-    targetType,
-    targetId,
-    reason
-  ) => {
-    // Validate all required parameters
-    if (!targetUserId || !targetType || !targetId) {
-      console.error("Missing required parameters:", {
-        targetUserId,
-        targetType,
-        targetId,
-      });
-      setAlertInfo({
-        show: true,
-        type: "error",
-        message: "Unable to report content due to missing information",
-      });
-      return;
-    }
-
-    // Prevent reporting own content
-    if (targetUserId === user.id) {
-      setAlertInfo({
-        show: true,
-        type: "error",
-        message: "You cannot report your own content",
-      });
-      return;
-    }
-
-    try {
-      console.log("Submitting report with:", {
-        targetUserId,
-        targetType,
-        targetId,
-        reason,
-        reporterId: user.id,
-      });
-
-      const userToken = localStorage.getItem("token");
-      const response = await axios.post(
-        `${apiUrl}/api/reports/${targetUserId}/${targetType}/${targetId}`,
-        { reason, reporterId: user.id },
-        {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (response.data.code == 201) {
-        setAlertInfo({
-          show: true,
-          type: "success",
-          message: "Report submitted successfully",
-        });
-      }
-    } catch (error) {
-      console.error("Report submission error:", error);
-      setAlertInfo({
-        show: true,
-        type: "error",
-        message: error.response?.data?.error || "Failed to submit report",
-      });
-    } finally {
-      setShowReportModal(false);
-      setSelectedReason("");
-      setCustomReason("");
-    }
-  };
-
-  // Fix for handleReportClick to properly set target IDs
-const handleReportClick = (userId, targetType, targetId) => {
-  setReportTarget({
-    userId,
-    targetType,
-    targetId
-  });
-  setShowReportModal(true);
-};
-
-
   const renderCommentOptionsModal = () => {
     if (!showCommentOptions || !selectedComment) return null;
 
     const isCurrentUserComment = selectedComment?.user?.id === currentUserId;
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg w-full max-w-xs mx-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="w-full max-w-xs mx-4 bg-white rounded-lg">
           <div className="p-4">
-            <h3 className="font-medium text-lg mb-3">Comment Options</h3>
+            <h3 className="mb-3 text-lg font-medium">Comment Options</h3>
 
             {isCurrentUserComment ? (
               <>
                 <button
-                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
+                  className="flex items-center w-full px-3 py-2 text-left rounded-md hover:bg-gray-100"
                   onClick={() => {
                     setEditingCommentId(selectedComment.id);
                     setCommentText(selectedComment.content);
@@ -1817,7 +2033,7 @@ const handleReportClick = (userId, targetType, targetId) => {
                   Edit Comment
                 </button>
                 <button
-                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
+                  className="flex items-center w-full px-3 py-2 text-left text-red-500 rounded-md hover:bg-gray-100"
                   onClick={() => handleDeleteComment(selectedComment.id)}
                 >
                   <X size={16} className="mr-2" />
@@ -1826,7 +2042,7 @@ const handleReportClick = (userId, targetType, targetId) => {
               </>
             ) : (
               <button
-                className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
+                className="flex items-center w-full px-3 py-2 text-left text-red-500 rounded-md hover:bg-gray-100"
                 onClick={() => {
                   if (selectedComment?.user?.id) {
                     handleReportClick(
@@ -1834,36 +2050,17 @@ const handleReportClick = (userId, targetType, targetId) => {
                       "comment",
                       selectedComment.id
                     );
-                  } else {
-                    setAlertInfo({
-                      show: true,
-                      type: "error",
-                      message: "Cannot identify comment owner. Report failed.",
-                    });
                   }
                   setShowCommentOptions(false);
                 }}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
+                <TriangleAlert size={16} className="mr-2" />
                 Report Comment
               </button>
             )}
           </div>
 
-          <div className="border-t p-3">
+          <div className="p-3 border-t">
             <button
               className="w-full py-2 text-gray-500 hover:text-gray-700"
               onClick={() => setShowCommentOptions(false)}
@@ -1882,15 +2079,15 @@ const handleReportClick = (userId, targetType, targetId) => {
     const isCurrentUserReply = selectedReply?.user?.id === currentUserId;
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg w-full max-w-xs mx-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="w-full max-w-xs mx-4 bg-white rounded-lg">
           <div className="p-4">
-            <h3 className="font-medium text-lg mb-3">Reply Options</h3>
+            <h3 className="mb-3 text-lg font-medium">Reply Options</h3>
 
             {isCurrentUserReply ? (
               <>
                 <button
-                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
+                  className="flex items-center w-full px-3 py-2 text-left rounded-md hover:bg-gray-100"
                   onClick={() => {
                     setEditingReplyId(selectedReply.id);
                     setReplyText(selectedReply.content);
@@ -1901,7 +2098,7 @@ const handleReportClick = (userId, targetType, targetId) => {
                   Edit Reply
                 </button>
                 <button
-                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
+                  className="flex items-center w-full px-3 py-2 text-left text-red-500 rounded-md hover:bg-gray-100"
                   onClick={() => handleDeleteReply(selectedReply.id)}
                 >
                   <X size={16} className="mr-2" />
@@ -1910,7 +2107,7 @@ const handleReportClick = (userId, targetType, targetId) => {
               </>
             ) : (
               <button
-                className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
+                className="flex items-center w-full px-3 py-2 text-left text-red-500 rounded-md hover:bg-gray-100"
                 onClick={() => {
                   if (selectedReply?.user?.id) {
                     handleReportClick(
@@ -1928,7 +2125,7 @@ const handleReportClick = (userId, targetType, targetId) => {
             )}
           </div>
 
-          <div className="border-t p-3">
+          <div className="p-3 border-t">
             <button
               className="w-full py-2 text-gray-500 hover:text-gray-700"
               onClick={() => setShowReplyOptions(false)}
@@ -2103,156 +2300,6 @@ const handleReportClick = (userId, targetType, targetId) => {
       });
     }
   };
-const ReportModal = ({
-  showReportModal,
-  setShowReportModal,
-  selectedReason,
-  setSelectedReason,
-  customReason,
-  setCustomReason,
-  setAlertInfo,
-  reportTarget // Tambahkan prop reportTarget
-}) => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmitReport = async () => {
-    if (!selectedReason) {
-      setAlertInfo({
-        show: true,
-        type: "error",
-        message: "Please select a reason for reporting"
-      });
-      return;
-    }
-
-    const reasonText = selectedReason === "Other" ? customReason : selectedReason;
-    
-    try {
-      setIsSubmitting(true);
-      const userToken = localStorage.getItem("token");
-      
-      const response = await axios.post(
-        `${apiUrl}/api/reports/${reportTarget.userId}/${reportTarget.targetType}/${reportTarget.targetId}`,
-        { reason: reasonText },
-        {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-            "Content-Type": "application/json"
-          }
-        }
-      );
-
-      if (response.data?.code === 201) {
-        setAlertInfo({
-          show: true,
-          type: "success",
-          message: "Report submitted successfully!"
-        });
-        setShowReportModal(false);
-        setSelectedReason("");
-        setCustomReason("");
-      } else {
-        throw new Error("Failed to submit report");
-      }
-    } catch (error) {
-      console.error("Failed to submit report:", error);
-      setAlertInfo({
-        show: true,
-        type: "error",
-        message: error.response?.data?.message || "Failed to submit report"
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] ${
-      showReportModal ? "block" : "hidden"
-    }`}>
-      <div className="bg-white rounded-lg w-full max-w-md mx-4 p-5">
-        <h3 className="text-lg font-semibold mb-4">Report this content</h3>
-        <p className="mb-3 text-sm text-gray-600">
-          Please select a reason for reporting
-        </p>
-
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          {[
-            "Harassment",
-            "Fraud",
-            "Spam",
-            "Misinformation",
-            "Hate speech",
-            "Threats or violence",
-            "Self-harm",
-            "Graphic content",
-            "Extremist organizations",
-            "Sexual content",
-            "Fake account",
-            "Child exploitation",
-            "Illegal products",
-            "Violation",
-            "Other",
-          ].map((reason) => (
-            <button
-              key={reason}
-              className={`py-2 px-3 text-sm border rounded-full ${
-                selectedReason === reason
-                  ? "bg-blue-100 border-blue-500 text-blue-700"
-                  : "bg-white hover:bg-gray-100"
-              }`}
-              onClick={() => setSelectedReason(reason)}
-            >
-              {reason}
-            </button>
-          ))}
-        </div>
-
-        {selectedReason === "Other" && (
-          <textarea
-            className="w-full p-2 border rounded mb-3 text-sm"
-            rows={3}
-            placeholder="Please describe the reason for your report"
-            value={customReason}
-            onChange={(e) => setCustomReason(e.target.value)}
-          />
-        )}
-
-        <div className="flex justify-end gap-2">
-          <button
-            className="text-gray-500 hover:text-gray-700"
-            onClick={() => {
-              setShowReportModal(false);
-              setSelectedReason("");
-              setCustomReason("");
-            }}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </button>
-          <button
-            className={`px-4 py-2 rounded text-white ${
-              selectedReason
-                ? "bg-blue-600 hover:bg-blue-700"
-                : "bg-gray-300 cursor-not-allowed"
-            }`}
-            disabled={!selectedReason || isSubmitting}
-            onClick={handleSubmitReport}
-          >
-            {isSubmitting ? (
-              <div className="flex items-center justify-center">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                Submitting...
-              </div>
-            ) : (
-              "Report"
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
   const handleDeleteComment = async (commentId) => {
     try {
@@ -2426,9 +2473,9 @@ const ReportModal = ({
       : [];
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
         <div className="bg-white rounded-lg w-full max-w-md max-h-[80vh] overflow-y-auto p-4">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">Semua Reply</h3>
             <button onClick={() => setShowShowcase(false)}>
               <X size={20} />
@@ -2436,11 +2483,11 @@ const ReportModal = ({
           </div>
 
           {repliesToRender.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">Tidak ada reply.</p>
+            <p className="py-4 text-center text-gray-500">Tidak ada reply.</p>
           ) : (
             <div className="space-y-3">
               {repliesToRender.map((reply) => (
-                <div key={reply.id} className="flex items-start border-b pb-3">
+                <div key={reply.id} className="flex items-start pb-3 border-b">
                   <div className="ml-3">
                     <p className="font-medium">
                       {reply.user?.name || "Unknown"}
@@ -2500,10 +2547,19 @@ const ReportModal = ({
     }
   };
 
+  const handleReportClick = (userId, targetType, targetId) => {
+    setReportTarget({
+      userId,
+      targetType,
+      targetId,
+    });
+    setShowReportModal(true);
+  };
+
   return (
-    <div className="flex flex-col md:flex-row bg-gray-50 px-4 md:px-6 lg:px-12 xl:px-32 py-4 md:py-6">
+    <div className="flex flex-col px-4 py-4 md:flex-row bg-gray-50 md:px-6 lg:px-12 xl:px-32 md:py-6">
       {renderShowcase()}
-      <div className="fixed top-5 right-5 z-50">
+      <div className="fixed z-50 top-5 right-5">
         {alertInfo.show && (
           <Alert
             type={alertInfo.type}
@@ -2515,16 +2571,16 @@ const ReportModal = ({
 
       {/* Notification Alert */}
       {showNotification && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50">
+        <div className="fixed z-50 px-4 py-2 text-white transform -translate-x-1/2 bg-green-500 rounded-lg shadow-lg top-4 left-1/2">
           Link copied to clipboard!
         </div>
       )}
 
       {/* Left Sidebar - Profile Section */}
-      <div className="block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pr-2 lg:pr-4">
-        <div className="bg-white rounded-lg shadow mb-4 p-4 text-center">
+      <div className="block w-full mb-4 md:w-1/4 lg:w-1/4 md:mb-0 md:pr-2 lg:pr-4">
+        <div className="p-4 mb-4 text-center bg-white rounded-lg shadow">
           <div className="flex justify-center mb-3">
-            <div className="relative w-28 h-28 mx-auto bg-gray-200 rounded-full overflow-hidden flex items-center justify-center">
+            <div className="relative flex items-center justify-center mx-auto overflow-hidden bg-gray-200 rounded-full w-28 h-28">
               {user.photo ? (
                 <img
                   src={
@@ -2533,7 +2589,7 @@ const ReportModal = ({
                       : `${apiUrl}/${user.photo}`
                   }
                   alt="Profile"
-                  className="w-full h-full object-cover"
+                  className="object-cover w-full h-full"
                   onError={(e) => {
                     e.target.onerror = null;
                     e.target.src = "";
@@ -2541,7 +2597,7 @@ const ReportModal = ({
                   }}
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gray-300">
+                <div className="flex items-center justify-center w-full h-full bg-gray-300">
                   <span className="text-lg font-bold text-gray-600">
                     {getInitials(user.name)}
                   </span>
@@ -2552,12 +2608,12 @@ const ReportModal = ({
 
           <Link
             to={`/profile`}
-            className="font-bold mb-2 text-sm cursor-pointer "
+            className="mb-2 text-sm font-bold cursor-pointer "
           >
             {user.name || "Unknown User"}
           </Link>
 
-          <div className="flex border-t pt-3 mt-2">
+          <div className="flex pt-3 mt-2 border-t">
             <Link
               to={"/list-connection"}
               className="flex-1 text-center border-r"
@@ -2565,33 +2621,33 @@ const ReportModal = ({
               <div className="text-base font-semibold">
                 {connections.length}
               </div>
-              <div className="text-gray-500 text-xs">Connections</div>
+              <div className="text-xs text-gray-500">Connections</div>
             </Link>
             <div className="flex-1 text-center">
               <div className="text-base font-semibold">
                 {profileViews.thisWeek.toLocaleString()}
               </div>
-              <div className="text-gray-500 text-xs">Views</div>
+              <div className="text-xs text-gray-500">Views</div>
             </div>
           </div>
 
           <Link to="/profile">
-            <button className="mt-3 text-blue-500 text-sm font-medium">
+            <button className="mt-3 text-sm font-medium text-blue-500">
               View my profile
             </button>
           </Link>
         </div>
 
         {/* chart */}
-        <div className="bg-white rounded-lg shadow p-3">
-          <h3 className="font-medium text-sm mb-3">Profile Views</h3>
+        <div className="p-3 bg-white rounded-lg shadow">
+          <h3 className="mb-3 text-sm font-medium">Profile Views</h3>
 
           <div className="flex justify-between mb-2">
             <div className="text-center">
               <div className="text-xl font-semibold text-cyan-400">
                 {profileViews.lastWeek.toLocaleString()}
               </div>
-              <div className="text-gray-500 text-xs">last 7 days</div>
+              <div className="text-xs text-gray-500">last 7 days</div>
             </div>
             <div className="text-center">
               <div
@@ -2609,11 +2665,11 @@ const ReportModal = ({
                 {profileViews.percentageChange > 0 ? "+" : ""}
                 {Math.abs(profileViews.percentageChange)}%
               </div>
-              <div className="text-gray-500 text-xs">Since last week</div>
+              <div className="text-xs text-gray-500">Since last week</div>
             </div>
           </div>
 
-          <div className="h-32 md:h-40 mt-2">
+          <div className="h-32 mt-2 md:h-40">
             <Line data={chartData} options={chartOptions} />
           </div>
         </div>
@@ -2627,10 +2683,10 @@ const ReportModal = ({
       >
         <div
           id="post-form"
-          className="bg-white rounded-2xl shadow-md mb-6 p-4 space-y-4"
+          className="p-4 mb-6 space-y-4 bg-white shadow-md rounded-2xl"
         >
           {/* Tabs */}
-          <div className="flex border-b pb-2 space-x-1">
+          <div className="flex pb-2 space-x-1 border-b">
             <button
               className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${
                 activeTab === "update"
@@ -2662,7 +2718,7 @@ const ReportModal = ({
             <>
               {/* Input */}
               <div className="flex items-start space-x-3">
-                <div className="w-9 h-9 bg-gray-200 text-xs rounded-full flex items-center justify-center font-semibold text-gray-600">
+                <div className="flex items-center justify-center text-xs font-semibold text-gray-600 bg-gray-200 rounded-full w-9 h-9">
                   {user.photo ? (
                     <img
                       src={
@@ -2671,7 +2727,7 @@ const ReportModal = ({
                           : `${apiUrl}/${user.photo}`
                       }
                       alt="Profile"
-                      className="w-full h-full object-cover rounded-full"
+                      className="object-cover w-full h-full rounded-full"
                       onError={(e) => {
                         e.target.onerror = null;
                         e.target.src = "";
@@ -2679,7 +2735,7 @@ const ReportModal = ({
                       }}
                     />
                   ) : (
-                    <div className="w-full h-full rounded-full flex items-center justify-center bg-gray-300">
+                    <div className="flex items-center justify-center w-full h-full bg-gray-300 rounded-full">
                       <span className="font-bold text-gray-600">
                         {getInitials(user.name)}
                       </span>
@@ -2689,7 +2745,7 @@ const ReportModal = ({
                 <input
                   type="text"
                   placeholder="What's on your mind?"
-                  className="flex-1 border-none outline-none bg-transparent text-sm"
+                  className="flex-1 text-sm bg-transparent border-none outline-none"
                   value={postContent}
                   onChange={(e) => setPostContent(e.target.value)}
                 />
@@ -2737,7 +2793,7 @@ const ReportModal = ({
                 >
                   {isLoading ? (
                     <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-white rounded-full border-t-transparent animate-spin" />
                       <span>Loading...</span>
                     </div>
                   ) : activeTab === "update" ? (
@@ -2751,7 +2807,7 @@ const ReportModal = ({
           ) : (
             <>
               {/* Editor */}
-              <div className="ck-editor-container relative z-10">
+              <div className="relative z-10 ck-editor-container">
                 <CKEditor
                   editor={ClassicEditor}
                   data={articleContent}
@@ -2806,12 +2862,12 @@ const ReportModal = ({
               {activeTab === "article" &&
                 newPostImages.length > 0 &&
                 !selectedPostId && (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
                     {newPostImages.map((img, index) => (
                       <div key={index} className="relative">
                         <img
                           src={img.preview}
-                          className="w-full h-24 object-cover rounded-md border"
+                          className="object-cover w-full h-24 border rounded-md"
                           alt={`img-${index}`}
                           onError={(e) => {
                             e.target.onerror = null;
@@ -2819,7 +2875,7 @@ const ReportModal = ({
                           }}
                         />
                         <button
-                          className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1"
+                          className="absolute p-1 text-white rounded-full top-1 right-1 bg-black/50"
                           onClick={() => removeImage(index)}
                         >
                           <X size={12} />
@@ -2830,11 +2886,11 @@ const ReportModal = ({
                 )}
 
               {/* Visibility & Submit */}
-              <div className="flex justify-between items-center pt-2">
+              <div className="flex items-center justify-between pt-2">
                 <div className="flex space-x-2">
                   <button
                     onClick={() => fileInputRef.current.click()}
-                    className="flex items-center text-blue-600 text-sm hover:underline"
+                    className="flex items-center text-sm text-blue-600 hover:underline"
                   >
                     <ImageIcon size={16} className="mr-2" />
                     Add images
@@ -2868,7 +2924,7 @@ const ReportModal = ({
                 >
                   {isLoading ? (
                     <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-white rounded-full border-t-transparent animate-spin" />
                       <span>Posting...</span>
                     </div>
                   ) : (
@@ -2893,24 +2949,24 @@ const ReportModal = ({
         {/* Posts */}
         <div className="p-0">
           {loadingPosts && page === 0 ? (
-            <div className="text-center py-4">Loading post...</div>
+            <div className="py-4 text-center">Loading post...</div>
           ) : (
             <>
               {posts.map((post) => (
                 <div
                   key={post.id}
-                  className="bg-white rounded-lg shadow-md mb-6 p-4 space-y-4"
+                  className="p-4 mb-6 space-y-4 bg-white rounded-lg shadow-md"
                 >
                   {/* Modified header with overlapping images */}
-                  <div className="border-b border-gray-200 pb-2 mb-1 relative">
+                  <div className="relative pb-3 mb-3 border-b border-gray-200">
                     {/* Group info - as background element */}
                     {post?.group && (
                       <Link to={`/groups/${post.group?.id}`}>
                         {/* Group photo */}
-                        <div className="absolute left-0 top-0 bottom-2 z-0">
+                        <div className="absolute top-0 left-0 z-0 bottom-2">
                           {post.group?.image ? (
                             <img
-                              className="rounded-lg object-cover w-12 h-12 border-2 border-gray-300 shadow-md"
+                              className="object-cover w-12 h-12 border-2 border-gray-300 rounded-lg shadow-md"
                               src={
                                 post.group.image.startsWith("http")
                                   ? post.group.image
@@ -2923,7 +2979,7 @@ const ReportModal = ({
                               }}
                             />
                           ) : (
-                            <div className="rounded-full border-2 border-white w-10 h-10 bg-gray-300 flex items-center justify-center shadow-md">
+                            <div className="flex items-center justify-center w-10 h-10 bg-gray-300 border-2 border-white rounded-full shadow-md">
                               <span className="text-xs font-bold text-gray-600">
                                 {post.group?.name?.charAt(0) || "G"}
                               </span>
@@ -2933,7 +2989,7 @@ const ReportModal = ({
                       </Link>
                     )}
 
-                    <div className="flex justify-between items-start">
+                    <div className="flex items-start justify-between mb-2">
                       <div className="flex items-start">
                         {/* User photo */}
                         <div
@@ -2946,7 +3002,7 @@ const ReportModal = ({
                           {post.user?.photo ? (
                             <Link to={`/user-profile/${post.user.username}`}>
                               <img
-                                className="rounded-full border-2 border-gray-300 w-10 h-10 object-cover"
+                                className="object-cover w-10 h-10 border-2 border-gray-300 rounded-full"
                                 src={
                                   post.user.photo.startsWith("http")
                                     ? post.user.photo
@@ -2963,7 +3019,7 @@ const ReportModal = ({
                               />
                             </Link>
                           ) : (
-                            <div className="w-9 h-9 bg-gray-200 text-xs rounded-full flex items-center justify-center font-semibold text-gray-600">
+                            <div className="flex items-center justify-center text-xs font-semibold text-gray-600 bg-gray-200 rounded-full w-9 h-9">
                               <span className="text-xs font-bold text-gray-600">
                                 {getInitials(post.user?.name)}
                               </span>
@@ -2975,7 +3031,7 @@ const ReportModal = ({
                           className={`${post?.group ? "ml-3 mt-2" : "ml-2"}`}
                         >
                           <h6
-                            className="font-bold mb-0 text-sm cursor-pointer hover:underline"
+                            className="mb-0 text-sm font-bold cursor-pointer hover:underline"
                             onClick={() =>
                               fetchUserProfile(post.user.username, post.user.id)
                             }
@@ -2983,18 +3039,18 @@ const ReportModal = ({
                             {post.user?.name || "Unknown User"}
                           </h6>
                           <div className="flex items-center">
-                            <small className="text-gray-500 text-xs">
-  {formatPostTime(post.created_at)}
-</small>
-                            <span className="text-gray-400 mx-1 text-xs">
+                            <small className="text-xs text-gray-500">
+                              {formatPostTime(post.created_at)}
+                            </small>
+                            <span className="mx-1 text-xs text-gray-400">
                               •
                             </span>
                             {post.group && (
-                              <small className="text-gray-500 text-xs">
+                              <small className="text-xs text-gray-500">
                                 <div className="flex items-center text-xs text-gray-500">
                                   <a
                                     href="#"
-                                    className="hover:underline text-blue-500"
+                                    className="text-blue-500 hover:underline"
                                     onClick={(e) => {
                                       e.preventDefault();
                                       navigate(`/groups/${post.group.id}`);
@@ -3008,14 +3064,14 @@ const ReportModal = ({
                           </div>
                         </div>
                       </div>
-                      <div className="ml-auto relative group">
+                      <div className="relative ml-auto group">
                         <button
-                          className="bg-gray-100 hover:bg-gray-200 rounded-full p-1 mr-2"
+                          className="p-1 mr-2 bg-gray-100 rounded-full hover:bg-gray-200"
                           onClick={() => handleOpenPostOptions(post.id)}
                         >
                           <Ellipsis size={14} />
                         </button>
-                        <button className="bg-gray-100 hover:bg-gray-200 rounded-full p-1">
+                        <button className="p-1 bg-gray-100 rounded-full hover:bg-gray-200">
                           {post.visibility === "public" && <Globe size={14} />}
                           {post.visibility === "private" && (
                             <LockKeyhole size={14} />
@@ -3029,27 +3085,15 @@ const ReportModal = ({
                   </div>
 
                   {/* Post Content */}
-                  {post.content && (
-                    // Tambahkan class khusus untuk konten post
-                   <div 
-  className="ck-content ml-1 text-gray-600 break-words whitespace-pre-line" 
-  style={{ 
-    maxWidth: '100%',
-    color: '#374151',
-    padding: '0.5rem'
-  }}
-  dangerouslySetInnerHTML={{ __html: post.content }}
-/>
-
-                  )}
+                  {renderPostContent(post)}
 
                   {renderPhotoGrid(post.images)}
 
                   <div>
                     {/* Likes & Comments Info */}
-                    <div className="flex items-center space-x-4 px-4 py-1 text-xs text-gray-500 justify-between">
-                      <div className="flex items-center space-x-1 pt-1">
-                        <span className="text-black flex">
+                    <div className="flex items-center justify-between px-4 py-1 space-x-4 text-xs text-gray-500">
+                      <div className="flex items-center pt-1 space-x-1">
+                        <span className="flex text-black">
                           <ThumbsUp size={14} className="mr-1" />{" "}
                           {post.likes_count || 0}
                         </span>
@@ -3065,7 +3109,7 @@ const ReportModal = ({
                     </div>
 
                     {/* Post Actions */}
-                    <div className="border-t border-gray-200 px-4 py-2 flex justify-between">
+                    <div className="flex justify-between px-4 py-2 border-t border-gray-200">
                       <button
                         className={`flex items-center justify-center w-1/3 py-2 rounded-lg ${
                           post.isLiked
@@ -3079,7 +3123,7 @@ const ReportModal = ({
                       </button>
 
                       <button
-                        className="flex items-center justify-center w-1/3 py-2 rounded-lg text-black hover:bg-gray-100"
+                        className="flex items-center justify-center w-1/3 py-2 text-black rounded-lg hover:bg-gray-100"
                         onClick={() => openCommentModal(post.id)}
                       >
                         <MessageCircle size={14} className="mr-2" />
@@ -3087,7 +3131,7 @@ const ReportModal = ({
                       </button>
 
                       <button
-                        className="flex items-center justify-center w-1/3 py-2 rounded-lg text-black hover:bg-gray-100"
+                        className="flex items-center justify-center w-1/3 py-2 text-black rounded-lg hover:bg-gray-100"
                         onClick={() => handleOpenShareModal(post.id)}
                       >
                         <Share2 size={14} className="mr-2" />
@@ -3098,10 +3142,10 @@ const ReportModal = ({
                 </div>
               ))}
               {hasMore && (
-                <div ref={loadingRef} className="text-center py-4">
+                <div ref={loadingRef} className="py-4 text-center">
                   {isLoadingMore ? (
-                    <div className="flex justify-center items-center">
-                      <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+                    <div className="flex items-center justify-center">
+                      <div className="w-6 h-6 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
                       <span className="ml-2 text-gray-600">
                         Loading more...
                       </span>
@@ -3112,12 +3156,12 @@ const ReportModal = ({
                 </div>
               )}
               {!hasMore && posts.length > 0 && (
-                <div className="text-center py-4 text-gray-500">
+                <div className="py-4 text-center text-gray-500">
                   No more posts
                 </div>
               )}
               {posts.length === 0 && !loadingPosts && (
-                <div className="text-center py-8 bg-white rounded-lg shadow-md">
+                <div className="py-8 text-center bg-white rounded-lg shadow-md">
                   <p className="text-gray-500">No posts yet</p>
                 </div>
               )}
@@ -3127,9 +3171,9 @@ const ReportModal = ({
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-md p-6 bg-white rounded-lg">
+            <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium">Share this post</h3>
               <button
                 onClick={handleCloseShareModal}
@@ -3140,13 +3184,13 @@ const ReportModal = ({
             </div>
 
             <div className="mb-6">
-              <p className="text-sm text-gray-500 mb-2">Copy link</p>
-              <div className="flex items-center border rounded-lg p-2">
+              <p className="mb-2 text-sm text-gray-500">Copy link</p>
+              <div className="flex items-center p-2 border rounded-lg">
                 <input
                   type="text"
                   value={`${clientUrl}/post/${sharePostId}`}
                   readOnly
-                  className="flex-grow text-sm text-gray-700 mr-2 outline-none"
+                  className="flex-grow mr-2 text-sm text-gray-700 outline-none"
                 />
                 <button
                   onClick={copyToClipboard}
@@ -3156,20 +3200,20 @@ const ReportModal = ({
                 </button>
               </div>
               {copied && (
-                <p className="text-xs text-green-600 mt-1">
+                <p className="mt-1 text-xs text-green-600">
                   Link copied to clipboard!
                 </p>
               )}
             </div>
 
             <div>
-              <p className="text-sm text-gray-500 mb-3">Share to</p>
+              <p className="mb-3 text-sm text-gray-500">Share to</p>
               <div className="flex justify-around">
                 <button
                   onClick={shareToWhatsApp}
                   className="flex flex-col items-center"
                 >
-                  <div className="bg-green-100 p-3 rounded-full mb-1">
+                  <div className="p-3 mb-1 bg-green-100 rounded-full">
                     <MessageCircle size={24} className="text-green-600" />
                   </div>
                   <span className="text-xs">WhatsApp</span>
@@ -3181,7 +3225,7 @@ const ReportModal = ({
                   }
                   className="flex flex-col items-center"
                 >
-                  <div className="bg-pink-100 p-3 rounded-full mb-1">
+                  <div className="p-3 mb-1 bg-pink-100 rounded-full">
                     <Instagram size={24} className="text-pink-600" />
                   </div>
                   <span className="text-xs">Instagram</span>
@@ -3191,7 +3235,7 @@ const ReportModal = ({
                   onClick={shareToTwitter}
                   className="flex flex-col items-center"
                 >
-                  <div className="bg-blue-100 p-3 rounded-full mb-1">
+                  <div className="p-3 mb-1 bg-blue-100 rounded-full">
                     <Twitter size={24} className="text-blue-600" />
                   </div>
                   <span className="text-xs">Twitter</span>
@@ -3204,18 +3248,18 @@ const ReportModal = ({
 
       {/* Post Options Modal */}
       {showPostOptions && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           {renderPostOptionsModal()}
         </div>
       )}
 
       {showEditModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-2xl p-6">
-            <h3 className="text-lg font-medium mb-4">Edit Post</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl p-6 bg-white rounded-lg">
+            <h3 className="mb-4 text-lg font-medium">Edit Post</h3>
 
             {/* Tabs untuk modal edit */}
-            <div className="flex border-b pb-2 space-x-1 mb-4">
+            <div className="flex pb-2 mb-4 space-x-1 border-b">
               <button
                 className={`flex-1 flex items-center justify-center text-sm font-medium py-2 rounded-t-lg transition ${
                   editActiveTab === "update"
@@ -3243,13 +3287,13 @@ const ReportModal = ({
             {/* Konten editor berdasarkan tab aktif */}
             {editActiveTab === "update" ? (
               <textarea
-                className="w-full border rounded-lg p-2 mb-4"
+                className="w-full p-2 mb-4 border rounded-lg"
                 rows="4"
                 value={editPostContent.replace(/<[^>]+>/g, "")}
                 onChange={(e) => setEditPostContent(e.target.value)}
               />
             ) : (
-              <div className="border rounded-md overflow-hidden text-black ck-editor-mode mb-4">
+              <div className="mb-4 overflow-hidden text-black border rounded-md ck-editor-mode">
                 <CKEditor
                   editor={ClassicEditor}
                   data={editArticleContent}
@@ -3305,7 +3349,7 @@ const ReportModal = ({
             {/* Existing Images */}
             {editPostImages.length > 0 && (
               <div className="mb-4">
-                <h4 className="text-sm font-medium mb-2">Current Images</h4>
+                <h4 className="mb-2 text-sm font-medium">Current Images</h4>
                 <div className="grid grid-cols-3 gap-2">
                   {editPostImages.map((img, index) => (
                     <div key={`existing-${index}`} className="relative">
@@ -3317,7 +3361,7 @@ const ReportModal = ({
                               : `${apiUrl}/${img}`
                             : img.preview
                         }
-                        className="w-full h-24 object-cover rounded-md border"
+                        className="object-cover w-full h-24 border rounded-md"
                         alt={`Current image ${index + 1}`}
                         onError={(e) => {
                           e.target.onerror = null;
@@ -3325,7 +3369,7 @@ const ReportModal = ({
                         }}
                       />
                       <button
-                        className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1"
+                        className="absolute p-1 text-white rounded-full top-1 right-1 bg-black/50"
                         onClick={() => handleRemoveExistingImage(index)}
                       >
                         <X size={12} />
@@ -3339,13 +3383,13 @@ const ReportModal = ({
             {/* New Images */}
             {newEditImages.length > 0 && (
               <div className="mb-4">
-                <h4 className="text-sm font-medium mb-2">New Images</h4>
+                <h4 className="mb-2 text-sm font-medium">New Images</h4>
                 <div className="grid grid-cols-3 gap-2">
                   {newEditImages.map((img, index) => (
                     <div key={`new-${index}`} className="relative">
                       <img
                         src={img.preview}
-                        className="w-full h-24 object-cover rounded-md border"
+                        className="object-cover w-full h-24 border rounded-md"
                         alt={`New image ${index + 1}`}
                         onError={(e) => {
                           e.target.onerror = null;
@@ -3353,7 +3397,7 @@ const ReportModal = ({
                         }}
                       />
                       <button
-                        className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1"
+                        className="absolute p-1 text-white rounded-full top-1 right-1 bg-black/50"
                         onClick={() => handleRemoveNewImage(index)}
                       >
                         <X size={12} />
@@ -3367,13 +3411,13 @@ const ReportModal = ({
             {/* New Images */}
             {newImages.length > 0 && (
               <div className="mb-4">
-                <h4 className="text-sm font-medium mb-2">New Images</h4>
+                <h4 className="mb-2 text-sm font-medium">New Images</h4>
                 <div className="grid grid-cols-3 gap-2">
                   {newImages.map((img, index) => (
                     <div key={`new-${index}`} className="relative">
                       <img
                         src={URL.createObjectURL(img)}
-                        className="w-full h-24 object-cover rounded-md border"
+                        className="object-cover w-full h-24 border rounded-md"
                         alt={`New image ${index + 1}`}
                         onError={(e) => {
                           e.target.onerror = null;
@@ -3381,7 +3425,7 @@ const ReportModal = ({
                         }}
                       />
                       <button
-                        className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1"
+                        className="absolute p-1 text-white rounded-full top-1 right-1 bg-black/50"
                         onClick={() => handleRemoveNewImage(index)}
                       >
                         <X size={12} />
@@ -3404,7 +3448,7 @@ const ReportModal = ({
               />
               <label
                 htmlFor="edit-post-images"
-                className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
+                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm cursor-pointer hover:bg-gray-50"
               >
                 <ImageIcon size={14} className="mr-2" />
                 Add Images
@@ -3413,7 +3457,7 @@ const ReportModal = ({
 
             {/* Visibility Options */}
             <div className="mb-4">
-              <h4 className="text-sm font-medium mb-2">Visibility</h4>
+              <h4 className="mb-2 text-sm font-medium">Visibility</h4>
               <div className="flex space-x-2">
                 {[
                   ["public", <Globe size={14} />, "Public"],
@@ -3445,13 +3489,13 @@ const ReportModal = ({
                 Cancel
               </button>
               <button
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg flex items-center"
+                className="flex items-center px-4 py-2 text-white bg-blue-500 rounded-lg"
                 onClick={handleUpdatePost}
                 disabled={isLoading}
               >
                 {isLoading ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    <div className="w-4 h-4 mr-2 border-2 border-white rounded-full border-t-transparent animate-spin" />
                     Saving...
                   </>
                 ) : (
@@ -3470,17 +3514,17 @@ const ReportModal = ({
         } md:block w-full md:w-1/4 lg:w-1/4 mb-4 md:mb-0 md:pl-2 lg:pr-4`}
       >
         {/* People You Might Know */}
-        <div className="bg-white rounded-xl shadow-sm border p-4 mb-6 transition-all duration-300">
+        <div className="p-4 mb-6 transition-all duration-300 bg-white border shadow-sm rounded-xl">
           {/* Header */}
-          <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-100">
-            <h3 className="font-semibold text-gray-800 text-base flex items-center gap-2">
+          <div className="flex items-center justify-between pb-3 mb-4 border-b border-gray-100">
+            <h3 className="flex items-center gap-2 text-base font-semibold text-gray-800">
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
               People you might know
             </h3>
             <button
               onClick={fetchSuggestedConnections}
               disabled={loadingSuggested}
-              className="flex items-center gap-1 text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors duration-200 disabled:opacity-50"
+              className="flex items-center gap-1 text-sm font-medium text-blue-600 transition-colors duration-200 hover:text-blue-700 disabled:opacity-50"
             >
               <RefreshCw
                 className={`w-4 h-4 ${loadingSuggested ? "animate-spin" : ""}`}
@@ -3492,19 +3536,19 @@ const ReportModal = ({
           {loadingSuggested ? (
             <div className="flex items-center justify-center py-8">
               <div className="flex items-center gap-2 text-gray-500">
-                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-4 h-4 border-2 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
                 <span className="text-sm">Finding suggestions...</span>
               </div>
             </div>
           ) : suggestedConnections.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <div className="py-8 text-center">
+              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full">
                 <UserPlus className="w-6 h-6 text-gray-400" />
               </div>
-              <p className="text-gray-500 text-sm">
+              <p className="text-sm text-gray-500">
                 No suggestions available at the moment
               </p>
-              <p className="text-gray-400 text-xs mt-1">
+              <p className="mt-1 text-xs text-gray-400">
                 Check back later for new connections
               </p>
             </div>
@@ -3513,15 +3557,15 @@ const ReportModal = ({
               {suggestedConnections.map((person, index) => (
                 <div
                   key={person.id}
-                  className="group flex items-center p-3 rounded-lg hover:bg-gray-50 transition-all duration-200 border border-transparent hover:border-gray-200"
+                  className="flex items-center p-3 transition-all duration-200 border border-transparent rounded-lg group hover:bg-gray-50 hover:border-gray-200"
                   style={{
                     animationDelay: `${index * 100}ms`,
                     animation: "fadeInUp 0.5s ease-out forwards",
                   }}
                 >
                   {/* Profile Picture */}
-                  <div className="relative mr-3 flex-shrink-0">
-                    <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden ring-2 ring-white shadow-md">
+                  <div className="relative flex-shrink-0 mr-3">
+                    <div className="w-12 h-12 overflow-hidden bg-gray-200 rounded-full shadow-md ring-2 ring-white">
                       {person.photo ? (
                         <img
                           src={
@@ -3530,7 +3574,7 @@ const ReportModal = ({
                               : `${apiUrl}/${person.photo}`
                           }
                           alt="Profile"
-                          className="w-full h-full object-cover"
+                          className="object-cover w-full h-full"
                           onError={(e) => {
                             e.target.onerror = null;
                             e.target.src = "";
@@ -3538,7 +3582,7 @@ const ReportModal = ({
                           }}
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center">
+                        <div className="flex items-center justify-center w-full h-full">
                           <span className="text-sm font-semibold text-gray-500">
                             {getInitials(person.name)}
                           </span>
@@ -3550,7 +3594,7 @@ const ReportModal = ({
                   {/* User Info */}
                   <div className="flex-1 min-w-0">
                     <Link to={`/user-profile/${person.username}`}>
-                      <h4 className="font-semibold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors duration-200">
+                      <h4 className="text-sm font-semibold text-gray-900 truncate transition-colors duration-200 group-hover:text-blue-600">
                         {person.name}
                       </h4>
                     </Link>
@@ -3561,7 +3605,7 @@ const ReportModal = ({
 
                   {/* Connect Button */}
                   <button
-                    className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 hover:scale-110 transition-all duration-200 group-hover:shadow-md"
+                    className="flex items-center justify-center w-8 h-8 text-blue-600 transition-all duration-200 rounded-full bg-blue-50 hover:bg-blue-100 hover:scale-110 group-hover:shadow-md"
                     onClick={() => handleConnectWithUser(person.id)}
                     disabled={
                       connections.some((conn) => conn.id === person.id) ||
@@ -3582,14 +3626,14 @@ const ReportModal = ({
         </div>
 
         {/* Premium Banner */}
-        <div className="bg-white rounded-lg shadow mb-4 p-3">
+        <div className="p-3 mb-4 bg-white rounded-lg shadow">
           <div className="mb-2">
             <img src="/" alt="Premium" className="w-full rounded" />
           </div>
-          <h3 className="font-bold text-sm md:text-base text-yellow-500 text-center mb-1">
+          <h3 className="mb-1 text-sm font-bold text-center text-yellow-500 md:text-base">
             EVOConnect Premium
           </h3>
-          <p className="text-gray-600 text-xs text-center mb-3">
+          <p className="mb-3 text-xs text-center text-gray-600">
             Grow & nurture your network
           </p>
           <button
@@ -3602,11 +3646,11 @@ const ReportModal = ({
 
         {/* Premium Modal */}
         {showPremiumModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-md w-full overflow-hidden">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-75">
+            <div className="w-full max-w-md overflow-hidden bg-white rounded-lg">
               <div className="relative">
                 {/* Header */}
-                <div className="p-4 border-b flex justify-between items-center">
+                <div className="flex items-center justify-between p-4 border-b">
                   <h3 className="text-lg font-bold text-yellow-600">
                     EVOConnect Premium
                   </h3>
@@ -3620,20 +3664,20 @@ const ReportModal = ({
 
                 {/* Content */}
                 <div className="p-4">
-                  <div className="text-center mb-4">
-                    <h4 className="text-xl font-semibold mb-2">
+                  <div className="mb-4 text-center">
+                    <h4 className="mb-2 text-xl font-semibold">
                       Unlock Premium Features
                     </h4>
-                    <p className="text-gray-600 mb-4">
+                    <p className="mb-4 text-gray-600">
                       Upgrade your account to access exclusive features:
                     </p>
 
-                    <div className="space-y-3 mb-6 text-left">
+                    <div className="mb-6 space-y-3 text-left">
                       <div className="flex items-start">
-                        <div className="text-yellow-500 mr-2 mt-1">
+                        <div className="mt-1 mr-2 text-yellow-500">
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5"
+                            className="w-5 h-5"
                             viewBox="0 0 20 20"
                             fill="currentColor"
                           >
@@ -3647,10 +3691,10 @@ const ReportModal = ({
                         <span>Unlimited connections and messaging</span>
                       </div>
                       <div className="flex items-start">
-                        <div className="text-yellow-500 mr-2 mt-1">
+                        <div className="mt-1 mr-2 text-yellow-500">
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5"
+                            className="w-5 h-5"
                             viewBox="0 0 20 20"
                             fill="currentColor"
                           >
@@ -3664,10 +3708,10 @@ const ReportModal = ({
                         <span>Advanced analytics for your posts</span>
                       </div>
                       <div className="flex items-start">
-                        <div className="text-yellow-500 mr-2 mt-1">
+                        <div className="mt-1 mr-2 text-yellow-500">
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5"
+                            className="w-5 h-5"
                             viewBox="0 0 20 20"
                             fill="currentColor"
                           >
@@ -3681,10 +3725,10 @@ const ReportModal = ({
                         <span>Priority support 24/7</span>
                       </div>
                       <div className="flex items-start">
-                        <div className="text-yellow-500 mr-2 mt-1">
+                        <div className="mt-1 mr-2 text-yellow-500">
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5"
+                            className="w-5 h-5"
                             viewBox="0 0 20 20"
                             fill="currentColor"
                           >
@@ -3699,11 +3743,11 @@ const ReportModal = ({
                       </div>
                     </div>
 
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                      <h5 className="font-bold text-yellow-700 mb-2">
+                    <div className="p-4 mb-4 border border-yellow-200 rounded-lg bg-yellow-50">
+                      <h5 className="mb-2 font-bold text-yellow-700">
                         Premium Plan
                       </h5>
-                      <p className="text-2xl font-bold text-yellow-600 mb-1">
+                      <p className="mb-1 text-2xl font-bold text-yellow-600">
                         $9.99
                         <span className="text-sm font-normal text-gray-500">
                           /month
@@ -3717,14 +3761,14 @@ const ReportModal = ({
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 border-t flex justify-between">
+                <div className="flex justify-between p-4 border-t">
                   <button
                     onClick={closePremiumModal}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                    className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
                   >
                     Cancel
                   </button>
-                  <button className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 font-medium">
+                  <button className="px-4 py-2 font-medium text-white bg-yellow-500 rounded-lg hover:bg-yellow-600">
                     Upgrade Now
                   </button>
                 </div>
@@ -3734,48 +3778,119 @@ const ReportModal = ({
         )}
 
         {/* Jobs */}
-        <div className="bg-white rounded-lg shadow p-3">
-          <h3 className="font-medium text-sm mb-3">Jobs</h3>
-          <div className="mb-4">
-            <div className="bg-gray-100 p-3 md:p-4 rounded-lg">
-              <div className="flex justify-between mb-1">
-                <h3 className="font-semibold text-xs md:text-sm">
-                  Product Director
-                </h3>
-                <div className="bg-white rounded-full p-1 w-8 md:w-10 h-8 md:h-10 flex items-center justify-center">
-                  <img
-                    src="/api/placeholder/24/24"
-                    alt="Company Logo"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              </div>
-              <p className="text-blue-500 text-xs md:text-sm">Spotify Inc.</p>
-              <div className="flex items-center text-gray-600 text-xs">
-                <MapPin size={12} className="mr-1" />
-                <span>India, Punjab</span>
-              </div>
-              <div className="mt-2 flex items-center">
-                <div className="flex -space-x-1 md:-space-x-2">
-                  <div className="w-5 md:w-6 h-5 md:h-6 rounded-full bg-gray-300 border-2 border-white"></div>
-                  <div className="w-5 md:w-6 h-5 md:h-6 rounded-full bg-gray-400 border-2 border-white"></div>
-                  <div className="w-5 md:w-6 h-5 md:h-6 rounded-full bg-gray-500 border-2 border-white"></div>
-                </div>
-                <span className="text-gray-600 text-xs ml-2">
-                  18 connections
-                </span>
+        <div className="p-3 bg-white rounded-lg shadow">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium">Jobs for you</h3>
+            <button
+              onClick={fetchRandomJobs}
+              disabled={loadingJobs}
+              className="flex items-center gap-1 text-sm font-medium text-blue-600 transition-colors duration-200 hover:text-blue-700 disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${loadingJobs ? "animate-spin" : ""}`}
+              />
+            </button>
+          </div>
+
+          {loadingJobs ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="flex items-center gap-2 text-gray-500">
+                <div className="w-4 h-4 border-2 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
+                <span className="text-sm">Loading jobs...</span>
               </div>
             </div>
+          ) : randomJobs.length === 0 ? (
+            <div className="py-8 text-center">
+              <p className="text-sm text-gray-500">No jobs available</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {randomJobs.map((job, index) => (
+                <div
+                  key={job.id}
+                  className="p-3 transition-colors rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
+                  onClick={() => navigate(`/jobs/${job.id}`)}
+                >
+                  <div className="flex items-start justify-between mb-1">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-semibold text-gray-900 truncate">
+                        {job.title}
+                      </h4>
+                      <p className="text-xs font-medium text-blue-500">
+                        {job.company?.name || "Company"}
+                      </p>
+                    </div>
+                    {job.company?.logo && (
+                      <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 p-1 ml-2 bg-white rounded-full">
+                        <img
+                          src={
+                            job.company.logo.startsWith("http")
+                              ? job.company.logo
+                              : `${apiUrl}/${job.company.logo}`
+                          }
+                          alt="Company Logo"
+                          className="object-cover w-full h-full rounded-full"
+                          onError={(e) => {
+                            e.target.style.display = "none";
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center mb-2 text-xs text-gray-600">
+                    <MapPin size={12} className="flex-shrink-0 mr-1" />
+                    <span className="truncate">{job.location || "Remote"}</span>
+                  </div>
+
+                  {(job.min_salary || job.max_salary) && (
+                    <div className="mb-2 text-xs font-medium text-green-600">
+                      {job.min_salary && job.max_salary
+                        ? `${
+                            job.currency || "$"
+                          } ${job.min_salary.toLocaleString()} - ${job.max_salary.toLocaleString()}`
+                        : job.min_salary
+                        ? `From ${
+                            job.currency || "$"
+                          } ${job.min_salary.toLocaleString()}`
+                        : `Up to ${
+                            job.currency || "$"
+                          } ${job.max_salary.toLocaleString()}`}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">
+                      {job.job_type || "Full-time"}
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      {job.created_at
+                        ? dayjs(job.created_at).fromNow()
+                        : "Recently posted"}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="pt-3 mt-3 border-t">
+            <Link
+              to="/jobs"
+              className="text-sm font-medium text-blue-600 transition-colors hover:text-blue-700"
+            >
+              View all jobs →
+            </Link>
           </div>
         </div>
       </div>
 
       {/* Image Modal */}
       {showImageModal && selectedPost && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-          <div className="relative max-w-4xl w-full mx-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
+          <div className="relative w-full max-w-4xl mx-4">
             <button
-              className="absolute top-2 md:top-4 right-2 md:right-4 text-white bg-black bg-opacity-50 rounded-full p-1 md:p-2 z-10"
+              className="absolute z-10 p-1 text-white bg-black bg-opacity-50 rounded-full top-2 md:top-4 right-2 md:right-4 md:p-2"
               onClick={closeImageModal}
             >
               <X size={20} />
@@ -3791,11 +3906,11 @@ const ReportModal = ({
               {selectedPost.images.length > 1 && (
                 <>
                   <button
-                    className="absolute left-2 md:left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white rounded-full p-1 md:p-2"
+                    className="absolute p-1 text-white transform -translate-y-1/2 bg-black bg-opacity-50 rounded-full left-2 md:left-4 top-1/2 md:p-2"
                     onClick={() => navigateImage("prev")}
                   >
                     <svg
-                      className="w-4 md:w-6 h-4 md:h-6"
+                      className="w-4 h-4 md:w-6 md:h-6"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -3810,11 +3925,11 @@ const ReportModal = ({
                   </button>
 
                   <button
-                    className="absolute right-2 md:right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white rounded-full p-1 md:p-2"
+                    className="absolute p-1 text-white transform -translate-y-1/2 bg-black bg-opacity-50 rounded-full right-2 md:right-4 top-1/2 md:p-2"
                     onClick={() => navigateImage("next")}
                   >
                     <svg
-                      className="w-4 md:w-6 h-4 md:h-6"
+                      className="w-4 h-4 md:w-6 md:h-6"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -3831,7 +3946,7 @@ const ReportModal = ({
               )}
             </div>
 
-            <div className="absolute bottom-2 md:bottom-4 left-0 right-0 flex justify-center">
+            <div className="absolute left-0 right-0 flex justify-center bottom-2 md:bottom-4">
               <div className="flex space-x-1 md:space-x-2">
                 {selectedPost.images.map((_, index) => (
                   <button
@@ -3849,21 +3964,21 @@ const ReportModal = ({
       )}
 
       {showReportModal && (
-  <ReportModal
-    showReportModal={showReportModal}
-    setShowReportModal={setShowReportModal}
-    selectedReason={selectedReason}
-    setSelectedReason={setSelectedReason}
-    customReason={customReason}
-    setCustomReason={setCustomReason}
-    setAlertInfo={setAlertInfo}
-    reportTarget={reportTarget} // Tambahkan reportTarget
-  />
-)}
+        <ReportModal
+          showReportModal={showReportModal}
+          setShowReportModal={setShowReportModal}
+          selectedReason={selectedReason}
+          setSelectedReason={setSelectedReason}
+          customReason={customReason}
+          setCustomReason={setCustomReason}
+          setAlertInfo={setAlertInfo}
+          reportTarget={reportTarget} // Tambahkan reportTarget
+        />
+      )}
 
       {/* Comment Modal */}
       {showCommentModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           {renderShowcase()}
 
           {/* Main Comment Modal */}
@@ -3872,27 +3987,27 @@ const ReportModal = ({
             style={{ zIndex: showReportModal ? 40 : 50 }}
           >
             {/* Modal Header */}
-            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-800">Comments</h3>
               <button
                 onClick={closeCommentModal}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-gray-500 transition-colors hover:text-gray-700"
               >
                 <X size={20} />
               </button>
             </div>
 
             {/* Comments Content */}
-            <div className="p-4 overflow-y-auto flex-1 space-y-4">
+            <div className="flex-1 p-4 space-y-4 overflow-y-auto">
               {loadingComments[currentPostId] ? (
-                <div className="flex justify-center items-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-8 h-8 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
                 </div>
               ) : !Array.isArray(comments[currentPostId]) ||
                 comments[currentPostId].length === 0 ? (
-                <div className="text-center py-8">
+                <div className="py-8 text-center">
                   <p className="text-gray-500">No comments yet.</p>
-                  <p className="text-gray-400 text-sm mt-1">
+                  <p className="mt-1 text-sm text-gray-400">
                     Be the first to comment!
                   </p>
                 </div>
@@ -3917,7 +4032,7 @@ const ReportModal = ({
                           {commentUser.profile_photo ? (
                             <Link to={`/user-profile/${commentUser.username}`}>
                               <img
-                                className="rounded-full w-10 h-10 object-cover border-2 border-white hover:border-blue-200 transition-colors"
+                                className="object-cover w-10 h-10 transition-colors border-2 border-white rounded-full hover:border-blue-200"
                                 src={
                                   commentUser.profile_photo.startsWith("http")
                                     ? commentUser.profile_photo
@@ -3934,7 +4049,7 @@ const ReportModal = ({
                               />
                             </Link>
                           ) : (
-                            <div className="w-10 h-10 flex items-center justify-center bg-gray-200 rounded-full border-2 border-white">
+                            <div className="flex items-center justify-center w-10 h-10 bg-gray-200 border-2 border-white rounded-full">
                               <span className="text-sm font-medium text-gray-600">
                                 {getInitials(commentUser.name)}
                               </span>
@@ -3944,7 +4059,7 @@ const ReportModal = ({
 
                         {/* Comment Content */}
                         <div className="flex-1 min-w-0">
-                          <div className="bg-gray-50 rounded-lg p-3">
+                          <div className="p-3 rounded-lg bg-gray-50">
                             {/* User Info */}
                             <div className="flex items-center justify-between">
                               <Link
@@ -3955,7 +4070,7 @@ const ReportModal = ({
                               </Link>
 
                               {/* Comment Actions */}
-                              <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="flex items-center space-x-2 transition-opacity opacity-0 group-hover:opacity-100">
                                 {comment.user?.id === currentUserId && (
                                   <button
                                     className="text-gray-500 hover:text-gray-700"
@@ -3991,10 +4106,10 @@ const ReportModal = ({
 
                             {/* Comment Text */}
                             {editingCommentId === comment.id ? (
-                              <div className="mt-2 flex gap-2">
+                              <div className="flex gap-2 mt-2">
                                 <input
                                   type="text"
-                                  className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                  className="flex-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
                                   value={commentText}
                                   onChange={(e) =>
                                     setCommentText(e.target.value)
@@ -4002,7 +4117,7 @@ const ReportModal = ({
                                   autoFocus
                                 />
                                 <button
-                                  className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-colors"
+                                  className="px-3 py-1 text-sm text-white transition-colors bg-blue-500 rounded-lg hover:bg-blue-600"
                                   onClick={() =>
                                     handleUpdateComment(comment.id)
                                   }
@@ -4010,7 +4125,7 @@ const ReportModal = ({
                                   Update
                                 </button>
                                 <button
-                                  className="bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm hover:bg-gray-300 transition-colors"
+                                  className="px-3 py-1 text-sm text-gray-700 transition-colors bg-gray-200 rounded-lg hover:bg-gray-300"
                                   onClick={() => {
                                     setEditingCommentId(null);
                                     setCommentText("");
@@ -4020,21 +4135,21 @@ const ReportModal = ({
                                 </button>
                               </div>
                             ) : (
-                              <p className="text-sm text-gray-700 mt-1">
+                              <p className="mt-1 text-sm text-gray-700">
                                 {comment.content}
                               </p>
                             )}
                           </div>
 
                           {/* Comment Meta */}
-                          <div className="flex items-center justify-between mt-2 px-1">
+                          <div className="flex items-center justify-between px-1 mt-2">
                             <span className="text-xs text-gray-500">
                               {formatPostTime(comment.created_at)}
                             </span>
 
                             <div className="flex items-center space-x-4">
                               <button
-                                className="text-xs text-blue-500 hover:text-blue-700 font-medium"
+                                className="text-xs font-medium text-blue-500 hover:text-blue-700"
                                 onClick={() => {
                                   setReplyingTo(comment.id);
                                   setReplyToUser(comment.user);
@@ -4059,10 +4174,10 @@ const ReportModal = ({
 
                           {/* Reply Input */}
                           {replyingTo === comment.id && (
-                            <div className="mt-3 flex gap-2">
+                            <div className="flex gap-2 mt-3">
                               <input
                                 type="text"
-                                className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                className="flex-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
                                 placeholder={`Reply to ${
                                   replyToUser?.name || comment.user.name
                                 }...`}
@@ -4071,7 +4186,7 @@ const ReportModal = ({
                                 autoFocus
                               />
                               <button
-                                className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-colors"
+                                className="px-3 py-1 text-sm text-white transition-colors bg-blue-500 rounded-lg hover:bg-blue-600"
                                 onClick={() =>
                                   handleReply(
                                     comment.id,
@@ -4086,10 +4201,10 @@ const ReportModal = ({
 
                           {/* Replies Section */}
                           {expandedReplies[comment.id] && (
-                            <div className="mt-3 ml-4 pl-4 border-l-2 border-gray-200 space-y-3">
+                            <div className="pl-4 mt-3 ml-4 space-y-3 border-l-2 border-gray-200">
                               {loadingComments[comment.id] ? (
                                 <div className="flex justify-center py-2">
-                                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500"></div>
+                                  <div className="w-5 h-5 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
                                 </div>
                               ) : (
                                 (allReplies[comment.id] || []).map((reply) => (
@@ -4102,7 +4217,7 @@ const ReportModal = ({
                                             to={`/user-profile/${reply.user.username}`}
                                           >
                                             <img
-                                              className="rounded-full w-8 h-8 object-cover border-2 border-white hover:border-blue-200 transition-colors"
+                                              className="object-cover w-8 h-8 transition-colors border-2 border-white rounded-full hover:border-blue-200"
                                               src={
                                                 reply.user.profile_photo.startsWith(
                                                   "http"
@@ -4121,7 +4236,7 @@ const ReportModal = ({
                                             />
                                           </Link>
                                         ) : (
-                                          <div className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-full border-2 border-white">
+                                          <div className="flex items-center justify-center w-8 h-8 bg-gray-200 border-2 border-white rounded-full">
                                             <span className="text-xs font-medium text-gray-600">
                                               {getInitials(reply.user?.name)}
                                             </span>
@@ -4131,7 +4246,7 @@ const ReportModal = ({
 
                                       {/* Reply Content */}
                                       <div className="flex-1 min-w-0">
-                                        <div className="bg-gray-50 rounded-lg p-2">
+                                        <div className="p-2 rounded-lg bg-gray-50">
                                           {/* Reply User Info */}
                                           <div className="flex items-center justify-between">
                                             <div className="flex items-center">
@@ -4146,7 +4261,7 @@ const ReportModal = ({
                                                 reply.parent_id !==
                                                   reply.reply_to
                                                     .reply_to_id && (
-                                                  <span className="text-xs text-gray-500 ml-1 flex items-center">
+                                                  <span className="flex items-center ml-1 text-xs text-gray-500">
                                                     <svg
                                                       xmlns="http://www.w3.org/2000/svg"
                                                       width="10"
@@ -4168,8 +4283,9 @@ const ReportModal = ({
                                             </div>
 
                                             {/* Reply Actions */}
-                                            <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                              {reply.user?.id === user.id && (
+                                            <div className="flex items-center space-x-2 transition-opacity opacity-0 group-hover:opacity-100">
+                                              {reply.user?.id ===
+                                                currentUserId && (
                                                 <button
                                                   className="text-gray-500 hover:text-gray-700"
                                                   onClick={(e) => {
@@ -4182,7 +4298,8 @@ const ReportModal = ({
                                                 </button>
                                               )}
 
-                                              {reply.user?.id !== user.id && (
+                                              {reply.user?.id !==
+                                                currentUserId && (
                                                 <button
                                                   className="text-gray-500 hover:text-red-500"
                                                   onClick={(e) => {
@@ -4204,10 +4321,10 @@ const ReportModal = ({
 
                                           {/* Reply Text */}
                                           {editingReplyId === reply.id ? (
-                                            <div className="mt-1 flex gap-2">
+                                            <div className="flex gap-2 mt-1">
                                               <input
                                                 type="text"
-                                                className="flex-1 border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                className="flex-1 px-2 py-1 text-xs border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
                                                 value={replyText}
                                                 onChange={(e) =>
                                                   setReplyText(e.target.value)
@@ -4215,7 +4332,7 @@ const ReportModal = ({
                                                 autoFocus
                                               />
                                               <button
-                                                className="bg-blue-500 text-white px-2 py-1 rounded-lg text-xs hover:bg-blue-600 transition-colors"
+                                                className="px-2 py-1 text-xs text-white transition-colors bg-blue-500 rounded-lg hover:bg-blue-600"
                                                 onClick={() =>
                                                   handleUpdateReply(reply.id)
                                                 }
@@ -4223,7 +4340,7 @@ const ReportModal = ({
                                                 Update
                                               </button>
                                               <button
-                                                className="bg-gray-200 text-gray-700 px-2 py-1 rounded-lg text-xs hover:bg-gray-300 transition-colors"
+                                                className="px-2 py-1 text-xs text-gray-700 transition-colors bg-gray-200 rounded-lg hover:bg-gray-300"
                                                 onClick={() => {
                                                   setEditingReplyId(null);
                                                   setReplyText("");
@@ -4233,14 +4350,14 @@ const ReportModal = ({
                                               </button>
                                             </div>
                                           ) : (
-                                            <p className="text-xs text-gray-700 mt-1">
+                                            <p className="mt-1 text-xs text-gray-700">
                                               {reply.content}
                                             </p>
                                           )}
                                         </div>
 
                                         {/* Reply Meta */}
-                                        <div className="flex items-center justify-between mt-1 px-1">
+                                        <div className="flex items-center justify-between px-1 mt-1">
                                           <span className="text-xs text-gray-500">
                                             {formatPostTime(reply.created_at)}
                                           </span>
@@ -4258,10 +4375,10 @@ const ReportModal = ({
                                           </div>
                                         </div>
                                         {replyingTo === reply.id && (
-                                          <div className="mt-3 flex gap-2">
+                                          <div className="flex gap-2 mt-3">
                                             <input
                                               type="text"
-                                              className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                              className="flex-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
                                               placeholder={`Reply to ${
                                                 replyToUser?.name ||
                                                 reply.user.name
@@ -4273,7 +4390,7 @@ const ReportModal = ({
                                               autoFocus
                                             />
                                             <button
-                                              className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-colors"
+                                              className="px-3 py-1 text-sm text-white transition-colors bg-blue-500 rounded-lg hover:bg-blue-600"
                                               onClick={() =>
                                                 handleReply(
                                                   reply.id,
@@ -4310,7 +4427,7 @@ const ReportModal = ({
                 <div className="flex-shrink-0">
                   {user.photo ? (
                     <img
-                      className="w-8 h-8 rounded-full object-cover"
+                      className="object-cover w-8 h-8 rounded-full"
                       src={
                         user.photo.startsWith("http")
                           ? user.photo
@@ -4324,7 +4441,7 @@ const ReportModal = ({
                       }}
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
+                    <div className="flex items-center justify-center w-8 h-8 bg-gray-300 rounded-full">
                       <span className="text-xs font-bold text-gray-600">
                         {getInitials(user.name)}
                       </span>
@@ -4335,19 +4452,19 @@ const ReportModal = ({
                 <div className="flex-1">
                   <input
                     type="text"
-                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
                     placeholder="Write a comment..."
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
                     onKeyPress={(e) => e.key === "Enter" && handleAddComment()}
                   />
                   {commentError && (
-                    <p className="text-red-500 text-xs mt-1">{commentError}</p>
+                    <p className="mt-1 text-xs text-red-500">{commentError}</p>
                   )}
                 </div>
 
                 <button
-                  className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors"
+                  className="px-4 py-2 text-sm text-white transition-colors bg-blue-500 rounded-lg hover:bg-blue-600"
                   onClick={handleAddComment}
                 >
                   Post

@@ -396,7 +396,7 @@ export default function EditProfile() {
                 <div className="flex items-center gap-2">
                   <User className="w-5 h-5 text-blue-500" />
                   <CardTitle className="text-lg font-semibold text-gray-800">
-                    About You
+                    About
                   </CardTitle>
                 </div>
                 <CardDescription className="text-gray-500">
@@ -460,16 +460,35 @@ export default function EditProfile() {
                   </div>
                   <textarea
                     placeholder="Tell us about yourself..."
-                    className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                    className={`w-full p-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white ${
+                      about.length > 1500 ? "border-red-400" : ""
+                    }`}
                     rows={5}
                     value={about}
                     onChange={(e) => setAbout(e.target.value)}
                   />
+                  <div className="text-xs text-right mt-1">
+                    {about.length <= 1500 ? (
+                      <span className="text-gray-400">{about.length}/1500 characters</span>
+                    ) : (
+                      <>
+                        <span className="text-gray-400">1500/1500 characters</span>
+                          {/* <span className="text-red-500 ml-2">
+                            {about.slice(1500)}
+                          </span> */}
+                      </>
+                    )}
+                  </div>
                 </div>
                 <div className="flex justify-end">
                   <Button
                     onClick={handleSaveAbout}
-                    className="bg-blue-600 hover:bg-blue-700 transition-colors"
+                    className={`transition-colors ${
+                      about.length > 1500
+                        ? "bg-gray-300 text-gray-400 cursor-not-allowed hover:bg-gray-300"
+                        : "bg-blue-600 hover:bg-blue-700"
+                    }`}
+                    disabled={about.length > 1500}
                   >
                     Save About
                   </Button>

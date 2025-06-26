@@ -203,18 +203,18 @@ const [reasonText, setReasonText] = useState("");
             />
           </div>
         )}
-        <div className="container mx-auto px-4 py-6">
+        <div className="container mx-auto px-4 py-6 mb-10">
           <div className="bg-white rounded-lg shadow-sm overflow-hidden min-h-[70vh]">
           {/* Header */}
           <div className="border-b p-4  ">
             <Link
               to={`/groups/${groupId}`}
-              className="flex items-center text-gray-600 hover:text-gray-800"
+              className="flex items-center text-xl text-gray-800 hover:text-gray-800"
             >
-              <ArrowLeft size={20} className="mr-2" />
+              <ArrowLeft size={20} className="mr-2 mt-2 " />
               <h2 className="font-bold">{group.name}</h2>
             </Link>
-            <h2 className="text-lg mt-5 font-semibold">{members.length} Members</h2>
+            <h2 className="text-base mt-5 font-semibold">{members.length} Members</h2>
           </div>
 
           {/* Member List */}

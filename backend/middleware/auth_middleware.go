@@ -2,135 +2,63 @@ package middleware
 
 import (
 	"context"
-	"encoding/json"
+	"evoconnect/backend/helper"
 	"evoconnect/backend/model/web"
+	"evoconnect/backend/utils"
 	"fmt"
 	"net/http"
 	"strings"
 
-	"github.com/dgrijalva/jwt-go"
-	// "github.com/google/uuid"
+	"github.com/julienschmidt/httprouter"
 )
 
-type AuthMiddleware struct {
-	Handler   http.Handler
-	JWTSecret string
-}
+func NewUserAuthMiddleware() func(httprouter.Handle) httprouter.Handle {
+	return func(next httprouter.Handle) httprouter.Handle {
+		return func(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 
-func NewAuthMiddleware(handler http.Handler, jwtSecret string) *AuthMiddleware {
-	return &AuthMiddleware{
-		Handler:   handler,
-		JWTSecret: jwtSecret,
-	}
-}
+			// Get Authorization header
+			authHeader := request.Header.Get("Authorization")
+			if authHeader == "" {
+				helper.WriteToResponseBody(writer, web.WebResponse{
+					Code:   http.StatusUnauthorized,
+					Status: "UNAUTHORIZED",
+					Data:   "Authorization header is required",
+				})
+				return
+			}
 
-// middleware/auth_middleware.go
+			// Check Bearer token format
+			tokenParts := strings.Split(authHeader, " ")
+			if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
+				helper.WriteToResponseBody(writer, web.WebResponse{
+					Code:   http.StatusUnauthorized,
+					Status: "UNAUTHORIZED",
+					Data:   "Invalid authorization format",
+				})
+				return
+			}
 
-func (middleware *AuthMiddleware) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
-	// Skip authentication for these public endpoints only
-	if strings.Contains(request.URL.Path, "/auth/login") ||
-		strings.Contains(request.URL.Path, "/auth/google") ||
-		strings.Contains(request.URL.Path, "/auth/register") ||
-		strings.Contains(request.URL.Path, "/auth/verify/send") ||
-		strings.Contains(request.URL.Path, "/auth/forgot-password") ||
-		strings.Contains(request.URL.Path, "/auth/reset-password") ||
-		strings.Contains(request.URL.Path, "/uploads") ||
-		strings.Contains(request.URL.Path, "/public") {
-		middleware.Handler.ServeHTTP(writer, request)
-		return
-	}
+			tokenString := tokenParts[1]
 
-	// Semua endpoint lain termasuk /api/auth/verify memerlukan autentikasi
-	authHeader := request.Header.Get("Authorization")
+			// Validate user token using utility function
+			claims, err := utils.ValidateUserToken(tokenString)
+			if err != nil {
+				fmt.Printf("User token validation error: %v\n", err)
+				helper.WriteToResponseBody(writer, web.WebResponse{
+					Code:   http.StatusUnauthorized,
+					Status: "UNAUTHORIZED",
+					Data:   "Invalid user token: " + err.Error(),
+				})
+				return
+			}
 
-	// Debug untuk melihat header yang diterima
-	// fmt.Printf("Auth header received: %s\n", authHeader)
+			// Add user info to context
+			ctx := context.WithValue(request.Context(), "user_id", claims.ID)
+			ctx = context.WithValue(ctx, "user_email", claims.Email)
+			ctx = context.WithValue(ctx, "user_role", claims.Role)
 
-	if !strings.Contains(authHeader, "Bearer ") {
-		// Return proper JSON response untuk error
-		writer.Header().Set("Content-Type", "application/json")
-		writer.WriteHeader(http.StatusUnauthorized)
-
-		response := web.WebResponse{
-			Code:   http.StatusUnauthorized,
-			Status: "UNAUTHORIZED",
-			Data:   "Unauthorized access",
+			// Continue to next handler
+			next(writer, request.WithContext(ctx), params)
 		}
-
-		_ = json.NewEncoder(writer).Encode(response)
-		return
 	}
-
-	// Extract the token
-	tokenString := strings.Replace(authHeader, "Bearer ", "", 1)
-
-	// Parse and validate token
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if method, ok := token.Method.(*jwt.SigningMethodHMAC); !ok || method.Alg() != "HS256" {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(middleware.JWTSecret), nil
-	})
-
-	if err != nil {
-		fmt.Printf("JWT Parse error: %v\n", err)
-		writer.Header().Set("Content-Type", "application/json")
-		writer.WriteHeader(http.StatusUnauthorized)
-
-		response := web.WebResponse{
-			Code:   http.StatusUnauthorized,
-			Status: "UNAUTHORIZED",
-			Data:   "Invalid token: " + err.Error(),
-		}
-
-		_ = json.NewEncoder(writer).Encode(response)
-		return
-	}
-
-	if !token.Valid {
-		writer.Header().Set("Content-Type", "application/json")
-		writer.WriteHeader(http.StatusUnauthorized)
-
-		response := web.WebResponse{
-			Code:   http.StatusUnauthorized,
-			Status: "UNAUTHORIZED",
-			Data:   "Invalid token",
-		}
-
-		_ = json.NewEncoder(writer).Encode(response)
-		return
-	}
-
-	// Extract user info from token
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		writer.Header().Set("Content-Type", "application/json")
-		writer.WriteHeader(http.StatusUnauthorized)
-
-		response := web.WebResponse{
-			Code:   http.StatusUnauthorized,
-			Status: "UNAUTHORIZED",
-			Data:   "Invalid token claims",
-		}
-
-		_ = json.NewEncoder(writer).Encode(response)
-		return
-	}
-
-	// Get user_id and email from claims
-	userIdStr, _ := claims["user_id"].(string)
-	email, _ := claims["email"].(string)
-
-	// Debug claims
-	// fmt.Printf("JWT Claims - user_id: %s, email: %s\n", userIdStr, email)
-
-	// Add to context
-	ctx := context.WithValue(request.Context(), "user_id", userIdStr)
-	ctx = context.WithValue(ctx, "email", email)
-
-	// Create new request with updated context
-	newRequest := request.WithContext(ctx)
-
-	// Pass to next handler
-	middleware.Handler.ServeHTTP(writer, newRequest)
 }

@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import Case from "../../components/Case";
 import axios from "axios";
 import RandomPosts from "../../components/Blog/RandomPosts";
 import EditBlog from "../../components/Blog/EditBlog";
 import DeleteBlog from "../../components/Blog/DeleteBlog";
-import Alert from "../../components/Auth/Alert";
+import Alert from "../../components/Auth/alert";
 import BlogMenu from "../../components/Blog/BlogMenu";
 import ReportModal from "../../components/Blog/ReportModal";
 import CommentSection from "../../components/Blog/CommentSection";
@@ -33,6 +33,8 @@ const BlogDetail = () => {
     type: "",
     message: "",
   });
+  const [showBackBtn, setShowBackBtn] = useState(true);
+  const lastScrollY = useRef(window.scrollY);
 
   // Get current user on component mount
   useEffect(() => {
@@ -216,6 +218,38 @@ const BlogDetail = () => {
       : `${apiUrl}/${user.photo.replace(/^\/+/, "")}`;
   };
 
+  useEffect(() => {
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY;
+          if (window.innerWidth >= 768) {
+            // Hide on desktop
+            setShowBackBtn(false);
+          } else if (
+            currentScrollY < lastScrollY.current ||
+            currentScrollY < 50
+          ) {
+            setShowBackBtn(true);
+          } else {
+            setShowBackBtn(false);
+          }
+          lastScrollY.current = currentScrollY;
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleScroll, { passive: true });
+    handleScroll(); // Initial check
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
+    };
+  }, []);
+
   if (!article) {
     return <div className="text-center py-10">Loading blog...</div>;
   }
@@ -225,7 +259,7 @@ const BlogDetail = () => {
 
   return (
     <Case>
-      <div className="relative py-10 bg-gray-50">
+      <div className="relative py-10 pb-16 bg-gray-50">
         {/* Alert Component */}
         {alertInfo.show && (
           <div className="fixed top-20 right-4 z-50">
@@ -239,20 +273,25 @@ const BlogDetail = () => {
         )}
 
         <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Back button */}
-          <Link
-            to="/blog"
-            className="fixed top-20 left-4 z-50 bg-sky-400 text-white font-bold w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:bg-sky-500 transition duration-200"
-          >
-            <CircleArrowLeft />
-          </Link>
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-6 relative">
               {/* Blog Content */}
               <div className="bg-white shadow-md rounded-lg relative">
                 {/* Blog Image */}
-                <div className="relative h-[400px]">
+                <div className="relative aspect-[4/3] w-full bg-gray-200 overflow-hidden rounded-t-xl">
+                  {/* Back button absolute di atas gambar */}
+                  <Link
+                    to="/blog"
+                    className={`absolute top-2 left-2 md:hidden bg-sky-400 text-white font-bold w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:bg-sky-500 transition-all duration-300
+                      ${
+                        showBackBtn
+                          ? "z-50 opacity-100"
+                          : "z-0 opacity-0 pointer-events-none"
+                      }`}
+                    style={{ transition: "z-index 0.3s, opacity 0.3s" }}
+                  >
+                    <CircleArrowLeft />
+                  </Link>
                   {article.photo ? (
                     <img
                       src={`${article.photo}?v=${refreshKey}`}
@@ -293,7 +332,7 @@ const BlogDetail = () => {
                   </h2>
 
                   <div
-                    className="prose max-w-none text-gray-700"
+                    className="prose max-w-none text-gray-700 whitespace-pre-wrap break-words"
                     dangerouslySetInnerHTML={{ __html: article.content }}
                   />
 
@@ -392,6 +431,8 @@ const BlogDetail = () => {
           customReason={customReason}
           setCustomReason={setCustomReason}
         />
+
+        {/* {toast && <Toast message={toast.message} type={toast.type} />} */}
       </div>
     </Case>
   );

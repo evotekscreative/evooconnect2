@@ -35,19 +35,26 @@ const UserDropdown = ({ user, handleLogout, onClose }) => {
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gray-300">
               <span className="text-sm font-bold text-gray-600">
-                {user.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
-              </span>
+  {user.name
+    .split(" ")
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")}
+</span>
+
             </div>
           )}
         </div>
-        <div>
-          <p className="font-bold">{user.name}</p>
-          <span className="text-gray-500 text-sm">{user.headline ?? ''}</span>
-          <span className="text-green-500 text-sm">● Online</span>
-        </div>
+       <div>
+  <p className="font-bold">{user.name}</p>
+  {user.headline ? (
+    <p className="text-gray-500 text-sm">{user.headline}</p>
+  ) : (
+    <p className="text-gray-500 text-sm italic">No headline</p>
+  )}
+  <span className="text-green-500 text-sm">● Online</span>
+</div>
+
       </div>
       <ul className="flex flex-col divide-y">
         <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">

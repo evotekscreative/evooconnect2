@@ -4,7 +4,7 @@ import { Eye, EyeOff } from "lucide-react";
 import axios from "axios";
 import logo from "../../assets/img/logoB.png";
 import googleIcon from "../../assets/img/google-icon.jpg";
-import Alert from "../../components/Auth/Alert";
+import Alert from "../../components/Auth/alert";
 import "../../assets/css/style.css";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 
@@ -68,12 +68,9 @@ function Login() {
       // Log the credential for debugging
       console.log("Google credential:", credentialResponse.credential);
 
-      const response = await axios.post(
-        apiUrl + "ogle",
-        {
-          token: credentialResponse.credential,
-        }
-      );
+      const response = await axios.post(apiUrl + "/api/auth/google", {
+        token: credentialResponse.credential,
+      });
 
       // Check that the token is a valid JWT format with console.log
       console.log("Backend response:", response.data);

@@ -8,6 +8,7 @@ import (
 	"evoconnect/backend/model/domain"
 	"fmt"
 	"time"
+
 	"github.com/google/uuid"
 )
 
@@ -383,37 +384,36 @@ func (repository *UserRepositoryImpl) FindUsersNotConnectedWith(ctx context.Cont
 	return users, nil
 }
 
-func (repository *UserRepositoryImpl) Search(ctx context.Context, tx *sql.Tx, query string, limit int, offset int) []domain.User {
-    SQL := `SELECT id, name, username, email, COALESCE(headline, ''), COALESCE(photo, ''), created_at, updated_at
+func (repository *UserRepositoryImpl) Search(ctx context.Context, tx *sql.Tx, query string, limit int, offset int, currentUserId uuid.UUID) []domain.User {
+	SQL := `SELECT id, name, username, email, COALESCE(headline, ''), COALESCE(photo, ''), created_at, updated_at
             FROM users
-            WHERE LOWER(name) LIKE LOWER($1) OR LOWER(username) LIKE LOWER($1) OR LOWER(COALESCE(headline, '')) LIKE LOWER($1)
+            WHERE (LOWER(name) LIKE LOWER($1) OR LOWER(username) LIKE LOWER($1) OR LOWER(COALESCE(headline, '')) LIKE LOWER($1))
+            AND id != $4
             ORDER BY name
             LIMIT $2 OFFSET $3`
-   
-    fmt.Printf("User search params: query=%s, limit=%d, offset=%d\n", query, limit, offset)
-    searchPattern := "%" + query + "%"
-    fmt.Printf("Search pattern: %s\n", searchPattern)
-   
-    rows, err := tx.QueryContext(ctx, SQL, searchPattern, limit, offset)
-    if err != nil {
-        fmt.Printf("Error in user search: %v\n", err)
-        return []domain.User{}
-    }
-    defer rows.Close()
-   
-    var users []domain.User
-    for rows.Next() {
-        user := domain.User{}
-        err := rows.Scan(&user.Id, &user.Name, &user.Username, &user.Email, &user.Headline, &user.Photo, &user.CreatedAt, &user.UpdatedAt)
-        if err != nil {
-            fmt.Printf("Error scanning user: %v\n", err)
-            continue
-        }
-        users = append(users, user)
-        fmt.Printf("Found user: %s (%s)\n", user.Name, user.Username)
-    }
-   
-    return users
+
+	fmt.Printf("User search params: query=%s, limit=%d, offset=%d, currentUserId=%s\n", query, limit, offset, currentUserId.String())
+	searchPattern := "%" + query + "%"
+	fmt.Printf("Search pattern: %s\n", searchPattern)
+
+	rows, err := tx.QueryContext(ctx, SQL, searchPattern, limit, offset, currentUserId)
+	if err != nil {
+		fmt.Printf("Error in user search: %v\n", err)
+		return []domain.User{}
+	}
+	defer rows.Close()
+
+	var users []domain.User
+	for rows.Next() {
+		user := domain.User{}
+		err := rows.Scan(&user.Id, &user.Name, &user.Username, &user.Email, &user.Headline, &user.Photo, &user.CreatedAt, &user.UpdatedAt)
+		if err != nil {
+			fmt.Printf("Error scanning user: %v\n", err)
+			continue
+		}
+		users = append(users, user)
+		fmt.Printf("Found user: %s (%s)\n", user.Name, user.Username)
+	}
+
+	return users
 }
-
-

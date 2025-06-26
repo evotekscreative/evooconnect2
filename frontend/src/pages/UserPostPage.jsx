@@ -83,6 +83,11 @@ const PostPage = () => {
     type: "",
     message: "",
   });
+  const [similarJobs, setSimilarJobs] = useState([]);
+  const [loadingJobs, setLoadingJobs] = useState(false);
+
+  // Debug log untuk similarJobs
+  console.log("Current similarJobs state:", similarJobs);
 
   const [user, setUser] = useState({
     id: "",
@@ -129,40 +134,30 @@ const PostPage = () => {
     }
   }, []);
 
-  const formatPostTime = (timestamp) => {
-    if (!timestamp) return "Just now";
+  const formatPostTime = (dateString) => {
+    if (!dateString) return "";
 
-    let postTime;
     try {
-      postTime = dayjs(timestamp);
-      if (!postTime.isValid()) {
-        postTime = dayjs(new Date(timestamp));
+      const utcDate = dayjs.utc(dateString);
+
+      if (!utcDate.isValid()) {
+        console.warn("Invalid date:", dateString);
+        return "";
       }
-    } catch (e) {
-      console.error("Error parsing timestamp:", timestamp, e);
-      return "Just now";
+
+      const now = dayjs.utc();
+      const diffInHours = now.diff(utcDate, "hour");
+
+      if (diffInHours < 24) {
+        return utcDate.format("h:mm A"); // hasil: 2:49 AM
+      } else {
+        return utcDate.format("MMM D [at] h:mm A"); // Misal: Jun 5 at 02:49
+      }
+    } catch (error) {
+      console.error("Time formatting error:", error);
+      return "";
     }
-
-    if (!postTime.isValid()) {
-      return "Just now";
-    }
-
-    const now = dayjs();
-    const diffInSeconds = now.diff(postTime, "second");
-    const diffInMinutes = now.diff(postTime, "minute");
-    const diffInHours = now.diff(postTime, "hour");
-    const diffInDays = now.diff(postTime, "day");
-
-    if (diffInSeconds < 0) return "Just now";
-
-    if (diffInSeconds < 60) return `${diffInSeconds}s ago`;
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    if (diffInDays < 7) return `${diffInDays}d ago`;
-
-    return postTime.format("MMM D, YYYY");
   };
-
   const fetchSuggestedConnections = async () => {
     try {
       setLoadingSuggested(true);
@@ -201,6 +196,70 @@ const PostPage = () => {
     }
   };
 
+  const fetchSimilarJobs = async () => {
+    try {
+      setLoadingJobs(true);
+      const userToken = localStorage.getItem("token");
+      const response = await axios.get(apiUrl + "/api/jobs/random", {
+        headers: { Authorization: `Bearer ${userToken}` },
+      });
+
+      console.log("Jobs API Response:", response.data); // Debug log
+
+      // Handle different possible response structures
+      let jobsData = [];
+      if (response.data?.data?.jobs) {
+        jobsData = response.data.data.jobs;
+      } else if (response.data?.data && Array.isArray(response.data.data)) {
+        jobsData = response.data.data;
+      } else if (response.data?.jobs) {
+        jobsData = response.data.jobs;
+      } else if (Array.isArray(response.data)) {
+        jobsData = response.data;
+      }
+
+      setSimilarJobs(jobsData.slice(0, 3));
+    } catch (error) {
+      console.error("Failed to fetch similar jobs:", error);
+      toast.error("Failed to load jobs");
+    } finally {
+      setLoadingJobs(false);
+    }
+  };
+
+  const handleConnectWithUser = async (userId) => {
+    try {
+      const userToken = localStorage.getItem("token");
+      await axios.post(
+        `${apiUrl}/api/connections/${userId}`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${userToken}` },
+        }
+      );
+
+      // Update connections list
+      fetchConnections();
+      fetchSuggestedConnections();
+
+      toast.success("Connection request sent!");
+    } catch (error) {
+      console.error("Failed to connect with user:", error);
+      toast.error("Failed to send connection request");
+    }
+  };
+
+  const addAlert = (type, message) => {
+    setAlertInfo({
+      show: true,
+      type,
+      message,
+    });
+    setTimeout(() => {
+      setAlertInfo({ show: false, type: "", message: "" });
+    }, 3000);
+  };
+
   const fetchConnections = async () => {
     const token = localStorage.getItem("token");
     setIsLoading(true);
@@ -224,39 +283,39 @@ const PostPage = () => {
     }
   };
 
- const fetchUserPosts = async () => {
-  const token = localStorage.getItem("token");
-  setIsLoading(true);
+  const fetchUserPosts = async () => {
+    const token = localStorage.getItem("token");
+    setIsLoading(true);
 
-  try {
-    const response = await axios.get(
-      `${apiUrl}/api/users/${user.id}/posts?limit=10&offset=0`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    try {
+      const response = await axios.get(
+        `${apiUrl}/api/users/${user.id}/posts?limit=10&offset=0`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-    const postsWithLikeStatus = response.data.data.map((post) => ({
-      ...post,
-      isLiked: post.is_liked || false,
-      likes_count: post.likes_count || 0,
-      visibility: post.visibility || "public",
-      group: post.group || null, // Make sure group data is included
-      user: post.user || {
-        id: post.user_id,
-        name: "Unknown User",
-        headline: "",
-        photo: null
-      }
-    }));
+      const postsWithLikeStatus = response.data.data.map((post) => ({
+        ...post,
+        isLiked: post.is_liked || false,
+        likes_count: post.likes_count || 0,
+        visibility: post.visibility || "public",
+        group: post.group || null, // Make sure group data is included
+        user: post.user || {
+          id: post.user_id,
+          name: "Unknown User",
+          headline: "",
+          photo: null,
+        },
+      }));
 
-    setUserPosts(postsWithLikeStatus);
-  } catch (error) {
-    console.error("Failed to fetch user posts:", error);
-  } finally {
-    setIsLoading(false);
-  }
-};
+      setUserPosts(postsWithLikeStatus);
+    } catch (error) {
+      console.error("Failed to fetch user posts:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   const fetchProfile = async () => {
     const token = localStorage.getItem("token");
     setIsLoading(true);
@@ -371,6 +430,7 @@ const PostPage = () => {
       fetchConnections();
       fetchUserPosts();
       fetchSuggestedConnections();
+      fetchSimilarJobs();
     }
   }, [user.id]);
 
@@ -414,17 +474,17 @@ const PostPage = () => {
               "Harassment",
               "Fraud",
               "Spam",
-              "Misinformation",
-              "Hate speech",
+              "Missinformation",
+              "Hate Speech",
               "Threats or violence",
-              "Self-harm",
-              "Graphic content",
-              "Extremist organizations",
-              "Sexual content",
-              "Fake account",
-              "Child exploitation",
-              "Illegal products",
-              "Violation",
+              "self-harm",
+              "Graphic or violent content",
+              "Dangerous or extremist organizations",
+              "Sexual Content",
+              "Fake Account",
+              "Child Exploitation",
+              "Illegal products and services",
+              "Infringement",
               "Other",
             ].map((reason) => (
               <button
@@ -688,7 +748,7 @@ const PostPage = () => {
         })
       );
 
-      addAlert("error", "Failed to like post");
+      toast.error("Failed to like post");
     }
   };
 
@@ -893,7 +953,7 @@ const PostPage = () => {
     }
   };
 
- const handleReply = async (commentId, replyToUser = null) => {
+  const handleReply = async (commentId, replyToUser = null) => {
     if (!commentId || !replyText.trim()) return;
 
     try {
@@ -966,9 +1026,9 @@ const PostPage = () => {
       setReplyToUser(null);
       setCommentError(null);
       setExpandedReplies((prev) => ({ ...prev, [commentId]: true }));
-      addAlert("success", "Successfully added reply!");
+      toast.success("Successfully added reply!");
     } catch (error) {
-      addAlert("error", "Failed to add reply");
+      toast.error("Failed to add reply");
       setCommentError(
         error.response?.data?.message ||
           "Failed to add reply. Please try again."
@@ -1024,10 +1084,10 @@ const PostPage = () => {
 
       setEditingReplyId(null);
       setReplyText("");
-      addAlert("success", "Reply updated successfully!");
+      toast.success("Reply updated successfully!");
     } catch (error) {
       console.error("Failed to update reply:", error);
-      addAlert("error", "Failed to update reply. Please try again.");
+      toast.error("Failed to update reply. Please try again.");
     }
   };
 
@@ -1080,7 +1140,7 @@ const PostPage = () => {
 
       setShowReplyOptions(false);
       setSelectedReply(null);
-      addAlert("success", "Reply deleted successfully!");
+      toast.success("Reply deleted successfully!");
     } catch (error) {
       console.error("Failed to delete reply:", error);
 
@@ -1125,10 +1185,7 @@ const PostPage = () => {
         });
       }
 
-      addAlert(
-        "error",
-        error.response?.data?.message || "Failed to delete reply"
-      );
+      toast.error(error.response?.data?.message || "Failed to delete reply");
     }
   };
 
@@ -1167,10 +1224,10 @@ const PostPage = () => {
 
       setEditingCommentId(null);
       setCommentText("");
-      addAlert("success", "Comment updated successfully!");
+      toast.success("Comment updated successfully!");
     } catch (error) {
       console.error("Failed to update post:", error);
-      addAlert("error", "Failed to update comment. Please try again.");
+      toast.error("Failed to update comment. Please try again.");
     }
   };
 
@@ -1318,9 +1375,7 @@ const PostPage = () => {
   const getInitials = (name) => {
     if (!name || typeof name !== "string") return "UU";
 
-    const names = name.trim().split(/\s+/); // Pisahkan berdasarkan spasi
-
-    // Ambil maksimal 3 huruf pertama dari nama depan, tengah, dan belakang
+    const names = name.trim().split(/\s+/);
     const initials = names
       .slice(0, 2)
       .map((word) => word[0].toUpperCase())
@@ -1549,138 +1604,138 @@ const PostPage = () => {
                     className="bg-white border rounded-lg shadow-sm p-4 mb-4"
                   >
                     {/* Header */}
-                     <div className="border-b border-gray-200 pb-3 mb-3 relative">
-                                          {/* Group info - as background element */}
-                                          {post.group && (
-                                            <Link to={`/groups/${post.group.id}`}>
-                                              {/* Group photo */}
-                                              <div className="absolute left-0 top-0 bottom-2 z-0">
-                                                {post.group.image ? (
-                                                  <img
-                                                    className="rounded-lg object-cover w-12 h-12 border-2 border-gray-300 shadow-md"
-                                                    src={
-                                                      post.group.image.startsWith("http")
-                                                        ? post.group.image
-                                                        : `${apiUrl}/${post.group.image}`
-                                                    }
-                                                    alt="Group"
-                                                    onError={(e) => {
-                                                      e.target.onerror = null;
-                                                      e.target.src = "";
-                                                    }}
-                                                  />
-                                                ) : (
-                                                  <div className="rounded-lg border-2 border-white w-12 h-12 bg-gray-300 flex items-center justify-center shadow-md">
-                                                    <span className="text-xs font-bold text-gray-600">
-                                                      {getInitials(post.group?.name)}
-                                                    </span>
-                                                  </div>
-                                                )}
-                                              </div>
-                                            </Link>
-                                          )}
-                    
-                                          <div className="flex justify-between items-start mb-2">
-                                            <div className="flex items-start">
-                                              {/* User photo */}
-                                              <div
-                                                className={`${
-                                                  post?.group
-                                                    ? "relative z-10 ml-4 mt-2 transform translate-y-2"
-                                                    : ""
-                                                }`}
-                                              >
-                                                {post.user?.photo ? (
-                                                  <Link to={`/user-profile/${post.user.username}`}>
-                                                    <img
-                                                      className="rounded-full border-2 border-gray-300 w-10 h-10 object-cover"
-                                                      src={
-                                                        post.user.photo.startsWith("http")
-                                                          ? post.user.photo
-                                                          : `${apiUrl}/${post.user.photo}`
-                                                      }
-                                                      alt="Profile"
-                                                      onError={(e) => {
-                                                        e.target.onerror = null;
-                                                        e.target.src = "";
-                                                        e.target.parentElement.classList.add(
-                                                          "bg-gray-300"
-                                                        );
-                                                      }}
-                                                    />
-                                                  </Link>
-                                                ) : (
-                                                  <div className="w-9 h-9 bg-gray-200 text-xs rounded-full flex items-center justify-center font-semibold text-gray-600">
-                                                    <span className="text-xs font-bold text-gray-600">
-                                                      {getInitials(post.user?.name)}
-                                                    </span>
-                                                  </div>
-                                                )}
-                                              </div>
-                    
-                                              <div
-                                                className={`${post?.group ? "ml-3 mt-2" : "ml-2"}`}
-                                              >
-                                                <h6
-                                                  className="font-bold mb-0 text-sm cursor-pointer hover:underline"
-                                                  onClick={() =>
-                                                    fetchUserProfile(
-                                                      post.user.username,
-                                                      post.user.id
-                                                    )
-                                                  }
-                                                >
-                                                  {post.user?.name || "Unknown User"}
-                                                </h6>
-                                                <div className="flex items-center">
-                                                  <small className="text-gray-500 text-xs">
-                                                    {formatPostTime(
-                                                      post.created_at || new Date().toISOString()
-                                                    )}
-                                                  </small>
-                                                  <span className="text-gray-400 mx-1 text-xs">
-                                                    •
-                                                  </span>
-                                                  {post.group && (
-                                                    <small className="text-gray-500 text-xs">
-                                                      <div className="flex items-center text-xs text-gray-500">
-                                                        <a
-                                                          href="#"
-                                                          className="hover:underline text-blue-500"
-                                                          onClick={(e) => {
-                                                            e.preventDefault();
-                                                            navigate(`/groups/${post.group.id}`);
-                                                          }}
-                                                        >
-                                                          Posted in {post.group.name}
-                                                        </a>
-                                                      </div>
-                                                    </small>
-                                                  )}
-                                                </div>
-                                              </div>
-                                            </div>
-                                            <div className="ml-auto relative group">
-                                              <button
-                                                className="bg-gray-100 hover:bg-gray-200 rounded-full p-1 mr-2"
-                                                onClick={() => handleOpenPostOptions(post.id)}
-                                              >
-                                                <Ellipsis size={14} />
-                                              </button>
-                                              <button className="bg-gray-100 hover:bg-gray-200 rounded-full p-1">
-                                                {post.visibility === "public" && (
-                                                  <Globe size={14} />
-                                                )}
-                                                {post.visibility === "private" && (
-                                                  <LockKeyhole size={14} />
-                                                )}
-                                                {post.visibility === "connections" && (
-                                                  <Users size={14} />
-                                                )}
-                                              </button>
-                                            </div>
-                                          </div>
-                                        </div>
+                    <div className="border-b border-gray-200 pb-3 mb-3 relative">
+                      {/* Group info - as background element */}
+                      {post.group && (
+                        <Link to={`/groups/${post.group.id}`}>
+                          {/* Group photo */}
+                          <div className="absolute left-0 top-0 bottom-2 z-0">
+                            {post.group.image ? (
+                              <img
+                                className="rounded-lg object-cover w-12 h-12 border-2 border-gray-300 shadow-md"
+                                src={
+                                  post.group.image.startsWith("http")
+                                    ? post.group.image
+                                    : `${apiUrl}/${post.group.image}`
+                                }
+                                alt="Group"
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.src = "";
+                                }}
+                              />
+                            ) : (
+                              <div className="rounded-lg border-2 border-white w-12 h-12 bg-gray-300 flex items-center justify-center shadow-md">
+                                <span className="text-xs font-bold text-gray-600">
+                                  {getInitials(post.group?.name)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </Link>
+                      )}
+
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex items-start">
+                          {/* User photo */}
+                          <div
+                            className={`${
+                              post?.group
+                                ? "relative z-10 ml-4 mt-2 transform translate-y-2"
+                                : ""
+                            }`}
+                          >
+                            {post.user?.photo ? (
+                              <Link to={`/user-profile/${post.user.username}`}>
+                                <img
+                                  className="rounded-full border-2 border-gray-300 w-10 h-10 object-cover"
+                                  src={
+                                    post.user.photo.startsWith("http")
+                                      ? post.user.photo
+                                      : `${apiUrl}/${post.user.photo}`
+                                  }
+                                  alt="Profile"
+                                  onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = "";
+                                    e.target.parentElement.classList.add(
+                                      "bg-gray-300"
+                                    );
+                                  }}
+                                />
+                              </Link>
+                            ) : (
+                              <div className="w-9 h-9 bg-gray-200 text-xs rounded-full flex items-center justify-center font-semibold text-gray-600">
+                                <span className="text-xs font-bold text-gray-600">
+                                  {getInitials(post.user?.name)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div
+                            className={`${post?.group ? "ml-3 mt-2" : "ml-2"}`}
+                          >
+                            <h6
+                              className="font-bold mb-0 text-sm cursor-pointer hover:underline"
+                              onClick={() =>
+                                fetchUserProfile(
+                                  post.user.username,
+                                  post.user.id
+                                )
+                              }
+                            >
+                              {post.user?.name || "Unknown User"}
+                            </h6>
+                            <div className="flex items-center">
+                              <small className="text-gray-500 text-xs">
+                                {formatPostTime(
+                                  post.created_at || new Date().toISOString()
+                                )}
+                              </small>
+                              <span className="text-gray-400 mx-1 text-xs">
+                                •
+                              </span>
+                              {post.group && (
+                                <small className="text-gray-500 text-xs">
+                                  <div className="flex items-center text-xs text-gray-500">
+                                    <a
+                                      href="#"
+                                      className="hover:underline text-blue-500"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        navigate(`/groups/${post.group.id}`);
+                                      }}
+                                    >
+                                      Posted in {post.group.name}
+                                    </a>
+                                  </div>
+                                </small>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="ml-auto relative group">
+                          <button
+                            className="bg-gray-100 hover:bg-gray-200 rounded-full p-1 mr-2"
+                            onClick={() => handleOpenPostOptions(post.id)}
+                          >
+                            <Ellipsis size={14} />
+                          </button>
+                          <button className="bg-gray-100 hover:bg-gray-200 rounded-full p-1">
+                            {post.visibility === "public" && (
+                              <Globe size={14} />
+                            )}
+                            {post.visibility === "private" && (
+                              <LockKeyhole size={14} />
+                            )}
+                            {post.visibility === "connections" && (
+                              <Users size={14} />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
 
                     {/* Body */}
                     <div className="mt-3 text-sm">
@@ -1882,36 +1937,90 @@ const PostPage = () => {
 
             {/* Jobs */}
             <div className="bg-white rounded-lg shadow p-4">
-              <h3 className="font-medium text-sm mb-3">Jobs</h3>
-              <div className="mb-4">
-                <div className="bg-gray-100 p-3 rounded-lg">
-                  <div className="flex justify-between mb-1">
-                    <h3 className="font-semibold text-sm">Product Director</h3>
-                    <div className="bg-white rounded-full p-1 w-8 h-8 flex items-center justify-center">
-                      <img
-                        src="/api/placeholder/24/24"
-                        alt="Company Logo"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </div>
-                  <p className="text-blue-500 text-sm">Spotify Inc.</p>
-                  <div className="flex items-center text-gray-600 text-xs">
-                    <MapPin size={12} className="mr-1" />
-                    <span>India, Punjab</span>
-                  </div>
-                  <div className="mt-2 flex items-center">
-                    <div className="flex -space-x-2">
-                      <div className="w-5 h-5 rounded-full bg-gray-300 border-2 border-white"></div>
-                      <div className="w-5 h-5 rounded-full bg-gray-400 border-2 border-white"></div>
-                      <div className="w-5 h-5 rounded-full bg-gray-500 border-2 border-white"></div>
-                    </div>
-                    <span className="text-gray-600 text-xs ml-2">
-                      18 connections
-                    </span>
-                  </div>
-                </div>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-medium text-sm">Similar Jobs</h3>
+                <button
+                  onClick={fetchSimilarJobs}
+                  disabled={loadingJobs}
+                  className="text-blue-600 text-xs hover:text-blue-700 transition-colors duration-200 disabled:opacity-50"
+                >
+                  <RefreshCw
+                    className={`w-3 h-3 ${loadingJobs ? "animate-spin" : ""}`}
+                  />
+                </button>
               </div>
+
+              {loadingJobs ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              ) : similarJobs.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-gray-500 text-xs">No jobs available</p>
+                  <p className="text-gray-400 text-xs mt-1">
+                    Jobs count: {similarJobs.length}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {similarJobs.map((job, index) => (
+                    <div
+                      key={job.id || index}
+                      className="bg-gray-100 p-3 rounded-lg"
+                    >
+                      <div className="flex justify-between mb-1">
+                        <h4 className="font-semibold text-sm truncate">
+                          {job.title || "Job Title"}
+                        </h4>
+                        <div className="bg-white rounded-full p-1 w-8 h-8 flex items-center justify-center flex-shrink-0">
+                          {job.company?.logo ? (
+                            <img
+                              src={
+                                job.company.logo.startsWith("http")
+                                  ? job.company.logo
+                                  : `${apiUrl}/${job.company.logo}`
+                              }
+                              alt="Company Logo"
+                              className="w-full h-full object-cover rounded-full"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = "";
+                                e.target.style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-300 rounded-full flex items-center justify-center">
+                              <span className="text-xs font-bold text-gray-600">
+                                {job.company?.name
+                                  ? job.company.name.charAt(0).toUpperCase()
+                                  : "C"}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-blue-500 text-sm truncate">
+                        {job.company?.name || "Company Name"}
+                      </p>
+                      <div className="flex items-center text-gray-600 text-xs">
+                        <MapPin size={12} className="mr-1" />
+                        <span className="truncate">
+                          {job.location || "Location not specified"}
+                        </span>
+                      </div>
+                      {(job.min_salary || job.max_salary) && (
+                        <div className="mt-1 text-green-600 text-xs font-medium">
+                          {job.min_salary && job.max_salary
+                            ? `$${job.min_salary} - $${job.max_salary}`
+                            : job.min_salary
+                            ? `From $${job.min_salary}`
+                            : `Up to $${job.max_salary}`}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -2505,8 +2614,6 @@ const PostPage = () => {
               )}
             </div>
 
-
-
             {/* Add Comment Section */}
             <div className="p-4 border-t border-gray-200">
               <div className="flex items-center gap-3">
@@ -2765,133 +2872,6 @@ const PostPage = () => {
         </div>
       )}
 
-      {showCommentOptions && selectedComment && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-xs mx-4">
-            <div className="p-4">
-              <h3 className="font-medium text-lg mb-3">Comment Options</h3>
-
-              {selectedComment.user?.id === user.id ? (
-                <>
-                  <button
-                    className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
-                    onClick={() => {
-                      setEditingCommentId(selectedComment.id);
-                      setCommentText(selectedComment.content);
-                      setShowCommentOptions(false);
-                    }}
-                  >
-                    <SquarePen size={16} className="mr-2" />
-                    Edit Comment
-                  </button>
-                  <button
-                    className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
-                    onClick={() => handleDeleteComment(selectedComment.id)}
-                  >
-                    <X size={16} className="mr-2" />
-                    Delete Comment
-                  </button>
-                </>
-              ) : (
-                <button
-                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
-                  onClick={() => {
-                    if (selectedComment.user?.id) {
-                      // Handle report comment
-                    }
-                    setShowCommentOptions(false);
-                  }}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 mr-2"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                    />
-                  </svg>
-                  Report Comment
-                </button>
-              )}
-            </div>
-
-            <div className="border-t p-3">
-              <button
-                className="w-full py-2 text-gray-500 hover:text-gray-700"
-                onClick={() => setShowCommentOptions(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showReplyOptions && selectedReply && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-xs mx-4">
-            <div className="p-4">
-              <h3 className="font-medium text-lg mb-3">Reply Options</h3>
-
-              {/* Perbaikan: Gunakan currentUserId untuk memeriksa kepemilikan reply */}
-              {selectedReply.user?.id === currentUserId ? (
-                <>
-                  <button
-                    className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center"
-                    onClick={() => {
-                      setEditingReplyId(selectedReply.id);
-                      setReplyText(selectedReply.content);
-                      setShowReplyOptions(false);
-                    }}
-                  >
-                    <SquarePen size={16} className="mr-2" />
-                    Edit Reply
-                  </button>
-                  <button
-                    className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
-                    onClick={() => handleDeleteReply(selectedReply.id)}
-                  >
-                    <X size={16} className="mr-2" />
-                    Delete Reply
-                  </button>
-                </>
-              ) : (
-                <button
-                  className="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-md flex items-center text-red-500"
-                  onClick={() => {
-                    if (selectedReply?.user?.id) {
-                      handleReportClick(
-                        selectedReply.user.id,
-                        "comment",
-                        selectedReply.id
-                      );
-                    }
-                    setShowReplyOptions(false);
-                  }}
-                >
-                  <TriangleAlert size={16} className="mr-2" />
-                  Report Reply
-                </button>
-              )}
-            </div>
-
-            <div className="border-t p-3">
-              <button
-                className="w-full py-2 text-gray-500 hover:text-gray-700"
-                onClick={() => setShowReplyOptions(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       {showReportModal && (
         <ReportModal
           showReportModal={showReportModal}

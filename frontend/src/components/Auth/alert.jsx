@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-function Alert({ type = 'success', message, onClose, isVisible = true, autoClose = true, duration = 5000 }) {
+function Alert ({ type = 'success', message, onClose, isVisible = true, autoClose = true, duration = 5000 }) {
   const [show, setShow] = useState(false);
   const [shouldRender, setShouldRender] = useState(isVisible);
 

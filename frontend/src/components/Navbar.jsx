@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import Logo from "../assets/img/logo1.png";
 import { Menu, X } from "lucide-react";
 import MobileMenu from "./Navbar/MobileMenu";
@@ -8,13 +8,17 @@ import SearchBar from "./Navbar/SearchBar";
 import MessageDropdown from "./Navbar/MessageDropdown";
 import NotificationDropdown from "./Navbar/NotificationDropdown";
 import UserDropdown from "./Navbar/UserDropdown";
+import Other from "./Navbar/Other";
 
 const Navbar = () => {
   const apiUrl =
     import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+  const location = useLocation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMsgOpen, setIsMsgOpen] = useState(false);
+  const [isBellOpen, setIsBellOpen] = useState(false);
   const navigate = useNavigate();
   const [user, setUser] = useState({
     name: "",
@@ -121,14 +125,14 @@ const Navbar = () => {
 
   return (
     <nav
-      className={`flex items-center justify-between px-4 sm:px-8 md:px-16 py-[13px] bg-sky-500 text-white shadow-sm font-sans sticky top-0 z-50 transition-all duration-300 ${
+      className={`flex items-center justify-between px-4 sm:px-8 md:px-16 py-[13px] bg-primary text-white shadow-sm font-sans sticky top-0 z-50 transition-all duration-300 ${
         isScrolled ? "shadow-lg" : ""
       }`}
     >
       {/* Left: Logo + Hamburger Menu (mobile) */}
       <div className="flex items-center gap-3">
         <button
-          className="md:hidden mr-2"
+          className="mr-2 md:hidden"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
           {isMobileMenuOpen ? (
@@ -138,15 +142,19 @@ const Navbar = () => {
           )}
         </button>
 
-        <Link to="/">
-          <img src={Logo} alt="Logo" className="h-8" />
-        </Link>
+        {!location.pathname.startsWith("/company-dashboard") && (
+          <Link to="/">
+            <img src={Logo} alt="Logo" className="h-8" />
+          </Link>
+        )}
 
-        <SearchBar />
+        {!location.pathname.startsWith("/company-dashboard") && <SearchBar />}
       </div>
 
       <div className="flex items-center gap-4">
         <NavLinks />
+
+        <Other />
 
         <div className="flex items-center gap-4 sm:gap-6">
           {/* Message Dropdown */} <MessageDropdown />
@@ -162,10 +170,10 @@ const Navbar = () => {
                 <img
                   src={`${apiUrl}/${user.photo}`}
                   alt="Profile"
-                  className="w-9 h-9 rounded-full object-cover border border-white shadow-sm"
+                  className="object-cover border border-white rounded-full shadow-sm w-9 h-9"
                 />
               ) : (
-                <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center font-semibold border border-white">
+                <div className="flex items-center justify-center w-8 h-8 font-semibold text-gray-600 bg-gray-300 border border-white rounded-full">
                   {user.name
                     .split(" ")
                     .map((n) => n[0])

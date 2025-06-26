@@ -11,10 +11,20 @@ function ContentStep({ content, images, onContentChange, onImagesChange, onNext,
 
   const handleContentChange = (event, editor) => {
     const data = editor.getData();
-    onContentChange(data);
-    setCharCount(data.replace(/<[^>]*>/g, '').length);
-    setContentError('');
+    const plainText = data.replace(/<[^>]*>/g, '');
+    const charLen = plainText.length;
+
+    if (charLen <= maxLength) {
+      onContentChange(data);
+      setCharCount(charLen);
+      setContentError('');
+    } else {
+      // Jangan update editor lagi supaya posisi kursor tetap stabil
+      setCharCount(charLen); // Tetap update counter (bisa nunjukin kelebihan)
+      setContentError(`Maximum ${maxLength} characters reached.`);
+    }
   };
+
 
   const handleImageChange = async (e) => {
     const files = Array.from(e.target.files);
@@ -140,7 +150,7 @@ function ContentStep({ content, images, onContentChange, onImagesChange, onNext,
             accept="image/*"
             onChange={handleImageChange}
           />
-          <span className="ml-3 text-sm text-gray-500">You can only upload one image</span>
+          <span className="ml-3 text-sm text-gray-500">You can only upload <span className="font-semibold">one image</span>. Preview will be displayed in <span className="font-semibold">4:3</span></span>
         </div>
         {imageError && <p className="text-sm text-red-500 mt-1">{imageError}</p>}
       </div>
@@ -157,7 +167,8 @@ function ContentStep({ content, images, onContentChange, onImagesChange, onNext,
         <button
           type="button"
           onClick={handleNext}
-          className="btn-primary text-white px-6 py-2.5 rounded-md font-medium"
+          className={`btn-primary text-white px-6 py-2.5 rounded-md font-medium ${charCount > maxLength ? 'opacity-50 cursor-not-allowed' : ''}`}
+          disabled={charCount > maxLength}
         >
           Preview
         </button>

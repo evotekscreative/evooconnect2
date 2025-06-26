@@ -19,7 +19,7 @@ function PreviewStep({ formData, onSubmit, onPrev, isSubmitting }) {
         <div className="space-y-6">
           <div className="bg-white shadow-md rounded-lg overflow-hidden">
             {images.length > 0 && (
-              <div className="relative overflow-hidden w-full h-[400px]">
+              <div className="relative overflow-hidden w-full aspect-[4/3]">
                 <div
                   className="flex transition-transform duration-500 ease-in-out"
                   style={{ transform: `translateX(-${currentIndex * 100}%)` }}
@@ -29,7 +29,7 @@ function PreviewStep({ formData, onSubmit, onPrev, isSubmitting }) {
                       key={index}
                       src={image.preview}
                       alt={`Image ${index + 1}`}
-                      className="w-full h-[400px] object-cover flex-shrink-0"
+                      className="w-full h-full object-cover flex-shrink-0"
                     />
                   ))}
                 </div>
@@ -56,7 +56,9 @@ function PreviewStep({ formData, onSubmit, onPrev, isSubmitting }) {
                 {category}
               </span>
               <h2 className="text-2xl font-semibold mt-3">{title}</h2>
-              <p className="text-xs text-gray-400 mb-4 mt-1">Published on: {date}</p>
+              <p className="text-xs text-gray-400 mb-4 mt-1">
+                Published on: {date}
+              </p>
               <div
                 className="prose max-w-none text-gray-700"
                 dangerouslySetInnerHTML={{ __html: content }}

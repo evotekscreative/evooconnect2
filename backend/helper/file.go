@@ -22,13 +22,15 @@ const (
 	TypeAudio    = "audio"
 
 	// Common upload directories
-	DirUsers      = "users"
-	DirGroups     = "groups"
-	DirPosts      = "posts"
-	DirComments   = "comments"
-	DirExperience = "experience"
-	DirEducation  = "education"
-	DirBlogs      = "blogs"
+	DirUsers        = "users"
+	DirGroups       = "groups"
+	DirPosts        = "posts"
+	DirComments     = "comments"
+	DirExperience   = "experience"
+	DirEducation    = "education"
+	DirBlogs        = "blogs"
+	DirCompanies    = "companies"
+	DirCompanyPosts = "company_posts"
 )
 
 // FileUploadOptions provides configuration options for file uploads
@@ -242,4 +244,12 @@ func SaveUploadedFile(file multipart.File, category string, userId string, fileE
 
 	// Return relative path with forward slashes for consistency across platforms
 	return strings.ReplaceAll(filepath, "\\", "/")
+}
+
+func GetFileHeaderFromForm(request *http.Request, fieldName string) (*multipart.FileHeader, error) {
+	fileHeaders := request.MultipartForm.File[fieldName]
+	if len(fileHeaders) == 0 {
+		return nil, fmt.Errorf("no file found for field: %s", fieldName)
+	}
+	return fileHeaders[0], nil
 }

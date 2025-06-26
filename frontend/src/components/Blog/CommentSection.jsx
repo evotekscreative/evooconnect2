@@ -10,7 +10,7 @@ import {
   X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import Alert from "../Auth/Alert";
+import Alert from "../Auth/alert";
 
 const CommentSection = ({ slug, blogId }) => {
   const apiUrl =
@@ -45,7 +45,7 @@ const CommentSection = ({ slug, blogId }) => {
   useEffect(() => {
     if (blogId) {
       fetchComments();
-    } 
+    }
   }, [blogId]);
 
   const showAlert = (message, type = "success") => {
@@ -114,8 +114,8 @@ const CommentSection = ({ slug, blogId }) => {
       const apiReplies = Array.isArray(res.data?.data.comments)
         ? res.data.data.comments
         : Array.isArray(res.data)
-          ? res.data
-          : [];
+        ? res.data
+        : [];
 
       setComments((prevComments) =>
         prevComments.map((comment) =>
@@ -147,6 +147,7 @@ const CommentSection = ({ slug, blogId }) => {
     setSubmittingComment(true);
 
     try {
+      // Gunakan endpoint yang benar untuk membuat komentar blog
       const res = await axios.post(
         `${apiUrl}/api/blog-comments/${blogId}`,
         { content: newComment },
@@ -313,6 +314,7 @@ const CommentSection = ({ slug, blogId }) => {
     }
 
     try {
+      // Gunakan endpoint yang benar untuk membalas komentar blog
       const res = await axios.post(
         `${apiUrl}/api/blog/comments/${commentId}/replies`,
         { content },
@@ -325,12 +327,12 @@ const CommentSection = ({ slug, blogId }) => {
         prev.map((comment) =>
           comment.id === commentId
             ? {
-              ...comment,
-              replies: Array.isArray(comment.replies)
-                ? [...comment.replies, newReply]
-                : [newReply],
-              replies_count: (comment.replies_count || 0) + 1,
-            }
+                ...comment,
+                replies: Array.isArray(comment.replies)
+                  ? [...comment.replies, newReply]
+                  : [newReply],
+                replies_count: (comment.replies_count || 0) + 1,
+              }
             : comment
         )
       );
@@ -380,7 +382,12 @@ const CommentSection = ({ slug, blogId }) => {
       console.error("Error submitting report:", error);
       showAlert("Failed to submit report.", "error");
     } finally {
-      setReportModal({ isOpen: false, targetId: null, targetType: null, userId: null });
+      setReportModal({
+        isOpen: false,
+        targetId: null,
+        targetType: null,
+        userId: null,
+      });
     }
   };
 
@@ -563,7 +570,9 @@ const CommentSection = ({ slug, blogId }) => {
                                         commentId={comment.id}
                                         replyId={reply.id}
                                         isReply={true}
-                                        isOpen={openDropdown === `reply-${reply.id}`}
+                                        isOpen={
+                                          openDropdown === `reply-${reply.id}`
+                                        }
                                         onToggle={() =>
                                           setOpenDropdown(
                                             openDropdown === `reply-${reply.id}`
@@ -577,7 +586,10 @@ const CommentSection = ({ slug, blogId }) => {
                                         }}
                                         onDelete={() => {
                                           setOpenDropdown(null);
-                                          handleDeleteReply(comment.id, reply.id);
+                                          handleDeleteReply(
+                                            comment.id,
+                                            reply.id
+                                          );
                                         }}
                                         onReport={() => {
                                           setOpenDropdown(null);
@@ -640,7 +652,14 @@ const CommentSection = ({ slug, blogId }) => {
 
       <ReportModal
         isOpen={reportModal.isOpen}
-        onClose={() => setReportModal({ isOpen: false, targetId: null, targetType: null, userId: null })}
+        onClose={() =>
+          setReportModal({
+            isOpen: false,
+            targetId: null,
+            targetType: null,
+            userId: null,
+          })
+        }
         onSubmit={handleReport}
       />
     </div>
@@ -805,7 +824,10 @@ const ReportModal = ({ isOpen, onClose, onSubmit }) => {
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold">Report Content</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
             <X size={20} />
           </button>
         </div>

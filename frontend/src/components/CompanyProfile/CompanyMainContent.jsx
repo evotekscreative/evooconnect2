@@ -3,21 +3,27 @@ import { ThumbsDown, ThumbsUp, MapPin } from 'lucide-react';
 import AboutTab from '../../components/CompanyProfile/AboutTab.jsx';
 import JobsTab from '../../components/CompanyProfile/JobsTab.jsx';
 import ReviewsTab from '../../components/CompanyProfile/ReviewsTab.jsx';
+import PostTab from "./PostTab.jsx";
+import { useParams } from "react-router-dom";
 
 export default function CompanyMainContent({
   activeTab,
   company,
   jobs,
+  posts,
   userReviews,
   newComment,
   setNewComment,
-  handleCommentSubmit
+  handleCommentSubmit,
+  onAddPost,
+  onJobPost
 }) {
+  const {company_id} = useParams()
   const formatDate = (dateString) => {
     const now = new Date();
     const commentDate = new Date(dateString);
     const diffInSeconds = Math.floor((now - commentDate) / 1000);
-    
+
     if (commentDate.toDateString() !== now.toDateString()) {
       const options = { 
         year: 'numeric', 
@@ -42,10 +48,12 @@ export default function CompanyMainContent({
     return "Just now";
   };
 
+
   return (
     <div className="lg:col-span-6 space-y-4">
       {activeTab === "About" && <AboutTab company={company} />}
-      {activeTab === "Jobs" && <JobsTab jobs={jobs} />}
+      {activeTab === "Posts" && <PostTab companyId={company_id}/>}
+      {activeTab === "Jobs" && <JobsTab jobs={jobs} onJobPost={onJobPost} />}
       {activeTab === "Reviews" && (
         <ReviewsTab 
           userReviews={userReviews}

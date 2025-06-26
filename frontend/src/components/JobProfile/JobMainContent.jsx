@@ -1,66 +1,38 @@
 import React from 'react';
-import job1 from '../../assets/img/job1.png';
+import JobHeader from './JobHeader.jsx';
 
-export default function JobMainContent({ job }) {
+export default function JobMainContent({ job, clickedSave, handleSaveClick }) {
+    if (!job) return null;
+
     return (
-        <div className="lg:col-span-2 space-y-6">
-            <div className="bg-gray-50 p-4 rounded-lg shadow-lg">
-                <h2 className="text-xl font-semibold mb-2">Overview</h2>
+        <div className="lg:col-span-2 space-y-4 w-full">
+            {/* Header */}
+            <JobHeader job={job} clickedSave={clickedSave} handleSaveClick={handleSaveClick} />
+            {/*Vacancy Details*/}
+            <div className="bg-white p-6 rounded-lg shadow mt-2">
+                <h2 className="text-xl font-semibold mb-2">Detail Vacancy</h2>
                 <hr />
-                <p className="text-sm text-gray-600 mt-3">{job.overview}</p>
-            </div>
-
-            <div className="bg-gray-50 p-4 rounded-lg shadow-lg">
-                <h2 className="text-xl font-semibold mb-5">Job Details</h2>
-
-                <div className="grid grid-cols-1 gap-y-2 text-sm text-gray-600 mt-2">
-                    <p>
-                        <span className="font-semibold text-gray-800">Seniority Level:</span> {job.seniorityLevel}
-                    </p>
-                    <hr className="my-2" />
-                    <p>
-                        <span className="font-semibold text-gray-800">Industry:</span> {job.Industry}
-                    </p>
-                    <hr className="my-2" />
-                    <p>
-                        <span className="font-semibold text-gray-800">Employment Type:</span> {job.type}
-                    </p>
-                    <hr className="my-2" />
-                    <p>
-                        <span className="font-semibold text-gray-800">Job Functions:</span> {job.jobFunction}
-                    </p>
-                    <hr className="my-2" />
-                    <p>
-                        <span className="font-semibold text-gray-800">Salary:</span> {job.salary}
-                    </p>
+                <div className="text-sm text-gray-600 mt-3 break-words whitespace-pre-line">
+                    {job.description}
                 </div>
-            </div>
-
-            <hr className="my-4 border-gray-200" />
-
-            <div className="bg-gray-50 p-4 rounded-lg shadow-lg">
-                <div className="flex items-center mb-3">
-                    <img
-                        src={job1}
-                        alt="React Company"
-                        className="w-14 h-14 rounded-full mr-2 object-cover"
-                    />
-                    <div>
-                        <p className="font-semibold text-sm">{job.company}</p>
-                        <p className="text-xs text-gray-400">{job.Industry} | {job.companySize}</p>
-                    </div>
-                </div>
-
-                <h2 className="text-xl font-semibold mb-2">About us</h2>
-                <p className="text-sm text-gray-600 mb-3">
-                   {job.companyDescription}
-                </p>
-                <hr className="my-4" />
-                <div className="text-center">
-                    <a href="#" className="text-[#0A66C2] text-sm font-normal hover:underline">
-                        READ MORE
-                    </a>
-                </div>
+                {/* Requirements */}
+                {job.requirements && (
+                    <>
+                        <h3 className="text-lg font-semibold mt-6 mb-2">Requirements</h3>
+                        <div className="text-sm text-gray-700 whitespace-pre-line break-words mb-2">
+                            {job.requirements}
+                        </div>
+                    </>
+                )}
+                {/* What We Offer */}
+                {job.benefits && (
+                    <>
+                        <h3 className="text-lg font-semibold mt-6 mb-2">What We Offer</h3>
+                        <div className="text-sm text-gray-700 whitespace-pre-line break-words">
+                            {job.benefits}
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );

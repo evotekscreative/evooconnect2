@@ -4,7 +4,7 @@ import githubIcon from "../../../assets/img/imgAdmin/github.svg";
 import googleIcon from "../../../assets/img/imgAdmin/google.svg";
 import background from "../../../assets/img/imgAdmin/register_bg_2.png";
 import logoB from "../../../assets/img/logoB.png";
-import Alert from "../../../components/Auth/Alert";
+import Alert from "../../../components/Auth/alert.jsx";
 // components
 import FooterSmall from "../../../components/Admin/Footers/FooterSmall.jsx";
 
@@ -12,6 +12,8 @@ import FooterSmall from "../../../components/Admin/Footers/FooterSmall.jsx";
 import Login from "../../../pages/Admin/AuthAdmin/LoginAdmin.jsx";
 
 export default function LoginAdmin() {
+          const apiUrl = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:3000";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -38,7 +40,7 @@ export default function LoginAdmin() {
     }
 
     try {
-      const response = await fetch(`http://localhost:3000/api/admin/auth/login`, {
+      const response = await fetch(`${apiUrl}/api/admin/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
