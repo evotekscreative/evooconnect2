@@ -595,6 +595,8 @@ This project was developed by talented interns from SMK Wikrama Bogor:
 - **Muhamad Afghan Alzena** - *Full Stack Developer*
   - Lead developer responsible for overall architecture and implementation
   - Backend API development and frontend integration
+  - API development and security implementation
+  - Database design and optimization
   
 - **Fazrie Riesky Putra** - *Backend Developer*
   - Database design and optimization
@@ -602,11 +604,12 @@ This project was developed by talented interns from SMK Wikrama Bogor:
   
 - **Zahran Fairuz** - *Frontend Developer*
   - User interface design and implementation
+  - Cross-browser compatibility and testing
   - React components and state management
+  - Component optimization and performance tuning
   
 - **Bintang Asydqy** - *Frontend Developer*
   - Frontend feature development
-  - Component optimization and performance tuning
   
 - **Zahra Kamila** - *Frontend Developer*
   - UI/UX development and responsive design
@@ -614,7 +617,7 @@ This project was developed by talented interns from SMK Wikrama Bogor:
   
 - **Windha Kusuma Dewi** - *Frontend Developer*
   - Interface development and styling
-  - Cross-browser compatibility and testing
+  - React components management
 
 ### Internship Program
 This project was completed as part of the **SMK Wikrama Bogor** internship program, demonstrating the students' capabilities in modern web development technologies and collaborative software development practices.
