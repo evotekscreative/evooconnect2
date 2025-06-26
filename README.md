@@ -528,8 +528,6 @@ The application uses MySQL with the following main entities:
 go build -o evoconnect main.go
 
 # Set production environment variables
-export DB_HOST=your_production_db_host
-export JWT_SECRET=your_production_jwt_secret
 
 # Run the application
 ./evoconnect
@@ -625,12 +623,12 @@ This project was completed as part of the **SMK Wikrama Bogor** internship progr
 
 ### Acknowledgments
 - SMK Wikrama Bogor for providing the opportunity and guidance
-- EVO Technologies for project mentorship and resources
+- EKS for project mentorship and resources
 - The open-source community for the amazing tools and libraries
 
 ## License
 
-This project is proprietary and owned by **EVO Technologies**. All rights reserved.
+This project is proprietary and owned by **EKS**. All rights reserved.
 
 ### Usage Rights
 - This software is developed for internal use and client projects
@@ -646,8 +644,8 @@ This project uses various open-source libraries and frameworks. Please refer to 
 
 For technical support, bug reports, or feature requests:
 
-- **Email**: dev@evotechnologies.com
-- **Issue Tracker**: [GitHub Issues](https://github.com/evotekscreative/epokonek/issues)
+- **Email**: evoteksdigital@gmail.com
+- **Issue Tracker**: [GitHub Issues](https://github.com/evotekscreative/evooconnect2/issues)
 - **Documentation**: This README and API documentation
 - **Development Team**: Contact any of the team members listed above
 
