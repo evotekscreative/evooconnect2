@@ -609,6 +609,7 @@ This project was developed by talented interns from SMK Wikrama Bogor:
   - Component optimization and performance tuning
   
 - **Bintang Asydqy** - *Frontend Developer*
+  - Interface development and styling
   - Frontend feature development
   
 - **Zahra Kamila** - *Frontend Developer*
