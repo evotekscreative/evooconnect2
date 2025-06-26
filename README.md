@@ -1,544 +1,565 @@
 # EvoConnect - Professional Social Networking Platform
 
-EvoConnect adalah platform jejaring sosial profesional full-stack yang dirancang untuk koneksi profesional, pencarian kerja, dan pengembangan karir. Platform ini menyediakan UI modern dengan berbagai kemampuan jejaring sosial mirip LinkedIn, termasuk profil, koneksi, posting pekerjaan, halaman perusahaan, blogging, dan sistem pesan.
+EvoConnect is a comprehensive full-stack social networking platform designed for professional connections, job hunting, and career development. Built with modern technologies, it provides LinkedIn-like functionality with advanced features for professional networking, company management, content sharing, and real-time communication.
 
-## Daftar Isi
-- [Gambaran Proyek](#gambaran-proyek)
-- [Fitur Utama](#fitur-utama)
+## Table of Contents
+- [Project Overview](#project-overview)
+- [Features](#features)
 - [Tech Stack](#tech-stack)
-- [Prasyarat](#prasyarat)
-- [Instalasi](#instalasi)
-- [Konfigurasi Environment](#konfigurasi-environment)
-- [Struktur Proyek](#struktur-proyek)
-- [Dokumentasi API](#dokumentasi-api)
-- [Fitur-Fitur Detail](#fitur-fitur-detail)
+- [Prerequisites](#prerequisites)
+- [Getting Started](#getting-started)
+  - [Backend Setup](#backend-setup)
+  - [Frontend Setup](#frontend-setup)
+- [Environment Variables](#environment-variables)
+- [Project Structure](#project-structure)
+- [API Documentation](#api-documentation)
+- [Database Schema](#database-schema)
 - [Deployment](#deployment)
-- [Troubleshooting](#troubleshooting)
-- [Kontribusi](#kontribusi)
-- [Lisensi](#lisensi)
+- [Contributing](#contributing)
+- [Team](#team)
+- [License](#license)
 
-## Gambaran Proyek
+## Project Overview
 
-EvoConnect adalah platform jejaring profesional yang menghubungkan para profesional, membantu mereka menemukan peluang kerja, dan memungkinkan berbagi pengetahuan melalui blog posts dan updates. Platform ini dibangun dengan arsitektur modern menggunakan Go untuk backend dan React untuk frontend.
+EvoConnect is a professional networking platform that facilitates meaningful connections between professionals, companies, and job seekers. The platform offers comprehensive features for career development, knowledge sharing, and business networking in the technology industry.
 
-## Fitur Utama
+## Features
 
-### 🔐 Autentikasi & Keamanan
-- **Registrasi & Login**: Sistem autentikasi lengkap dengan JWT
-- **Forgot Password**: Reset password melalui email
-- **Google OAuth**: Login dengan akun Google
-- **Role-based Access**: User dan Admin dengan permission berbeda
-- **JWT Token Management**: Refresh token dan session management
+### 🔐 Authentication & Security
+- **Multi-provider Authentication**: Email/password, Google OAuth integration
+- **JWT-based Security**: Secure token-based authentication with refresh tokens
+- **Password Management**: Secure password reset via email verification
+- **Admin Authentication**: Separate admin panel with role-based access control
 
-### 👤 Manajemen Profil
-- **Profil Pengguna**: Profil lengkap dengan foto, bio, kontak
-- **Pengalaman Kerja**: CRUD pengalaman kerja dengan foto
-- **Pendidikan**: Manajemen riwayat pendidikan dengan sertifikat
-- **Skills**: Skill management dengan endorsement
-- **Portfolio**: Upload dan showcase portfolio
-- **CV Management**: Upload dan manajemen CV untuk aplikasi kerja
+### 👤 User Management
+- **Rich Profile System**: Professional profiles with photos, headlines, and contact information
+- **Experience Management**: Add/edit work experiences with company logos and descriptions
+- **Education Tracking**: Academic background with certificates and achievements
+- **Skills & Endorsements**: Skill management with peer endorsements
+- **Profile Analytics**: Track profile views and engagement metrics
 
-### 🌐 Jejaring Sosial
-- **Sistem Koneksi**: Connect dengan profesional lain
-- **Follow System**: Follow perusahaan dan influencer
-- **Feed Algoritma**: News feed dengan algoritma personal
-- **Post Interactions**: Like, comment, reply, share
-- **Visibility Control**: Public, connections, private posts
-- **Mention System**: Tag pengguna dalam post
+### 🤝 Social Networking
+- **Connection System**: Send/accept connection requests with personalized messages
+- **Follow Companies**: Stay updated with company activities and job postings
+- **Network Discovery**: Find and connect with professionals in your field
+- **Connection Recommendations**: AI-powered connection suggestions
 
-### 💼 Portal Pekerjaan
-- **Job Listings**: Browse lowongan dengan filter canggih
-- **Saved Jobs**: Simpan lowongan menarik
-- **Job Applications**: Apply dengan CV dan cover letter
-- **Application Tracking**: Track status aplikasi
-- **Employer Dashboard**: Manajemen lowongan untuk perusahaan
-- **Applicant Management**: Review dan kelola pelamar
+### 📰 Content & Feed
+- **Dynamic News Feed**: Personalized content feed with smart algorithms
+- **Rich Text Editor**: CKEditor integration for professional content creation
+- **Multi-media Posts**: Support for images, videos, and document attachments
+- **Post Interactions**: Like, comment, reply, and share functionality
+- **Content Moderation**: Report inappropriate content with admin review system
 
-### 🏢 Halaman Perusahaan
-- **Company Profiles**: Profil perusahaan lengkap
-- **Company Posts**: Konten dari perusahaan
-- **Company Members**: Manajemen anggota perusahaan
-- **Company Verification**: Sistem verifikasi perusahaan
-- **Company Statistics**: Dashboard statistik perusahaan
+### 👥 Group Management
+- **Professional Groups**: Create and join industry-specific groups
+- **Group Moderation**: Admin controls for member approval and content management
+- **Group Analytics**: Track group engagement and member activity
+- **Event Management**: Organize and manage professional events within groups
 
-### 📝 Platform Blog
-- **Rich Text Editor**: CKEditor untuk konten berkualitas
-- **Blog Categories**: Kategori artikel berbeda
-- **Blog Comments**: Sistem komentar dan reply
-- **Blog Sharing**: Share artikel ke social media
-- **Blog Analytics**: Statistik pembaca dan engagement
+### 💼 Job Portal
+- **Job Listings**: Comprehensive job posting system with detailed descriptions
+- **Application Management**: Track applications with status updates
+- **Saved Jobs**: Bookmark interesting opportunities for later review
+- **Company Job Pages**: Dedicated company career pages
+- **Application Analytics**: Track application success rates and feedback
 
-### 💬 Sistem Pesan
-- **Real-time Chat**: Messaging real-time
-- **Group Conversations**: Chat grup
-- **File Sharing**: Kirim file dalam chat
-- **Message Status**: Read receipts dan status
-- **Chat History**: Riwayat percakapan
+### 🏢 Company Profiles
+- **Company Pages**: Detailed company profiles with branding and information
+- **Company Analytics**: Track follower growth and engagement metrics
+- **Job Posting Management**: Post and manage job openings
+- **Company Updates**: Share company news and achievements
+- **Employee Management**: Manage company employee profiles and permissions
 
-### 🔔 Notifikasi
-- **Real-time Notifications**: Notifikasi real-time
-- **Email Notifications**: Notifikasi via email
-- **Push Notifications**: Browser push notifications
-- **Notification Settings**: Kontrol preferensi notifikasi
+### 📝 Blog Platform
+- **Professional Blogging**: Rich text blog creation with multimedia support
+- **Article Management**: Draft, publish, and schedule blog posts
+- **Blog Analytics**: Track article views, engagement, and reader demographics
+- **Comment System**: Threaded comments with reply functionality
+- **Content Categories**: Organize content by industry topics and tags
 
-### 👥 Manajemen Grup
-- **Create Groups**: Buat grup diskusi
-- **Group Posts**: Posting dalam grup
-- **Group Moderation**: Moderasi konten grup
-- **Join Requests**: Sistem persetujuan anggota
-- **Group Roles**: Admin dan member roles
+### 💬 Communication
+- **Real-time Messaging**: WebSocket-based instant messaging system
+- **File Sharing**: Share documents and media in conversations
+- **Message Status**: Read receipts and delivery confirmations
+- **Group Messaging**: Multi-participant conversations
 
-### 🛡️ Sistem Laporan & Moderasi
-- **Content Reporting**: Laporkan konten bermasalah
-- **Admin Dashboard**: Dashboard admin untuk moderasi
-- **Take Action System**: Suspend, ban, take down content
-- **Report Analytics**: Statistik laporan dan tindakan
+### 🔔 Notifications
+- **Real-time Alerts**: Instant notifications for important activities
+- **Email Notifications**: Configurable email alerts for key events
+- **Push Notifications**: Browser-based push notification support
+- **Notification Preferences**: Granular control over notification types
 
-### 🔍 Pencarian Global
-- **Advanced Search**: Pencarian users, posts, companies, jobs
-- **Search Filters**: Filter pencarian canggih
-- **Search Suggestions**: Auto-complete pencarian
-- **Search History**: Riwayat pencarian
+### 📊 Analytics & Reporting
+- **Profile Analytics**: Track profile views and search appearances
+- **Content Performance**: Monitor post engagement and reach
+- **Network Growth**: Visualize connection growth over time
+- **Admin Dashboard**: Comprehensive platform analytics and user management
+
+### 🛡️ Content Moderation
+- **Report System**: User-generated content reporting with admin review
+- **Automated Moderation**: AI-powered content filtering
+- **Admin Panel**: Comprehensive moderation tools and user management
+- **Content Appeals**: Appeal system for moderation decisions
 
 ## Tech Stack
 
 ### Backend
-- **Language**: Go (Golang) 1.19+
-- **Database**: PostgreSQL 13+
-- **ORM**: Database/SQL dengan custom repository pattern
-- **Authentication**: JWT dengan bcrypt hashing
-- **File Storage**: Local filesystem dengan organized directory structure
-- **Email Service**: SMTP dengan Gmail integration
-- **Real-time**: WebSocket untuk chat dan notifikasi
-- **Migration**: Goose untuk database migrations
-- **API Design**: RESTful API dengan JSON responses
-- **Middleware**: Custom middleware untuk auth, CORS, logging
-- **Validation**: Custom validation dengan struct tags
-- **Error Handling**: Centralized error handling dengan custom exceptions
+- **Language**: [Go (Golang)](https://golang.org/) v1.21+
+- **Framework**: Custom REST API with Gorilla Mux routing
+- **Database**: PostgreSQL 14+ with optimized indexing
+- **Authentication**: JWT with RS256 signing algorithm
+- **File Storage**: Local filesystem with organized directory structure
+- **Email Service**: SMTP integration for transactional emails
+- **WebSocket**: Real-time communication support
+- **Validation**: Go-playground/validator for request validation
+- **Logging**: Structured logging with logrus
+- **CORS**: Configurable cross-origin resource sharing
 
 ### Frontend
-- **Framework**: React 18 dengan Vite 4
-- **Styling**: Tailwind CSS 3 dengan custom components
-- **State Management**: React Hooks dengan Context API
-- **Routing**: React Router DOM 6
-- **HTTP Client**: Axios dengan interceptors
-- **Form Handling**: Custom form handling dengan validation
-- **Rich Text**: CKEditor 5 dan Trix Editor
-- **Icons**: Lucide React
-- **Charts**: Recharts untuk analytics
-- **Notifications**: React Toastify
-- **Date Handling**: Day.js
-- **File Upload**: Custom file upload dengan progress
-- **Image Processing**: Client-side image optimization
+- **Framework**: [React 18](https://reactjs.org/) with [Vite](https://vitejs.dev/) build tool
+- **Language**: JavaScript ES6+ with JSX
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) v3.x with custom components
+- **State Management**: React hooks (useState, useEffect, useContext)
+- **Routing**: [React Router v6](https://reactrouter.com/) with protected routes
+- **HTTP Client**: [Axios](https://axios-http.com/) with interceptors
+- **Form Handling**: Custom form validation with real-time feedback
+- **Rich Text Editor**: [CKEditor 5](https://ckeditor.com/) for content creation
+- **Charts**: [Chart.js](https://www.chartjs.org/) with React wrapper for analytics
+- **Icons**: [Lucide React](https://lucide.dev/) icon library
+- **Notifications**: [React Toastify](https://fkhadra.github.io/react-toastify/) for user feedback
+- **Date Handling**: [Day.js](https://day.js.org/) for date manipulation
+- **Image Handling**: Custom image upload and preview components
 
-## Prasyarat
+### Development Tools
+- **Version Control**: Git with conventional commits
+- **Code Quality**: ESLint and Prettier for consistent formatting
+- **API Testing**: Postman collections with comprehensive test suites
+- **Documentation**: Swagger/OpenAPI 3.0 specification
+- **Environment Management**: Environment-based configuration
 
-Pastikan Anda memiliki software berikut terinstal:
+## Prerequisites
 
-- **Node.js** 16+ dan npm/yarn
-- **Go** 1.19+
-- **PostgreSQL** 13+
-- **Git**
-- **Email SMTP** (Gmail recommended)
-- **Google OAuth** credentials (optional)
+Before you begin, ensure you have the following installed:
 
-## Instalasi
+- **[Node.js](https://nodejs.org/)** (v18.0 or later)
+- **[Go](https://golang.org/dl/)** (v1.21 or later)
+- **[PostgreSQL](https://www.postgresql.org/download/)** (v14.0 or later)
+- **[Git](https://git-scm.com/downloads)** (latest version)
+- **Code Editor** (VS Code recommended with Go and React extensions)
 
-### 1. Clone Repository
+## Getting Started
+
+### Backend Setup
+
+1. **Clone the repository:**
 ```bash
-git clone https://github.com/your-repo/evoconnect.git
-cd evoconnect
+git clone https://github.com/evotekscreative/epokonek.git
+cd epokonek
 ```
 
-### 2. Setup Backend
-
+2. **Navigate to the backend directory:**
 ```bash
 cd backend
-
-# Install dependencies
-go mod download
-
-# Copy environment file
-cp .env.example .env
-# Edit .env dengan konfigurasi Anda
-
-# Setup database
-createdb evoconnect
-psql -d evoconnect -f db/schema.sql
-
-# Run migrations
-go run main.go migrate
-
-# Start server
-go run main.go
 ```
 
-Backend akan berjalan di `http://localhost:3000`
+3. **Install Go dependencies:**
+```bash
+go mod download
+go mod tidy
+```
 
-### 3. Setup Frontend
+4. **Set up environment variables:**
+```bash
+cp .env.example .env
+```
+Edit the `.env` file with your configuration (see Environment Variables section).
 
+5. **Set up the database:**
+```bash
+# Create database
+psql -U postgres -c "CREATE DATABASE evoconnect WITH ENCODING='UTF8' LC_COLLATE='en_US.UTF-8' LC_CTYPE='en_US.UTF-8';"
+
+# Run migrations (if available)
+go run main.go migrate
+```
+
+6. **Start the backend server:**
+```bash
+# Development mode
+go run main.go
+
+# Or build and run
+go build -o evoconnect main.go
+./evoconnect
+```
+
+The backend server will start at `http://localhost:3000` (default port).
+
+### Frontend Setup
+
+1. **Navigate to the frontend directory:**
 ```bash
 cd ../frontend
-
-# Install dependencies
-npm install
-
-# Copy environment file
-cp .env.example .env
-# Edit .env dengan konfigurasi Anda
-
-# Start development server
-npm run dev
 ```
 
-Frontend akan berjalan di `http://localhost:5173`
+2. **Install dependencies:**
+```bash
+npm install
+# or
+yarn install
+```
 
-## Konfigurasi Environment
+3. **Set up environment variables:**
+```bash
+cp .env.example .env
+```
+Configure the environment variables for your setup.
+
+4. **Start the development server:**
+```bash
+npm run dev
+# or
+yarn dev
+```
+
+The frontend will be available at `http://localhost:5173`.
+
+## Environment Variables
 
 ### Backend (.env)
-```env
-# Application Configuration
-APP_NAME="EvoConnect"
-APP_HOST="localhost"
-APP_PORT=3000
-APP_URL="http://localhost:3000"
-APP_ENV=development
-APP_DEBUG=true
+```bash
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=evoconnect
+DB_USER=your_username
+DB_PASSWORD=your_password
 
 # JWT Configuration
-JWT_SECRET_KEY="your-super-secret-jwt-key-change-this-in-production"
-ADMIN_JWT_SECRET_KEY="your-admin-jwt-secret-key"
-JWT_EXPIRES_IN=24
+JWT_SECRET=your_super_secret_jwt_key_here
+JWT_EXPIRY=24h
 
-# Database Configuration
-DB_HOST="localhost"
-DB_PORT=5432
-DB_NAME="evoconnect"
-DB_USER="postgres"
-DB_PASSWORD="your-db-password"
+# Server Configuration
+PORT=3000
+HOST=localhost
 
-# Email Configuration
-EMAIL_HOST="smtp.gmail.com"
-EMAIL_PORT=587
-EMAIL_USERNAME="your-email@gmail.com"
-EMAIL_PASSWORD="your-app-password"
-EMAIL_FROM="EvoConnect <noreply@evoconnect.com>"
+# CORS Configuration
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
 
-# Google OAuth (Optional)
-GOOGLE_CLIENT_ID="your-google-client-id"
-GOOGLE_CLIENT_SECRET="your-google-client-secret"
+# File Upload Configuration
+MAX_FILE_SIZE=10MB
+UPLOAD_PATH=./uploads
 
-# Goose Migration Configuration
-GOOSE_DRIVER=postgres
-GOOSE_DBSTRING="postgres://postgres:password@localhost:5432/evoconnect"
-GOOSE_MIGRATION_DIR=./db/migrations
-GOOSE_TABLE=goose_migrations
+# Email Configuration (for notifications and password reset)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your_email@gmail.com
+SMTP_PASSWORD=your_app_password
 
-# Client URL for CORS
-CLIENT_URL="http://localhost:5173"
+# Admin Configuration
+ADMIN_EMAIL=admin@evoconnect.com
+ADMIN_PASSWORD=secure_admin_password
+
+# Rate Limiting
+RATE_LIMIT_REQUESTS=100
+RATE_LIMIT_WINDOW=15m
+
+# Security
+BCRYPT_COST=12
+SESSION_TIMEOUT=24h
 ```
 
 ### Frontend (.env)
-```env
+```bash
 # API Configuration
 VITE_APP_BACKEND_URL=http://localhost:3000
-
-# Client Configuration
 VITE_APP_CLIENT_URL=http://localhost:5173
-VITE_APP_NAME="EvoConnect"
 
 # Feature Flags
 VITE_APP_ENABLE_GOOGLE_AUTH=true
+VITE_APP_ENABLE_REAL_TIME_CHAT=true
+VITE_APP_ENABLE_PUSH_NOTIFICATIONS=true
+
+# External Services
+VITE_APP_GOOGLE_CLIENT_ID=your_google_oauth_client_id
+
+# Environment
+VITE_APP_ENVIRONMENT=development
+VITE_APP_VERSION=1.0.0
 ```
 
-## Struktur Proyek
+## Project Structure
 
 ```
 evoconnect/
 ├── README.md
+├── .gitignore
 ├── backend/
-│   ├── main.go                 # Entry point aplikasi
-│   ├── go.mod                  # Go module dependencies
-│   ├── go.sum                  # Checksums dependencies
-│   ├── .env.example           # Template environment variables
-│   ├── api_docs/              # API documentation
-│   │   ├── postman.json       # Postman collection
-│   │   ├── admin_postman.json # Admin API collection
-│   │   └── swagger.json       # Swagger documentation
-│   ├── app/                   # Application configuration
-│   │   └── database.go        # Database connection
-│   ├── controller/            # HTTP handlers
+│   ├── .env
+│   ├── .env.example
+│   ├── .gitignore
+│   ├── go.mod
+│   ├── go.sum
+│   ├── main.go                    # Application entry point
+│   ├── getSocketID.html           # WebSocket testing page
+│   ├── api_docs/
+│   │   ├── postman.json          # Postman collection
+│   │   ├── admin_postman.json    # Admin endpoints collection
+│   │   └── swagger.json          # OpenAPI specification
+│   ├── app/
+│   │   └── database.go           # Database connection and configuration
+│   ├── controller/               # HTTP request handlers
 │   │   ├── auth_controller.go
 │   │   ├── user_controller.go
 │   │   ├── post_controller.go
-│   │   ├── company_controller.go
+│   │   ├── group_controller.go
 │   │   ├── job_controller.go
+│   │   ├── company_controller.go
 │   │   ├── blog_controller.go
-│   │   ├── chat_controller.go
-│   │   ├── notification_controller.go
-│   │   └── admin_*.go         # Admin controllers
-│   ├── db/                    # Database related
-│   │   ├── migrations/        # Database migrations
-│   │   └── schema.sql         # Database schema
-│   ├── exception/             # Custom exceptions
-│   │   ├── error_handler.go
-│   │   └── custom_errors.go
-│   ├── helper/                # Utility functions
-│   │   ├── model.go           # Model converters
-│   │   ├── upload.go          # File upload utilities
-│   │   ├── email.go           # Email utilities
-│   │   └── validation.go      # Validation utilities
-│   ├── middleware/            # HTTP middleware
+│   │   └── admin_controller.go
+│   ├── db/                       # Database related files
+│   │   ├── migrations/
+│   │   └── seeds/
+│   ├── exception/                # Custom error handling
+│   │   └── error_handler.go
+│   ├── helper/                   # Utility functions
+│   │   ├── bcrypt.go
+│   │   ├── jwt.go
+│   │   ├── validation.go
+│   │   └── file_upload.go
+│   ├── middleware/               # HTTP middlewares
 │   │   ├── auth_middleware.go
 │   │   ├── cors_middleware.go
-│   │   └── admin_middleware.go
-│   ├── model/                 # Data models
-│   │   ├── domain/            # Domain models
-│   │   └── web/               # Web request/response models
-│   ├── repository/            # Data access layer
-│   │   ├── *_repository.go
-│   │   └── *_repository_impl.go
-│   ├── service/               # Business logic
-│   │   ├── *_service.go
-│   │   └── *_service_impl.go
-│   ├── uploads/               # File uploads directory
-│   │   ├── avatars/
+│   │   ├── rate_limit_middleware.go
+│   │   └── logging_middleware.go
+│   ├── model/                    # Data models and structs
+│   │   ├── user.go
+│   │   ├── post.go
+│   │   ├── group.go
+│   │   ├── job.go
+│   │   ├── company.go
+│   │   └── blog.go
+│   ├── public/                   # Static files served by backend
+│   ├── repository/               # Data access layer
+│   │   ├── user_repository.go
+│   │   ├── post_repository.go
+│   │   ├── group_repository.go
+│   │   └── job_repository.go
+│   ├── service/                  # Business logic layer
+│   │   ├── auth_service.go
+│   │   ├── user_service.go
+│   │   ├── post_service.go
+│   │   ├── notification_service.go
+│   │   └── email_service.go
+│   ├── uploads/                  # File upload directory
+│   │   ├── profiles/
 │   │   ├── posts/
 │   │   ├── companies/
-│   │   ├── blogs/
 │   │   └── documents/
-│   └── utils/                 # Utility packages
+│   └── utils/                    # Additional utilities
+│       ├── logger.go
+│       ├── response.go
+│       └── constants.go
 └── frontend/
-    ├── index.html             # HTML template
-    ├── package.json           # NPM dependencies
-    ├── vite.config.js         # Vite configuration
-    ├── tailwind.config.js     # Tailwind configuration
-    ├── postcss.config.js      # PostCSS configuration
-    ├── public/                # Static assets
+    ├── .env
+    ├── .env.example
+    ├── .gitignore
+    ├── eslint.config.js
+    ├── index.html
+    ├── package.json
+    ├── postcss.config.cjs
+    ├── postcss.config.js
+    ├── tailwind.config.js
+    ├── vite.config.js
+    ├── README.md
+    ├── public/
+    │   ├── favicon.ico
+    │   └── evoconnect1.png         # App logo
     └── src/
-        ├── main.jsx           # React entry point
-        ├── App.jsx            # Main app component
-        ├── routes.jsx         # Route definitions
-        ├── assets/            # Static assets
-        ├── components/        # Reusable components
-        │   ├── Auth/          # Authentication components
-        │   ├── Profile/       # Profile components
-        │   ├── Post/          # Post components
-        │   ├── Company/       # Company components
-        │   ├── Job/           # Job components
-        │   ├── Blog/          # Blog components
-        │   ├── Chat/          # Chat components
-        │   ├── Admin/         # Admin components
-        │   └── Common/        # Common components
-        └── pages/             # Page components
-            ├── Auth/          # Authentication pages
-            ├── Profile/       # Profile pages
-            ├── Company/       # Company pages
-            ├── Job/           # Job pages
-            ├── Blog/          # Blog pages
-            ├── Chat/          # Chat pages
-            ├── Admin/         # Admin pages
-            └── Home.jsx       # Homepage
+        ├── App.css
+        ├── App.jsx                 # Main application component
+        ├── index.css              # Global styles
+        ├── main.jsx               # Application entry point
+        ├── routes.jsx             # Application routing configuration
+        ├── assets/                # Static assets
+        │   ├── css/
+        │   │   └── style.css      # Custom CSS styles
+        │   ├── img/               # Image assets
+        │   └── icons/
+        ├── components/            # Reusable UI components
+        │   ├── Auth/              # Authentication components
+        │   │   ├── alert.jsx
+        │   │   └── ProtectedRoute.jsx
+        │   ├── Admin/             # Admin panel components
+        │   │   ├── Sidebar/
+        │   │   ├── Cards/
+        │   │   └── Charts/
+        │   ├── Blog/              # Blog-related components
+        │   │   ├── BlogCard.jsx
+        │   │   ├── EditBlog.jsx
+        │   │   └── BlogList.jsx
+        │   ├── CompanyProfile/    # Company profile components
+        │   │   ├── CompanyHeader.jsx
+        │   │   ├── CompanyEditModal.jsx
+        │   │   └── CompanyPosts.jsx
+        │   ├── Profile/           # User profile components
+        │   │   ├── ProfileHeader.jsx
+        │   │   ├── ProfilePosts.jsx
+        │   │   ├── ExperienceModal.jsx
+        │   │   └── EducationModal.jsx
+        │   ├── Case.jsx           # Layout wrapper component
+        │   ├── Button.jsx         # Reusable button component
+        │   └── NetworkManager.jsx # Network connection handler
+        └── pages/                 # Page components
+            ├── Home.jsx           # Main dashboard/feed
+            ├── Help.jsx           # Help and support page
+            ├── SinglePost.jsx     # Individual post view
+            ├── UserPostPage.jsx   # User's posts listing
+            ├── Groups.jsx         # Groups discovery page
+            ├── GroupPage.jsx      # Individual group view
+            ├── Admin/             # Admin panel pages
+            │   ├── AuthAdmin/
+            │   │   └── LoginAdmin.jsx
+            │   ├── Report/        # Content moderation
+            │   │   ├── ReportPostDetail.jsx
+            │   │   └── ReportBlogPage.jsx
+            │   └── Dashboard/
+            ├── Blog/              # Blog-related pages
+            │   └── Blog.jsx
+            ├── CompanyProfile/    # Company pages
+            │   └── JobProfile.jsx
+            ├── Connection/        # Networking pages
+            │   └── Connections.jsx
+            └── Profile/           # User profile pages
+                └── Profile.jsx
 ```
 
-## Dokumentasi API
+## API Documentation
 
-### Base URL
-```
-http://localhost:3000/api
-```
+The API follows RESTful principles with comprehensive endpoint coverage:
 
 ### Authentication Endpoints
-```
-POST   /auth/register          # User registration
-POST   /auth/login             # User login
-POST   /auth/google            # Google OAuth login
-POST   /auth/forgot-password   # Forgot password
-POST   /auth/reset-password    # Reset password
-POST   /auth/refresh-token     # Refresh JWT token
-POST   /auth/logout            # Logout
-```
+- `POST /api/auth/login` - User login
+- `POST /api/auth/register` - User registration  
+- `POST /api/auth/google` - Google OAuth authentication
+- `POST /api/auth/forgot-password` - Password reset request
+- `POST /api/auth/reset-password` - Password reset confirmation
 
 ### User Management
-```
-GET    /user/profile           # Get current user profile
-PUT    /user/profile           # Update user profile
-POST   /user/avatar            # Upload avatar
-GET    /users/{id}             # Get user by ID
-GET    /users/search           # Search users
-```
+- `GET /api/user/profile` - Get current user profile
+- `PUT /api/user/profile` - Update user profile
+- `GET /api/user-profile/{username}` - Get user by username
+- `GET /api/users/{userId}/posts` - Get user's posts
+- `GET /api/users/{userId}/connections` - Get user connections
+- `GET /api/users/{userId}/education` - Get user education
+- `GET /api/users/{userId}/experience` - Get user experience
 
-### Post Management
-```
-GET    /posts                  # Get posts feed
-POST   /posts                  # Create new post
-GET    /posts/{id}             # Get post by ID
-PUT    /posts/{id}             # Update post
-DELETE /posts/{id}             # Delete post
-POST   /posts/{id}/like        # Like/unlike post
-GET    /posts/{id}/comments    # Get post comments
-POST   /posts/{id}/comments    # Add comment
-```
+### Posts & Content
+- `GET /api/posts` - Get all posts with pagination
+- `POST /api/posts` - Create new post
+- `GET /api/posts/{postId}` - Get specific post
+- `PUT /api/posts/{postId}` - Update post
+- `DELETE /api/posts/{postId}` - Delete post
+- `POST /api/posts/{postId}/comments` - Add comment to post
+- `POST /api/post-actions/{postId}/like` - Like/unlike post
+
+### Groups
+- `GET /api/groups` - Get all groups
+- `POST /api/groups` - Create new group
+- `GET /api/groups/{groupId}` - Get group details
+- `PUT /api/groups/{groupId}` - Update group
+- `POST /api/groups/{groupId}/join` - Join group
+- `POST /api/groups/{groupId}/posts` - Create group post
+- `GET /api/groups/{groupId}/members` - Get group members
+
+### Job Portal
+- `GET /api/job-vacancies` - Get job listings
+- `POST /api/job-vacancies` - Create job posting
+- `GET /api/job-vacancies/{jobId}` - Get job details
+- `POST /api/job-applications/{jobId}` - Apply for job
+- `POST /api/saved-jobs/{jobId}` - Save job
+- `GET /api/saved-jobs` - Get saved jobs
 
 ### Company Management
-```
-GET    /companies              # Get companies list
-POST   /companies              # Create company
-GET    /companies/{id}         # Get company details
-PUT    /companies/{id}         # Update company
-GET    /companies/{id}/stats   # Get company statistics
-GET    /companies/{id}/members # Get company members
-POST   /companies/{id}/join    # Join company request
-```
+- `GET /api/companies` - Get companies
+- `POST /api/companies` - Create company
+- `GET /api/companies/{companyId}` - Get company details
+- `PUT /api/companies/{companyId}` - Update company
+- `POST /api/companies/{companyId}/follow` - Follow company
 
-### Job Management
-```
-GET    /jobs                   # Get job listings
-POST   /jobs                   # Create job posting
-GET    /jobs/{id}              # Get job details
-PUT    /jobs/{id}              # Update job
-DELETE /jobs/{id}              # Delete job
-POST   /jobs/{id}/apply        # Apply to job
-GET    /saved-jobs             # Get saved jobs
-POST   /saved-jobs/{id}        # Save job
-DELETE /saved-jobs/{id}        # Unsave job
-```
-
-### Blog Management
-```
-GET    /blogs                  # Get blog posts
-POST   /blogs                  # Create blog post
-GET    /blogs/{id}             # Get blog post
-PUT    /blogs/{id}             # Update blog post
-DELETE /blogs/{id}             # Delete blog post
-POST   /blogs/{id}/photo       # Upload blog photo
-GET    /blog-comments/{id}     # Get blog comments
-POST   /blog-comments/{id}     # Add blog comment
-```
+### Search & Discovery
+- `GET /api/search/users` - Search users
+- `GET /api/search/posts` - Search posts
+- `GET /api/search/groups` - Search groups
+- `GET /api/search` - Global search
 
 ### Admin Endpoints
-```
-GET    /admin/users            # Get all users
-PUT    /admin/users/{id}/status # Update user status
-GET    /admin/reports          # Get reports
-POST   /admin/reports/{id}/action # Take action on report
-GET    /admin/companies        # Get companies for approval
-PUT    /admin/companies/{id}/status # Approve/reject company
-```
+- `GET /api/admin/users` - Manage users
+- `GET /api/admin/reports` - Content moderation
+- `PUT /api/admin/reports/{reportId}` - Handle reports
+- `GET /api/admin/analytics` - Platform analytics
 
-Dokumentasi lengkap tersedia di:
+Full API documentation is available in:
 - **Postman Collection**: `backend/api_docs/postman.json`
-- **Admin API Collection**: `backend/api_docs/admin_postman.json`
-- **Swagger**: `backend/api_docs/swagger.json`
+- **Admin Collection**: `backend/api_docs/admin_postman.json`
+- **Swagger Spec**: `backend/api_docs/swagger.json`
 
-## Fitur-Fitur Detail
+## Database Schema
 
-### 1. Sistem Autentikasi
-- JWT-based authentication dengan refresh token
-- Password hashing menggunakan bcrypt
-- Google OAuth integration
-- Email verification dan password reset
-- Role-based access control (User, Admin)
+The application uses MySQL with the following main entities:
 
-### 2. Manajemen Profil Pengguna
-- Complete profile dengan foto dan informasi lengkap
-- Pengalaman kerja dengan foto perusahaan
-- Riwayat pendidikan dengan sertifikat
-- Skills management dengan endorsement system
-- Portfolio showcase dengan file upload
+### Core Tables
+- **users** - User profiles and authentication
+- **posts** - User posts and content
+- **comments** - Post comments and replies
+- **groups** - Professional groups
+- **group_members** - Group membership
+- **connections** - User connections/networking
+- **companies** - Company profiles
+- **job_vacancies** - Job postings
+- **job_applications** - Job applications
+- **blogs** - Blog articles
+- **notifications** - User notifications
+- **reports** - Content moderation reports
 
-### 3. Sistem Posting & Feed
-- Rich text posting dengan image upload
-- Visibility control (public, connections, private)
-- Like, comment, dan reply system
-- Mention system untuk tag pengguna
-- Feed algoritma berdasarkan connections
-
-### 4. Portal Pekerjaan
-- Advanced job search dengan multiple filters
-- Saved jobs untuk bookmark lowongan
-- Application tracking system
-- CV management untuk aplikasi
-- Employer dashboard untuk posting jobs
-
-### 5. Halaman Perusahaan
-- Company profile dengan verifikasi
-- Company posts dan updates
-- Member management system
-- Join request approval
-- Company statistics dashboard
-
-### 6. Platform Blog
-- CKEditor untuk rich text editing
-- Blog categories dan tagging
-- Comment system dengan replies
-- Blog sharing ke social media
-- Analytics untuk blog performance
-
-### 7. Sistem Chat
-- Real-time messaging
-- Group conversations
-- File sharing dalam chat
-- Message status (sent, delivered, read)
-- Chat history dan search
-
-### 8. Admin Dashboard
-- User management dan moderation
-- Content moderation tools
-- Report management system
-- Company approval workflow
-- System analytics dan statistics
+### Relationship Overview
+- Users can create posts, join groups, connect with others
+- Posts can have comments, likes, and be shared
+- Groups have members with different roles (admin, moderator, member)
+- Companies can post jobs and have followers
+- Users can apply for jobs and save interesting positions
 
 ## Deployment
 
-### Backend Deployment
+### Production Deployment
 
-1. **Build aplikasi**:
+#### Backend Deployment
 ```bash
-cd backend
+# Build the application
 go build -o evoconnect main.go
-```
 
-2. **Setup database production**:
-```bash
-# Import schema
-psql -d evoconnect_prod -f db/schema.sql
+# Set production environment variables
+export DB_HOST=your_production_db_host
+export JWT_SECRET=your_production_jwt_secret
 
-# Run migrations
-./evoconnect migrate
-```
-
-3. **Setup environment production**:
-```bash
-# Copy dan edit environment
-cp .env.example .env.production
-# Edit dengan konfigurasi production
-```
-
-4. **Run aplikasi**:
-```bash
+# Run the application
 ./evoconnect
 ```
 
-### Frontend Deployment
-
-1. **Build aplikasi**:
+#### Frontend Deployment
 ```bash
-cd frontend
+# Build for production
 npm run build
-```
 
-2. **Deploy ke web server**:
-```bash
-# Copy dist folder ke web server
-cp -r dist/* /var/www/evoconnect/
+# The dist/ folder can be served by any static file server
+# or deployed to services like Vercel, Netlify, or AWS S3
 ```
 
 ### Docker Deployment (Optional)
-
-1. **Create Dockerfile backend**:
 ```dockerfile
-FROM golang:1.19-alpine AS builder
+# Backend Dockerfile
+FROM golang:1.21-alpine AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
@@ -549,176 +570,109 @@ FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 WORKDIR /root/
 COPY --from=builder /app/main .
-COPY --from=builder /app/.env .
 CMD ["./main"]
 ```
 
-2. **Create Dockerfile frontend**:
-```dockerfile
-FROM node:16-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-RUN npm run build
+## Contributing
 
-FROM nginx:alpine
-COPY --from=builder /app/dist /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
-```
-
-3. **Docker Compose**:
-```yaml
-version: '3.8'
-services:
-  backend:
-    build: ./backend
-    ports:
-      - "3000:3000"
-    environment:
-      - DB_HOST=db
-    depends_on:
-      - db
-  
-  frontend:
-    build: ./frontend
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
-  
-  db:
-    image: postgres:13
-    environment:
-      POSTGRES_DB: evoconnect
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
-```
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Database Connection Error**:
-```bash
-# Check PostgreSQL status
-sudo systemctl status postgresql
-
-# Check database exists
-psql -l | grep evoconnect
-
-# Check connection string
-psql -h localhost -U postgres -d evoconnect
-```
-
-2. **CORS Error**:
-```bash
-# Check CLIENT_URL in backend .env
-CLIENT_URL="http://localhost:5173"
-
-# Check VITE_APP_BACKEND_URL in frontend .env
-VITE_APP_BACKEND_URL=http://localhost:3000
-```
-
-3. **File Upload Error**:
-```bash
-# Check uploads directory permissions
-chmod 755 backend/uploads
-chmod -R 644 backend/uploads/*
-
-# Check disk space
-df -h
-```
-
-4. **JWT Token Error**:
-```bash
-# Check JWT_SECRET_KEY length (minimum 32 characters)
-# Regenerate secret key if needed
-openssl rand -base64 32
-```
-
-5. **Email Not Sending**:
-```bash
-# For Gmail, use App Password instead of regular password
-# Enable 2FA and generate App Password
-# Check EMAIL_* configuration in .env
-```
-
-### Performance Optimization
-
-1. **Database Optimization**:
-```sql
--- Add indexes for frequently queried columns
-CREATE INDEX idx_posts_user_id ON posts(user_id);
-CREATE INDEX idx_posts_created_at ON posts(created_at);
-CREATE INDEX idx_users_email ON users(email);
-```
-
-2. **File Upload Optimization**:
-```go
-// Implement image compression
-// Use CDN for file storage in production
-// Add file size limits
-```
-
-3. **Frontend Optimization**:
-```bash
-# Enable gzip compression
-# Implement lazy loading
-# Use React.memo for heavy components
-# Optimize bundle size
-npm run build --analyze
-```
-
-## Kontribusi
-
-Kami menerima kontribusi untuk meningkatkan EvoConnect:
-
-1. **Fork repository**
-2. **Create feature branch**: `git checkout -b feature/amazing-feature`
-3. **Commit changes**: `git commit -m 'Add amazing feature'`
-4. **Push to branch**: `git push origin feature/amazing-feature`
-5. **Open Pull Request**
-
-### Coding Standards
-
-- **Go**: Follow Go standard formatting dengan `gofmt`
-- **React**: Use functional components dengan hooks
-- **CSS**: Use Tailwind utility classes
-- **Commits**: Use conventional commit messages
-- **Testing**: Write tests untuk new features
+We welcome contributions from the community! Please follow these guidelines:
 
 ### Development Workflow
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes with clear, descriptive commits
+4. Write or update tests as needed
+5. Ensure code follows the project's style guidelines
+6. Push to your branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request with a detailed description
 
-1. **Setup development environment**
-2. **Create feature branch dari main**
-3. **Implement feature dengan tests**
-4. **Run linting dan tests**
-5. **Update documentation**
-6. **Submit pull request**
+### Code Standards
+- **Go**: Follow Go conventions, use `gofmt` and `golint`
+- **React**: Use functional components with hooks, follow ESLint rules
+- **Git**: Use conventional commit messages
+- **Documentation**: Update README and API docs for new features
 
-## Lisensi
+### Pull Request Process
+1. Ensure all tests pass
+2. Update documentation for any API changes
+3. Include screenshots for UI changes
+4. Get at least one code review approval
+5. Ensure CI/CD checks pass
 
-Proyek ini adalah proprietary dan dimiliki oleh EVO Technologies. Semua hak dilindungi undang-undang.
+## Team
+
+This project was developed by talented interns from SMK Wikrama Bogor:
+
+### Development Team
+- **Muhamad Afghan Alzena** - *Full Stack Developer*
+  - Lead developer responsible for overall architecture and implementation
+  - Backend API development and frontend integration
+  
+- **Fazrie Riesky Putra** - *Backend Developer*
+  - Database design and optimization
+  - API development and security implementation
+  
+- **Zahran Fairuz** - *Frontend Developer*
+  - User interface design and implementation
+  - React components and state management
+  
+- **Bintang Asydqy** - *Frontend Developer*
+  - Frontend feature development
+  - Component optimization and performance tuning
+  
+- **Zahra Kamila** - *Frontend Developer*
+  - UI/UX development and responsive design
+  - User experience optimization
+  
+- **Windha Kusuma Dewi** - *Frontend Developer*
+  - Interface development and styling
+  - Cross-browser compatibility and testing
+
+### Internship Program
+This project was completed as part of the **SMK Wikrama Bogor** internship program, demonstrating the students' capabilities in modern web development technologies and collaborative software development practices.
+
+### Acknowledgments
+- SMK Wikrama Bogor for providing the opportunity and guidance
+- EVO Technologies for project mentorship and resources
+- The open-source community for the amazing tools and libraries
+
+## License
+
+This project is proprietary and owned by **EVO Technologies**. All rights reserved.
+
+### Usage Rights
+- This software is developed for internal use and client projects
+- Redistribution or commercial use without explicit permission is prohibited
+- Educational use within the scope of the internship program is permitted
+
+### Third-Party Licenses
+This project uses various open-source libraries and frameworks. Please refer to their respective licenses for usage terms.
 
 ---
 
-## Kontak & Support
+## Support & Contact
 
-Untuk pertanyaan, issue, atau dukungan:
+For technical support, bug reports, or feature requests:
 
-- **Email**: support@evotekscreative.com
-- **GitHub Issues**: [Create an issue](https://github.com/your-repo/evoconnect/issues)
-- **Documentation**: [Wiki](https://github.com/your-repo/evoconnect/wiki)
+- **Email**: dev@evotechnologies.com
+- **Issue Tracker**: [GitHub Issues](https://github.com/evotekscreative/epokonek/issues)
+- **Documentation**: This README and API documentation
+- **Development Team**: Contact any of the team members listed above
+
+### FAQ
+
+**Q: How do I reset my development database?**
+A: Drop and recreate your database, then run migrations again.
+
+**Q: Why am I getting CORS errors?**
+A: Ensure your frontend URL is listed in the backend's ALLOWED_ORIGINS environment variable.
+
+**Q: How do I add new API endpoints?**
+A: Create the handler in the controller, add the route in main.go, and update the API documentation.
+
+**Q: Can I contribute to this project?**
+A: Yes! Please see the Contributing section above for guidelines.
 
 ---
 
-**EvoConnect** - Menghubungkan Profesional, Membuka Peluang Karir
-
-*Dikembangkan dengan ❤️ oleh Tim Developer dari SMK WIKRAMA BOGOR*
+*Built with ❤️ by the SMK Wikrama Bogor development
