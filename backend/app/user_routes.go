@@ -181,13 +181,10 @@ func setupUserRoutes(
 
 	router.POST("/api/groups/:groupId/join-requests", userAuth(groupController.CreateJoinRequest))
 	router.GET("/api/groups/:groupId/join-requests", userAuth(groupController.FindJoinRequestsByGroupId))
-	router.GET("/api/my-joined-groups", userAuth(groupController.FindMyJoinedGroups))
 	router.PUT("/api/join-requests/:requestId/accept", userAuth(groupController.AcceptJoinRequest))
 	router.PUT("/api/join-requests/:requestId/reject", userAuth(groupController.RejectJoinRequest))
 	router.GET("/api/my-join-requests", userAuth(groupController.FindMyJoinRequests))
 	router.DELETE("/api/join-requests/:requestId", userAuth(groupController.CancelJoinRequest))
-	router.GET("/api/count-request-invitation", userAuth(connectionController.CountRequestInvitation))
-
 
 	// Chat routes
 	// ========== CHAT ROUTES ==========

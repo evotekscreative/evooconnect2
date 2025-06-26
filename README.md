@@ -34,7 +34,7 @@ EvoConnect is a professional networking platform that facilitates meaningful con
 ### 👤 User Management
 - **Rich Profile System**: Professional profiles with photos, headlines, and contact information
 - **Experience Management**: Add/edit work experiences with company logos and descriptions
-- **Education Tracking**: Academic background with certificates and achievements
+- **Education Tracking**: Academic background with institutions and degrees
 - **Skills & Endorsements**: Skill management with peer endorsements
 - **Profile Analytics**: Track profile views and engagement metrics
 
@@ -82,7 +82,6 @@ EvoConnect is a professional networking platform that facilitates meaningful con
 - **Real-time Messaging**: WebSocket-based instant messaging system
 - **File Sharing**: Share documents and media in conversations
 - **Message Status**: Read receipts and delivery confirmations
-- **Group Messaging**: Multi-participant conversations
 
 ### 🔔 Notifications
 - **Real-time Alerts**: Instant notifications for important activities
@@ -106,7 +105,6 @@ EvoConnect is a professional networking platform that facilitates meaningful con
 
 ### Backend
 - **Language**: [Go (Golang)](https://golang.org/) v1.21+
-- **Framework**: Custom REST API with Gorilla Mux routing
 - **Database**: PostgreSQL 14+ with optimized indexing
 - **Authentication**: JWT with RS256 signing algorithm
 - **File Storage**: Local filesystem with organized directory structure
@@ -135,7 +133,7 @@ EvoConnect is a professional networking platform that facilitates meaningful con
 - **Version Control**: Git with conventional commits
 - **Code Quality**: ESLint and Prettier for consistent formatting
 - **API Testing**: Postman collections with comprehensive test suites
-- **Documentation**: Swagger/OpenAPI 3.0 specification
+- **Documentation**: Swagger/Postman 3.0 specification
 - **Environment Management**: Environment-based configuration
 
 ## Prerequisites
@@ -154,7 +152,7 @@ Before you begin, ensure you have the following installed:
 
 1. **Clone the repository:**
 ```bash
-git clone https://github.com/evotekscreative/epokonek.git
+git clone https://github.com/evotekscreative/evoconnect.git
 cd epokonek
 ```
 
@@ -180,8 +178,8 @@ Edit the `.env` file with your configuration (see Environment Variables section)
 # Create database
 psql -U postgres -c "CREATE DATABASE evoconnect WITH ENCODING='UTF8' LC_COLLATE='en_US.UTF-8' LC_CTYPE='en_US.UTF-8';"
 
-# Run migrations (if available)
-go run main.go migrate
+# Run migrations 
+sh ./db/migrations/migrate-fresh.sh 
 ```
 
 6. **Start the backend server:**
@@ -230,44 +228,46 @@ The frontend will be available at `http://localhost:5173`.
 ### Backend (.env)
 ```bash
 # Database Configuration
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=evoconnect
-DB_USER=your_username
-DB_PASSWORD=your_password
+APP_HOST="localhost"
+APP_PORT=3000
 
-# JWT Configuration
-JWT_SECRET=your_super_secret_jwt_key_here
-JWT_EXPIRY=24h
+APP_NAME="EvoConnect"
+APP_URL="http://${APP_HOST}:${APP_PORT}"
+APP_ENV=development
+APP_DEBUG=true
+APP_SERVER="${APP_HOST}:${APP_PORT}"
 
-# Server Configuration
-PORT=3000
-HOST=localhost
+JWT_SECRET_KEY="your_jwt_secret_key_here"
+ADMIN_JWT_SECRET_KEY="your_admin_jwt_secret_key_here"
+JWT_EXPIRES_IN=24  
 
-# CORS Configuration
-ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+DB_HOST="localhost"
+DB_PORT=5432
+DB_NAME="evoconnect"
+DB_USER="postgres"
+DB_PASSWORD="your_database_password"
 
-# File Upload Configuration
-MAX_FILE_SIZE=10MB
-UPLOAD_PATH=./uploads
+EMAIL_HOST="smtp.gmail.com"
+EMAIL_PORT=587
+EMAIL_USERNAME="your_email@gmail.com"
+EMAIL_PASSWORD="your_app_password" 
+EMAIL_FROM="EvoConnect <noreply@evoconnect.com>"
 
-# Email Configuration (for notifications and password reset)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USERNAME=your_email@gmail.com
-SMTP_PASSWORD=your_app_password
+PUSHER_APP_ID=your_pusher_app_id
+PUSHER_KEY=your_pusher_key
+PUSHER_SECRET=your_pusher_secret
+PUSHER_CLUSTER=your_pusher_cluster
 
-# Admin Configuration
-ADMIN_EMAIL=admin@evoconnect.com
-ADMIN_PASSWORD=secure_admin_password
+GOOSE_DRIVER=postgres
+# GOOSE_DBSTRING=postgres://admin:admin@localhost:5432/admin_db
+GOOSE_DBSTRING="${GOOSE_DRIVER}://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
+GOOSE_MIGRATION_DIR=./db/migrations
+GOOSE_TABLE=custom.goose_migrations
 
-# Rate Limiting
-RATE_LIMIT_REQUESTS=100
-RATE_LIMIT_WINDOW=15m
+GOOGLE_CLIENT_ID="your_google_client_id.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="your_google_client_secret"
 
-# Security
-BCRYPT_COST=12
-SESSION_TIMEOUT=24h
+CLIENT_URL="http://localhost:3000"
 ```
 
 ### Frontend (.env)
@@ -275,18 +275,6 @@ SESSION_TIMEOUT=24h
 # API Configuration
 VITE_APP_BACKEND_URL=http://localhost:3000
 VITE_APP_CLIENT_URL=http://localhost:5173
-
-# Feature Flags
-VITE_APP_ENABLE_GOOGLE_AUTH=true
-VITE_APP_ENABLE_REAL_TIME_CHAT=true
-VITE_APP_ENABLE_PUSH_NOTIFICATIONS=true
-
-# External Services
-VITE_APP_GOOGLE_CLIENT_ID=your_google_oauth_client_id
-
-# Environment
-VITE_APP_ENVIRONMENT=development
-VITE_APP_VERSION=1.0.0
 ```
 
 ## Project Structure
@@ -658,21 +646,5 @@ For technical support, bug reports, or feature requests:
 - **Issue Tracker**: [GitHub Issues](https://github.com/evotekscreative/epokonek/issues)
 - **Documentation**: This README and API documentation
 - **Development Team**: Contact any of the team members listed above
-
-### FAQ
-
-**Q: How do I reset my development database?**
-A: Drop and recreate your database, then run migrations again.
-
-**Q: Why am I getting CORS errors?**
-A: Ensure your frontend URL is listed in the backend's ALLOWED_ORIGINS environment variable.
-
-**Q: How do I add new API endpoints?**
-A: Create the handler in the controller, add the route in main.go, and update the API documentation.
-
-**Q: Can I contribute to this project?**
-A: Yes! Please see the Contributing section above for guidelines.
-
----
 
 *Built with ❤️ by the SMK Wikrama Bogor development
